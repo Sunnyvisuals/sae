@@ -95,7 +95,7 @@
   to { transform: rotate(360deg); }
 }
 
-/* Particules fines — désert (mouvement lent, alternate = boucle sans saut) */
+/* Particules désert — vent (droite → gauche), léger flottement vertical */
 .desert-mote-anim-1 {
   animation: desert-dust-1 ease-in-out infinite alternate;
 }
@@ -105,37 +105,79 @@
 .desert-mote-anim-3 {
   animation: desert-dust-3 ease-in-out infinite alternate;
 }
+.desert-mote-anim-4 {
+  animation: desert-dust-4 ease-in-out infinite alternate;
+}
+.desert-mote-anim-5 {
+  animation: desert-dust-5 ease-in-out infinite alternate;
+}
+.desert-mote-anim-6 {
+  animation: desert-dust-6 ease-in-out infinite alternate;
+}
 
 @keyframes desert-dust-1 {
   0% {
-    transform: translate3d(0, 0, 0);
-    opacity: 0.18;
+    transform: translate3d(18px, 4px, 0);
+    opacity: 0.2;
   }
   100% {
-    transform: translate3d(7px, -22px, 0);
-    opacity: 0.48;
+    transform: translate3d(-32px, -18px, 0);
+    opacity: 0.52;
   }
 }
 
 @keyframes desert-dust-2 {
   0% {
-    transform: translate3d(0, 0, 0) scale(1);
-    opacity: 0.12;
+    transform: translate3d(12px, 0, 0) scale(1);
+    opacity: 0.14;
   }
   100% {
-    transform: translate3d(-11px, -16px, 0) scale(1.15);
-    opacity: 0.42;
+    transform: translate3d(-28px, -22px, 0) scale(1.12);
+    opacity: 0.46;
   }
 }
 
 @keyframes desert-dust-3 {
   0% {
-    transform: translate3d(0, 0, 0);
-    opacity: 0.14;
+    transform: translate3d(22px, -6px, 0);
+    opacity: 0.16;
   }
   100% {
-    transform: translate3d(9px, -28px, 0);
-    opacity: 0.38;
+    transform: translate3d(-38px, -30px, 0);
+    opacity: 0.4;
+  }
+}
+
+@keyframes desert-dust-4 {
+  0% {
+    transform: translate3d(8px, 8px, 0);
+    opacity: 0.22;
+  }
+  100% {
+    transform: translate3d(-24px, -12px, 0);
+    opacity: 0.48;
+  }
+}
+
+@keyframes desert-dust-5 {
+  0% {
+    transform: translate3d(26px, 2px, 0) scale(1);
+    opacity: 0.12;
+  }
+  100% {
+    transform: translate3d(-34px, -26px, 0) scale(1.18);
+    opacity: 0.44;
+  }
+}
+
+@keyframes desert-dust-6 {
+  0% {
+    transform: translate3d(14px, -4px, 0);
+    opacity: 0.18;
+  }
+  100% {
+    transform: translate3d(-30px, -20px, 0);
+    opacity: 0.5;
   }
 }
 
