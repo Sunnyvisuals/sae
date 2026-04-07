@@ -1,0 +1,120 @@
+'use client';
+
+import { useEffect, useRef, type CSSProperties } from 'react';
+import DesertDustParticles from './DesertDustParticles';
+
+/**
+ * Fond mesh interactif — désert / Maghreb / oriental (sable, ocre, or chaud).
+ * CSS variables + requestAnimationFrame (pas de setInterval).
+ */
+export default function AuroraMeshBackground({ className = '' }: { className?: string }) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const target = useRef({ x: 0.5, y: 0.5 });
+  const current = useRef({ x: 0.5, y: 0.5 });
+  const rafId = useRef(0);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      target.current = {
+        x: e.clientX / window.innerWidth,
+        y: e.clientY / window.innerHeight,
+      };
+    };
+    window.addEventListener('mousemove', onMove, { passive: true });
+
+    const tick = () => {
+      const t = 0.045;
+      current.current.x += (target.current.x - current.current.x) * t;
+      current.current.y += (target.current.y - current.current.y) * t;
+      const el = rootRef.current;
+      if (el) {
+        const { x, y } = current.current;
+        el.style.setProperty('--mx', `${x * 100}%`);
+        el.style.setProperty('--my', `${y * 100}%`);
+        el.style.setProperty('--mx-slow', `${(x * 0.65 + 0.175) * 100}%`);
+        el.style.setProperty('--my-slow', `${(y * 0.55 + 0.225) * 100}%`);
+        /* Léger balancement chaud (ocre ↔ sable), pas froid */
+        el.style.setProperty('--hue-shift', `${x * 5 - 2.5}`);
+      }
+      rafId.current = requestAnimationFrame(tick);
+    };
+    rafId.current = requestAnimationFrame(tick);
+
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      cancelAnimationFrame(rafId.current);
+    };
+  }, []);
+
+  return (
+    <div
+      ref={rootRef}
+      className={`fixed inset-0 overflow-hidden pointer-events-none ${className}`}
+      style={
+        {
+          '--mx': '50%',
+          '--my': '50%',
+          '--mx-slow': '50%',
+          '--my-slow': '50%',
+          '--hue-shift': '0',
+        } as CSSProperties
+      }
+    >
+      {/* Base : nuit de sable / terre (proche solar-brown) */}
+      <div className="absolute inset-0 bg-[#120e0a]" />
+
+      {/* Halo « soleil bas » / sable doré qui suit le curseur */}
+      <div
+        className="absolute w-[min(135vmin,1400px)] h-[min(135vmin,1400px)] rounded-full -translate-x-1/2 -translate-y-1/2 blur-[72px] sm:blur-[100px] opacity-[0.88]"
+        style={{
+          left: 'var(--mx)',
+          top: 'var(--my)',
+          background:
+            'radial-gradient(circle at 42% 38%, rgba(213, 175, 110, 0.55) 0%, rgba(197, 160, 89, 0.38) 28%, rgba(140, 95, 48, 0.22) 52%, transparent 74%)',
+        }}
+      />
+
+      {/* Ocre / terre cuite — chaleur maghrébine */}
+      <div
+        className="absolute w-[min(115vmin,1200px)] h-[min(115vmin,1200px)] rounded-full -translate-x-1/2 -translate-y-1/2 blur-[88px] sm:blur-[120px] opacity-[0.82]"
+        style={{
+          left: 'var(--mx-slow)',
+          top: 'var(--my-slow)',
+          background:
+            'radial-gradient(circle at 52% 48%, rgba(155, 72, 42, 0.62) 0%, rgba(95, 42, 28, 0.45) 40%, rgba(45, 28, 18, 0.35) 58%, transparent 78%)',
+        }}
+      />
+
+      {/* Contre-jour : ombre chaude + reflet crème (souvenir de dune) */}
+      <div
+        className="absolute w-[min(95vmin,1000px)] h-[min(95vmin,1000px)] rounded-full -translate-x-1/2 -translate-y-1/2 blur-[96px] sm:blur-[130px] opacity-[0.48]"
+        style={{
+          left: 'calc(100% - var(--mx))',
+          top: 'calc(100% - var(--my))',
+          transform: 'translate(-50%, -50%)',
+          background:
+            'radial-gradient(circle, rgba(253, 250, 246, 0.12) 0%, rgba(245, 235, 215, 0.08) 35%, rgba(60, 42, 28, 0.18) 62%, transparent 72%)',
+        }}
+      />
+
+      <div
+        className="absolute inset-0 opacity-[0.5]"
+        style={{
+          background:
+            'linear-gradient(118deg, rgba(20, 14, 10, 0.92) 0%, transparent 45%, rgba(55, 32, 22, 0.42) 100%)',
+          filter: 'hue-rotate(calc(var(--hue-shift) * 1deg)) saturate(1.08)',
+        }}
+      />
+
+      <DesertDustParticles />
+
+      <div
+        className="absolute inset-0 opacity-[0.035] mix-blend-soft-light"
+        style={{
+          backgroundImage: 'url("https://grainy-gradients.vercel.app/noise.svg")',
+          backgroundSize: '200px',
+        }}
+      />
+    </div>
+  );
+}
