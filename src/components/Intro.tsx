@@ -1,5 +1,5 @@
-import { motion, AnimatePresence, useScroll, useTransform, useMotionValue, useSpring } from "motion/react";
-import React, { useState, useEffect, useRef, MouseEvent } from "react";
+import { motion, AnimatePresence, useScroll, useTransform, useMotionValue, useSpring, useReducedMotion } from "motion/react";
+import React, { useState, useEffect, useRef, useId, MouseEvent } from "react";
 import { Play, Volume2, VolumeX, ChevronDown, Volume1, Compass } from "lucide-react";
 import PoetryGame from "./PoetryGame";
 import AuroraMeshBackground from "./AuroraMeshBackground";
@@ -97,6 +97,28 @@ const AnimatedTitle = ({ text, className, heroMotion = false }: AnimatedTitlePro
   );
 };
 
+/** Triangle lecture — dégradé or/bronze (DA), pas de blanc « UI générique » */
+function GoldPlayIcon({ className }: { className?: string }) {
+  const gid = useId().replace(/:/g, "");
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden>
+      <defs>
+        <linearGradient id={`play-grad-${gid}`} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#e8d5a4" />
+          <stop offset="42%" stopColor="#c5a059" />
+          <stop offset="100%" stopColor="#7a5c2e" />
+        </linearGradient>
+      </defs>
+      <polygon
+        points="8,5 8,19 19,12"
+        fill={`url(#play-grad-${gid})`}
+        className="transition-[filter] duration-500 group-hover:brightness-110"
+        style={{ filter: `drop-shadow(0 0 8px rgba(197, 160, 89, 0.35))` }}
+      />
+    </svg>
+  );
+}
+
 interface IntroProps {
   onComplete: () => void;
   onReplay?: () => void;
@@ -105,6 +127,7 @@ interface IntroProps {
 }
 
 export default function Intro({ onComplete, onReplay, isExploring, onVideoStart }: IntroProps) {
+  const prefersReducedMotion = useReducedMotion();
   const { scrollYProgress } = useScroll();
   const introOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
   const introScale = useTransform(scrollYProgress, [0, 0.2], [1, 1.05]);
@@ -135,11 +158,20 @@ export default function Intro({ onComplete, onReplay, isExploring, onVideoStart 
     }
   }, [videoStarted, isEasterEggFound]);
 
-  // Randomize easter egg position on mount
+  // Œuf de Pâques : uniquement vers les coins (évite le titre + le bouton centrés)
   useEffect(() => {
-    const randomTop = Math.floor(Math.random() * 60 + 20) + "%"; // Between 20% and 80%
-    const randomLeft = Math.floor(Math.random() * 60 + 20) + "%"; // Between 20% and 80%
-    setEasterEggPos({ top: randomTop, left: randomLeft });
+    const corners: [number, number][] = [
+      [0.08, 0.1],
+      [0.88, 0.1],
+      [0.08, 0.82],
+      [0.88, 0.82],
+    ];
+    const [lx, ty] = corners[Math.floor(Math.random() * corners.length)]!;
+    const jitter = () => (Math.random() - 0.5) * 0.05;
+    setEasterEggPos({
+      top: `${Math.round((ty + jitter()) * 100)}%`,
+      left: `${Math.round((lx + jitter()) * 100)}%`,
+    });
   }, []);
 
   // Detect scroll attempts to guide the user
@@ -321,7 +353,7 @@ export default function Intro({ onComplete, onReplay, isExploring, onVideoStart 
         }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 5, duration: 2 }}
+        transition={{ delay: 0.9, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
       >
         <AnimatePresence>
           {isEasterEggFound && !easterEggPromptHidden && (
@@ -338,13 +370,13 @@ export default function Intro({ onComplete, onReplay, isExploring, onVideoStart 
         </AnimatePresence>
 
         <motion.button
-          whileHover={{ 
-            scale: 1.2, 
-            rotate: 225, 
-            backgroundColor: "rgba(197, 160, 89, 0.2)",
-            borderColor: "rgba(197, 160, 89, 0.8)"
-          }}
-          whileTap={{ scale: 0.9 }}
+          type="button"
+          whileHover={
+            prefersReducedMotion
+              ? undefined
+              : { scale: 1.06 }
+          }
+          whileTap={{ scale: 0.94 }}
           onClick={() => {
             if (isEasterEggFound) {
               setIsPoetryGameOpen(true);
@@ -352,17 +384,39 @@ export default function Intro({ onComplete, onReplay, isExploring, onVideoStart 
               setIsEasterEggFound(true);
             }
           }}
-          className={`transition-all duration-700 rotate-45 border
-            ${isEasterEggFound 
-              ? "w-10 h-10 bg-solar-gold border-solar-gold shadow-[0_0_30px_rgba(197,160,89,0.6)] opacity-100" 
-              : "w-32 h-32 border-transparent opacity-0 group-hover:opacity-100 group-hover:border-solar-gold/20"}`}
+          className={`relative flex h-[4.25rem] min-w-[3.25rem] shrink-0 items-center justify-center overflow-visible transition-opacity duration-300 ease-[0.22,1,0.36,1] focus:outline-none focus-visible:ring-2 focus-visible:ring-solar-gold/35 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent rounded-sm
+            ${isEasterEggFound ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
           title={isEasterEggFound ? "Ouvrir le jeu" : "Un secret est caché ici..."}
         >
-          {!isEasterEggFound && (
-            <div className="absolute inset-0 flex items-center justify-center -rotate-45">
-               <div className="w-1 h-1 bg-solar-gold/20 rounded-full blur-[1px] animate-pulse" />
-            </div>
-          )}
+          {/* filet façon manuscrit */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute -bottom-0.5 left-1/2 h-[2px] w-10 -translate-x-1/2 bg-gradient-to-r from-transparent via-solar-gold/50 to-transparent opacity-60 transition-opacity duration-500 group-hover:opacity-100"
+          />
+          <span
+            aria-hidden
+            className="pointer-events-none absolute -top-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-solar-gold/35 blur-[1px] opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+          />
+          <motion.span
+            className="relative z-[1] select-none font-serif text-5xl font-normal italic leading-none tracking-tight text-transparent sm:text-[3.15rem]"
+            style={{
+              backgroundImage:
+                "linear-gradient(165deg, #f0e2c8 0%, #c5a059 42%, #8a6a35 88%)",
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              filter: isEasterEggFound
+                ? "drop-shadow(0 0 14px rgba(197, 160, 89, 0.45))"
+                : "drop-shadow(0 0 8px rgba(197, 160, 89, 0.2))",
+            }}
+            animate={prefersReducedMotion ? undefined : { y: [0, -2, 0] }}
+            transition={{
+              duration: 4.2,
+              repeat: Infinity,
+              ease: [0.45, 0, 0.55, 1],
+            }}
+          >
+            S
+          </motion.span>
         </motion.button>
       </motion.div>
       )}
@@ -433,23 +487,64 @@ export default function Intro({ onComplete, onReplay, isExploring, onVideoStart 
             <motion.button
               onClick={startExperience}
               whileTap={{ scale: 0.98 }}
+              whileHover={
+                prefersReducedMotion
+                  ? undefined
+                  : { scale: 1.015 }
+              }
+              transition={{ type: "spring", stiffness: 420, damping: 28 }}
               className="group relative flex flex-col items-center gap-6 pointer-events-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-solar-gold/30 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent rounded-sm"
             >
               {/* Halo discret — même logique que le contrôle volume */}
               <div className="absolute -inset-14 opacity-0 group-hover:opacity-100 transition-opacity duration-700 ease-[0.22,1,0.36,1] pointer-events-none bg-[radial-gradient(circle_at_center,rgba(197,160,89,0.14)_0%,transparent_68%)] blur-2xl" />
 
-              {/* Losange type « monolithe son » : statique, lueur au survol */}
+              {/* Losange — respiration lente, icône or (DA) */}
               <div className="relative h-20 w-20 flex items-center justify-center">
-                <div
+                <motion.div
                   aria-hidden
-                  className="absolute inset-0 rotate-45 border border-solar-gold/20 transition-all duration-700 ease-[0.22,1,0.36,1] group-hover:border-solar-gold/45"
+                  className="absolute inset-0 rotate-45 border border-solar-gold/20 transition-[border-color,box-shadow] duration-700 ease-[0.22,1,0.36,1] group-hover:border-solar-gold/45"
+                  animate={
+                    prefersReducedMotion
+                      ? undefined
+                      : { opacity: [0.52, 0.78, 0.52] }
+                  }
+                  transition={{
+                    duration: 5,
+                    repeat: Infinity,
+                    ease: [0.45, 0, 0.55, 1],
+                  }}
                 />
-                <div
-                  className="absolute inset-[6px] flex rotate-45 items-center justify-center border border-solar-gold/45 bg-black/40 backdrop-blur-md transition-all duration-700 ease-[0.22,1,0.36,1] group-hover:border-solar-gold group-hover:bg-black/55 group-hover:shadow-[0_0_20px_rgba(197,160,89,0.45)]"
-                >
-                  <div className="pointer-events-none absolute inset-[7px] -rotate-45 rounded-full border border-dashed border-solar-gold/25 opacity-60 transition-all duration-700 group-hover:border-solar-gold/45 group-hover:opacity-100" />
-                  <Play className="-rotate-45 h-6 w-6 fill-white text-white transition-colors duration-500 group-hover:fill-solar-gold group-hover:text-solar-gold" />
-                </div>
+                <motion.div className="absolute inset-[6px] flex rotate-45 items-center justify-center border border-solar-gold/45 bg-black/40 backdrop-blur-md transition-[border-color,background-color,box-shadow] duration-700 ease-[0.22,1,0.36,1] group-hover:border-solar-gold group-hover:bg-black/55 group-hover:shadow-[0_0_20px_rgba(197,160,89,0.45)]">
+                  <motion.div
+                    className="pointer-events-none absolute inset-[7px] -rotate-45 rounded-full border border-dashed border-solar-gold/30 transition-[border-color,opacity] duration-700 group-hover:border-solar-gold/50 group-hover:opacity-100"
+                    animate={
+                      prefersReducedMotion
+                        ? undefined
+                        : { opacity: [0.42, 0.72, 0.42] }
+                    }
+                    transition={{
+                      duration: 3.8,
+                      repeat: Infinity,
+                      ease: [0.45, 0, 0.55, 1],
+                      delay: 0.5,
+                    }}
+                  />
+                  <motion.div
+                    className="-rotate-45 relative flex h-[26px] w-[26px] items-center justify-center"
+                    animate={
+                      prefersReducedMotion
+                        ? undefined
+                        : { y: [0, -2, 0] }
+                    }
+                    transition={{
+                      duration: 4.8,
+                      repeat: Infinity,
+                      ease: [0.45, 0, 0.55, 1],
+                    }}
+                  >
+                    <GoldPlayIcon className="h-[26px] w-[26px]" />
+                  </motion.div>
+                </motion.div>
               </div>
 
               <div className="flex w-full max-w-[min(100vw,18rem)] flex-col items-center gap-2">
