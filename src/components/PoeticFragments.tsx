@@ -137,7 +137,7 @@ function Fragment({
         translateX: mouseMoveX,
         translateY: mouseMoveY,
       }}
-      className="absolute cursor-pointer group"
+      className="absolute cursor-none group"
     >
       <div className="relative flex flex-col items-center">
         <motion.span 

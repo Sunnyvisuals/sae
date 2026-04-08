@@ -45,6 +45,40 @@
   * {
     scrollbar-width: none;
   }
+
+  /*
+   * Curseur personnalisé : masquer le pointeur OS sur les clics (pas sur les champs texte).
+   */
+  button,
+  [role="button"],
+  a,
+  label[for],
+  summary {
+    cursor: none !important;
+  }
+}
+
+/* Tailwind cursor-* → rester cohérent avec le curseur custom */
+@layer utilities {
+  .cursor-pointer,
+  .cursor-default,
+  .cursor-auto,
+  .cursor-grab,
+  .cursor-grabbing,
+  .cursor-move,
+  .cursor-wait,
+  .cursor-help,
+  .cursor-not-allowed,
+  .cursor-col-resize,
+  .cursor-row-resize,
+  .cursor-nesw-resize,
+  .cursor-nwse-resize {
+    cursor: none !important;
+  }
+
+  .cursor-none {
+    cursor: none !important;
+  }
 }
 
 .poetry-text {
@@ -179,5 +213,21 @@
     transform: translate3d(-30px, -20px, 0);
     opacity: 0.5;
   }
+}
+
+/*
+ * Dernier mot sur le curseur : halo React en portail + pas de pointeur OS (menus Échap, vidéo, range, vidéo HTML5).
+ * Hors @layer pour gagner sur Tailwind.
+ */
+html,
+body {
+  cursor: none !important;
+}
+
+#root,
+#root *,
+#root *::before,
+#root *::after {
+  cursor: none !important;
 }
 
