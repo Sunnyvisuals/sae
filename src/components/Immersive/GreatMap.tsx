@@ -2,7 +2,7 @@ import { Canvas } from '@react-three/fiber';
 import { Stars } from '@react-three/drei';
 
 /**
- * Phase 2 — Carte-mémoire 3D (vol plané, constellations, vignettes).
+ * Phase 2 - Carte-mémoire 3D (vol plané, constellations, vignettes).
  * Brancher dans App à la place d’AlgeriaMap quand le socle Three.js sera prêt.
  */
 export default function GreatMap() {
@@ -19,7 +19,7 @@ export default function GreatMap() {
         </mesh>
       </Canvas>
       <p className="pointer-events-none absolute bottom-6 left-6 max-w-sm text-[10px] leading-relaxed text-solar-gold/35">
-        GreatMap · espace 3D — remplacer le plan par le tracé Algérie (TubeGeometry / extrude), sprites texte,
+        GreatMap · espace 3D - remplacer le plan par le tracé Algérie (TubeGeometry / extrude), sprites texte,
         CameraControls fly-through, raycaster mots & vignettes.
       </p>
     </div>

@@ -2,54 +2,86 @@
 
 import { useEffect, useRef, type CSSProperties } from 'react';
 import DesertDustParticles from './DesertDustParticles';
+import ShootingStars from './ShootingStars';
 
 /**
- * Fond mesh interactif — désert / Maghreb / oriental (sable, ocre, or chaud).
- * CSS variables + requestAnimationFrame (pas de setInterval).
+ * Fond mesh interactif - désert / Maghreb / oriental (sable, ocre, or chaud).
+ * CSS variables + RAF à la demande (pas de boucle tant que la cible n'évolue pas).
  */
-export default function AuroraMeshBackground({ className = '' }: { className?: string }) {
+type AuroraProps = {
+  className?: string;
+  /** true = `absolute inset-0` (pile dans le parent), false = `fixed` plein écran */
+  fillContainer?: boolean;
+  /** Désactive les étoiles filantes (ex. acte I carte) */
+  hideShootingStars?: boolean;
+};
+
+export default function AuroraMeshBackground({
+  className = '',
+  fillContainer = false,
+  hideShootingStars = false,
+}: AuroraProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const target = useRef({ x: 0.5, y: 0.5 });
   const current = useRef({ x: 0.5, y: 0.5 });
   const rafId = useRef(0);
 
   useEffect(() => {
+    const lerp = 0.045;
+    const converge = 0.00035;
+
+    const applyStyles = (x: number, y: number) => {
+      const el = rootRef.current;
+      if (!el) return;
+      el.style.setProperty('--mx', `${x * 100}%`);
+      el.style.setProperty('--my', `${y * 100}%`);
+      el.style.setProperty('--mx-slow', `${(x * 0.65 + 0.175) * 100}%`);
+      el.style.setProperty('--my-slow', `${(y * 0.55 + 0.225) * 100}%`);
+      el.style.setProperty('--hue-shift', `${x * 5 - 2.5}`);
+    };
+
+    const tick = () => {
+      const dx = target.current.x - current.current.x;
+      const dy = target.current.y - current.current.y;
+
+      if (Math.hypot(dx, dy) < converge) {
+        current.current.x = target.current.x;
+        current.current.y = target.current.y;
+        applyStyles(current.current.x, current.current.y);
+        rafId.current = 0;
+        return;
+      }
+
+      current.current.x += dx * lerp;
+      current.current.y += dy * lerp;
+      applyStyles(current.current.x, current.current.y);
+
+      rafId.current = requestAnimationFrame(tick);
+    };
+
     const onMove = (e: MouseEvent) => {
       target.current = {
         x: e.clientX / window.innerWidth,
         y: e.clientY / window.innerHeight,
       };
+      if (rafId.current === 0) {
+        rafId.current = requestAnimationFrame(tick);
+      }
     };
     window.addEventListener('mousemove', onMove, { passive: true });
 
-    const tick = () => {
-      const t = 0.045;
-      current.current.x += (target.current.x - current.current.x) * t;
-      current.current.y += (target.current.y - current.current.y) * t;
-      const el = rootRef.current;
-      if (el) {
-        const { x, y } = current.current;
-        el.style.setProperty('--mx', `${x * 100}%`);
-        el.style.setProperty('--my', `${y * 100}%`);
-        el.style.setProperty('--mx-slow', `${(x * 0.65 + 0.175) * 100}%`);
-        el.style.setProperty('--my-slow', `${(y * 0.55 + 0.225) * 100}%`);
-        /* Léger balancement chaud (ocre ↔ sable), pas froid */
-        el.style.setProperty('--hue-shift', `${x * 5 - 2.5}`);
-      }
-      rafId.current = requestAnimationFrame(tick);
-    };
-    rafId.current = requestAnimationFrame(tick);
-
     return () => {
       window.removeEventListener('mousemove', onMove);
-      cancelAnimationFrame(rafId.current);
+      if (rafId.current) cancelAnimationFrame(rafId.current);
     };
   }, []);
+
+  const pos = fillContainer ? 'absolute inset-0' : 'fixed inset-0';
 
   return (
     <div
       ref={rootRef}
-      className={`fixed inset-0 overflow-hidden pointer-events-none ${className}`}
+      className={`${pos} overflow-hidden pointer-events-none ${className}`}
       style={
         {
           '--mx': '50%',
@@ -74,7 +106,7 @@ export default function AuroraMeshBackground({ className = '' }: { className?: s
         }}
       />
 
-      {/* Ocre / terre cuite — chaleur maghrébine */}
+      {/* Ocre / terre cuite - chaleur maghrébine */}
       <div
         className="absolute w-[min(115vmin,1200px)] h-[min(115vmin,1200px)] rounded-full -translate-x-1/2 -translate-y-1/2 blur-[88px] sm:blur-[120px] opacity-[0.82]"
         style={{
@@ -107,6 +139,7 @@ export default function AuroraMeshBackground({ className = '' }: { className?: s
       />
 
       <DesertDustParticles />
+      {!hideShootingStars && <ShootingStars />}
 
       <div
         className="absolute inset-0 opacity-[0.035] mix-blend-soft-light"

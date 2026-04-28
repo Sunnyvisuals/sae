@@ -7,7 +7,8 @@
     "dev": "vite --port=3000 --host=0.0.0.0",
     "start": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build",
-    "preview": "vite preview",
+    "preview": "vite preview --port 3000 --host",
+    "deploy:netlify": "npm run build && npx netlify deploy --prod --dir=dist",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"
   },
@@ -38,6 +39,7 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
+    "@turf/turf": "^7.3.4",
     "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
     "autoprefixer": "^10.4.21",

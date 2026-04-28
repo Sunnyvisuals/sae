@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef } from 'react';
+import { useCursorStore } from '../hooks/useCursorContext';
 
 interface SplashCursorProps {
   SIM_RESOLUTION?: number;
@@ -16,6 +17,12 @@ interface SplashCursorProps {
   COLOR_UPDATE_SPEED?: number;
   BACK_COLOR?: { r: number; g: number; b: number };
   TRANSPARENT?: boolean;
+  /** Acte II nuit saharienne : fluide bleu-cyan au lieu du doré désert */
+  palette?: "solar" | "midnight";
+  /** Suit `useCursorStore().ambient` (même chose que curseur doré/minuit - ex. immersion parchemin acte II). */
+  syncPaletteFromAmbient?: boolean;
+  /** Permet d'insérer le fluide dans une pile locale (ex: sous contenu de la modale). */
+  zIndex?: number;
 }
 
 function SplashCursor({
@@ -31,10 +38,15 @@ function SplashCursor({
   SPLAT_FORCE = 6000,
   SHADING = true,
   COLOR_UPDATE_SPEED = 10,
-  BACK_COLOR = { r: 0.17, g: 0.14, b: 0.12 }, // Matching solar-brown (#2d241e)
-  TRANSPARENT = true
+  BACK_COLOR,
+  TRANSPARENT = true,
+  palette = "solar",
+  syncPaletteFromAmbient = false,
+  zIndex = 30,
 }: SplashCursorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const storePalette = useCursorStore((s) => (s.ambient === 'midnight' ? 'midnight' : 'solar'));
+  const resolvedPalette = syncPaletteFromAmbient ? storePalette : palette;
   const animationFrameId = useRef<number | null>(null);
 
   useEffect(() => {
@@ -57,6 +69,12 @@ function SplashCursor({
       this.color = [0, 0, 0];
     }
 
+    const effectiveBack =
+      BACK_COLOR ??
+      (resolvedPalette === "midnight"
+        ? { r: 0.03, g: 0.05, b: 0.1 }
+        : { r: 0.17, g: 0.14, b: 0.12 });
+
     let config = {
       SIM_RESOLUTION,
       DYE_RESOLUTION,
@@ -71,7 +89,7 @@ function SplashCursor({
       SHADING,
       COLOR_UPDATE_SPEED,
       PAUSED: false,
-      BACK_COLOR,
+      BACK_COLOR: effectiveBack,
       TRANSPARENT
     };
 
@@ -702,6 +720,11 @@ function SplashCursor({
 
     function updateFrame() {
       if (!isActive) return;
+      if (document.visibilityState === 'hidden') {
+        lastUpdateTime = Date.now();
+        animationFrameId.current = null;
+        return;
+      }
       const dt = calcDeltaTime();
       if (resizeCanvas()) initFramebuffers();
       updateColors(dt);
@@ -710,6 +733,16 @@ function SplashCursor({
       render(null);
       animationFrameId.current = requestAnimationFrame(updateFrame);
     }
+
+    function resumeFluidWhenVisible() {
+      if (!isActive || document.visibilityState !== 'visible') return;
+      lastUpdateTime = Date.now();
+      if (animationFrameId.current == null) {
+        animationFrameId.current = requestAnimationFrame(updateFrame);
+      }
+    }
+
+    document.addEventListener('visibilitychange', resumeFluidWhenVisible);
 
     function calcDeltaTime() {
       let now = Date.now();
@@ -908,21 +941,31 @@ function SplashCursor({
     }
 
     function generateColor() {
-      // Solar theme colors: gold (#c5a059), cream (#fdfaf6), sand (#f5f0e6)
+      if (resolvedPalette === "midnight") {
+        const colors = [
+          { r: 0.45, g: 0.76, b: 1.0 }, // glace / 8bd5ff tone
+          { r: 0.62, g: 0.86, b: 1.0 }, // halo cyan
+          { r: 0.36, g: 0.58, b: 0.92 }, // bleu nuit
+        ];
+        const baseColor = colors[Math.floor(Math.random() * colors.length)];
+        const variation = 0.08;
+        return {
+          r: Math.max(0, Math.min(1, baseColor.r + (Math.random() - 0.5) * variation)),
+          g: Math.max(0, Math.min(1, baseColor.g + (Math.random() - 0.5) * variation)),
+          b: Math.max(0, Math.min(1, baseColor.b + (Math.random() - 0.5) * variation)),
+        };
+      }
       const colors = [
-        { r: 0.77, g: 0.63, b: 0.35 }, // solar-gold
-        { r: 0.99, g: 0.98, b: 0.96 }, // solar-cream
-        { r: 0.96, g: 0.94, b: 0.90 }, // solar-sand
+        { r: 0.77, g: 0.63, b: 0.35 },
+        { r: 0.99, g: 0.98, b: 0.96 },
+        { r: 0.96, g: 0.94, b: 0.9 },
       ];
-      
       const baseColor = colors[Math.floor(Math.random() * colors.length)];
-      
-      // Add some slight random variation
       const variation = 0.1;
       return {
         r: Math.max(0, Math.min(1, baseColor.r + (Math.random() - 0.5) * variation)),
         g: Math.max(0, Math.min(1, baseColor.g + (Math.random() - 0.5) * variation)),
-        b: Math.max(0, Math.min(1, baseColor.b + (Math.random() - 0.5) * variation))
+        b: Math.max(0, Math.min(1, baseColor.b + (Math.random() - 0.5) * variation)),
       };
     }
 
@@ -985,8 +1028,9 @@ function SplashCursor({
       else return { width: min, height: max };
     }
 
+    /** Cap DPR @ 2 : au-delà, coût GPU massif pour gain visuel négligeable. */
     function scaleByPixelRatio(input) {
-      const pixelRatio = window.devicePixelRatio || 1;
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
       return Math.floor(input * pixelRatio);
     }
 
@@ -1011,19 +1055,26 @@ function SplashCursor({
 
     let firstMouseMoveHandled = false;
     let isHovering = false;
+    let lastHoverProbe = 0;
     function handleMouseMove(e) {
       let pointer = pointers[0];
       let posX = scaleByPixelRatio(e.clientX);
       let posY = scaleByPixelRatio(e.clientY);
 
-      // Check if hovering over interactive element
-      const target = e.target as HTMLElement;
-      isHovering = !!(target && (
-        window.getComputedStyle(target).cursor === 'pointer' || 
-        target.tagName === 'BUTTON' || 
-        target.closest('button') ||
-        target.closest('a')
-      ));
+      const now = performance.now();
+      if (now - lastHoverProbe > 90) {
+        lastHoverProbe = now;
+        const rawTarget = e.target;
+        const target = rawTarget instanceof HTMLElement ? rawTarget : null;
+        // Cible absente (p.ex. MouseEvent synthétique depuis l’iframe) - pas de détection hover DOM.
+        isHovering = !!(
+          target &&
+          (window.getComputedStyle(target).cursor === "pointer" ||
+            target.tagName === "BUTTON" ||
+            target.closest("button") ||
+            target.closest("a"))
+        );
+      }
 
       if (!firstMouseMoveHandled) {
         let color = generateColor();
@@ -1098,10 +1149,28 @@ function SplashCursor({
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('touchmove', handleTouchMove);
-      window.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('visibilitychange', resumeFluidWhenVisible);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reconstruction WebGL voulue quand palette / résolution changes
+  }, [
+    BACK_COLOR?.r,
+    BACK_COLOR?.g,
+    BACK_COLOR?.b,
+    CURL,
+    CAPTURE_RESOLUTION,
+    COLOR_UPDATE_SPEED,
+    DENSITY_DISSIPATION,
+    DYE_RESOLUTION,
+    PRESSURE,
+    PRESSURE_ITERATIONS,
+    SIM_RESOLUTION,
+    SHADING,
+    SPLAT_FORCE,
+    SPLAT_RADIUS,
+    TRANSPARENT,
+    VELOCITY_DISSIPATION,
+    resolvedPalette,
+  ]);
 
   return (
     <div
@@ -1109,7 +1178,8 @@ function SplashCursor({
         position: 'fixed',
         top: 0,
         left: 0,
-        zIndex: 50,
+        /* Sous UI (40+) et curseur custom ; au-dessus acte I (z-20). Évite WebGL au-dessus du curseur. */
+        zIndex,
         pointerEvents: 'none',
         width: '100%',
         height: '100%'

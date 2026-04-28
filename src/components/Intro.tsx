@@ -1,11 +1,28 @@
-import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, useReducedMotion } from "motion/react";
-import React, { useState, useEffect, useRef, useId, MouseEvent } from "react";
+﻿import {
+  motion,
+  AnimatePresence,
+  animate,
+  useMotionValue,
+  useMotionValueEvent,
+  useSpring,
+  useTransform,
+  useReducedMotion,
+} from "motion/react";
+import React, { useState, useEffect, useRef, useId } from "react";
 import { Volume2, VolumeX, Volume1 } from "lucide-react";
 import PoetryGame from "./PoetryGame";
 import AuroraMeshBackground from "./AuroraMeshBackground";
+import {
+  applyVolumeKeyStep,
+  getVolumeKeyDirection,
+  shouldIgnoreVolumeKeyboardTarget,
+} from "../lib/volumeKeyboard";
+import { playSuspenseLoadCompleteChime, primeSuspenseAudio } from "../lib/suspenseLoadChime";
 
 // --- CONFIGURATION VIDÉO ---
-const VIDEO_SOURCE = "/al-rihla.mp4"; 
+const VIDEO_SOURCE = "/al-rihla.mp4";
+
+const INTRO_CTA_WORDS = ["Cliquer", "ou", "Entrée"] as const;
 
 type AnimatedTitleProps = {
   text: string;
@@ -96,6 +113,205 @@ const AnimatedTitle = ({ text, className, heroMotion = false }: AnimatedTitlePro
   );
 };
 
+function SuspenseOverlay({ prefersReducedMotion }: { prefersReducedMotion: boolean | null }) {
+  const [phase, setPhase] = useState<"idle" | "building" | "climax">("idle");
+  const loadProgress = useMotionValue(0);
+  const [loadPct, setLoadPct] = useState(0);
+  const loadWidth = useTransform(loadProgress, [0, 100], ["0%", "100%"]);
+  const chimePlayedRef = useRef(false);
+
+  useEffect(() => {
+    const ctrl = animate(loadProgress, 100, {
+      delay: 2.1,
+      duration: prefersReducedMotion ? 0.45 : 3,
+      ease: [0.4, 0, 0.2, 1],
+    });
+    return () => ctrl.stop();
+  }, [loadProgress, prefersReducedMotion]);
+
+  useMotionValueEvent(loadProgress, "change", (v) => {
+    setLoadPct(Math.round(v));
+    if (chimePlayedRef.current) return;
+    if (v < 99.5) return;
+    chimePlayedRef.current = true;
+    playSuspenseLoadCompleteChime();
+  });
+
+  useEffect(() => {
+    // "building" démarre quand la barre commence (~2,1 s)
+    const t1 = setTimeout(() => setPhase("building"), 2100);
+    // "climax" quand la barre est à ~85% (~4,6 s après le début = 2,1 + 2,5)
+    const t2 = setTimeout(() => setPhase("climax"), 4600);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
+
+  const isClimax = phase === "climax";
+  const isBuilding = phase === "building" || isClimax;
+
+  return (
+    <div className="pointer-events-none absolute inset-0 z-[26] flex flex-col items-center justify-center gap-0 px-6 text-center">
+
+      {/* fond noir */}
+      <motion.div
+        aria-hidden
+        className="absolute inset-0"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1.1, ease: "easeIn" }}
+        style={{ background: "radial-gradient(ellipse 110% 110% at 50% 50%, rgba(4,2,1,0.82) 0%, rgba(2,1,0,0.97) 100%)" }}
+      />
+
+      {/* halo doré - s'emballe au climax */}
+      <motion.div
+        aria-hidden
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+        animate={
+          isClimax
+            ? { opacity: [0.35, 0.65, 0.35, 0.7, 0.35], scale: [1.2, 1.9, 1.3, 2.1, 1.4] }
+            : isBuilding
+            ? { opacity: [0.18, 0.28, 0.18], scale: [1.2, 1.5, 1.2] }
+            : { opacity: [0, 0.28, 0.18], scale: [0.4, 1.6, 1.2] }
+        }
+        transition={
+          isClimax
+            ? { duration: 0.55, repeat: Infinity, ease: "easeInOut" }
+            : { duration: 3.2, delay: isBuilding ? 0 : 0.6, ease: [0.22, 1, 0.36, 1] }
+        }
+        style={{ width: 520, height: 520, background: "radial-gradient(circle, rgba(197,160,89,0.28) 0%, transparent 68%)", filter: isClimax ? "blur(28px)" : "blur(40px)" }}
+      />
+
+      {/* éclats de particules au climax */}
+      {isClimax && !prefersReducedMotion && (
+        <>
+          {[...Array(6)].map((_, i) => (
+            <motion.div
+              key={i}
+              aria-hidden
+              className="absolute rounded-full bg-solar-gold"
+              style={{
+                width: 2 + (i % 3),
+                height: 2 + (i % 3),
+                left: `${30 + i * 8}%`,
+                top: `${38 + (i % 2) * 24}%`,
+                filter: "blur(0.5px)",
+              }}
+              animate={{
+                y: [0, -18 - i * 6, 0],
+                x: [0, (i % 2 === 0 ? 1 : -1) * (8 + i * 4), 0],
+                opacity: [0, 0.9, 0],
+                scale: [0.5, 1.4, 0.5],
+              }}
+              transition={{ duration: 0.45 + i * 0.07, repeat: Infinity, ease: "easeInOut", delay: i * 0.06 }}
+            />
+          ))}
+        </>
+      )}
+
+      {/* vignette qui pulse au climax */}
+      <motion.div
+        aria-hidden
+        className="absolute inset-0"
+        animate={
+          isClimax
+            ? { opacity: [0.0, 0.18, 0.0] }
+            : { opacity: 0 }
+        }
+        transition={isClimax ? { duration: 0.5, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
+        style={{ background: "radial-gradient(ellipse 80% 80% at 50% 50%, rgba(197,160,89,0.12) 0%, transparent 70%), linear-gradient(to bottom, transparent 60%, rgba(197,100,20,0.08) 100%)" }}
+      />
+
+      {/* contenu centré */}
+      <div className="relative z-[2] flex flex-col items-center gap-8">
+
+        {/* ornement haut */}
+        <motion.div
+          aria-hidden
+          className="flex items-center gap-3"
+          initial={{ opacity: 0, scaleX: 0 }}
+          animate={{ opacity: 1, scaleX: 1 }}
+          transition={{ duration: 1.1, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <div className="h-px w-16 bg-gradient-to-r from-transparent to-solar-gold/50" />
+          <div className="h-1 w-1 rotate-45 bg-solar-gold/60" />
+          <div className="h-px w-16 bg-gradient-to-l from-transparent to-solar-gold/50" />
+        </motion.div>
+
+        {/* phrase principale - tremble légèrement au climax */}
+        <motion.p
+          className="font-bahlull text-[clamp(2.2rem,7.5vw,4.2rem)] italic leading-[1.1] tracking-tight text-white"
+          style={{ textShadow: isClimax ? "0 0 120px rgba(197,160,89,0.55), 0 8px 48px rgba(0,0,0,0.9)" : "0 0 80px rgba(197,160,89,0.25), 0 8px 48px rgba(0,0,0,0.9)" }}
+          initial={{ opacity: 0, y: 32, filter: "blur(14px)" }}
+          animate={
+            isClimax && !prefersReducedMotion
+              ? { opacity: 1, y: [0, -1.5, 1, -0.8, 0], filter: "blur(0px)", scale: [1, 1.012, 1] }
+              : { opacity: 1, y: 0, filter: "blur(0px)" }
+          }
+          transition={
+            isClimax
+              ? { y: { duration: 0.38, repeat: Infinity, ease: "easeInOut" }, scale: { duration: 0.38, repeat: Infinity }, opacity: { duration: 0 }, filter: { duration: 0 } }
+              : { duration: 1.3, delay: 0.9, ease: [0.22, 1, 0.36, 1] }
+          }
+        >
+          Le voyage va commencer
+        </motion.p>
+
+        {/* sous-titre */}
+        <motion.p
+          className="text-[9px] font-light uppercase tracking-[0.58em] text-solar-gold/55 md:text-[10px]"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.1, delay: 1.7, ease: [0.22, 1, 0.36, 1] }}
+        >
+          Prologue
+        </motion.p>
+
+        {/* barre de chargement - sobre, même logique que « Passer l&apos;introduction » */}
+        <motion.div
+          className="relative mt-3 flex w-full max-w-[17.5rem] flex-col items-center gap-2 md:max-w-[20rem]"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 2.0 }}
+        >
+          <div
+            className="relative h-[2px] w-full overflow-hidden rounded-full bg-solar-gold/15"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={loadPct}
+            aria-label="Progression du chargement"
+          >
+            <motion.div
+              className="absolute inset-y-0 left-0 h-full rounded-full bg-solar-gold/50"
+              style={{ width: loadWidth }}
+            />
+          </div>
+          <span
+            className="text-[10px] tabular-nums tracking-[0.45em] text-solar-gold/55 md:text-[11px]"
+            aria-hidden
+          >
+            {loadPct}%
+          </span>
+        </motion.div>
+
+        {/* ornement bas */}
+        <motion.div
+          aria-hidden
+          className="flex items-center gap-3"
+          initial={{ opacity: 0, scaleX: 0 }}
+          animate={{ opacity: 1, scaleX: 1 }}
+          transition={{ duration: 1.1, delay: 1.4, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <div className="h-px w-8 bg-gradient-to-r from-transparent to-solar-gold/30" />
+          <div className="h-[3px] w-[3px] rotate-45 bg-solar-gold/40" />
+          <div className="h-px w-8 bg-gradient-to-l from-transparent to-solar-gold/30" />
+        </motion.div>
+
+      </div>
+    </div>
+  );
+}
+
+
 function GoldPlayIcon({ className }: { className?: string }) {
   const gid = useId().replace(/:/g, "");
   return (
@@ -117,13 +333,21 @@ function GoldPlayIcon({ className }: { className?: string }) {
   );
 }
 
+export type DevChapterJumps = {
+  goChapter1: () => void;
+  goChapter2: () => void;
+  goChapter3: () => void;
+};
+
 interface IntroProps {
   onComplete: () => void;
   isExploring?: boolean;
   onVideoStart?: () => void;
+  /** Raccourcis vers les chapitres - affichés uniquement si défini (ex. mode dev dans App). */
+  devChapterJumps?: DevChapterJumps;
 }
 
-export default function Intro({ onComplete, isExploring, onVideoStart }: IntroProps) {
+export default function Intro({ onComplete, isExploring, onVideoStart, devChapterJumps }: IntroProps) {
   const prefersReducedMotion = useReducedMotion();
   const [videoStarted, setVideoStarted] = useState(false);
   const [showInitialTitle, setShowInitialTitle] = useState(true);
@@ -137,6 +361,29 @@ export default function Intro({ onComplete, isExploring, onVideoStart }: IntroPr
   const [easterEggPromptHidden, setEasterEggPromptHidden] = useState(false);
   const [easterEggPos, setEasterEggPos] = useState({ top: "20%", left: "80%" });
   const videoRef = useRef<HTMLVideoElement>(null);
+  const volumeRef = useRef(volume);
+  const isMutedRef = useRef(isMuted);
+  volumeRef.current = volume;
+  isMutedRef.current = isMuted;
+
+  useEffect(() => {
+    if (!videoStarted) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (shouldIgnoreVolumeKeyboardTarget(e.target)) return;
+      const dir = getVolumeKeyDirection(e);
+      if (!dir) return;
+      e.preventDefault();
+      const { volume: v, muted: m } = applyVolumeKeyStep(
+        dir,
+        volumeRef.current,
+        isMutedRef.current
+      );
+      setVolume(v);
+      setIsMuted(m);
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [videoStarted]);
 
   useEffect(() => {
     if (videoStarted && isEasterEggFound) {
@@ -174,26 +421,18 @@ export default function Intro({ onComplete, isExploring, onVideoStart }: IntroPr
 
   const startExperience = () => {
     if (isStarting || videoStarted) return;
+    primeSuspenseAudio();
     setIsStarting(true);
-    const suspenseDuration = 2500;
+    const suspenseDuration = 5200;
     setTimeout(() => {
       setVideoStarted(true);
       onVideoStart?.();
       setTimeout(() => {
         if (videoRef.current) {
-          videoRef.current.play().catch(err => {
+          videoRef.current.volume = isMuted ? 0 : volume;
+          videoRef.current.play().catch((err) => {
             console.log("Play failed:", err);
           });
-          videoRef.current.volume = 0;
-          let vol = 0;
-          const interval = setInterval(() => {
-            if (vol < volume) {
-              vol += 0.05;
-              if (videoRef.current) videoRef.current.volume = Math.min(vol, volume);
-            } else {
-              clearInterval(interval);
-            }
-          }, 100);
         }
       }, 100);
       setTimeout(() => {
@@ -216,26 +455,24 @@ export default function Intro({ onComplete, isExploring, onVideoStart }: IntroPr
     return () => window.removeEventListener("keydown", onKey, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- déclenchement aligné sur l’écran titre initial uniquement
   }, [videoStarted, isStarting, showInitialTitle, isPoetryGameOpen]);
-
+  // Entr\u00e9e pendant le trailer = passer
   useEffect(() => {
-    if (videoStarted && videoRef.current) {
-      videoRef.current.volume = volume;
-      const playVideo = async () => {
-        try {
-          await videoRef.current?.play();
-        } catch (err) {
-          console.log("Autoplay bloque:", err);
-        }
-      };
-      playVideo();
-    }
+    if (!videoStarted) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Enter" || e.repeat) return;
+      const t = e.target;
+      if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement) return;
+      e.preventDefault();
+      handleSkip();
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
   }, [videoStarted]);
 
   useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.volume = isMuted ? 0 : volume;
-    }
-  }, [volume, isMuted]);
+    if (!videoRef.current) return;
+    videoRef.current.volume = isMuted ? 0 : volume;
+  }, [volume, isMuted, videoStarted]);
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newVolume = parseFloat(e.target.value);
@@ -277,6 +514,43 @@ export default function Intro({ onComplete, isExploring, onVideoStart }: IntroPr
           setEasterEggPromptHidden(true);
         }}
       />
+
+      {devChapterJumps && (
+        <div
+          className="pointer-events-auto fixed z-[100] flex flex-col gap-2 rounded-sm border border-solar-gold/25 bg-black/55 p-3 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-sm"
+          style={{
+            left: "max(0.75rem, env(safe-area-inset-left))",
+            bottom: "max(0.75rem, env(safe-area-inset-bottom))",
+          }}
+        >
+          <p className="m-0 text-[8px] font-medium uppercase tracking-[0.35em] text-solar-gold/50">
+            Raccourcis dev
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              onClick={devChapterJumps.goChapter1}
+              className="rounded-sm border border-solar-gold/30 bg-black/40 px-2.5 py-1.5 text-[9px] uppercase tracking-[0.18em] text-solar-gold/90 transition-colors hover:border-solar-gold/50 hover:bg-solar-gold/10"
+            >
+              Ch. I
+            </button>
+            <button
+              type="button"
+              onClick={devChapterJumps.goChapter2}
+              className="rounded-sm border border-solar-gold/30 bg-black/40 px-2.5 py-1.5 text-[9px] uppercase tracking-[0.18em] text-solar-gold/90 transition-colors hover:border-solar-gold/50 hover:bg-solar-gold/10"
+            >
+              Ch. II
+            </button>
+            <button
+              type="button"
+              onClick={devChapterJumps.goChapter3}
+              className="rounded-sm border border-solar-gold/30 bg-black/40 px-2.5 py-1.5 text-[9px] uppercase tracking-[0.18em] text-solar-gold/90 transition-colors hover:border-solar-gold/50 hover:bg-solar-gold/10"
+            >
+              Ch. III
+            </button>
+          </div>
+        </div>
+      )}
 
       {!videoStarted && (
       <motion.div 
@@ -350,7 +624,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart }: IntroPr
             transition={{ duration: 2, ease: [0.22, 1, 0.36, 1] }}
             className="absolute inset-0 z-20 flex flex-col items-center justify-center overflow-hidden"
           >
-            <motion.div
+          <motion.div
               className="absolute inset-0 flex flex-col items-center justify-center origin-center will-change-transform"
               animate={{ scale: prefersReducedMotion ? 1 : isStarting ? 1.14 : 1 }}
               transition={{ duration: prefersReducedMotion ? 0 : isStarting ? 2.35 : 0.55, ease: [0.22, 1, 0.36, 1] }}
@@ -372,11 +646,21 @@ export default function Intro({ onComplete, isExploring, onVideoStart }: IntroPr
                 <AuroraMeshBackground />
               </motion.div>
 
-            <AnimatedTitle
-              heroMotion
-              text="Al-Rihla"
-              className="font-bahlull text-7xl md:text-9xl text-white tracking-tighter italic drop-shadow-[0_0_22px_rgba(197,160,89,0.35)]"
-            />
+            <motion.div
+              animate={{
+                opacity: isStarting ? 0 : 1,
+                y: isStarting ? -28 : 0,
+                filter: isStarting ? "blur(12px)" : "blur(0px)",
+              }}
+              transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+              className="relative z-[2]"
+            >
+              <AnimatedTitle
+                heroMotion
+                text="Al-Rihla"
+                className="font-bahlull text-7xl md:text-9xl text-white tracking-tighter italic drop-shadow-[0_0_22px_rgba(197,160,89,0.35)]"
+              />
+            </motion.div>
 
             <motion.div
               animate={{ opacity: isStarting ? 0 : 1, y: isStarting ? 40 : 0, filter: isStarting ? "blur(10px)" : "blur(0px)" }}
@@ -449,66 +733,52 @@ export default function Intro({ onComplete, isExploring, onVideoStart }: IntroPr
                 </motion.div>
               </div>
 
-              <div className="flex w-full max-w-[min(100vw,18rem)] flex-col items-center gap-2">
-                <span className="text-[10px] font-light uppercase tracking-[0.6em] text-solar-gold/60 transition-colors duration-500 group-hover:text-solar-gold">
-                  Commencer le voyage
-                </span>
-                <div className="flex h-px w-full justify-center overflow-hidden">
-                  <div className="h-full w-0 bg-solar-gold/65 transition-all duration-700 ease-[0.22,1,0.36,1] group-hover:w-4/5 max-w-[11rem]" />
-                </div>
-              </div>
-            </motion.button>
-            </motion.div>
-          </motion.div>
-            </motion.div>
-
-            <motion.div
-              aria-hidden={isStarting}
-              className="pointer-events-none absolute bottom-0 left-0 right-0 z-[25] px-4 pb-[max(1.75rem,env(safe-area-inset-bottom))] pt-6 text-center"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{
-                opacity: isStarting ? 0 : 1,
-                y: isStarting ? 24 : 0,
-              }}
-              transition={{
-                opacity: { duration: 0.65, delay: isStarting ? 0 : 1.05, ease: [0.22, 1, 0.36, 1] },
-                y: { duration: 0.65, delay: isStarting ? 0 : 1.05, ease: [0.22, 1, 0.36, 1] },
-              }}
-            >
               <motion.p
-                className="mx-auto max-w-[min(100vw,22rem)] text-[8px] font-light uppercase leading-relaxed tracking-[0.32em] text-solar-gold/50"
-                style={{
-                  textShadow: "0 0 18px rgba(197,160,89,0.2)",
-                }}
+                className="max-w-[min(92vw,24rem)] text-center text-[9px] font-light uppercase leading-relaxed tracking-[0.38em] text-solar-gold/75 transition-colors duration-500 group-hover:text-solar-gold md:text-[10px] md:tracking-[0.42em]"
                 animate={
                   prefersReducedMotion || isStarting
-                    ? { opacity: 0.68, y: 0 }
+                    ? { opacity: 0.9, filter: "brightness(1)" }
                     : {
-                        opacity: [0.4, 0.98, 0.45, 0.98, 0.4],
-                        y: [0, -7, 0, -4, 0],
+                        opacity: [0.52, 1, 0.52],
+                        filter: ["brightness(0.88)", "brightness(1.14)", "brightness(0.88)"],
                         textShadow: [
-                          "0 0 12px rgba(197,160,89,0.1)",
-                          "0 0 32px rgba(197,160,89,0.48)",
-                          "0 0 14px rgba(197,160,89,0.15)",
-                          "0 0 28px rgba(197,160,89,0.4)",
-                          "0 0 12px rgba(197,160,89,0.1)",
+                          "0 0 12px rgba(197,160,89,0.1), 0 0 2px rgba(253,248,238,0.06)",
+                          "0 0 36px rgba(197,160,89,0.55), 0 0 14px rgba(253,248,238,0.2)",
+                          "0 0 12px rgba(197,160,89,0.1), 0 0 2px rgba(253,248,238,0.06)",
                         ],
                       }
                 }
-                transition={
-                  prefersReducedMotion || isStarting
-                    ? { duration: 0.3 }
-                    : {
-                        duration: 3.6,
-                        repeat: Infinity,
-                        ease: [0.42, 0, 0.58, 1],
-                        delay: 1.35,
-                      }
-                }
+                transition={{
+                  duration: 2.65,
+                  repeat: prefersReducedMotion || isStarting ? 0 : Infinity,
+                  ease: [0.4, 0, 0.6, 1],
+                }}
               >
-                Cliquer ou appuyer sur Entrée
+                {INTRO_CTA_WORDS.join(" ")}
               </motion.p>
+            </motion.button>
             </motion.div>
+            </motion.div>
+            </motion.div>
+
+            <AnimatePresence>
+              {isStarting && !videoStarted && (
+                <motion.div
+                  key="intro-suspense"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0, scale: 1.06, filter: "blur(22px)" }}
+                  transition={{
+                    opacity: { duration: prefersReducedMotion ? 0.2 : 0.65, delay: prefersReducedMotion ? 0 : 0.35, ease: [0.22, 1, 0.36, 1] },
+                    scale: { duration: 1.0, ease: [0.22, 1, 0.36, 1] },
+                    filter: { duration: 1.0 },
+                  }}
+                  className="absolute inset-0 z-[26]"
+                >
+                  <SuspenseOverlay prefersReducedMotion={prefersReducedMotion ?? false} />
+                </motion.div>
+              )}
+            </AnimatePresence>
         </motion.div>
       )}
 
@@ -536,16 +806,16 @@ export default function Intro({ onComplete, isExploring, onVideoStart }: IntroPr
             />
           </motion.div>
 
-          {/* Volume Control */}
+          {/* Volume - toujours visible pendant la vidéo (indépendant du bouton « Passer ») */}
           <AnimatePresence>
-            {!showSkip && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20, filter: "blur(10px)" }}
-                transition={{ delay: 1, duration: 1 }}
-                className="absolute top-16 right-16 z-50 flex items-center gap-4 group"
-              >
+            <motion.div
+              key="intro-volume"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20, filter: "blur(10px)" }}
+              transition={{ delay: 1, duration: 1 }}
+              className="absolute top-16 right-16 z-50 flex items-center gap-4 group"
+            >
                 <div
                   onClick={toggleMute}
                   className="w-10 h-10 border border-solar-gold/40 bg-black/40 backdrop-blur-md rotate-45 flex items-center justify-center cursor-none hover:border-solar-gold transition-colors group-hover:shadow-[0_0_15px_rgba(197,160,89,0.5)]"
@@ -566,7 +836,6 @@ export default function Intro({ onComplete, isExploring, onVideoStart }: IntroPr
                   />
                 </div>
               </motion.div>
-            )}
           </AnimatePresence>
 
           {/* Skip */}

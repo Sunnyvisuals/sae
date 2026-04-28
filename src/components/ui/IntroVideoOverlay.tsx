@@ -1,17 +1,22 @@
 import { useEffect, useRef, useState, type ChangeEvent, type MouseEvent } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { Volume2, VolumeX, Volume1 } from 'lucide-react';
+import {
+  applyVolumeKeyStep,
+  getVolumeKeyDirection,
+  shouldIgnoreVolumeKeyboardTarget,
+} from '../../lib/volumeKeyboard';
 
 const INTRO_VIDEO_SRC = '/al-rihla.mp4';
 
 type Props = {
-  /** Retour à l’expérience (carte / acte) — ne recharge rien */
+  /** Retour à l’expérience (carte / acte) - ne recharge rien */
   onClose: () => void;
 };
 
 /**
  * Même lecture cinématique que l’intro : plein écran, volume losange, « Passer l’introduction ».
- * Surcouche uniquement — la phase et la progression ne changent pas.
+ * Surcouche uniquement - la phase et la progression ne changent pas.
  */
 export default function IntroVideoOverlay({ onClose }: Props) {
   const prefersReducedMotion = useReducedMotion();
@@ -19,6 +24,28 @@ export default function IntroVideoOverlay({ onClose }: Props) {
   const [volume, setVolume] = useState(0.35);
   const [isMuted, setIsMuted] = useState(false);
   const [showSkip, setShowSkip] = useState(false);
+  const volumeRef = useRef(volume);
+  const isMutedRef = useRef(isMuted);
+  volumeRef.current = volume;
+  isMutedRef.current = isMuted;
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (shouldIgnoreVolumeKeyboardTarget(e.target)) return;
+      const dir = getVolumeKeyDirection(e);
+      if (!dir) return;
+      e.preventDefault();
+      const { volume: v, muted: m } = applyVolumeKeyStep(
+        dir,
+        volumeRef.current,
+        isMutedRef.current
+      );
+      setVolume(v);
+      setIsMuted(m);
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, []);
 
   useEffect(() => {
     const v = videoRef.current;
@@ -70,7 +97,7 @@ export default function IntroVideoOverlay({ onClose }: Props) {
     <motion.div
       role="dialog"
       aria-modal="true"
-      aria-label="Introduction — Al-Rihla"
+      aria-label="Introduction - Al-Rihla"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -94,7 +121,7 @@ export default function IntroVideoOverlay({ onClose }: Props) {
         />
       </motion.div>
 
-      {/* Volume — même principe que Intro */}
+      {/* Volume - même principe que Intro */}
       <AnimatePresence>
         {!showSkip && (
           <motion.div
@@ -136,7 +163,7 @@ export default function IntroVideoOverlay({ onClose }: Props) {
         )}
       </AnimatePresence>
 
-      {/* Passer l'introduction — aligné intro */}
+      {/* Passer l'introduction - aligné intro */}
       <AnimatePresence>
         {showSkip && (
           <motion.div

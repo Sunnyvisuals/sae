@@ -125,8 +125,8 @@ export const WORD_DATA: Record<string, WordEntry> = {
   },
 };
 
+/** Mots du parcours révélation : exclus du tirage aléatoire pour éviter des doublons illisibles sur la carte. */
 const POEM_POOL = [
-  'soleil',
   'sable',
   'mémoire',
   'lumière',
@@ -134,7 +134,6 @@ const POEM_POOL = [
   'algérie',
   'cri',
   'immensité',
-  'corps',
   'vent',
   'dune',
   'horizon',
@@ -162,11 +161,9 @@ const POEM_POOL = [
   'dieu',
   'peuple',
   'chant',
-  'liberté',
-  'naissance',
   'chemin',
   'éclat',
-];
+].filter((w) => !(REVELATION_WORDS as readonly string[]).includes(w));
 
 export function randomPoemWord(seed: number): string {
   return POEM_POOL[Math.floor(rnd(seed, 9) * POEM_POOL.length)]!;

@@ -132,9 +132,9 @@ export default function DesertDustParticles() {
         const isFar = layer === 'far';
         const size = isFar ? 0.85 + r2 * 2.6 : 1.1 + r2 * 3.2;
         const blurPx = isFar ? 0.65 + r3 * 1.9 : 0.12 + r4 * 0.45;
-        const duration = isFar ? 22 + r3 * 38 : 14 + r2 * 24;
+        const duration = isFar ? 12 + r3 * 20 : 7 + r2 * 13;
         const delay = -(r0 + r1) * 32;
-        const variant = (i % 6) + 1;
+        const variant = (i % 12) + 1;
         const isGlow = r5 > 0.82;
         const glow = 0.8 + r3 * 2.2;
         const bg = palette[i % palette.length]!;
@@ -156,8 +156,9 @@ export default function DesertDustParticles() {
       }
     };
 
-    pushBatch(88, 'far', 'f');
-    pushBatch(64, 'near', 'n');
+    /* Densité poussière / motes (fond intro + carte acte I) */
+    pushBatch(115, 'far', 'f');
+    pushBatch(82, 'near', 'n');
 
     return items;
   }, []);

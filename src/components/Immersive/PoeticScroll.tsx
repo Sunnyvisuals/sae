@@ -123,7 +123,8 @@ export default function PoeticScroll() {
 
               {/* Référence */}
               <p className="mt-6 text-[9px] tracking-[0.5em] uppercase text-solar-gold/40">
-                — {info.poem}
+                {' - '}
+                {info.poem}
               </p>
 
               {/* Ligne décorative */}
@@ -132,7 +133,7 @@ export default function PoeticScroll() {
           );
         })}
 
-        {/* Panel final — CTA */}
+        {/* Panel final - CTA */}
         <div className="poetic-panel flex-shrink-0 flex flex-col justify-center" style={{ width: '40vw' }}>
           <p className="text-[9px] tracking-[0.6em] uppercase text-solar-gold/40 mb-4">Continuer</p>
           <p className="font-bahlull text-5xl italic text-white/80 leading-tight">

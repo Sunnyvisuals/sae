@@ -1,14 +1,34 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, useMotionValue, useSpring } from 'motion/react';
 import { useCursorStore } from '../../hooks/useCursorContext';
 
-/** Z-index max pratique — au-dessus de tout overlay / Lenis / PoetryGame */
+/**
+ * Au-dessus du fluide WebGL, intro, menu pause (z~560), overlays.
+ * Max 32-bit évite de perdre contre d’autres calques `fixed` / portails.
+ */
 const CURSOR_ROOT_Z = 2147483647;
 
-export default function CustomCursor() {
+/** Dernier enfant du `body` = au-dessus des autres couches `fixed` même z-index (ordre de peinture). */
+function reparentCursorPortalToBodyEnd() {
+  const el = document.getElementById('__custom-cursor-root');
+  if (el?.parentElement === document.body) {
+    document.body.appendChild(el);
+  }
+}
+
+export default function CustomCursor({
+  /** Menu pause / vidéo intro : on remonte le portail pour qu’il ne soit pas masqué par le dialogue. */
+  overlayOpen = false,
+}: {
+  overlayOpen?: boolean;
+}) {
   const [mounted, setMounted] = useState(false);
-  const { mode, label } = useCursorStore();
+  const [portalHost, setPortalHost] = useState<HTMLElement | null>(null);
+  const mode = useCursorStore((s) => s.mode);
+  const label = useCursorStore((s) => s.label);
+  const ambient = useCursorStore((s) => s.ambient);
+  const night = ambient === 'midnight';
   const mx = useMotionValue(-100);
   const my = useMotionValue(-100);
   const sx = useSpring(mx, { damping: 28, stiffness: 300, mass: 0.5 });
@@ -19,6 +39,34 @@ export default function CustomCursor() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    const id = '__custom-cursor-root';
+    let el = document.getElementById(id) as HTMLElement | null;
+    if (!el) {
+      el = document.createElement('div');
+      el.id = id;
+      el.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(el);
+    }
+    el.style.setProperty('position', 'fixed');
+    el.style.setProperty('inset', '0');
+    el.style.setProperty('pointer-events', 'none');
+    el.style.setProperty('z-index', String(CURSOR_ROOT_Z));
+    reparentCursorPortalToBodyEnd();
+    setPortalHost(el);
+  }, []);
+
+  useLayoutEffect(() => {
+    reparentCursorPortalToBodyEnd();
+    if (!overlayOpen) return;
+    const t0 = window.setTimeout(reparentCursorPortalToBodyEnd, 0);
+    const t1 = window.setTimeout(reparentCursorPortalToBodyEnd, 120);
+    return () => {
+      window.clearTimeout(t0);
+      window.clearTimeout(t1);
+    };
+  }, [portalHost, overlayOpen]);
 
   const move = (e: PointerEvent) => {
     mx.set(e.clientX);
@@ -37,7 +85,7 @@ export default function CustomCursor() {
   const tree = (
     <div
       className="pointer-events-none fixed inset-0"
-      style={{ zIndex: CURSOR_ROOT_Z, isolation: 'isolate' }}
+      style={{ zIndex: 1, transform: 'translateZ(0)' }}
       aria-hidden
     >
       <motion.div
@@ -54,12 +102,18 @@ export default function CustomCursor() {
           height: isHalo ? 80 : isFeather ? 60 : 44,
           opacity: isHalo ? 0.24 : isFeather ? 0.14 : 0.18,
           background: isHalo
-            ? 'radial-gradient(circle, rgba(197,160,89,0.9) 0%, transparent 70%)'
+            ? night
+              ? 'radial-gradient(circle, rgba(139,213,255,0.88) 0%, transparent 70%)'
+              : 'radial-gradient(circle, rgba(197,160,89,0.9) 0%, transparent 70%)'
             : isFeather
-              ? 'radial-gradient(circle, rgba(253,248,238,0.7) 0%, transparent 70%)'
-              : 'radial-gradient(circle, rgba(197,160,89,0.65) 0%, transparent 70%)',
+              ? night
+                ? 'radial-gradient(circle, rgba(220,238,255,0.75) 0%, transparent 70%)'
+                : 'radial-gradient(circle, rgba(253,248,238,0.7) 0%, transparent 70%)'
+              : night
+                ? 'radial-gradient(circle, rgba(100,185,235,0.7) 0%, transparent 70%)'
+                : 'radial-gradient(circle, rgba(197,160,89,0.65) 0%, transparent 70%)',
         }}
-        transition={{ duration: 0.3 }}
+        transition={{ duration: 0.52, ease: [0.22, 1, 0.36, 1] }}
       />
 
       {(isFeather || isDrag) && (
@@ -81,13 +135,13 @@ export default function CustomCursor() {
           transition={{ duration: 0.2 }}
         >
           {isFeather ? (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(253,248,238,0.9)" strokeWidth="1.5">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={night ? 'rgba(226,246,255,0.9)' : 'rgba(253,248,238,0.9)'} strokeWidth="1.5">
               <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z" />
               <line x1="16" y1="8" x2="2" y2="22" />
               <line x1="17.5" y1="15" x2="9" y2="15" />
             </svg>
           ) : (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(197,160,89,0.9)" strokeWidth="1.5">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={night ? 'rgba(139,213,255,0.92)' : 'rgba(197,160,89,0.9)'} strokeWidth="1.5">
               <polyline points="5 9 2 12 5 15" />
               <polyline points="9 5 12 2 15 5" />
               <polyline points="15 19 12 22 9 19" />
@@ -101,7 +155,11 @@ export default function CustomCursor() {
 
       {label && (
         <motion.div
-          className="pointer-events-none fixed text-[9px] uppercase tracking-[0.4em] text-solar-gold/80 will-change-transform"
+          className={
+            night
+              ? 'pointer-events-none fixed text-[9px] uppercase tracking-[0.4em] text-sky-200/85 will-change-transform'
+              : 'pointer-events-none fixed text-[9px] uppercase tracking-[0.4em] text-solar-gold/80 will-change-transform'
+          }
           style={{ x: sx, y: sy, translateX: '12px', translateY: '12px', zIndex: 3 }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -113,6 +171,6 @@ export default function CustomCursor() {
     </div>
   );
 
-  if (!mounted || typeof document === 'undefined') return null;
-  return createPortal(tree, document.body);
+  if (!mounted || typeof document === 'undefined' || !portalHost) return null;
+  return createPortal(tree, portalHost);
 }

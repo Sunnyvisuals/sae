@@ -1,20 +1,42 @@
-import { useState, useEffect, useLayoutEffect, useRef, useCallback, type MutableRefObject } from 'react';
-import { motion, AnimatePresence, useMotionValue, useSpring, useMotionValueEvent } from 'motion/react';
+﻿import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useCallback,
+  useMemo,
+  type MouseEvent as ReactMouseEvent,
+  type WheelEvent as ReactWheelEvent,
+} from 'react';
+import {
+  motion,
+  AnimatePresence,
+  useMotionValue,
+  useSpring,
+  useMotionValueEvent,
+  useReducedMotion,
+} from 'motion/react';
 import gsap from 'gsap';
 import { useCursorStore } from '../../hooks/useCursorContext';
+import ActOneAmbiance from './ActOneAmbiance';
+import ActOnePhraseStrip from './ActOnePhraseStrip';
 import { ALGERIA_PATH } from './algeriaOutlinePath';
+
+/** Path2D partagé : ne pas recréer à chaque frame du canvas. */
+const ALGERIA_SHAPE_PATH = new Path2D(ALGERIA_PATH);
 import {
   REVELATION_WORDS,
   metaForWord,
   randomPoemWord,
   isRevelationWord,
+  type RevelationWord,
   type WordFontRole,
   type Importance,
 } from './mapWordData';
 
-/** Carte en carré centré, plus petite que l’écran → marge autour (moins « zoomé »). */
+/** Carte centrée : échelle un peu plus large pour que littoral / « rayons » ne butent pas au bord du cadre. */
 function mapLayout(W: number, H: number) {
-  const S = Math.min(W, H) * 0.5;
+  const S = Math.min(W, H) * 0.66;
   return { S, mapOX: (W - S) / 2, mapOY: (H - S) / 2 };
 }
 
@@ -40,7 +62,7 @@ function buildChecker(size: number) {
   ctx.save();
   ctx.scale(sc, sc);
   ctx.fillStyle = '#fff';
-  ctx.fill(new Path2D(ALGERIA_PATH));
+  ctx.fill(ALGERIA_SHAPE_PATH);
   ctx.restore();
   const d = ctx.getImageData(0, 0, size, size).data;
   return (nx: number, ny: number) => {
@@ -66,7 +88,18 @@ interface Particle {
 
 const LS_CONSIGNES_KEY = 'al-rihla-consignes-vues';
 
+/** Après ce nombre de clics sans ouvrir le bon mot, surbrillance d’indice sur la carte. */
+const WORD_HINT_AFTER_MISS_CLICKS = 2;
+/** Surbrillance d’indice : léger zoom pulsé (canvas). */
+const HINT_GLOW_SCALE_MIN = 1.07;
+const HINT_GLOW_SCALE_AMP = 0.12;
+/** Marge cliquable autour du mot (italique / serif = traits fins sur le canvas). */
+const WORD_HIT_EXTRA_X = 2.8;
+const WORD_HIT_EXTRA_Y = 2.4;
+
 const N_PARTICLES = 3200;
+/** > 1 : compense la rotation 3D (perspective) pour ne pas révéler le fond derrière aux bords de l’écran. */
+const MAP_PARALLAX_COVER_SCALE = 1.085;
 const REPEL_R = 100;
 const REPEL_F = 0.32;
 const RETURN  = 0.06;
@@ -94,30 +127,43 @@ function plantRevelationKeywords(list: Particle[]) {
   }
 }
 
-function canvasFontForParticle(p: Particle, hover: boolean): string {
+/** Taille d’affichage du mot (alignée hit-test / rendu). */
+function poemParticleFontSizePx(p: Particle, hover: boolean): number {
   const mult = hover ? 1.12 : 1;
   const imp = p.importance;
   const base = p.size * (imp === 3 ? 1.22 : imp === 2 ? 1.06 : 0.94) * mult;
-  const sz = Math.max(9, Math.round(base));
+  return Math.max(10, Math.round(base));
+}
+
+function canvasFontForParticle(p: Particle, hover: boolean): string {
+  const sz = poemParticleFontSizePx(p, hover);
   if (p.fontRole === 'serifPoem') {
     return `italic ${sz}px "Playfair Display", "Bahlull", Georgia, serif`;
   }
   return `${sz}px "Inter", system-ui, sans-serif`;
 }
 
+export type Act1QuestStep = 'hover' | 'clickWord' | 'zoom';
+
 type AlgeriaMapProps = {
   onMemoryMapComplete?: () => void;
   onRevelationProgress?: (count: number) => void;
-  escapePriorityRef?: MutableRefObject<(() => boolean) | null>;
+  /** Premiers gestes (panneau gauche) : survol mot, clic sur le bon fragment, zoom */
+  onQuestStepComplete?: (step: Act1QuestStep) => void;
+  /** Rail développé vs replié - largeur alignée avec `OrientationPanel`. */
+  parcoursRailExpanded?: boolean;
 };
 
 export default function AlgeriaMap({
   onMemoryMapComplete,
   onRevelationProgress,
-  escapePriorityRef,
+  onQuestStepComplete,
+  parcoursRailExpanded = true,
 }: AlgeriaMapProps) {
   const canvasRef  = useRef<HTMLCanvasElement>(null);
   const particles  = useRef<Particle[]>([]);
+  /** Index canvas du mot-révélation planté (un par mot du parcours). */
+  const revelationParticleIdxRef = useRef<Partial<Record<RevelationWord, number>>>({});
   const mouse      = useRef({ x: -9999, y: -9999 });
   const raf        = useRef(0);
   const appearRef  = useRef(0);
@@ -128,18 +174,41 @@ export default function AlgeriaMap({
   const [tooltip, setTooltip] = useState<{
     word: string; verse: string; poem: string; px: number; py: number;
   } | null>(null);
-  const [sidePanel, setSidePanel] = useState<{
-    word: string; verse: string; poem: string;
-  } | null>(null);
+  const tooltipRafRef = useRef<number | null>(null);
+  const pendingTooltipRef = useRef<typeof tooltip>(null);
+  const queueTooltip = useCallback((next: typeof tooltip) => {
+    pendingTooltipRef.current = next;
+    if (tooltipRafRef.current != null) return;
+    tooltipRafRef.current = requestAnimationFrame(() => {
+      tooltipRafRef.current = null;
+      setTooltip(pendingTooltipRef.current);
+    });
+  }, []);
   const [revelationFound, setRevelationFound] = useState<string[]>([]);
+  const [hasZoomed, setHasZoomed] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
 
   const revelRef = useRef(0);
   const mapAwakenedRef = useRef(false);
   const awakenNotify = useRef(false);
   const hoveredIdx = useRef(-1);
+  const questDone = useRef({ hover: false, clickWord: false, zoom: false });
   const downPt = useRef<{ x: number; y: number } | null>(null);
   const panPending = useRef(false);
-  const [mapTilt, setMapTilt] = useState({ x: 0, y: 0 });
+  const mapParallaxLayerRef = useRef<HTMLDivElement>(null);
+  const mapTiltRafRef = useRef<number | null>(null);
+  const mapTiltPendingRef = useRef({ x: 0, y: 0 });
+  const applyMapParallax = useCallback((x: number, y: number) => {
+    mapTiltPendingRef.current = { x, y };
+    if (mapTiltRafRef.current != null) return;
+    mapTiltRafRef.current = requestAnimationFrame(() => {
+      mapTiltRafRef.current = null;
+      const el = mapParallaxLayerRef.current;
+      if (!el) return;
+      const { x: tx, y: ty } = mapTiltPendingRef.current;
+      el.style.transform = `rotateX(${ty}deg) rotateY(${tx}deg) scale(${MAP_PARALLAX_COVER_SCALE}) translateZ(0)`;
+    });
+  }, []);
 
   useEffect(() => {
     revelRef.current = revelationFound.length;
@@ -153,20 +222,6 @@ export default function AlgeriaMap({
   useEffect(() => {
     onRevelationProgress?.(revelationFound.length);
   }, [revelationFound, onRevelationProgress]);
-
-  useEffect(() => {
-    if (!escapePriorityRef) return;
-    escapePriorityRef.current = () => {
-      if (sidePanel) {
-        setSidePanel(null);
-        return true;
-      }
-      return false;
-    };
-    return () => {
-      escapePriorityRef.current = null;
-    };
-  }, [escapePriorityRef, sidePanel]);
 
   const { setMode } = useCursorStore();
 
@@ -183,9 +238,33 @@ export default function AlgeriaMap({
   const panYSpring  = useSpring(mpanY, { damping: 54, stiffness: 125, mass: 0.95, restDelta: 0.001 });
 
   const [zoomLabel, setZoomLabel] = useState(1);
-  useMotionValueEvent(zoomSpring, 'change', (v) => setZoomLabel(v));
+  const zoomLabelStepRef = useRef(1);
+  useMotionValueEvent(zoomSpring, 'change', (v) => {
+    const step = Math.round(v * 10) / 10;
+    if (step !== zoomLabelStepRef.current) {
+      zoomLabelStepRef.current = step;
+      setZoomLabel(step);
+    }
+  });
 
-  /** Tutoriel consignes + voile — false si déjà vu (localStorage) */
+  /** Mot du parcours en cours - tant qu’il reste des trous, seul ce mot est cliquable / mis en avant. */
+  const activeWordTarget = useMemo(
+    () => REVELATION_WORDS.find((w) => !revelationFound.includes(w)),
+    [revelationFound]
+  );
+
+  const activeWordTargetRef = useRef<typeof activeWordTarget>(undefined);
+  activeWordTargetRef.current = activeWordTarget;
+
+  /** Indice visuel : surbrillance après N clics sans succès sur le mot attendu. */
+  const showWordHintRef = useRef(false);
+  const missClicksForHintRef = useRef(0);
+  useEffect(() => {
+    showWordHintRef.current = false;
+    missClicksForHintRef.current = 0;
+  }, [activeWordTarget]);
+
+  /** Tutoriel consignes + voile - false si déjà vu (localStorage) */
   const [tutorialActive, setTutorialActive] = useState(() => {
     if (typeof window === 'undefined') return true;
     try {
@@ -197,20 +276,13 @@ export default function AlgeriaMap({
 
   const tutorialVeilRef = useRef<HTMLDivElement>(null);
   const dismissRunningRef = useRef(false);
-  const actHudRef = useRef<HTMLDivElement>(null);
-  const actMetaRef = useRef<HTMLDivElement>(null);
-  const actTitleRef = useRef<HTMLHeadingElement>(null);
-  const actLineRef = useRef<HTMLDivElement>(null);
   const actConsignesRef = useRef<HTMLDivElement>(null);
-  const actConsignesGlowRef = useRef<HTMLDivElement>(null);
 
   const dismissTutorial = useCallback(() => {
     if (!tutorialActive || dismissRunningRef.current) return;
     dismissRunningRef.current = true;
     const veil = tutorialVeilRef.current;
     const cons = actConsignesRef.current;
-    const glow = actConsignesGlowRef.current;
-    if (glow) gsap.killTweensOf(glow);
 
     const finish = () => {
       try {
@@ -264,51 +336,6 @@ export default function AlgeriaMap({
     gsap.fromTo(v, { opacity: 0 }, { opacity: 1, duration: 0.48, ease: 'power2.out' });
   }, [tutorialActive]);
 
-  useLayoutEffect(() => {
-    const root = actHudRef.current;
-    if (!root) return;
-
-    const ctx = gsap.context(() => {
-      const meta = actMetaRef.current;
-      const title = actTitleRef.current;
-      const line = actLineRef.current;
-      const consignes = actConsignesRef.current;
-      const glow = actConsignesGlowRef.current;
-
-      gsap.set(meta, { opacity: 0, x: -12 });
-      gsap.set(title, { opacity: 0, y: 12 });
-      gsap.set(line, { scaleX: 0, transformOrigin: '0% 50%' });
-      if (consignes) gsap.set(consignes, { opacity: 0, y: 10 });
-
-      const tl = gsap.timeline({ delay: 0.45, defaults: { ease: 'power3.out' } });
-      tl.to(meta, { opacity: 1, x: 0, duration: 0.5 })
-        .to(title, { opacity: 1, y: 0, duration: 0.55 }, '-=0.36')
-        .to(line, { scaleX: 1, duration: 0.45, ease: 'power2.inOut' }, '-=0.38');
-      if (consignes) {
-        tl.to(consignes, { opacity: 1, y: 0, duration: 0.5 }, '-=0.28');
-      }
-
-      if (glow && tutorialActive) {
-        const shadowSoft =
-          '0 0 0 1px rgba(197,160,89,0.12), 0 10px 40px rgba(0,0,0,0.45), 0 0 36px rgba(197,160,89,0.14), inset 0 0 28px rgba(197,160,89,0.05)';
-        const shadowBright =
-          '0 0 0 1px rgba(197,160,89,0.2), 0 10px 40px rgba(0,0,0,0.45), 0 0 52px rgba(197,160,89,0.28), inset 0 0 36px rgba(197,160,89,0.1)';
-        gsap.set(glow, { boxShadow: shadowSoft });
-        gsap.to(glow, {
-          boxShadow: shadowBright,
-          duration: 2.8,
-          repeat: -1,
-          yoyo: true,
-          ease: 'sine.inOut',
-          delay: 0.6,
-        });
-      }
-    }, root);
-
-    return () => ctx.revert();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intro une fois au montage selon présence consignes
-  }, []);
-
   // ── Init + resize ─────────────────────────────────────────────────────────
   const initParticles = useCallback(() => {
     const canvas = canvasRef.current;
@@ -327,8 +354,8 @@ export default function AlgeriaMap({
       const inside = checker(ox, oy);
       const isPoem = inside && rnd(i, 3) < 0.022;
       const baseAlpha = inside
-        ? (isPoem ? 0.75 + rnd(i, 6) * 0.25 : 0.3 + rnd(i, 7) * 0.4)
-        : 0.06 + rnd(i, 8) * 0.08;
+        ? (isPoem ? 0.84 + rnd(i, 6) * 0.16 : 0.38 + rnd(i, 7) * 0.38)
+        : 0.08 + rnd(i, 8) * 0.1;
 
       const w = isPoem ? randomPoemWord(i) : '';
       const m = isPoem ? metaForWord(w) : null;
@@ -352,6 +379,14 @@ export default function AlgeriaMap({
       });
     }
     plantRevelationKeywords(list);
+    const byWord: Partial<Record<RevelationWord, number>> = {};
+    for (let i = 0; i < list.length; i++) {
+      const p = list[i]!;
+      if (p.isRevelation && isRevelationWord(p.word)) {
+        byWord[p.word as RevelationWord] = i;
+      }
+    }
+    revelationParticleIdxRef.current = byWord;
     particles.current = list;
     ready.current = true;
   }, []);
@@ -386,12 +421,13 @@ export default function AlgeriaMap({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    const ctx = canvas.getContext('2d', { alpha: true, desynchronized: true });
+    if (!ctx) return;
+
     const tick = () => {
       raf.current = requestAnimationFrame(tick);
       if (!ready.current) return;
 
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
       const W = canvas.width, H = canvas.height;
       if (!W || !H) return;
 
@@ -404,7 +440,7 @@ export default function AlgeriaMap({
       const prog = appearRef.current;
       const revel = revelRef.current;
       const mapAwake = revel >= 5;
-      const veil = mapAwake ? 1 : 0.34 + 0.66 * (revel / 5);
+      const veil = mapAwake ? 1 : 0.5 + 0.5 * (revel / 5);
 
       ctx.clearRect(0, 0, W, H);
 
@@ -423,27 +459,47 @@ export default function AlgeriaMap({
       ctx.translate(px, py);
       ctx.scale(z, z);
 
-      // Terre : remplissage doux + un seul trait fin (contour GeoJSON, pas d’étirement W×H)
-      const algeriaShape = new Path2D(ALGERIA_PATH);
       ctx.save();
       ctx.translate(mapOX, mapOY);
       ctx.scale(S / 400, S / 400);
-      ctx.globalAlpha = prog * (0.65 + 0.35 * veil);
-      ctx.fillStyle = 'rgba(230, 205, 155, 0.07)';
-      ctx.fill(algeriaShape);
+
+      // 1) Algérie - territoire mis en avant (remplissage + contour fort + léger halo)
+      ctx.globalAlpha = prog * (0.78 + 0.22 * veil);
+      ctx.fillStyle = 'rgba(240, 220, 185, 0.12)';
+      ctx.fill(ALGERIA_SHAPE_PATH);
+
       const pulseStroke = mapAwake ? 0.5 + 0.5 * Math.sin(t * 2.1) : 0;
-      const strokeGold = Math.round(mapAwake ? GOLD.r + 35 * pulseStroke : GOLD.r);
-      const strokeGg = Math.round(mapAwake ? GOLD.g + 22 * pulseStroke : GOLD.g);
-      ctx.globalAlpha = (0.55 + 0.25 * veil) * prog;
-      ctx.strokeStyle = `rgba(${strokeGold},${strokeGg},${GOLD.b},${mapAwake ? 0.72 : 0.5})`;
-      ctx.lineJoin = 'round';
-      ctx.lineCap = 'round';
-      ctx.lineWidth = (1.35 * 400) / (z * S);
-      ctx.stroke(algeriaShape);
+      const strokeGold = Math.round(mapAwake ? GOLD.r + 38 * pulseStroke : GOLD.r);
+      const strokeGg = Math.round(mapAwake ? GOLD.g + 26 * pulseStroke : GOLD.g);
+
+      ctx.globalAlpha = (0.38 + 0.32 * veil) * prog;
+      ctx.strokeStyle = `rgba(${strokeGold},${strokeGg},${GOLD.b},${mapAwake ? 0.28 : 0.14})`;
+      ctx.lineWidth = (3.2 * 400) / (z * S);
+      ctx.stroke(ALGERIA_SHAPE_PATH);
+
+      ctx.globalAlpha = (0.62 + 0.28 * veil) * prog;
+      ctx.strokeStyle = `rgba(${strokeGold},${strokeGg},${GOLD.b},${mapAwake ? 0.95 : 0.68})`;
+      ctx.lineWidth = (1.78 * 400) / (z * S);
+      ctx.shadowColor = 'rgba(253, 248, 238, 0.25)';
+      ctx.shadowBlur = 6 / z;
+      ctx.stroke(ALGERIA_SHAPE_PATH);
+      ctx.shadowBlur = 0;
+      ctx.shadowColor = 'transparent';
+
+      ctx.globalAlpha = prog * (0.45 + 0.35 * veil) * (mapAwake ? 1 : 0.75);
+      ctx.strokeStyle = 'rgba(253, 248, 238, 0.22)';
+      ctx.lineWidth = (0.48 * 400) / (z * S);
+      ctx.stroke(ALGERIA_SHAPE_PATH);
+
       ctx.restore();
 
       const arr = particles.current;
       const hi = hoveredIdx.current;
+      const need = activeWordTargetRef.current;
+      const hintOn = Boolean(need && showWordHintRef.current);
+      const hintIdx =
+        hintOn && need ? revelationParticleIdxRef.current[need as RevelationWord] : undefined;
+
       for (let idx = 0; idx < arr.length; idx++) {
         const p = arr[idx]!;
         p.tx = mapOX + p.ox * S;
@@ -466,7 +522,17 @@ export default function AlgeriaMap({
 
         const c = lerpC(GOLD, p.isPoem ? CREAM : SAND, p.colorT);
         const isHover = p.isPoem && idx === hi;
-        let drawA = p.alpha * (isHover ? 1.2 : 1);
+        const isHintGlow = p.isPoem && hintIdx === idx;
+        /** Respiration douce + léger scintillement (DA or / crème, pas halo orangé). */
+        const hintBreath = 0.5 + 0.5 * Math.sin(t * 3.05 + idx * 0.11);
+        const hintTwinkle =
+          0.45 +
+          0.55 * Math.sin(t * 5.9 + idx * 0.19) * Math.sin(t * 2.4 + 0.85);
+        let drawA = p.alpha * (
+          isHover ? 1.22
+            : isHintGlow ? 1.12 + 0.14 * hintBreath
+            : revel < 3 ? 1.06 : 1
+        );
         drawA = Math.min(1, drawA);
         ctx.globalAlpha = drawA;
 
@@ -475,10 +541,36 @@ export default function AlgeriaMap({
           if (isHover) {
             ctx.shadowColor = 'rgba(253,248,238,0.45)';
             ctx.shadowBlur = 18 / z;
+            ctx.font = canvasFontForParticle(p, true);
+            ctx.fillStyle = `rgb(${Math.round(c.r)},${Math.round(c.g)},${Math.round(c.b)})`;
+            ctx.fillText(p.word, p.cx, p.cy);
+          } else if (isHintGlow) {
+            const hintScalePulse = HINT_GLOW_SCALE_MIN + HINT_GLOW_SCALE_AMP * hintBreath;
+            ctx.translate(p.cx, p.cy);
+            ctx.scale(hintScalePulse, hintScalePulse);
+            ctx.translate(-p.cx, -p.cy);
+            ctx.font = canvasFontForParticle(p, false);
+            ctx.shadowColor = `rgba(${GOLD.r}, ${GOLD.g}, ${GOLD.b}, ${0.28 + 0.22 * hintBreath})`;
+            ctx.shadowBlur = (11 + 9 * hintTwinkle) / z;
+            const br = Math.min(255, Math.round(c.r + (CREAM.r - c.r) * (0.4 + 0.35 * hintTwinkle)));
+            const bg = Math.min(255, Math.round(c.g + (CREAM.g - c.g) * (0.32 + 0.28 * hintTwinkle)));
+            const bb = Math.min(255, Math.round(c.b + (CREAM.b - c.b) * (0.26 + 0.22 * hintTwinkle)));
+            ctx.fillStyle = `rgb(${br},${bg},${bb})`;
+            ctx.fillText(p.word, p.cx, p.cy);
+            ctx.shadowBlur = (6 + 5 * hintTwinkle) / z;
+            ctx.shadowColor = `rgba(253, 248, 238, ${0.2 + 0.18 * hintBreath})`;
+            ctx.fillText(p.word, p.cx, p.cy);
+            ctx.shadowBlur = 0;
+            ctx.shadowColor = 'transparent';
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.fillStyle = `rgba(255, 250, 238, ${0.1 + 0.2 * hintTwinkle * hintTwinkle})`;
+            ctx.fillText(p.word, p.cx, p.cy);
+            ctx.globalCompositeOperation = 'source-over';
+          } else {
+            ctx.font = canvasFontForParticle(p, false);
+            ctx.fillStyle = `rgb(${Math.round(c.r)},${Math.round(c.g)},${Math.round(c.b)})`;
+            ctx.fillText(p.word, p.cx, p.cy);
           }
-          ctx.font = canvasFontForParticle(p, isHover);
-          ctx.fillStyle = `rgb(${Math.round(c.r)},${Math.round(c.g)},${Math.round(c.b)})`;
-          ctx.fillText(p.word, p.cx, p.cy);
           ctx.restore();
         } else {
           ctx.fillStyle = `rgb(${Math.round(c.r)},${Math.round(c.g)},${Math.round(c.b)})`;
@@ -505,14 +597,25 @@ export default function AlgeriaMap({
     let best: { p: Particle; i: number } | null = null;
     let bestD = Infinity;
     const arr = particles.current;
+    const needHit = activeWordTargetRef.current;
+    const hintIdxHit =
+      needHit && showWordHintRef.current
+        ? revelationParticleIdxRef.current[needHit as RevelationWord]
+        : undefined;
     for (let i = 0; i < arr.length; i++) {
       const p = arr[i]!;
       if (!p.isPoem) continue;
+      const sz = poemParticleFontSizePx(p, false);
+      const cyVis = p.cy - sz * 0.38;
+      const hintPad = hintIdxHit === i ? HINT_GLOW_SCALE_MIN + HINT_GLOW_SCALE_AMP : 1;
+      const halfW =
+        Math.max(sz * 1.65, sz * 0.56 * Math.max(p.word.length, 2.5)) * WORD_HIT_EXTRA_X * hintPad;
+      const halfH = sz * 0.95 * WORD_HIT_EXTRA_Y * hintPad;
       const dx = mx2 - p.cx;
-      const dy = my2 - p.cy;
-      const d = Math.sqrt(dx * dx + dy * dy);
-      const hitR = p.size * (p.importance >= 3 ? 4.2 : 3.5);
-      if (d < hitR && d < bestD) {
+      const dy = my2 - cyVis;
+      if (Math.abs(dx) >= halfW || Math.abs(dy) >= halfH) continue;
+      const d = Math.hypot(dx, dy);
+      if (d < bestD) {
         bestD = d;
         best = { p, i };
       }
@@ -521,19 +624,24 @@ export default function AlgeriaMap({
   }, [zoomSpring, panXSpring, panYSpring]);
 
   // ── Mouse move ────────────────────────────────────────────────────────────
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleMouseMove = useCallback((e: ReactMouseEvent<HTMLCanvasElement>) => {
     if (tutorialActive) dismissTutorial();
-    const r = e.currentTarget.getBoundingClientRect();
-    const cx = e.clientX - r.left;
-    const cy = e.clientY - r.top;
+    const canvas = e.currentTarget;
+    const r = canvas.getBoundingClientRect();
+    // Correction du scale CSS (parallax cover scale + perspective) : getBoundingClientRect
+    // renvoie les dimensions visuelles après transform, mais les coords canvas sont en espace layout.
+    const scaleX = r.width  > 0 ? canvas.width  / r.width  : 1;
+    const scaleY = r.height > 0 ? canvas.height / r.height : 1;
+    const cx = (e.clientX - r.left) * scaleX;
+    const cy = (e.clientY - r.top)  * scaleY;
     mouse.current = { x: cx, y: cy };
 
     const rw = r.width;
     const rh = r.height;
     if (rw > 0 && rh > 0) {
-      const nx = (cx / rw - 0.5) * 2;
-      const ny = (cy / rh - 0.5) * 2;
-      setMapTilt({ x: nx * 6.8, y: -ny * 5 });
+      const nx = ((e.clientX - r.left) / rw - 0.5) * 2;
+      const ny = ((e.clientY - r.top)  / rh - 0.5) * 2;
+      applyMapParallax(nx * 6.8, -ny * 5);
     }
 
     if (downPt.current && panPending.current && zoomSpring.get() > 1.05) {
@@ -557,20 +665,46 @@ export default function AlgeriaMap({
 
     const z = zoomSpring.get();
     const hit = hitTestWord(cx, cy);
+
+    if (hit?.p.isPoem && onQuestStepComplete && !questDone.current.hover) {
+      questDone.current.hover = true;
+      onQuestStepComplete('hover');
+    }
+
+    const blockOtherWords = Boolean(activeWordTarget && hit?.p.isPoem && hit.p.word !== activeWordTarget);
+    if (blockOtherWords) {
+      hoveredIdx.current = -1;
+      queueTooltip(null);
+      setMode(z > 1.05 ? 'drag' : 'default');
+      return;
+    }
+
     hoveredIdx.current = hit ? hit.i : -1;
 
     if (hit) {
       const d = metaForWord(hit.p.word);
-      setTooltip({ word: hit.p.word, verse: d.verse, poem: d.poem, px: e.clientX, py: e.clientY });
+      queueTooltip({ word: hit.p.word, verse: d.verse, poem: d.poem, px: e.clientX, py: e.clientY });
       setMode('feather', hit.p.word);
     } else {
-      setTooltip(null);
+      queueTooltip(null);
       setMode(z > 1.05 ? 'drag' : 'default');
     }
-  }, [setMode, mpanX, mpanY, zoomSpring, hitTestWord, tutorialActive, dismissTutorial]);
+  }, [
+    setMode,
+    mpanX,
+    mpanY,
+    zoomSpring,
+    hitTestWord,
+    tutorialActive,
+    dismissTutorial,
+    onQuestStepComplete,
+    activeWordTarget,
+    applyMapParallax,
+    queueTooltip,
+  ]);
 
   // ── Wheel zoom centré curseur ─────────────────────────────────────────────
-  const handleWheel = useCallback((e: React.WheelEvent<HTMLCanvasElement>) => {
+  const handleWheel = useCallback((e: ReactWheelEvent<HTMLCanvasElement>) => {
     if (tutorialActive) dismissTutorial();
     e.preventDefault();
     // Molette : pas plus fin (trackpad = petits deltas)
@@ -592,10 +726,17 @@ export default function AlgeriaMap({
     mpanX.set(next <= ZOOM_MIN ? 0 : nx);
     mpanY.set(next <= ZOOM_MIN ? 0 : ny);
     mzoom.set(next);
-  }, [mzoom, mpanX, mpanY, tutorialActive, dismissTutorial]);
+    if (next > 1.12) {
+      setHasZoomed(true);
+      if (onQuestStepComplete && !questDone.current.zoom) {
+        questDone.current.zoom = true;
+        onQuestStepComplete('zoom');
+      }
+    }
+  }, [mzoom, mpanX, mpanY, tutorialActive, dismissTutorial, onQuestStepComplete]);
 
   const handleMouseDown = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
+    (e: ReactMouseEvent<HTMLCanvasElement>) => {
       downPt.current = { x: e.clientX, y: e.clientY };
       panPending.current = zoomSpring.get() > 1.05;
       if (panPending.current) {
@@ -605,27 +746,38 @@ export default function AlgeriaMap({
     [zoomSpring, mpanX, mpanY]
   );
 
-  const openWordPanel = useCallback(
-    (clientX: number, clientY: number, canvas: HTMLCanvasElement) => {
+  /** Clic sur un bon mot : valide la révélation sans panneau latéral (mécanique conservée). */
+  const tryRevealWordFromClick = useCallback(
+    (clientX: number, clientY: number, canvas: HTMLCanvasElement): boolean => {
       const r = canvas.getBoundingClientRect();
-      const cx = clientX - r.left;
-      const cy = clientY - r.top;
+      const scaleX = r.width  > 0 ? canvas.width  / r.width  : 1;
+      const scaleY = r.height > 0 ? canvas.height / r.height : 1;
+      const cx = (clientX - r.left) * scaleX;
+      const cy = (clientY - r.top)  * scaleY;
       const hit = hitTestWord(cx, cy);
-      if (!hit) return;
-      const m = metaForWord(hit.p.word);
-      setSidePanel({ word: hit.p.word, verse: m.verse, poem: m.poem });
-      setTooltip(null);
-      if (hit.p.isRevelation && isRevelationWord(hit.p.word)) {
-        setRevelationFound((prev) =>
-          prev.includes(hit.p.word) ? prev : [...prev, hit.p.word]
-        );
+      if (!hit) return false;
+
+      const need = REVELATION_WORDS.find((w) => !revelationFound.includes(w));
+      if (need && hit.p.word !== need) {
+        return false;
       }
+
+      if (onQuestStepComplete && !questDone.current.clickWord) {
+        questDone.current.clickWord = true;
+        onQuestStepComplete('clickWord');
+      }
+      setTooltip(null);
+      /** Toute occurrence du mot attendu compte (pas seulement la pastille « plantée »), pour éviter les doublons illisibles. */
+      if (need && hit.p.word === need && isRevelationWord(need)) {
+        setRevelationFound((prev) => (prev.includes(need) ? prev : [...prev, need]));
+      }
+      return true;
     },
-    [hitTestWord]
+    [hitTestWord, onQuestStepComplete, revelationFound]
   );
 
   const handleMouseUp = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
+    (e: ReactMouseEvent<HTMLCanvasElement>) => {
       const moved = downPt.current
         ? Math.hypot(e.clientX - downPt.current.x, e.clientY - downPt.current.y)
         : 999;
@@ -635,20 +787,31 @@ export default function AlgeriaMap({
       downPt.current = null;
 
       if (!wasDrag && moved < 14) {
-        openWordPanel(e.clientX, e.clientY, e.currentTarget);
+        const opened = tryRevealWordFromClick(e.clientX, e.clientY, e.currentTarget);
+        const need = activeWordTargetRef.current;
+        if (!opened && need && !showWordHintRef.current) {
+          missClicksForHintRef.current += 1;
+          if (missClicksForHintRef.current >= WORD_HINT_AFTER_MISS_CLICKS) {
+            showWordHintRef.current = true;
+          }
+        }
       }
       setMode('default');
     },
-    [setMode, openWordPanel]
+    [setMode, tryRevealWordFromClick]
   );
 
   const memoryAwake = revelationFound.length >= 5;
 
   return (
-    <div className="relative w-full h-full overflow-hidden" style={{ background: '#0a0806' }}>
+    <div className="relative h-full min-h-0 w-full max-w-[100vw] overflow-x-hidden overflow-y-visible" style={{ background: '#080604' }}>
+      <ActOneAmbiance chapterComplete={memoryAwake} />
+
       {/* ── Grille narrative : chapitre + progression (5 mots-révélation) ── */}
       <header className="pointer-events-none absolute left-0 right-0 top-0 z-20 flex flex-col items-center px-4 pt-6">
-        <p className="text-[9px] tracking-[0.45em] text-solar-gold/42 uppercase">Chapitre I — Carte-mémoire</p>
+        <p className="text-[11px] font-medium tracking-[0.32em] text-solar-gold/72 uppercase [text-shadow:0_1px_14px_rgba(0,0,0,0.75)] md:text-xs">
+          Chapitre I - Carte-mémoire
+        </p>
         <div className="mt-3 flex h-[3px] w-full max-w-sm gap-1.5">
           {REVELATION_WORDS.map((w) => (
             <div
@@ -662,19 +825,22 @@ export default function AlgeriaMap({
             />
           ))}
         </div>
-        <p className="mt-2 max-w-md text-center text-[9px] leading-relaxed text-solar-gold/32">
+        <p className="mt-3 max-w-lg text-center text-[12px] font-medium leading-snug text-solar-gold/72 [text-shadow:0_1px_14px_rgba(0,0,0,0.82)] sm:text-[13px] md:text-[14px]">
           {memoryAwake
-            ? 'Les cinq feux sont rallumés — la carte respire.'
-            : 'Cherchez cinq mots du territoire intérieur : naissance, soleil, mère, liberté, corps.'}
+            ? 'Les cinq feux sont rallumés - la carte respire.'
+            : "Retrouvez sur la carte les fragments qui achèvent le vers, l'un après l'autre."}
         </p>
       </header>
 
-      {/* Scène « showcase » : perspective + léger parallax (Canvas 2D inchangé) */}
-      <div className="absolute inset-0 [perspective:1600px]">
+      <ActOnePhraseStrip revelationFound={revelationFound} chapterComplete={memoryAwake} hasZoomed={hasZoomed} />
+
+      {/* Scène « showcase » : perspective + parallax - overflow-hidden + scale>1 évite les bords noirs au tilt */}
+      <div className="absolute inset-0 z-[10] overflow-hidden [perspective:1600px] [perspective-origin:50%_50%]">
         <div
-          className="absolute inset-2 origin-center will-change-transform [transform-style:preserve-3d] max-md:inset-1"
+          ref={mapParallaxLayerRef}
+          className="absolute inset-0 origin-center will-change-transform [transform-style:preserve-3d]"
           style={{
-            transform: `rotateX(${mapTilt.y}deg) rotateY(${mapTilt.x}deg) scale(0.987) translateZ(0)`,
+            transform: `rotateX(0deg) rotateY(0deg) scale(${MAP_PARALLAX_COVER_SCALE}) translateZ(0)`,
           }}
         >
           <canvas
@@ -684,12 +850,16 @@ export default function AlgeriaMap({
             onMouseDown={handleMouseDown}
             onMouseUp={handleMouseUp}
             onMouseLeave={() => {
+              if (tooltipRafRef.current != null) {
+                cancelAnimationFrame(tooltipRafRef.current);
+                tooltipRafRef.current = null;
+              }
               setTooltip(null);
               setMode('default');
               isDragging.current = false;
               hoveredIdx.current = -1;
               mouse.current = { x: -9999, y: -9999 };
-              setMapTilt({ x: 0, y: 0 });
+              applyMapParallax(0, 0);
             }}
             onWheel={handleWheel}
           />
@@ -706,64 +876,22 @@ export default function AlgeriaMap({
           />
         )}
         <div
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_38%,transparent_0%,rgba(5,4,3,0.35)_55%,rgba(0,0,0,0.82)_100%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,transparent_0%,rgba(5,4,3,0.06)_50%,rgba(0,0,0,0.14)_100%)]"
           aria-hidden
         />
         <div
-          className="pointer-events-none absolute inset-0 opacity-[0.12]"
+          className="pointer-events-none absolute inset-0 opacity-[0.05]"
           style={{
             backgroundImage:
-              'linear-gradient(125deg, rgba(197,160,89,0.35) 0%, transparent 42%, rgba(253,248,238,0.04) 100%)',
+              'linear-gradient(125deg, rgba(197,160,89,0.14) 0%, transparent 45%, rgba(253,248,238,0.02) 100%)',
           }}
           aria-hidden
         />
       </div>
 
-      {/* ── Panneau latéral (clic sur un mot) ── */}
-      <AnimatePresence>
-        {sidePanel && (
-          <motion.aside
-            key="panel"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="memory-word-title"
-            initial={{ x: 100, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: 60, opacity: 0 }}
-            transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed right-0 top-0 z-[100] flex h-full w-[min(420px,92vw)] flex-col border-l border-solar-gold/20 bg-[#080705]/96 px-7 py-10 pl-8 shadow-[-20px_0_80px_rgba(0,0,0,0.5)] backdrop-blur-2xl"
-          >
-            <button
-              type="button"
-              className="absolute right-5 top-5 text-[9px] uppercase tracking-[0.35em] text-solar-gold/45 transition-colors hover:text-solar-gold/90"
-              onClick={() => setSidePanel(null)}
-            >
-              Fermer
-            </button>
-            <p className="text-[8px] uppercase tracking-[0.55em] text-solar-gold/45">{sidePanel.poem}</p>
-            <h3 id="memory-word-title" className="font-bahlull mt-3 text-3xl italic text-white/95">
-              {sidePanel.word}
-            </h3>
-            <p className="font-serif mt-6 text-lg italic leading-relaxed text-white/85">« {sidePanel.verse} »</p>
-            <p className="mt-8 text-[9px] tracking-widest text-solar-gold/40">Jean Sénac</p>
-            <div className="mt-10 h-px w-full bg-solar-gold/15" />
-            <p className="mt-4 text-[10px] leading-relaxed text-solar-gold/35">
-              Fragment — lecture audio et archives visuelles : prochaine itération.
-            </p>
-            <button
-              type="button"
-              disabled
-              className="mt-4 w-fit rounded border border-solar-gold/20 px-4 py-2 text-[9px] uppercase tracking-[0.3em] text-solar-gold/25"
-            >
-              Écouter (bientôt)
-            </button>
-          </motion.aside>
-        )}
-      </AnimatePresence>
-
       {/* ── Tooltip poétique (aperçu au survol) ── */}
       <AnimatePresence>
-        {tooltip && !sidePanel && (
+        {tooltip && (
           <motion.div
             key={tooltip.word}
             className="fixed z-50 pointer-events-none"
@@ -775,88 +903,122 @@ export default function AlgeriaMap({
           >
             <div className="bg-[#120e0a]/92 backdrop-blur-xl border border-solar-gold/25 px-5 py-4 max-w-[300px]"
               style={{ boxShadow: '0 0 40px rgba(197,160,89,0.08), inset 0 0 0 1px rgba(197,160,89,0.05)' }}>
-              <p className="text-[8px] tracking-[0.55em] uppercase text-solar-gold/45 mb-2">{tooltip.poem}</p>
+              <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.38em] text-solar-gold/72">{tooltip.poem}</p>
               <p className="font-bahlull text-[1.1rem] italic text-white/90 leading-snug">
                 « {tooltip.verse} »
               </p>
               <div className="mt-3 flex items-center gap-3">
                 <div className="h-px flex-1 bg-solar-gold/20" />
-                <p className="text-[9px] text-solar-gold/50 font-light tracking-widest">Jean Sénac</p>
+                <p className="text-[10px] font-medium tracking-widest text-solar-gold/70">Jean Sénac</p>
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ── HUD acte : bas gauche, au-dessus du voile tutoriel (z-8) ── */}
+      {/* ── HUD acte : bandeau fixe bas-gauche (flux normal - plus de vol GSAP / ancre) ── */}
       <div
-        ref={actHudRef}
-        className="pointer-events-none absolute bottom-0 left-0 z-[18] flex max-w-[min(92vw,320px)] flex-col items-start pl-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pr-3 pt-0 select-none md:max-w-sm md:pl-7 md:pb-[max(2rem,env(safe-area-inset-bottom))]"
+        className="pointer-events-none absolute bottom-0 left-0 z-[45] flex w-full max-w-[min(calc(100vw-1.25rem),380px)] flex-col items-start pb-[max(1.75rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-4 pt-3 select-none sm:pr-6 md:pb-[max(2.5rem,env(safe-area-inset-bottom))] md:pl-8 md:pr-8"
       >
-        <div className="relative pl-2">
-          <div
-            className="pointer-events-none absolute bottom-1 left-0 top-3 w-px bg-gradient-to-b from-solar-gold/40 via-solar-gold/15 to-transparent"
-            aria-hidden
-          />
-          <div ref={actMetaRef} className="pl-1">
-            <p className="text-[7px] font-light uppercase tracking-[0.65em] text-solar-gold/50 md:tracking-[0.72em]">
-              Acte I <span className="text-solar-gold/25">·</span> Algérie
-            </p>
-          </div>
-          <h2
-            ref={actTitleRef}
-            className="font-bahlull mt-2.5 text-[clamp(1.6rem,4vw,2.25rem)] italic leading-[1.06] text-white/[0.93]"
-            style={{ textShadow: '0 0 32px rgba(197,160,89,0.22)' }}
+        <div className="relative w-full">
+          <motion.div
+            initial={
+              prefersReducedMotion
+                ? { opacity: 1, y: 0, filter: 'blur(0px)' }
+                : { opacity: 0, y: 22, filter: 'blur(12px)' }
+            }
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            transition={
+              prefersReducedMotion
+                ? { duration: 0.01 }
+                : { duration: 1, delay: 0.35, ease: [0.22, 1, 0.36, 1] }
+            }
+            className="w-full text-left"
+            role="status"
+            aria-label="Acte I, Algérie, La Naissance"
           >
-            La Naissance
-          </h2>
-          <div
-            ref={actLineRef}
-            className="mt-3 h-px w-24 max-w-[90%] origin-left bg-gradient-to-r from-solar-gold/55 via-solar-gold/25 to-transparent md:w-[6.5rem]"
-          />
+            <div className="min-w-0 border-l-[3px] border-solar-gold/50 pl-4 pr-1 [box-shadow:0_0_32px_rgba(0,0,0,0.25)]">
+              <p className="text-[10px] font-semibold uppercase leading-relaxed tracking-[0.4em] text-solar-gold/88 md:text-[11px] md:tracking-[0.42em] [text-shadow:0_1px_14px_rgba(0,0,0,0.9)]">
+                Acte I <span className="mx-1.5 inline-block text-solar-gold/40">·</span> Algérie
+              </p>
+              <h2 className="font-bahlull mt-2.5 text-[clamp(1.6rem,4.2vw,2.25rem)] italic leading-[1.12] tracking-tight text-[#fefaf4] [text-shadow:0_2px_18px_rgba(0,0,0,0.95),0_0_32px_rgba(197,160,89,0.28)] md:mt-3">
+                La Naissance
+              </h2>
+              <motion.div
+                aria-hidden
+                className="mt-3 h-[2px] w-24 max-w-full origin-left bg-gradient-to-r from-solar-gold/70 via-solar-gold/25 to-transparent md:mt-4 md:w-28"
+                initial={prefersReducedMotion ? { scaleX: 1 } : { scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={
+                  prefersReducedMotion
+                    ? { duration: 0.01 }
+                    : { delay: 0.95, duration: 0.55, ease: [0.22, 1, 0.36, 1] }
+                }
+                style={{ transformOrigin: '0% 50%' }}
+              />
+            </div>
+          </motion.div>
 
           {tutorialActive && (
-            <div ref={actConsignesRef} className="mt-5 flex flex-col gap-2">
-              <p className="pl-0.5 text-[6px] font-medium uppercase tracking-[0.7em] text-solar-gold/32">
+            <motion.div
+              ref={actConsignesRef}
+              className="mt-7 flex flex-col gap-2 md:mt-8"
+              initial={prefersReducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={
+                prefersReducedMotion
+                  ? { duration: 0.01 }
+                  : { delay: 1.15, duration: 0.5, ease: [0.22, 1, 0.36, 1] }
+              }
+            >
+              <p className="pl-0.5 text-[9px] font-semibold uppercase tracking-[0.45em] text-solar-gold/65">
                 Consignes
               </p>
-              <div
-                ref={actConsignesGlowRef}
-                className="rounded-[2px] border border-solar-gold/28 bg-[#060504]/80 px-3 py-2.5 backdrop-blur-md md:px-3.5 md:py-3"
-              >
+              <div className="rounded-[2px] border border-solar-gold/28 bg-[#060504]/85 px-3 py-2.5 shadow-[0_0_0_1px_rgba(197,160,89,0.08),0_8px_28px_rgba(0,0,0,0.4)] backdrop-blur-md md:px-3.5 md:py-3">
                 <p
-                  className="text-[7px] font-medium uppercase leading-relaxed tracking-[0.36em] text-solar-gold/[0.88] md:text-[7.5px] md:tracking-[0.4em]"
-                  style={{
-                    textShadow:
-                      '0 0 18px rgba(197,160,89,0.4), 0 0 6px rgba(253,248,238,0.12)',
-                  }}
+                  className="text-[10px] font-semibold uppercase leading-relaxed tracking-[0.22em] text-solar-gold [text-shadow:0_0_20px_rgba(197,160,89,0.45),0_1px_8px_rgba(0,0,0,0.85)] md:text-[11px] md:tracking-[0.26em]"
                 >
-                  Survolez — clic pour ouvrir —
+                  Survolez - clic sur le fragment attendu - 
                 </p>
                 <p
-                  className="mt-2 text-[7px] font-medium uppercase tracking-[0.42em] text-solar-gold/[0.82] md:text-[7.5px]"
-                  style={{
-                    textShadow: '0 0 16px rgba(197,160,89,0.35)',
-                  }}
+                  className="mt-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-solar-gold/92 [text-shadow:0_0_18px_rgba(197,160,89,0.4),0_1px_8px_rgba(0,0,0,0.8)] md:text-[11px]"
                 >
                   Molette zoom
                 </p>
               </div>
-            </div>
+            </motion.div>
           )}
         </div>
       </div>
 
-      {/* ── Indicateur zoom ── */}
+      {/* ── Échelle / zoom : bas droite, décal si rail Parcours (cf. OrientationPanel) ── */}
       <AnimatePresence>
         {zoomLabel > 1.08 && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute top-20 right-[min(200px,24vw)] text-[9px] tracking-[0.4em] text-solar-gold/35 pointer-events-none z-10 max-md:right-3 max-md:top-8"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 4 }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            className={
+              'pointer-events-none fixed z-[110] flex flex-col items-end gap-2 pb-px text-right ' +
+              (parcoursRailExpanded
+                ? 'right-[max(1rem,calc(env(safe-area-inset-right)+min(248px,max(200px,22vw))+1.35rem))] '
+                : 'right-[max(1rem,calc(env(safe-area-inset-right)+3.35rem))] ') +
+              'bottom-[max(1rem,calc(env(safe-area-inset-bottom)+0.75rem))]'
+            }
+            role="status"
+            aria-label={`Échelle de la carte, grossissement ${zoomLabel.toFixed(1)}`}
           >
-            ×{zoomLabel.toFixed(1)}
+            <span className="text-[10px] font-medium uppercase tracking-[0.34em] text-solar-gold/60 [text-shadow:0_1px_14px_rgba(0,0,0,0.88)]">
+              Échelle
+            </span>
+            <span
+              className="block h-px w-11 max-w-full bg-gradient-to-l from-solar-gold/40 via-solar-gold/15 to-transparent"
+              aria-hidden
+            />
+            <span className="font-serif text-[15px] italic leading-none tabular-nums tracking-tight text-solar-gold/[0.88] [text-shadow:0_0_26px_rgba(197,160,89,0.2),0_2px_16px_rgba(0,0,0,0.92)]">
+              ×{zoomLabel.toFixed(1)}
+            </span>
           </motion.div>
         )}
       </AnimatePresence>

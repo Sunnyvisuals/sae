@@ -22,7 +22,7 @@ export default function HeroTransition({ active, onDone }: Props) {
 
     const tl = gsap.timeline({ onComplete: onDone });
 
-    // 1. Iris reveal — cercle SVG clip-path s'agrandit
+    // 1. Iris reveal - cercle SVG clip-path s'agrandit
     tl.fromTo(
       maskRef.current,
       { attr: { r: 0 } },

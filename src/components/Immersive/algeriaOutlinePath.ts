@@ -1,5 +1,5 @@
 /**
- * Frontière Algérie (Natural Earth 50m, ADM0 « DZA »), projetée en carré 0–400
+ * Frontière Algérie (Natural Earth 50m, ADM0 « DZA »), projetée en carré 0 - 400
  * (échelle lon/lat uniforme, nord en haut). Même repère que le masque particules.
  */
 export const ALGERIA_PATH =

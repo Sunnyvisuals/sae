@@ -144,7 +144,7 @@ export default function PoetryGame({ isOpen, onClose }: PoetryGameProps) {
                           animate={{ opacity: 0.35 }}
                           className="text-[9px] uppercase tracking-[0.35em] text-solar-gold/30"
                         >
-                          —
+                          {' - '}
                         </motion.span>
                       )}
                     </AnimatePresence>
