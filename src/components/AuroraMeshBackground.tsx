@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, type CSSProperties } from 'react';
+import SplashCursor from './SplashCursor';
 import DesertDustParticles from './DesertDustParticles';
 import ShootingStars from './ShootingStars';
 
@@ -94,6 +95,24 @@ export default function AuroraMeshBackground({
     >
       {/* Base : nuit de sable / terre (proche solar-brown) */}
       <div className="absolute inset-0 bg-[#120e0a]" />
+
+      {/* WebGL smoke : même simulation que le fluide curseur, calé sur le scroll Lenis · visible sous les halos. */}
+      <SplashCursor
+        layer="background"
+        fillContainer
+        zIndex={1}
+        SIM_RESOLUTION={88}
+        DYE_RESOLUTION={320}
+        DENSITY_DISSIPATION={4.2}
+        VELOCITY_DISSIPATION={4.4}
+        CURL={14}
+        SPLAT_RADIUS={0.086}
+        SPLAT_FORCE={7400}
+        scrollImpulse={1.35}
+        syncPaletteFromAmbient
+        COLOR_UPDATE_SPEED={6}
+        ambientOpacity={0.53}
+      />
 
       {/* Halo « soleil bas » / sable doré qui suit le curseur */}
       <div

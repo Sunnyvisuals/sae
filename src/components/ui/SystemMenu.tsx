@@ -1,7 +1,9 @@
-import type { ReactNode } from 'react';
+import type { ChangeEvent, ReactNode } from 'react';
+import { useId, useState } from 'react';
 import { motion } from 'motion/react';
-import { X } from 'lucide-react';
+import { ChevronDown, Volume2, VolumeX, X } from 'lucide-react';
 import { useCursorStore } from '../../hooks/useCursorContext';
+import { useMasterVolumeStore } from '../../stores/masterVolumeStore';
 import SplashCursor from '../SplashCursor';
 
 type Props = {
@@ -84,6 +86,196 @@ function MajesticButton({
         aria-hidden
       />
     </motion.button>
+  );
+}
+
+/** Barre de volume — filet léger + remplissage (comme l’ornement au-dessus), icône fantôme sans cadre. */
+function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
+  const panelId = useId();
+  const [soundOpen, setSoundOpen] = useState(true);
+  const volume = useMasterVolumeStore((s) => s.volume);
+  const setVolume = useMasterVolumeStore((s) => s.setVolume);
+
+  const onRange = (e: ChangeEvent<HTMLInputElement>) => {
+    setVolume(parseFloat(e.target.value));
+  };
+
+  const toggleSilent = () => {
+    setVolume(volume > 0 ? 0 : 0.72);
+  };
+
+  const toggleSoundPanel = () => setSoundOpen((o) => !o);
+
+  /** Piste invisible : seule la pastille diamant contraste ; décor dessous montre le niveau. */
+  const rangeTrackInvisible =
+    '[&::-webkit-slider-runnable-track]:h-[5px] [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:bg-transparent ' +
+    '[&::-moz-range-track]:h-[5px] [&::-moz-range-track]:rounded-full [&::-moz-range-track]:bg-transparent';
+
+  /** Même inset que le padding de l’input range pour aligner piste, remplissage et curseur. */
+  const trackInsetClass = 'left-0 right-0 mx-[max(10px,0.55rem)]';
+
+  const thumbStyle =
+    '[&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:-mt-[4px] [&::-webkit-slider-thumb]:rotate-45 [&::-webkit-slider-thumb]:rounded-[1px] [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:appearance-none [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:-mt-0 ' +
+    (midnight
+      ? '[&::-webkit-slider-thumb]:border-[rgba(186,226,255,0.75)] [&::-webkit-slider-thumb]:bg-[rgba(6,14,28,0.96)] [&::-webkit-slider-thumb]:shadow-[0_0_22px_rgba(90,168,255,0.42),inset_0_0_0_1px_rgba(255,255,255,0.04)] [&::-moz-range-thumb]:rotate-45 [&::-moz-range-thumb]:rounded-[1px] [&::-moz-range-thumb]:border [&::-moz-range-thumb]:border-[rgba(186,226,255,0.75)] [&::-moz-range-thumb]:bg-[rgba(6,14,28,0.96)] [&::-moz-range-thumb]:shadow-[0_0_22px_rgba(90,168,255,0.42)]'
+      : '[&::-webkit-slider-thumb]:border-[rgba(232,212,164,0.85)] [&::-webkit-slider-thumb]:bg-[#060504]/96 [&::-webkit-slider-thumb]:shadow-[0_0_22px_rgba(197,160,89,0.35),inset_0_0_0_1px_rgba(255,248,238,0.05)] [&::-moz-range-thumb]:rotate-45 [&::-moz-range-thumb]:rounded-[1px] [&::-moz-range-thumb]:border [&::-moz-range-thumb]:border-[rgba(232,212,164,0.65)] [&::-moz-range-thumb]:bg-[#060504]/96 [&::-moz-range-thumb]:shadow-[0_0_22px_rgba(197,160,89,0.32)]');
+
+  const haloLine = midnight
+    ? 'from-[rgba(90,168,255,0.06)] via-[rgba(139,213,255,0.52)] to-[rgba(139,213,255,0.06)]'
+    : 'from-solar-gold/[0.04] via-solar-gold/45 to-solar-gold/[0.04]';
+
+  const fillGlow = midnight
+    ? 'bg-[linear-gradient(90deg,rgba(90,168,255,0.72),rgba(174,218,255,0.32),transparent)] opacity-[0.9]'
+    : 'bg-[linear-gradient(90deg,rgba(197,160,89,0.65),rgba(232,212,164,0.28),transparent)] opacity-[0.92]';
+
+  const trackGroove = midnight
+    ? 'shadow-[inset_0_1px_0_rgba(255,255,255,0.04),inset_0_-1px_8px_rgba(0,0,0,0.55)]'
+    : 'shadow-[inset_0_1px_0_rgba(253,248,238,0.05),inset_0_-1px_8px_rgba(0,0,0,0.55)]';
+
+  const pct = Math.round(volume * 100);
+
+  const notchBtn =
+    'flex h-7 w-7 shrink-0 items-center justify-center rounded-[2px] border transition-[border-color,background-color,transform,color] duration-300 sm:h-8 sm:w-8 ' +
+    (midnight
+      ? 'border-[rgba(90,168,255,0.32)] bg-[rgba(4,12,28,0.45)] text-sky-300/78 hover:border-[rgba(139,213,255,0.5)] hover:bg-[rgba(8,20,40,0.55)]'
+      : 'border-solar-gold/30 bg-black/40 text-solar-gold/70 hover:border-solar-gold/48 hover:bg-black/55');
+
+  return (
+    <motion.div variants={item} className="mt-9 w-full max-w-[min(100%,26rem)] px-0 sm:mt-10">
+      <div className="mb-0">
+        <button
+          type="button"
+          id={panelId}
+          aria-expanded={soundOpen}
+          aria-controls={`${panelId}-soundscape`}
+          onClick={toggleSoundPanel}
+          aria-labelledby={`${panelId}-label`}
+          className={
+            'group flex w-full min-w-0 items-center gap-2.5 rounded-[2px] py-1.5 text-left outline-none transition-[opacity,background-color] duration-300 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent sm:gap-3 sm:py-2 ' +
+            (midnight
+              ? 'focus-visible:ring-[rgba(90,168,255,0.38)]'
+              : 'focus-visible:ring-solar-gold/40')
+          }
+        >
+          <span className={notchBtn} aria-hidden>
+            <ChevronDown
+              strokeWidth={1.35}
+              className={`h-3.5 w-3.5 shrink-0 transition-transform duration-300 ease-out sm:h-4 sm:w-4 ${soundOpen ? 'rotate-0' : '-rotate-90'}`}
+            />
+          </span>
+          <p
+            id={`${panelId}-label`}
+            className={
+              'flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 gap-y-1 text-[9px] uppercase tracking-[0.38em] sm:text-[10px] sm:tracking-[0.42em] ' +
+              (midnight ? 'text-sky-400/62' : 'text-solar-gold/55')
+            }
+          >
+            <span className="shrink-0">Son</span>
+            <span className={midnight ? 'font-sans text-sky-300/35' : 'font-sans text-solar-gold/30'} aria-hidden>
+              ·
+            </span>
+            <span
+              className={
+                'shrink-0 font-serif text-[11px] normal-case not-italic tabular-nums tracking-[0.12em] sm:text-[12px] ' +
+                (midnight ? 'text-sky-300/78' : 'text-[rgba(253,248,238,0.62)]')
+              }
+            >
+              {pct}
+              <span className="font-sans text-[9px] tracking-[0.06em] opacity-[0.72] sm:text-[10px]"> %</span>
+            </span>
+          </p>
+        </button>
+      </div>
+
+      <div
+        id={`${panelId}-soundscape`}
+        role="region"
+        aria-labelledby={panelId}
+        aria-hidden={!soundOpen}
+        className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${soundOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+      >
+        <div className={`min-h-0 overflow-hidden ${!soundOpen ? 'pointer-events-none' : ''}`}>
+          <div className="pt-2 sm:pt-2.5">
+            <div
+              className={`pointer-events-none mb-4 h-px w-full bg-gradient-to-r sm:mb-5 ${haloLine}`}
+              aria-hidden
+            />
+            <div className="flex items-center gap-3 sm:gap-5">
+              <button
+                type="button"
+                onClick={toggleSilent}
+                tabIndex={soundOpen ? 0 : -1}
+                aria-label={volume === 0 ? 'Réactiver le son ambiant' : 'Couper le son ambiant'}
+                className={
+                  (soundOpen ? 'pointer-events-auto ' : 'pointer-events-none ') +
+                  '-ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-[color,background-color,opacity,transform] duration-300 ease-out outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent active:scale-[0.96] sm:h-12 sm:w-12 ' +
+                  (midnight
+                    ? 'text-sky-400/72 hover:bg-[rgba(90,168,255,0.06)] hover:text-sky-100 focus-visible:ring-[rgba(90,168,255,0.38)]'
+                    : 'text-solar-gold/58 hover:bg-[rgba(197,160,89,0.07)] hover:text-solar-gold focus-visible:ring-solar-gold/40')
+                }
+              >
+                {volume === 0 ? (
+                  <VolumeX className="h-[17px] w-[17px] sm:h-[18px] sm:w-[18px]" strokeWidth={1.15} aria-hidden />
+                ) : (
+                  <Volume2 className="h-[17px] w-[17px] sm:h-[18px] sm:w-[18px]" strokeWidth={1.15} aria-hidden />
+                )}
+              </button>
+
+              <div className="relative flex min-h-[44px] min-w-0 flex-1 items-center py-1">
+                <div
+                  className={
+                    'pointer-events-none absolute top-1/2 h-[7px] -translate-y-1/2 rounded-full border backdrop-blur-[1px] ' +
+                    trackInsetClass +
+                    ' ' +
+                    trackGroove +
+                    (midnight
+                      ? ' border-[rgba(90,168,255,0.28)] bg-[rgba(3,10,28,0.35)]'
+                      : ' border-solar-gold/[0.26] bg-[rgba(6,5,4,0.42)]')
+                  }
+                  aria-hidden
+                />
+
+                <div
+                  className="pointer-events-none absolute top-1/2 h-[5px] -translate-y-1/2 overflow-hidden rounded-full"
+                  style={{ left: 'max(10px, 0.55rem)', right: 'max(10px, 0.55rem)' }}
+                  aria-hidden
+                >
+                  <span
+                    className={
+                      'pointer-events-none block h-full origin-left rounded-full transition-[width] duration-200 ease-out ' +
+                      fillGlow
+                    }
+                    style={{ width: `${volume * 100}%` }}
+                  />
+                </div>
+
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.02}
+                  value={volume}
+                  onChange={onRange}
+                  aria-label="Volume du son"
+                  disabled={!soundOpen}
+                  className={
+                    'pointer-events-auto relative z-[2] h-11 w-full min-h-[44px] cursor-pointer appearance-none bg-transparent box-border px-[max(10px,0.55rem)] focus:outline-none focus-visible:ring-1 rounded-full ' +
+                    (midnight
+                      ? 'focus-visible:ring-[rgba(90,168,255,0.38)] focus-visible:ring-offset-0 focus-visible:ring-offset-transparent'
+                      : 'focus-visible:ring-solar-gold/38 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent') +
+                    ' ' +
+                    rangeTrackInvisible +
+                    ' ' +
+                    thumbStyle +
+                    (!soundOpen ? ' pointer-events-none opacity-40' : '')
+                  }
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
@@ -205,8 +397,8 @@ export default function SystemMenu({ onClose, onReplayIntroVideo, onRestartExper
                 id="system-menu-title"
                 className={
                   midnight
-                    ? 'text-[8px] uppercase tracking-[0.72em] text-sky-300/62 sm:text-[9px] sm:tracking-[0.8em] md:text-[10px]'
-                    : 'text-[8px] uppercase tracking-[0.72em] text-solar-gold/55 sm:text-[9px] sm:tracking-[0.8em] md:text-[10px]'
+                    ? '-mt-1 text-[8px] uppercase tracking-[0.72em] text-sky-300/62 sm:-mt-2 sm:text-[9px] sm:tracking-[0.8em] md:text-[10px]'
+                    : '-mt-1 text-[8px] uppercase tracking-[0.72em] text-solar-gold/55 sm:-mt-2 sm:text-[9px] sm:tracking-[0.8em] md:text-[10px]'
                 }
               >
                 Pause
@@ -278,6 +470,8 @@ export default function SystemMenu({ onClose, onReplayIntroVideo, onRestartExper
               <span className={midnight ? 'text-sky-300/42' : 'text-solar-gold/35'}>»</span>
             </motion.p>
 
+            <PauseVolumeSlider midnight={midnight} />
+
             <motion.nav
               variants={item}
               className="mt-9 flex w-full flex-col gap-3.5 sm:mt-11 sm:gap-[1.15rem]"
@@ -322,7 +516,7 @@ export default function SystemMenu({ onClose, onReplayIntroVideo, onRestartExper
         </div>
       </div>
 
-      {/* Crédit - hors du cadre, bas d’écran, typo alignée sur « Pause » */}
+      {/* Crédits - hors du cadre, bas d’écran */}
       <div className="pointer-events-none relative z-10 flex w-full shrink-0 flex-col items-center gap-1.5 px-4 pb-[max(1.35rem,env(safe-area-inset-bottom))] pt-4 text-center">
         <motion.p
           initial={{ opacity: 0 }}
@@ -356,6 +550,18 @@ export default function SystemMenu({ onClose, onReplayIntroVideo, onRestartExper
           </span>
           <span className={midnight ? 'text-sky-400/45' : 'text-solar-gold/38'}> · </span>
           <span className="tabular-nums">2026</span>
+        </motion.p>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.58, ease: easeMajestic }}
+          className={
+            midnight
+              ? 'text-[7px] font-medium uppercase leading-relaxed tracking-[0.28em] text-sky-300/45 sm:text-[8px] sm:tracking-[0.32em] md:text-[9px] md:tracking-[0.36em]'
+              : 'text-[7px] font-medium uppercase leading-relaxed tracking-[0.28em] text-solar-gold/45 sm:text-[8px] sm:tracking-[0.32em] md:text-[9px] md:tracking-[0.36em]'
+          }
+        >
+          Musique · © Rafael Krux
         </motion.p>
       </div>
     </motion.div>

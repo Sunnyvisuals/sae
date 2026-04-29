@@ -99,7 +99,8 @@ const WORD_HIT_EXTRA_Y = 2.4;
 
 const N_PARTICLES = 3200;
 /** > 1 : compense la rotation 3D (perspective) pour ne pas révéler le fond derrière aux bords de l’écran. */
-const MAP_PARALLAX_COVER_SCALE = 1.085;
+/** Légère marge sur scale pour éviter franges aux bords en ultrawide + tilt 3D. */
+const MAP_PARALLAX_COVER_SCALE = 1.098;
 const REPEL_R = 100;
 const REPEL_F = 0.32;
 const RETURN  = 0.06;
@@ -804,20 +805,20 @@ export default function AlgeriaMap({
   const memoryAwake = revelationFound.length >= 5;
 
   return (
-    <div className="relative h-full min-h-0 w-full max-w-[100vw] overflow-x-hidden overflow-y-visible" style={{ background: '#080604' }}>
+    <div className="relative h-full min-h-0 w-full min-w-0 max-w-full overflow-x-hidden overflow-y-visible" style={{ background: '#080604' }}>
       <ActOneAmbiance chapterComplete={memoryAwake} />
 
       {/* ── Grille narrative : chapitre + progression (5 mots-révélation) ── */}
       <header className="pointer-events-none absolute left-0 right-0 top-0 z-20 flex flex-col items-center px-4 pt-6">
         <p className="text-[11px] font-medium tracking-[0.32em] text-solar-gold/72 uppercase [text-shadow:0_1px_14px_rgba(0,0,0,0.75)] md:text-xs">
-          Chapitre I - Carte-mémoire
+          Acte I - L'algérie
         </p>
         <div className="mt-3 flex h-[3px] w-full max-w-sm gap-1.5">
           {REVELATION_WORDS.map((w) => (
             <div
               key={w}
               title={w}
-              className={`h-full min-w-0 flex-1 rounded-full transition-all duration-700 ${
+              className={`h-full min-w-0 flex-1 rounded-[1px] transition-all duration-700 ${
                 revelationFound.includes(w)
                   ? 'bg-solar-gold shadow-[0_0_14px_rgba(197,160,89,0.45)]'
                   : 'bg-white/10'
@@ -935,27 +936,15 @@ export default function AlgeriaMap({
             }
             className="w-full text-left"
             role="status"
-            aria-label="Acte I, Algérie, La Naissance"
+            aria-label="Acte I, L'algérie, La Naissance"
           >
-            <div className="min-w-0 border-l-[3px] border-solar-gold/50 pl-4 pr-1 [box-shadow:0_0_32px_rgba(0,0,0,0.25)]">
+            <div className="min-w-0 pr-1 [box-shadow:0_0_32px_rgba(0,0,0,0.25)]">
               <p className="text-[10px] font-semibold uppercase leading-relaxed tracking-[0.4em] text-solar-gold/88 md:text-[11px] md:tracking-[0.42em] [text-shadow:0_1px_14px_rgba(0,0,0,0.9)]">
-                Acte I <span className="mx-1.5 inline-block text-solar-gold/40">·</span> Algérie
+                Acte I - L'algérie
               </p>
               <h2 className="font-bahlull mt-2.5 text-[clamp(1.6rem,4.2vw,2.25rem)] italic leading-[1.12] tracking-tight text-[#fefaf4] [text-shadow:0_2px_18px_rgba(0,0,0,0.95),0_0_32px_rgba(197,160,89,0.28)] md:mt-3">
                 La Naissance
               </h2>
-              <motion.div
-                aria-hidden
-                className="mt-3 h-[2px] w-24 max-w-full origin-left bg-gradient-to-r from-solar-gold/70 via-solar-gold/25 to-transparent md:mt-4 md:w-28"
-                initial={prefersReducedMotion ? { scaleX: 1 } : { scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={
-                  prefersReducedMotion
-                    ? { duration: 0.01 }
-                    : { delay: 0.95, duration: 0.55, ease: [0.22, 1, 0.36, 1] }
-                }
-                style={{ transformOrigin: '0% 50%' }}
-              />
             </div>
           </motion.div>
 

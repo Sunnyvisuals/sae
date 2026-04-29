@@ -23,6 +23,20 @@ interface SplashCursorProps {
   syncPaletteFromAmbient?: boolean;
   /** Permet d'insérer le fluide dans une pile locale (ex: sous contenu de la modale). */
   zIndex?: number;
+  /**
+   * `cursor` (défaut) — suit souris comme aujourd’hui.
+   * `background` — même simulation WebGL en calque très lointain (shader atmosphérique), sans suivis curseur,
+   * forces principalement tirées du scroll Lenis (+ option ratio iframe acte II).
+   */
+  layer?: 'cursor' | 'background';
+  /** Multiplicateur forces scroll (fenêtre + iframe si fourni). */
+  scrollImpulse?: number;
+  /** Acte II : ratio scroll parchemin 0–1 — réaction fluide même si `window.scrollY` ne bouge pas. */
+  iframeScrollRatio?: number;
+  /** Remplissage dans un bloc `absolute`/`relative` au lieu du viewport (`fixed`). */
+  fillContainer?: boolean;
+  /** Opacité wrapper en mode `background` ; sinon valeur par défaut (plein écran ou scène). */
+  ambientOpacity?: number;
 }
 
 function SplashCursor({
@@ -43,8 +57,15 @@ function SplashCursor({
   palette = "solar",
   syncPaletteFromAmbient = false,
   zIndex = 30,
+  layer = 'cursor',
+  scrollImpulse = 1,
+  iframeScrollRatio,
+  fillContainer = false,
+  ambientOpacity,
 }: SplashCursorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const iframeScrollRatioRef = useRef<number | undefined>(iframeScrollRatio);
+  iframeScrollRatioRef.current = iframeScrollRatio;
   const storePalette = useCursorStore((s) => (s.ambient === 'midnight' ? 'midnight' : 'solar'));
   const resolvedPalette = syncPaletteFromAmbient ? storePalette : palette;
   const animationFrameId = useRef<number | null>(null);
@@ -55,6 +76,7 @@ function SplashCursor({
 
     // Track if the effect is still active for cleanup
     let isActive = true;
+    const isBackgroundLayer = layer === 'background';
 
     function pointerPrototype(this: any) {
       this.id = -1;
@@ -718,6 +740,64 @@ function SplashCursor({
     let lastUpdateTime = Date.now();
     let colorUpdateTimer = 0.0;
 
+    /** Mode background : dernier scroll window + dernier ratio iframe (acte II). */
+    let scrollLastWinY =
+      typeof window !== 'undefined' ? window.scrollY || document.documentElement.scrollTop || 0 : 0;
+    let iframeRatioLast =
+      iframeScrollRatioRef.current !== undefined && Number.isFinite(iframeScrollRatioRef.current as number)
+        ? (iframeScrollRatioRef.current as number)
+        : null;
+    let scrollVelSmooth = 0;
+
+    function injectBackgroundScrollReaction(dt: number) {
+      if (!isBackgroundLayer) return;
+      const iy = iframeScrollRatioRef.current;
+      const hasIframeSig = iy !== undefined && Number.isFinite(iy);
+
+      let mix = 0;
+      const wy = window.scrollY ?? document.documentElement.scrollTop ?? 0;
+      const dyWin = Math.max(-200, Math.min(200, wy - scrollLastWinY));
+      scrollLastWinY = wy;
+      mix += dyWin;
+
+      if (hasIframeSig) {
+        const u = iy as number;
+        if (iframeRatioLast === null) {
+          iframeRatioLast = u;
+        } else {
+          const dr = Math.max(-0.12, Math.min(0.12, u - iframeRatioLast));
+          iframeRatioLast = u;
+          mix += dr * 720;
+        }
+      } else {
+        iframeRatioLast = null;
+      }
+
+      const imp = typeof scrollImpulse === 'number' && scrollImpulse > 0 ? scrollImpulse : 1;
+      scrollVelSmooth = scrollVelSmooth * (0.78 - Math.min(dt, 0.05) * 0.35) + mix * imp * 0.092;
+
+      const mag = Math.abs(scrollVelSmooth);
+      if (mag < 0.55 && Math.abs(mix) < 2.8) return;
+      const bursts = Math.min(8, Math.max(1, Math.floor(mag / 22)));
+
+      const colBase = generateColor();
+      const softColor = {
+        r: Math.min(1, colBase.r * 0.62),
+        g: Math.min(1, colBase.g * 0.62),
+        b: Math.min(1, colBase.b * 0.62),
+      };
+
+      for (let i = 0; i < bursts; i++) {
+        const ux = Math.random() * 0.86 + 0.07;
+        const uy = Math.random() * 0.5 + 0.18;
+        const jx = (Math.random() - 0.5) * (38 + Math.min(62, mag * 0.35));
+        const jy =
+          scrollVelSmooth * (0.85 + (Math.random() - 0.5) * 0.09) +
+          Math.cos(Date.now() * 0.0017 + uy * 4) * Math.min(16, mag * 0.12);
+        splat(ux, uy, jx * 3.8, jy * 6.8, softColor);
+      }
+    }
+
     function updateFrame() {
       if (!isActive) return;
       if (document.visibilityState === 'hidden') {
@@ -728,6 +808,7 @@ function SplashCursor({
       const dt = calcDeltaTime();
       if (resizeCanvas()) initFramebuffers();
       updateColors(dt);
+      injectBackgroundScrollReaction(dt);
       applyInputs();
       step(dt);
       render(null);
@@ -878,7 +959,8 @@ function SplashCursor({
     }
 
     function splat(x, y, dx, dy, color) {
-      const radius = isHovering ? config.SPLAT_RADIUS * 0.4 : config.SPLAT_RADIUS;
+      const baseRad = isBackgroundLayer ? config.SPLAT_RADIUS * 1.75 : config.SPLAT_RADIUS;
+      const radius = isHovering && !isBackgroundLayer ? baseRad * 0.4 : baseRad;
       splatProgram.bind();
       gl.uniform1i(splatProgram.uniforms.uTarget, velocity.read.attach(0));
       gl.uniform1f(splatProgram.uniforms.aspectRatio, canvas.width / canvas.height);
@@ -1113,23 +1195,35 @@ function SplashCursor({
       }
     }
 
-    // Add event listeners
-    window.addEventListener('mousedown', handleMouseDown);
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('touchstart', handleTouchStart);
-    window.addEventListener('touchmove', handleTouchMove, false);
-    window.addEventListener('touchend', handleTouchEnd);
+    // Add event listeners (mode curseur uniquement)
+    if (!isBackgroundLayer) {
+      window.addEventListener('mousedown', handleMouseDown);
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('touchstart', handleTouchStart);
+      window.addEventListener('touchmove', handleTouchMove, false);
+      window.addEventListener('touchend', handleTouchEnd);
+    }
 
-    // Ambient splats for "living background" effect
+    // Ambient splats for "living" effect — plus discret en calque background (le scroll porte le mouvement).
+    const ambientMs = isBackgroundLayer ? 7400 : 2500;
     const ambientInterval = setInterval(() => {
       if (!isActive || config.PAUSED) return;
       const x = Math.random();
       const y = Math.random();
-      const dx = (Math.random() - 0.5) * 15; // More subtle velocity
-      const dy = (Math.random() - 0.5) * 15;
+      const spread = isBackgroundLayer ? 8 : 15;
+      const dx = (Math.random() - 0.5) * spread;
+      const dy = (Math.random() - 0.5) * spread;
       const color = generateColor();
-      splat(x, y, dx, dy, color);
-    }, 2500); // Slightly more frequent but more subtle
+      if (isBackgroundLayer) {
+        splat(x, y, dx * 4, dy * 4, {
+          r: color.r * 0.52,
+          g: color.g * 0.52,
+          b: color.b * 0.52,
+        });
+      } else {
+        splat(x, y, dx, dy, color);
+      }
+    }, ambientMs);
 
     updateFrame();
 
@@ -1145,10 +1239,13 @@ function SplashCursor({
       }
 
       // Remove event listeners
-      window.removeEventListener('mousedown', handleMouseDown);
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('touchstart', handleTouchStart);
-      window.removeEventListener('touchmove', handleTouchMove);
+      if (!isBackgroundLayer) {
+        window.removeEventListener('mousedown', handleMouseDown);
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('touchstart', handleTouchStart);
+        window.removeEventListener('touchmove', handleTouchMove);
+        window.removeEventListener('touchend', handleTouchEnd);
+      }
       document.removeEventListener('visibilitychange', resumeFluidWhenVisible);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reconstruction WebGL voulue quand palette / résolution changes
@@ -1170,28 +1267,58 @@ function SplashCursor({
     TRANSPARENT,
     VELOCITY_DISSIPATION,
     resolvedPalette,
+    layer,
+    scrollImpulse,
   ]);
+
+  const bgOpacityAmbient =
+    layer === 'background'
+      ? ambientOpacity !== undefined && ambientOpacity !== null
+        ? ambientOpacity
+        : fillContainer
+          ? resolvedPalette === 'midnight'
+            ? 0.54
+            : 0.5
+          : resolvedPalette === 'midnight'
+            ? 0.44
+            : 0.4
+      : undefined;
 
   return (
     <div
       style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
+        ...(fillContainer
+          ? ({
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+            } as const)
+          : ({
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+            } as const)),
         /* Sous UI (40+) et curseur custom ; au-dessus acte I (z-20). Évite WebGL au-dessus du curseur. */
         zIndex,
         pointerEvents: 'none',
-        width: '100%',
-        height: '100%'
+        ...(layer === 'background'
+          ? {
+              opacity: bgOpacityAmbient,
+              mixBlendMode: 'soft-light' as const,
+            }
+          : {}),
       }}
     >
       <canvas
         ref={canvasRef}
-        id="fluid"
+        id={layer === 'background' ? (fillContainer ? 'fluid-bg-scene' : 'fluid-bg') : 'fluid'}
         style={{
-          width: '100vw',
-          height: '100vh',
-          display: 'block'
+          width: fillContainer ? '100%' : '100vw',
+          height: fillContainer ? '100%' : '100vh',
+          display: 'block',
         }}
       />
     </div>

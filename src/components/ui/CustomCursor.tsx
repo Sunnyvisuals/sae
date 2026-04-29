@@ -116,6 +116,53 @@ export default function CustomCursor({
         transition={{ duration: 0.52, ease: [0.22, 1, 0.36, 1] }}
       />
 
+      {/* Losange + « queue » — alignés sur index.css ; indispensables dès que `cursor-none` (iframe Acte II, Intro…). */}
+      {!isFeather && !isDrag && (
+        <motion.div
+          className="pointer-events-none fixed will-change-transform"
+          style={{
+            x: sx,
+            y: sy,
+            translateX: '-50%',
+            translateY: '-50%',
+            zIndex: 4,
+          }}
+          animate={{
+            opacity: isHalo ? 0.82 : 0.96,
+            scale: isHalo ? 1.05 : 1,
+          }}
+          transition={{ duration: 0.35 }}
+          aria-hidden
+        >
+          <svg width="22" height="30" viewBox="0 0 22 30" fill="none">
+            <polygon
+              points="11,1 21,11 11,21 1,11"
+              fill={night ? 'rgba(90,168,255,0.14)' : 'rgba(197,160,89,0.14)'}
+              stroke={night ? '#cce8ff' : '#e8d5a4'}
+              strokeWidth="1.35"
+            />
+            <circle cx="11" cy="11" r="1.65" fill={night ? '#cce8ff' : '#e8d5a4'} />
+            <line
+              x1="11"
+              y1="21"
+              x2="11"
+              y2="27"
+              stroke={night ? '#8bd5ff' : '#c5a059'}
+              strokeWidth={1}
+              strokeOpacity={0.85}
+            />
+            <polyline
+              points="8,24 11,28 14,24"
+              stroke={night ? '#8bd5ff' : '#c5a059'}
+              strokeWidth={1}
+              strokeOpacity={0.85}
+              strokeLinejoin="round"
+              fill="none"
+            />
+          </svg>
+        </motion.div>
+      )}
+
       {(isFeather || isDrag) && (
         <motion.div
           className="pointer-events-none fixed flex items-center justify-center will-change-transform"

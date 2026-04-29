@@ -22,26 +22,47 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    scrollbar-width: none;
+    /* Pas d’overflow-x ici : Lenis (root) translate le documentElement — clip + transform = artefacts au scroll. */
+    width: 100%;
+    overscroll-behavior-x: none;
     cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='30' viewBox='0 0 22 30'%3E%3Cpolygon points='11,1 21,11 11,21 1,11' fill='rgba(197,160,89,0.13)' stroke='%23c5a059' stroke-width='1.2'/%3E%3Ccircle cx='11' cy='11' r='1.5' fill='%23e8d5a4'/%3E%3Cline x1='11' y1='21' x2='11' y2='27' stroke='%23c5a059' stroke-width='1' stroke-opacity='0.7'/%3E%3Cpolyline points='8,24 11,28 14,24' fill='none' stroke='%23c5a059' stroke-width='1' stroke-opacity='0.7' stroke-linejoin='round'/%3E%3C/svg%3E") 11 11, auto;
+  }
+
+  html::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
   }
   
   body {
     @apply bg-solar-cream text-solar-gold font-sans selection:bg-solar-gold/20 antialiased;
     cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='30' viewBox='0 0 22 30'%3E%3Cpolygon points='11,1 21,11 11,21 1,11' fill='rgba(197,160,89,0.13)' stroke='%23c5a059' stroke-width='1.2'/%3E%3Ccircle cx='11' cy='11' r='1.5' fill='%23e8d5a4'/%3E%3Cline x1='11' y1='21' x2='11' y2='27' stroke='%23c5a059' stroke-width='1' stroke-opacity='0.7'/%3E%3Cpolyline points='8,24 11,28 14,24' fill='none' stroke='%23c5a059' stroke-width='1' stroke-opacity='0.7' stroke-linejoin='round'/%3E%3C/svg%3E") 11 11, auto;
-    /* Cinematic Grain Overlay */
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100%;
+    /* Cinematic Grain Overlay — `scroll` évite bugs de composite WebKit / très large écran avec calques fixed. */
     background-image: url("https://grainy-gradients.vercel.app/noise.svg");
     background-repeat: repeat;
     background-size: 200px;
-    background-attachment: fixed;
+    background-attachment: scroll;
     opacity: 0.98;
   }
 
-  /* Hide default scrollbar for a cleaner look */
-  ::-webkit-scrollbar {
-    display: none;
+  #root {
+    width: 100%;
+    max-width: 100%;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    isolation: isolate;
   }
 
-  /* For Firefox */
+  ::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
   * {
     scrollbar-width: none;
   }

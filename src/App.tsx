@@ -17,9 +17,11 @@ import ChapterCompleteToast from "./components/ui/ChapterCompleteToast";
 import IntroVideoOverlay from "./components/ui/IntroVideoOverlay";
 import HintPanel from "./components/ui/HintPanel";
 import ScrollNudge from "./components/ui/ScrollNudge";
+import ScrollProgressBar from "./components/ui/ScrollProgressBar";
 import type { Act1QuestProgress, Act2QuestProgress } from "./components/ui/HintPanel";
 import type { Act1QuestStep } from "./components/Immersive/AlgeriaMap";
 import { useCursorStore } from "./hooks/useCursorContext";
+import { useMasterVolumeStore } from "./stores/masterVolumeStore";
 
 /** Page statique parchemin (ch. II / III) - respecte `import.meta.env.BASE_URL` (déploiement sous sous-chemin). */
 function parcheminSenacHref(hash: string) {
@@ -30,6 +32,7 @@ function parcheminSenacHref(hash: string) {
 }
 
 export default function App() {
+  const phaseRef = useRef<"intro" | "act1" | "act2">("intro");
   const [phase, setPhase] = useState<"intro" | "act1" | "act2">("intro");
   const [videoStarted, setVideoStarted] = useState(false);
   const [introKey, setIntroKey] = useState(0);
@@ -53,11 +56,15 @@ export default function App() {
 
   const pendingAct2 = useRef(false);
   const setCursorAmbient = useCursorStore((s) => s.setAmbient);
+  const masterVolume = useMasterVolumeStore((s) => s.volume);
+  const playbackUnlocked = useMasterVolumeStore((s) => s.playbackUnlocked);
   /** Ton UI acte II (iframe parchemin) : solaire en haut, minuit après défile - via `senac-chrome`. */
   const [act2ParcheminTone, setAct2ParcheminTone] = useState<"solar" | "midnight" | null>(null);
 
   const act2AmbientMidnight =
     phase === "act2" && (act2ParcheminTone ?? "solar") === "midnight";
+
+  phaseRef.current = phase;
 
   useEffect(() => {
     if (phase !== "act2") setAct2ParcheminTone(null);
@@ -68,6 +75,45 @@ export default function App() {
     setCursorAmbient(theme);
     document.documentElement.setAttribute("data-theme", theme);
   }, [phase, act2AmbientMidnight, setCursorAmbient]);
+
+  /** Ratio scroll parchemin (postMessage depuis l’iframe) — même barre en z élevée au-dessus du rail. */
+  const [senacIframeScrollRatio, setSenacIframeScrollRatio] = useState(0);
+
+  useEffect(() => {
+    if (phase !== "act2") setSenacIframeScrollRatio(0);
+  }, [phase]);
+
+  /** Relais volume menu pause -> iframe acte II (musique locale parchemin). */
+  useEffect(() => {
+    if (phase !== "act2") return;
+    const iframe = document.querySelector('iframe[src*="parchemin-senac"]');
+    if (!(iframe instanceof HTMLIFrameElement)) return;
+    const payload = {
+      type: "senac-audio" as const,
+      volume: Math.min(1, Math.max(0, masterVolume)),
+      unlocked: playbackUnlocked,
+    };
+    const post = () => {
+      try {
+        iframe.contentWindow?.postMessage(payload, window.location.origin);
+      } catch {
+        /* ignore */
+      }
+    };
+    post();
+    const t1 = window.setTimeout(post, 500);
+    const t2 = window.setTimeout(post, 1500);
+    try {
+      iframe.addEventListener("load", post, { once: true });
+    } catch {}
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+      try {
+        iframe.removeEventListener("load", post);
+      } catch {}
+    };
+  }, [phase, masterVolume, playbackUnlocked]);
 
   /** Délai avant le toast : laisser voir la carte + fond « célébration » sans masque plein écran. */
   const CHAPTER_TOAST_DELAY_MS = 3200;
@@ -114,12 +160,17 @@ export default function App() {
     setAct1Quest((p) => (p[step] ? p : { ...p, [step]: true }));
   }, []);
 
-  /** Acte I = carte : Lenis sans lissage molette. Intro + hors acte I : défilement doux. */
+  /** Acte I carte : Lenis sans lissage molette (zoom molette précis sur le canvas). Autres phases : glide doux. */
   const lenisOptions = useMemo(
     () =>
       phase === "act1"
         ? { lerp: 0.12, duration: 1.2, smoothWheel: false }
-        : { lerp: 0.06, duration: 1.8, smoothWheel: true },
+        : {
+            lerp: 0.068,
+            duration: 1.82,
+            smoothWheel: true,
+            wheelMultiplier: 0.92,
+          },
     [phase]
   );
 
@@ -169,6 +220,14 @@ export default function App() {
     const expectedOrigin = window.location.origin;
     const onMsg = (e: MessageEvent) => {
       if (e.origin !== expectedOrigin) return;
+      const d = e.data as Record<string, unknown>;
+      if (d?.type === "senac-scroll-progress") {
+        const ratio = typeof d.ratio === "number" ? d.ratio : NaN;
+        if (phaseRef.current === "act2" && Number.isFinite(ratio)) {
+          setSenacIframeScrollRatio(Math.min(1, Math.max(0, ratio)));
+        }
+        return;
+      }
       if (e.data?.type === "senac-quest") {
         const step = e.data.step as string;
         if (step === "scroll") {
@@ -223,7 +282,7 @@ export default function App() {
     <ReactLenis root options={lenisOptions}>
       <GrainOverlay opacity={0.04} />
       <CinematicOverlay />
-      <Soundscape />
+      <Soundscape enabled={phase !== "act2"} />
 
       <AnimatePresence mode="sync">
         {chapterToast && (
@@ -416,6 +475,13 @@ export default function App() {
           </motion.div>
         )}
       </main>
+
+      {/* Acte II : iframe parchemin a sa propre barre (--senac-scroll-progress) ; ici elle serait au-dessus et à ~0 %. */}
+      <ScrollProgressBar
+        tone={act2AmbientMidnight ? "midnight" : "solar"}
+        iframeFillRatio={phase === "act2" ? senacIframeScrollRatio : undefined}
+        aboveChrome={phase === "act2"}
+      />
     </ReactLenis>
       {/* Hors Lenis - fluide + curseur : en acte II, coords relayées depuis l’iframe (postMessage). */}
       <div style={{ visibility: systemMenuOpen || introVideoOpen ? "hidden" : "visible" }}>

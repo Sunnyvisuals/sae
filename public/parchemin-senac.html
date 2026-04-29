@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
@@ -10,7 +10,19 @@
     <link rel="stylesheet" href="/parchemin-senac.css" />
   </head>
   <body class="senac-night">
+    <div
+      id="senac-scroll-progress"
+      class="senac-scroll-progress"
+      aria-hidden="true"
+    >
+      <div class="senac-scroll-progress__track"></div>
+      <div class="senac-scroll-progress__fill"></div>
+    </div>
     <canvas id="sky-canvas" aria-hidden="true"></canvas>
+    <canvas id="fog-canvas" aria-hidden="true"></canvas>
+    <div id="senac-pointer-aura" aria-hidden="true"></div>
+    <div id="senac-sandstorm" aria-hidden="true"></div>
+    <div id="senac-crescent-moon" aria-hidden="true"></div>
     <div class="night-gradient" aria-hidden="true"></div>
     <div class="celestial-rings" aria-hidden="true"></div>
     <div class="depth-lines" aria-hidden="true"></div>

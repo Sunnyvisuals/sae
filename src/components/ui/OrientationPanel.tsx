@@ -25,6 +25,13 @@ type Props = {
 
 const PHASE_NAV_INDEX: Record<PhaseLabel, number> = { intro: 0, act1: 1, act2: 2 };
 
+/** Titre « verrouillé » tant que l’étape n’est pas atteinte (même logique que Actes III / IV). */
+function lockedLabelForPhase(p: PhaseLabel): string {
+  if (p === 'intro') return 'Intro - ?';
+  if (p === 'act1') return 'Acte I - ?';
+  return 'Acte II - ?';
+}
+
 /** Résumés d’étape affichés dans le panneau (léger récap.). */
 const PARCOURS_SUMMARIES: Record<PhaseLabel, string> = {
   intro:
@@ -47,7 +54,7 @@ type ParcoursRow = {
 
 const PARCOURS_PHASE_ORDER: { label: string; phase: PhaseLabel }[] = [
   { label: 'Intro - Prologue', phase: 'intro' },
-  { label: 'Acte I - Carte-mémoire', phase: 'act1' },
+  { label: 'Acte I - L\'algérie', phase: 'act1' },
   { label: 'Acte II - (suite)', phase: 'act2' },
 ];
 
@@ -201,6 +208,9 @@ function useExpandedWidthPx() {
   return px;
 }
 
+/** Après ce délai (rail replié), le fond / bordure s’estompent — restent le libellé + l’encoche. */
+const COLLAPSED_MINIMAL_AFTER_MS = 10_000;
+
 export default function OrientationPanel({
   phase,
   revelationCount = 0,
@@ -213,6 +223,17 @@ export default function OrientationPanel({
   const shellRef = useRef<HTMLDivElement>(null);
   const didInit = useRef(false);
   const prevExpandedRef = useRef(expanded);
+  /** Rail replié : au bout de 10 s, chrome du panneau retiré (texte + chevron seuls). */
+  const [collapsedMinimal, setCollapsedMinimal] = useState(false);
+
+  useEffect(() => {
+    if (expanded) {
+      setCollapsedMinimal(false);
+      return;
+    }
+    const id = window.setTimeout(() => setCollapsedMinimal(true), COLLAPSED_MINIMAL_AFTER_MS);
+    return () => window.clearTimeout(id);
+  }, [expanded]);
 
   useLayoutEffect(() => {
     const el = shellRef.current;
@@ -263,23 +284,29 @@ export default function OrientationPanel({
     ...PARCOURS_PLACEHOLDERS_AFTER,
   ];
 
+  const quietCollapsed = !expanded && collapsedMinimal;
+
   return (
     <div
       ref={shellRef}
       className={
         'pointer-events-auto fixed right-0 top-0 z-[40] h-full max-h-screen overflow-hidden ' +
-        'shadow-[-4px_0_28px_rgba(0,0,0,0.12)] ' +
-        'transition-[background-color,backdrop-filter,box-shadow,border-color] duration-300 ease-out ' +
         'will-change-[width] ' +
-        (nightRail
-          ? 'border-l border-[rgba(139,213,255,0.14)] bg-[rgba(2,6,18,0.35)] backdrop-blur-[6px] ' +
-            (expanded
-              ? 'bg-[rgba(2,8,24,0.88)] backdrop-blur-xl shadow-[-8px_0_44px_rgba(0,0,0,0.5)] border-[rgba(139,213,255,0.22)] '
-              : 'hover:bg-[rgba(3,10,28,0.82)] hover:backdrop-blur-xl hover:shadow-[-8px_0_44px_rgba(0,0,0,0.42)] hover:border-[rgba(139,213,255,0.26)] ')
-          : 'border-l border-solar-gold/[0.1] bg-[#060402]/[0.14] backdrop-blur-[5px] ' +
-            (expanded
-              ? 'bg-[#080705]/[0.82] backdrop-blur-xl shadow-[-8px_0_44px_rgba(0,0,0,0.38)] border-solar-gold/[0.18] '
-              : 'hover:bg-[#080705]/[0.78] hover:backdrop-blur-xl hover:shadow-[-8px_0_44px_rgba(0,0,0,0.38)] hover:border-solar-gold/[0.22] '))
+        (quietCollapsed
+          ? 'border-l border-transparent bg-transparent shadow-none backdrop-blur-none ' +
+            'transition-[background-color,backdrop-filter,box-shadow,border-color] duration-[850ms] ease-out ' +
+            'hover:bg-black/[0.07] hover:backdrop-blur-[3px] hover:shadow-[-3px_0_14px_rgba(0,0,0,0.14)]'
+          : 'shadow-[-4px_0_28px_rgba(0,0,0,0.12)] ' +
+            'transition-[background-color,backdrop-filter,box-shadow,border-color] duration-300 ease-out ' +
+            (nightRail
+              ? 'border-l border-[rgba(139,213,255,0.14)] bg-[rgba(2,6,18,0.35)] backdrop-blur-[6px] ' +
+                (expanded
+                  ? 'bg-[rgba(2,8,24,0.88)] backdrop-blur-xl shadow-[-8px_0_44px_rgba(0,0,0,0.5)] border-[rgba(139,213,255,0.22)] '
+                  : 'hover:bg-[rgba(3,10,28,0.82)] hover:backdrop-blur-xl hover:shadow-[-8px_0_44px_rgba(0,0,0,0.42)] hover:border-[rgba(139,213,255,0.26)] ')
+              : 'border-l border-solar-gold/[0.1] bg-[#060402]/[0.14] backdrop-blur-[5px] ' +
+                (expanded
+                  ? 'bg-[#080705]/[0.82] backdrop-blur-xl shadow-[-8px_0_44px_rgba(0,0,0,0.38)] border-solar-gold/[0.18] '
+                  : 'hover:bg-[#080705]/[0.78] hover:backdrop-blur-xl hover:shadow-[-8px_0_44px_rgba(0,0,0,0.38)] hover:border-solar-gold/[0.22] ')))
       }
       aria-expanded={expanded}
     >
@@ -296,7 +323,9 @@ export default function OrientationPanel({
         >
           <span
             className={
-              'pointer-events-none absolute left-0 top-1/2 h-14 w-px -translate-y-1/2 bg-gradient-to-b from-transparent to-transparent opacity-80 transition-opacity duration-300 ' +
+              'pointer-events-none absolute left-0 top-1/2 h-14 w-px -translate-y-1/2 bg-gradient-to-b from-transparent to-transparent transition-opacity duration-[850ms] ease-out ' +
+              (quietCollapsed ? 'opacity-0' : 'opacity-80') +
+              ' ' +
               (nightRail
                 ? 'via-[rgba(139,213,255,0.4)] group-hover:via-[rgba(139,213,255,0.6)]'
                 : 'via-solar-gold/35 group-hover:via-solar-gold/55')
@@ -305,18 +334,28 @@ export default function OrientationPanel({
           />
           <ChevronLeft
             className={
-              'relative h-4 w-4 shrink-0 drop-shadow-[0_1px_8px_rgba(0,0,0,0.95)] transition-[color,transform] duration-300 group-hover:-translate-x-px ' +
-              (nightRail
-                ? 'text-[rgba(139,213,255,0.72)] group-hover:text-[#ead7a4]'
-                : 'text-solar-gold/70 group-hover:text-solar-gold')
+              'relative h-4 w-4 shrink-0 transition-[color,transform,filter] duration-[850ms] ease-out group-hover:-translate-x-px ' +
+              (quietCollapsed
+                ? nightRail
+                  ? 'text-[rgba(139,213,255,0.88)] drop-shadow-[0_1px_10px_rgba(0,0,0,0.65)] group-hover:text-[#ead7a4]'
+                  : 'text-solar-gold/85 drop-shadow-[0_1px_10px_rgba(0,0,0,0.65)] group-hover:text-solar-gold'
+                : 'drop-shadow-[0_1px_8px_rgba(0,0,0,0.95)] ' +
+                  (nightRail
+                    ? 'text-[rgba(139,213,255,0.72)] group-hover:text-[#ead7a4]'
+                    : 'text-solar-gold/70 group-hover:text-solar-gold'))
             }
             strokeWidth={1.35}
             aria-hidden
           />
           <span
             className={
-              'select-none text-[7px] font-semibold uppercase tracking-[0.38em] [writing-mode:vertical-rl] rotate-180 [text-shadow:0_0_18px_rgba(0,0,0,0.95),0_2px_8px_rgba(0,0,0,0.88)] ' +
-              (nightRail ? 'text-[rgba(234,215,164,0.58)]' : 'text-solar-gold/60')
+              'select-none text-[7px] font-semibold uppercase tracking-[0.38em] [writing-mode:vertical-rl] rotate-180 transition-[color,text-shadow] duration-[850ms] ease-out ' +
+              (quietCollapsed
+                ? nightRail
+                  ? 'text-[rgba(234,215,164,0.88)] [text-shadow:0_0_14px_rgba(0,0,0,0.55),0_2px_12px_rgba(0,0,0,0.45)]'
+                  : 'text-solar-gold/82 [text-shadow:0_0_14px_rgba(0,0,0,0.55),0_2px_12px_rgba(0,0,0,0.45)]'
+                : '[text-shadow:0_0_18px_rgba(0,0,0,0.95),0_2px_8px_rgba(0,0,0,0.88)] ' +
+                  (nightRail ? 'text-[rgba(234,215,164,0.58)]' : 'text-solar-gold/60'))
             }
           >
             Parcours
@@ -387,7 +426,13 @@ export default function OrientationPanel({
             />
             {navRows.map(({ key, phase: rowPhase, label, variant, summary }) => {
               const active = rowPhase !== null && phase === rowPhase;
-              const cryptic = rowPhase === null;
+              /** Étapes pas encore débloquées : même rendu que les jalons « ??? » (pas seulement phase === null). */
+              const cryptic =
+                rowPhase === null ||
+                (rowPhase !== null && PHASE_NAV_INDEX[rowPhase] > activeStep);
+              const showCrypticCopy = cryptic && rowPhase !== null;
+              const rowLabel = showCrypticCopy ? lockedLabelForPhase(rowPhase) : label;
+              const rowSummary = showCrypticCopy ? '???' : summary;
               return (
                 <div
                   key={key}
@@ -409,7 +454,7 @@ export default function OrientationPanel({
                             navItemClass(active, nightRail)
                       }
                     >
-                      {label}
+                      {rowLabel}
                     </p>
                     <p
                       className={
@@ -420,7 +465,7 @@ export default function OrientationPanel({
                             navSummaryClass(active, nightRail)
                       }
                     >
-                      {summary}
+                      {rowSummary}
                     </p>
                   </div>
                 </div>

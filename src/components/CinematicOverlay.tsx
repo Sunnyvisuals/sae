@@ -23,8 +23,8 @@ export default function CinematicOverlay() {
       {/* 3. Vignette - Cinematic Framing */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.2)_100%)]" />
 
-      {/* 4. Subtle Scanlines */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.05)_50%),linear-gradient(90deg,rgba(255,0,0,0.01),rgba(0,255,0,0.005),rgba(0,0,128,0.01))] bg-[size:100%_2px,3px_100%] pointer-events-none opacity-20" />
+      {/* 4. Scanlines horizontales seules : le motif RVB 3px en largeur provoquait moiré / bandes sur ultrawide. */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.04)_50%)] bg-[length:100%_2px] pointer-events-none opacity-[0.14]" />
 
     </div>
   );
