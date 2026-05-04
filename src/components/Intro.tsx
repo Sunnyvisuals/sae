@@ -337,6 +337,8 @@ export type DevChapterJumps = {
   goChapter1: () => void;
   goChapter2: () => void;
   goChapter3: () => void;
+  /** Ouvre le parchemin sur Ch. III avec générique façon cinéma (`?previewCredits=1`). */
+  previewCredits: () => void;
 };
 
 interface IntroProps {
@@ -547,6 +549,14 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
               className="rounded-sm border border-solar-gold/30 bg-black/40 px-2.5 py-1.5 text-[9px] uppercase tracking-[0.18em] text-solar-gold/90 transition-colors hover:border-solar-gold/50 hover:bg-solar-gold/10"
             >
               Ch. III
+            </button>
+            <button
+              type="button"
+              onClick={devChapterJumps.previewCredits}
+              className="rounded-sm border border-solar-gold/30 bg-black/40 px-2.5 py-1.5 text-[9px] uppercase tracking-[0.18em] text-solar-gold/90 transition-colors hover:border-solar-gold/50 hover:bg-solar-gold/10"
+              title="Prévisualiser le générique de fin (?previewCredits=1)"
+            >
+              Crédits
             </button>
           </div>
         </div>

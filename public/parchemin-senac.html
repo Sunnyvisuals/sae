@@ -10,6 +10,43 @@
     <link rel="stylesheet" href="/parchemin-senac.css" />
   </head>
   <body class="senac-night">
+    <!-- SVG filter : warp + chromatic aberration portrait (piloté par JS) -->
+    <svg id="portrait-filter-defs" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false">
+      <defs>
+        <filter id="portrait-chroma" x="-12%" y="-12%" width="124%" height="124%" color-interpolation-filters="sRGB">
+          <!-- Warp subtil : turbulence statique, scale animé par JS -->
+          <feTurbulence type="fractalNoise" baseFrequency="0.028 0.016" numOctaves="3" seed="12" result="warp-noise"/>
+          <feDisplacementMap in="SourceGraphic" in2="warp-noise" scale="0"
+            xChannelSelector="R" yChannelSelector="G" result="warped" id="pf-warp"/>
+          <!-- Canal rouge : décalé vers la droite/haut -->
+          <feOffset in="warped" dx="0" dy="0" result="r-raw" id="pf-r"/>
+          <feColorMatrix in="r-raw" type="matrix"
+            values="1 0 0 0 0
+                    0 0 0 0 0
+                    0 0 0 0 0
+                    0 0 0 1 0" result="r-ch"/>
+          <!-- Canal vert : centré -->
+          <feColorMatrix in="warped" type="matrix"
+            values="0 0 0 0 0
+                    0 1 0 0 0
+                    0 0 0 0 0
+                    0 0 0 1 0" result="g-ch"/>
+          <!-- Canal bleu : décalé vers la gauche/bas -->
+          <feOffset in="warped" dx="0" dy="0" result="b-raw" id="pf-b"/>
+          <feColorMatrix in="b-raw" type="matrix"
+            values="0 0 0 0 0
+                    0 0 0 0 0
+                    0 0 1 0 0
+                    0 0 0 1 0" result="b-ch"/>
+          <!-- Fusion screen des 3 canaux → aberration chromatique -->
+          <feBlend in="r-ch" in2="g-ch" mode="screen" result="rg"/>
+          <feBlend in="rg"   in2="b-ch" mode="screen" result="rgb-blended"/>
+          <!-- Restaure l'alpha original pour ne pas rendre opaques les zones transparentes du PNG -->
+          <feComposite in="rgb-blended" in2="SourceGraphic" operator="in"/>
+        </filter>
+      </defs>
+    </svg>
+
     <div
       id="senac-scroll-progress"
       class="senac-scroll-progress"
@@ -23,6 +60,84 @@
     <div id="senac-pointer-aura" aria-hidden="true"></div>
     <div id="senac-sandstorm" aria-hidden="true"></div>
     <div id="senac-crescent-moon" aria-hidden="true"></div>
+
+    <!-- Lanternes arabes - minimalistes, fond, réactives scroll + survol -->
+    <div class="senac-lantern senac-lantern--a" aria-hidden="true">
+      <div class="lantern-chain"></div>
+      <div class="lantern-body">
+        <svg viewBox="0 0 40 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- capuchon haut -->
+          <path d="M20 2 L36 14 L4 14 Z" fill="rgba(200,148,52,0.72)" stroke="rgba(220,165,60,0.45)" stroke-width="0.6"/>
+          <rect x="6" y="13" width="28" height="2" rx="0.5" fill="rgba(200,148,52,0.55)"/>
+          <!-- corps -->
+          <rect x="8" y="15" width="24" height="40" rx="1.5" fill="rgba(8,12,28,0.55)" stroke="rgba(200,148,52,0.32)" stroke-width="0.8"/>
+          <!-- costales verticales -->
+          <line x1="16" y1="15" x2="16" y2="55" stroke="rgba(200,148,52,0.22)" stroke-width="0.6"/>
+          <line x1="20" y1="15" x2="20" y2="55" stroke="rgba(200,148,52,0.22)" stroke-width="0.6"/>
+          <line x1="24" y1="15" x2="24" y2="55" stroke="rgba(200,148,52,0.22)" stroke-width="0.6"/>
+          <!-- étoile à 6 branches -->
+          <polygon points="20,22 22,27 27,27 23,30 25,35 20,32 15,35 17,30 13,27 18,27" fill="rgba(245,190,75,0.28)" stroke="rgba(245,190,75,0.4)" stroke-width="0.4"/>
+          <!-- lueur intérieure animée -->
+          <radialGradient id="lg-a" cx="50%" cy="55%" r="35%" gradientUnits="objectBoundingBox">
+            <stop offset="0%" stop-color="rgba(255,205,90,0.55)"/>
+            <stop offset="100%" stop-color="rgba(255,160,30,0)"/>
+          </radialGradient>
+          <rect class="l-glow" x="8" y="15" width="24" height="40" rx="1.5" fill="url(#lg-a)"/>
+          <!-- capuchon bas -->
+          <rect x="6" y="55" width="28" height="2" rx="0.5" fill="rgba(200,148,52,0.55)"/>
+          <path d="M8 57 L12 64 L20 67 L28 64 L32 57 Z" fill="rgba(8,12,28,0.55)" stroke="rgba(200,148,52,0.32)" stroke-width="0.7"/>
+          <!-- pendant -->
+          <circle cx="20" cy="68" r="2.5" fill="rgba(210,155,48,0.82)" stroke="rgba(245,190,75,0.45)" stroke-width="0.5"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="senac-lantern senac-lantern--b" aria-hidden="true">
+      <div class="lantern-chain"></div>
+      <div class="lantern-body">
+        <svg viewBox="0 0 40 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 2 L36 14 L4 14 Z" fill="rgba(200,148,52,0.62)" stroke="rgba(220,165,60,0.38)" stroke-width="0.6"/>
+          <rect x="6" y="13" width="28" height="2" rx="0.5" fill="rgba(200,148,52,0.48)"/>
+          <rect x="8" y="15" width="24" height="40" rx="1.5" fill="rgba(8,12,28,0.52)" stroke="rgba(200,148,52,0.28)" stroke-width="0.8"/>
+          <line x1="16" y1="15" x2="16" y2="55" stroke="rgba(200,148,52,0.18)" stroke-width="0.6"/>
+          <line x1="20" y1="15" x2="20" y2="55" stroke="rgba(200,148,52,0.18)" stroke-width="0.6"/>
+          <line x1="24" y1="15" x2="24" y2="55" stroke="rgba(200,148,52,0.18)" stroke-width="0.6"/>
+          <polygon points="20,22 22,27 27,27 23,30 25,35 20,32 15,35 17,30 13,27 18,27" fill="rgba(245,190,75,0.22)" stroke="rgba(245,190,75,0.32)" stroke-width="0.4"/>
+          <radialGradient id="lg-b" cx="50%" cy="55%" r="35%" gradientUnits="objectBoundingBox">
+            <stop offset="0%" stop-color="rgba(255,205,90,0.45)"/>
+            <stop offset="100%" stop-color="rgba(255,160,30,0)"/>
+          </radialGradient>
+          <rect class="l-glow" x="8" y="15" width="24" height="40" rx="1.5" fill="url(#lg-b)"/>
+          <rect x="6" y="55" width="28" height="2" rx="0.5" fill="rgba(200,148,52,0.48)"/>
+          <path d="M8 57 L12 64 L20 67 L28 64 L32 57 Z" fill="rgba(8,12,28,0.52)" stroke="rgba(200,148,52,0.28)" stroke-width="0.7"/>
+          <circle cx="20" cy="68" r="2.5" fill="rgba(200,145,42,0.72)" stroke="rgba(245,190,75,0.38)" stroke-width="0.5"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="senac-lantern senac-lantern--c" aria-hidden="true">
+      <div class="lantern-chain"></div>
+      <div class="lantern-body">
+        <svg viewBox="0 0 40 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 2 L36 14 L4 14 Z" fill="rgba(200,148,52,0.52)" stroke="rgba(220,165,60,0.3)" stroke-width="0.6"/>
+          <rect x="6" y="13" width="28" height="2" rx="0.5" fill="rgba(200,148,52,0.4)"/>
+          <rect x="8" y="15" width="24" height="40" rx="1.5" fill="rgba(8,12,28,0.48)" stroke="rgba(200,148,52,0.22)" stroke-width="0.8"/>
+          <line x1="16" y1="15" x2="16" y2="55" stroke="rgba(200,148,52,0.15)" stroke-width="0.6"/>
+          <line x1="20" y1="15" x2="20" y2="55" stroke="rgba(200,148,52,0.15)" stroke-width="0.6"/>
+          <line x1="24" y1="15" x2="24" y2="55" stroke="rgba(200,148,52,0.15)" stroke-width="0.6"/>
+          <polygon points="20,22 22,27 27,27 23,30 25,35 20,32 15,35 17,30 13,27 18,27" fill="rgba(245,190,75,0.16)" stroke="rgba(245,190,75,0.25)" stroke-width="0.4"/>
+          <radialGradient id="lg-c" cx="50%" cy="55%" r="35%" gradientUnits="objectBoundingBox">
+            <stop offset="0%" stop-color="rgba(255,205,90,0.35)"/>
+            <stop offset="100%" stop-color="rgba(255,160,30,0)"/>
+          </radialGradient>
+          <rect class="l-glow" x="8" y="15" width="24" height="40" rx="1.5" fill="url(#lg-c)"/>
+          <rect x="6" y="55" width="28" height="2" rx="0.5" fill="rgba(200,148,52,0.4)"/>
+          <path d="M8 57 L12 64 L20 67 L28 64 L32 57 Z" fill="rgba(8,12,28,0.48)" stroke="rgba(200,148,52,0.22)" stroke-width="0.7"/>
+          <circle cx="20" cy="68" r="2.5" fill="rgba(190,135,38,0.62)" stroke="rgba(245,190,75,0.3)" stroke-width="0.5"/>
+        </svg>
+      </div>
+    </div>
+
     <div class="night-gradient" aria-hidden="true"></div>
     <div class="celestial-rings" aria-hidden="true"></div>
     <div class="depth-lines" aria-hidden="true"></div>
@@ -33,9 +148,57 @@
     <div class="grain" aria-hidden="true"></div>
     <div id="chapter-curtain" class="chapter-curtain" aria-hidden="true"></div>
 
-    <div class="stellar-thread" aria-hidden="true">
-      <span class="thread-core"></span>
-      <span class="thread-comet"></span>
+    <!-- Backdrop flou derrière le choix de mode -->
+    <div id="smc-backdrop" class="smc-backdrop" aria-hidden="true"></div>
+
+    <!-- Choix de mode à l'arrivée -->
+    <div id="scroll-mode-choice" class="scroll-mode-choice" role="dialog" aria-modal="true" aria-label="Choisissez votre mode de navigation">
+      <div class="smc-inner">
+        <p class="smc-kicker">Comment traverser cette nuit ?</p>
+        <div class="smc-buttons">
+          <button type="button" id="smc-cinema" class="smc-btn smc-btn--cinema">
+            <span class="smc-btn-icon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <polygon points="5,2 14,8 5,14" fill="currentColor" opacity="0.9"/>
+                <line x1="1" y1="2" x2="1" y2="14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <span class="smc-btn-label">Cinéma</span>
+            <span class="smc-btn-sub">défilement automatique</span>
+          </button>
+          <div class="smc-choice-nudge" aria-hidden="true">
+            <span class="smc-choice-nudge-line"></span>
+          </div>
+          <button type="button" id="smc-explore" class="smc-btn smc-btn--explore">
+            <span class="smc-btn-icon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <polygon points="8,1 15,8 8,15 1,8" fill="none" stroke="currentColor" stroke-width="1.35"/>
+                <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
+              </svg>
+            </span>
+            <span class="smc-btn-label">Exploration</span>
+            <span class="smc-btn-sub">à ton rythme</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toggle mode permanent (bas gauche) -->
+    <div id="scroll-mode-toggle" class="scroll-mode-toggle" aria-label="Mode de défilement" hidden>
+      <button type="button" id="smt-cinema-btn" class="smt-btn smt-btn--cinema" title="Mode Cinéma (défilement auto)">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+          <polygon points="5,2 14,8 5,14" fill="currentColor" opacity="0.9"/>
+          <line x1="1" y1="2" x2="1" y2="14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        <span>Cinéma</span>
+      </button>
+      <button type="button" id="smt-explore-btn" class="smt-btn smt-btn--explore" title="Mode Exploration (manuel)">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+          <polygon points="8,1 15,8 8,15 1,8" fill="none" stroke="currentColor" stroke-width="1.35"/>
+          <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
+        </svg>
+        <span>Exploration</span>
+      </button>
     </div>
 
     <main class="chapter chapter-two">
@@ -58,7 +221,7 @@
               decoding="async"
             />
           </div>
-          <figcaption>Jean Sénac - portrait</figcaption>
+          <figcaption>Jean Sénac - portrait d'archive</figcaption>
         </figure>
         <a class="scroll-cue" href="#timeline-start" aria-label="Faire défiler vers la frise narrative">
           <span class="scroll-cue-mouse" aria-hidden="true">
@@ -123,7 +286,7 @@
           </div>
         </article>
 
-        <figure class="archive-window archive-window--round senac-fragment" data-reveal>
+        <figure class="archive-window archive-window--round senac-fragment" data-reveal role="button" tabindex="0">
           <div class="archive-media archive-media--photo archive-media--pos-coast">
             <img
               src="/images/jean-senac-portrait.png"
@@ -134,7 +297,7 @@
               decoding="async"
             />
           </div>
-          <figcaption>Jeunesse - littoral, rochers, horizon</figcaption>
+          <figcaption>Jeunesse à Alger - mer, rochers, premiers horizons</figcaption>
         </figure>
 
         <article class="story-card story-card--left" data-reveal>
@@ -151,8 +314,7 @@
           </div>
         </article>
 
-        <section class="quote-break senac-fragment" data-reveal>
-          <span aria-hidden="true">«</span>
+        <section class="quote-break senac-fragment" data-reveal role="button" tabindex="0">
           <blockquote>Je parle avec l'accent<br />de ma solitude.</blockquote>
           <cite>Jean Sénac</cite>
         </section>
@@ -175,18 +337,18 @@
           </div>
         </article>
 
-        <figure class="archive-window archive-window--wide senac-fragment" data-reveal>
+        <figure class="archive-window archive-window--wide senac-fragment" data-reveal role="button" tabindex="0">
           <div class="archive-media archive-media--photo archive-media--pos-wide">
             <img
-              src="/images/jean-senac-portrait.png"
-              alt="Jean Sénac, portrait photographique."
+              src="/images/alger-vue-port.png"
+              alt="Vue d'Alger et de son port, photographie d'archive."
               width="1200"
               height="675"
               loading="lazy"
               decoding="async"
             />
           </div>
-          <figcaption>Présence - voix, corps, regard</figcaption>
+          <figcaption>Alger, années 1950-1960 - scène littéraire et engagement</figcaption>
         </figure>
 
         <article class="story-card story-card--left" data-reveal>
@@ -203,7 +365,7 @@
           </div>
         </article>
 
-        <section class="quote-break quote-break--title senac-fragment" data-reveal>
+        <section class="quote-break quote-break--title senac-fragment" data-reveal role="button" tabindex="0">
           <span aria-hidden="true">✦</span>
           <blockquote>Soleils séparés</blockquote>
           <cite>un titre comme une constellation</cite>
@@ -223,18 +385,18 @@
           </div>
         </article>
 
-        <figure class="archive-window archive-window--round archive-window--medium senac-fragment" data-reveal>
+        <figure class="archive-window archive-window--round archive-window--medium senac-fragment" data-reveal role="button" tabindex="0">
           <div class="archive-media archive-media--photo archive-media--pos-face">
             <img
-              src="/images/jean-senac-portrait.png"
-              alt="Portrait de Jean Sénac."
+              src="/images/jean-senac-bureau.png"
+              alt="Jean Sénac à son bureau, lisant un manuscrit."
               width="720"
               height="720"
               loading="lazy"
               decoding="async"
             />
           </div>
-          <figcaption>Figure - intimité du poète</figcaption>
+          <figcaption>Sénac à son bureau - le poète au travail</figcaption>
         </figure>
 
         <article class="story-card story-card--left" data-reveal>
@@ -251,7 +413,7 @@
           </div>
         </article>
 
-        <figure class="archive-window archive-window--round senac-fragment" data-reveal>
+        <figure class="archive-window archive-window--round senac-fragment" data-reveal role="button" tabindex="0">
           <div class="archive-media archive-media--photo archive-media--pos-memory">
             <img
               src="/images/jean-senac-souvenir-photo.png"
@@ -262,7 +424,7 @@
               decoding="async"
             />
           </div>
-          <figcaption>Mémoire - derniers feux, présence</figcaption>
+          <figcaption>Mémoire de Sénac - derniers feux d'une voix libre</figcaption>
         </figure>
 
         <article class="story-card story-card--right" data-reveal>
@@ -282,6 +444,11 @@
     </main>
 
     <section id="chapitre-3" class="chapter-three" aria-labelledby="chapter-three-title">
+      <div class="chapter-three-parallax-mount" aria-hidden="true">
+        <div class="ch3-layer ch3-layer--deep"></div>
+        <div class="ch3-layer ch3-layer--mid"></div>
+        <div class="ch3-layer ch3-layer--near"></div>
+      </div>
       <div class="chapter-three-inner">
         <p class="kicker">Suite du voyage</p>
         <h2 id="chapter-three-title">Chapitre III</h2>
@@ -289,11 +456,109 @@
           La nuit se dissipe. Le fil d'or quitte la frise et ouvre un autre territoire.
         </p>
         <div class="chapter-three-actions">
+          <button type="button" id="voyage-credits-trigger" class="chapter-three-actions-secondary">
+            Crédits du voyage
+          </button>
           <a href="/">Retour à l'expérience</a>
           <a href="/parchemin-senac.html">Revoir la frise</a>
         </div>
       </div>
     </section>
+
+    <!-- Générique de fin (cinéma) - plein écran après la traversée -->
+    <div
+      id="voyage-credits"
+      class="voyage-credits"
+      aria-hidden="true"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="voyage-credits-title"
+    >
+      <div class="voyage-credits-bg-video-wrap" aria-hidden="true">
+        <video
+          class="voyage-credits-bg-video"
+          src="/al-rihla.mp4"
+          muted
+          playsinline
+          loop
+          preload="metadata"
+        ></video>
+        <div class="voyage-credits-bg-video-bloom" aria-hidden="true"></div>
+      </div>
+      <div class="voyage-credits-particles" aria-hidden="true">
+        <canvas id="voyage-credits-sky-canvas"></canvas>
+        <canvas id="voyage-credits-fog-canvas"></canvas>
+      </div>
+      <div class="voyage-credits-vignette" aria-hidden="true"></div>
+      <div class="voyage-credits-roll-clip">
+        <div id="voyage-credits-roll" class="voyage-credits-roll">
+          <p id="voyage-credits-title" class="voyage-credits-main-title">Al-Rihla</p>
+          <p class="voyage-credits-subtitle">Médiation culturelle - Jean Sénac</p>
+          <p class="voyage-credits-gap">&nbsp;</p>
+
+          <h3 class="voyage-credits-heading">Conception & réalisation</h3>
+          <ul class="voyage-credits-list">
+            <li>Direction artistique et développement expérience interactive</li>
+            <li>Parcours : Carte mémoire - Frise narrative - Clôture</li>
+          </ul>
+
+          <h3 class="voyage-credits-heading">Textes & citations</h3>
+          <ul class="voyage-credits-list voyage-credits-list--narrow">
+            <li>
+              Fragments poétiques et titres d’œuvres : Jean Sénac - à compléter avec références précises
+              (éditions, années).
+            </li>
+            <li>Citations affichées sur la frise : vérifier droits et sources dans votre dossier.</li>
+          </ul>
+
+          <h3 class="voyage-credits-heading">Images & archives</h3>
+          <ul class="voyage-credits-list voyage-credits-list--narrow">
+            <li>Photographies et portraits intégrés au parchemin : crédits à reporter (institution, photographe, date).</li>
+          </ul>
+
+          <h3 class="voyage-credits-heading">Vidéo</h3>
+          <ul class="voyage-credits-list voyage-credits-list--narrow">
+            <li><cite>Al-Rihla</cite> - fichier média du projet ; auteurs image / son / musique à mentionner ici.</li>
+          </ul>
+
+          <h3 class="voyage-credits-heading">Musique & sons</h3>
+          <ul class="voyage-credits-list voyage-credits-list--narrow">
+            <li>Ambiances et pistes utilisées : crédits et licences (ex. Creative Commons, bibliothèque).</li>
+          </ul>
+
+          <h3 class="voyage-credits-heading">Outils</h3>
+          <ul class="voyage-credits-list">
+            <li>React, Vite, Motion - Parchemin : Lenis, canvas & WebGL (selon activation).</li>
+            <li>
+              Création &amp; post-production : Adobe Photoshop, Premiere Pro, After Effects, Blackmagic DaVinci
+              Resolve.
+            </li>
+          </ul>
+
+          <p class="voyage-credits-gap">&nbsp;</p>
+          <p class="voyage-credits-fin">Merci d’avoir traversé cette nuit.</p>
+          <p class="voyage-credits-gap">&nbsp;</p>
+        </div>
+      </div>
+
+      <div
+        id="voyage-credits-cta"
+        class="voyage-credits-cta is-locked-out"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <div class="voyage-credits-skip-frame">
+          <button
+            type="button"
+            id="voyage-credits-skip"
+            class="voyage-credits-skip"
+            title="Retour à l’expérience principale (affiché à la fin du générique)"
+          >
+            Revenir à l'expérience
+          </button>
+        </div>
+      </div>
+    </div>
 
     <script type="module" src="/parchemin-senac.js"></script>
   </body>

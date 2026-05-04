@@ -13,7 +13,7 @@ type MasterVolumeState = {
 export const useMasterVolumeStore = create<MasterVolumeState>()(
   persist(
     (set, get) => ({
-      volume: 0.85,
+      volume: 0,
       playbackUnlocked: false,
       setVolume: (v: number) => {
         const volume = Math.min(1, Math.max(0, v));

@@ -1,4 +1,13 @@
-import { useState, useEffect, useRef, useCallback, lazy, Suspense, useMemo } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  lazy,
+  Suspense,
+  useMemo,
+  Fragment,
+} from "react";
 import { Settings } from "lucide-react";
 import { ReactLenis } from "lenis/react";
 import { AnimatePresence, motion } from "motion/react";
@@ -12,7 +21,7 @@ import CinematicOverlay from "./components/CinematicOverlay";
 import Soundscape from "./components/Soundscape";
 import SplashCursor from "./components/SplashCursor";
 import SystemMenu from "./components/ui/SystemMenu";
-import OrientationPanel from "./components/ui/OrientationPanel";
+import OrientationPanel, { ParcoursPanelInnerContent } from "./components/ui/OrientationPanel";
 import ChapterCompleteToast from "./components/ui/ChapterCompleteToast";
 import IntroVideoOverlay from "./components/ui/IntroVideoOverlay";
 import HintPanel from "./components/ui/HintPanel";
@@ -21,14 +30,16 @@ import ScrollProgressBar from "./components/ui/ScrollProgressBar";
 import type { Act1QuestProgress, Act2QuestProgress } from "./components/ui/HintPanel";
 import type { Act1QuestStep } from "./components/Immersive/AlgeriaMap";
 import { useCursorStore } from "./hooks/useCursorContext";
+import { useMediaQuery } from "./hooks/useMediaQuery";
 import { useMasterVolumeStore } from "./stores/masterVolumeStore";
 
 /** Page statique parchemin (ch. II / III) - respecte `import.meta.env.BASE_URL` (déploiement sous sous-chemin). */
-function parcheminSenacHref(hash: string) {
+function parcheminSenacHref(hash: string, options?: { previewCredits?: boolean }) {
   const base = import.meta.env.BASE_URL;
   const prefix = base.endsWith("/") ? base : `${base}/`;
   const h = hash.startsWith("#") ? hash : `#${hash}`;
-  return `${prefix}parchemin-senac.html${h}`;
+  const q = options?.previewCredits ? "?previewCredits=1" : "";
+  return `${prefix}parchemin-senac.html${q}${h}`;
 }
 
 export default function App() {
@@ -58,11 +69,19 @@ export default function App() {
   const setCursorAmbient = useCursorStore((s) => s.setAmbient);
   const masterVolume = useMasterVolumeStore((s) => s.volume);
   const playbackUnlocked = useMasterVolumeStore((s) => s.playbackUnlocked);
+  const unlockPlayback = useMasterVolumeStore((s) => s.unlockPlayback);
+  const masterVolumeRef = useRef(masterVolume);
+  const playbackUnlockedRef = useRef(playbackUnlocked);
+  masterVolumeRef.current = masterVolume;
+  playbackUnlockedRef.current = playbackUnlocked;
   /** Ton UI acte II (iframe parchemin) : solaire en haut, minuit après défile - via `senac-chrome`. */
   const [act2ParcheminTone, setAct2ParcheminTone] = useState<"solar" | "midnight" | null>(null);
 
   const act2AmbientMidnight =
     phase === "act2" && (act2ParcheminTone ?? "solar") === "midnight";
+
+  const mdUp = useMediaQuery("(min-width: 768px)");
+  const finePointer = useMediaQuery("(hover: hover) and (pointer: fine)");
 
   phaseRef.current = phase;
 
@@ -78,10 +97,31 @@ export default function App() {
 
   /** Ratio scroll parchemin (postMessage depuis l’iframe) — même barre en z élevée au-dessus du rail. */
   const [senacIframeScrollRatio, setSenacIframeScrollRatio] = useState(0);
+  /** Générique fin de voyage (iframe) : masque le fluide parent et remonte le curseur comme pour l’intro. */
+  const [act2VoyageCreditsOpen, setAct2VoyageCreditsOpen] = useState(false);
 
   useEffect(() => {
-    if (phase !== "act2") setSenacIframeScrollRatio(0);
+    if (phase !== "act2") {
+      setSenacIframeScrollRatio(0);
+      setAct2VoyageCreditsOpen(false);
+    }
   }, [phase]);
+
+  /** Déverrouille l'audio au premier geste utilisateur (autoplay policy navigateur). */
+  useEffect(() => {
+    if (playbackUnlocked) return;
+    const onFirstGesture = () => {
+      unlockPlayback();
+    };
+    window.addEventListener("pointerdown", onFirstGesture, { passive: true });
+    window.addEventListener("touchstart", onFirstGesture, { passive: true });
+    window.addEventListener("keydown", onFirstGesture);
+    return () => {
+      window.removeEventListener("pointerdown", onFirstGesture);
+      window.removeEventListener("touchstart", onFirstGesture);
+      window.removeEventListener("keydown", onFirstGesture);
+    };
+  }, [playbackUnlocked, unlockPlayback]);
 
   /** Relais volume menu pause -> iframe acte II (musique locale parchemin). */
   useEffect(() => {
@@ -103,17 +143,46 @@ export default function App() {
     post();
     const t1 = window.setTimeout(post, 500);
     const t2 = window.setTimeout(post, 1500);
+    const t3 = window.setTimeout(post, 3200);
     try {
       iframe.addEventListener("load", post, { once: true });
     } catch {}
     return () => {
       window.clearTimeout(t1);
       window.clearTimeout(t2);
+      window.clearTimeout(t3);
       try {
         iframe.removeEventListener("load", post);
       } catch {}
     };
   }, [phase, masterVolume, playbackUnlocked]);
+
+  /**
+   * L’iframe redemande l’état audio une fois prête : le premier postMessage parent part souvent
+   * avant que `initChapterTwoAmbience` n’ait enregistré son listener (message perdu).
+   */
+  useEffect(() => {
+    if (phase !== "act2") return;
+    const onMsg = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin) return;
+      if (!e.data || e.data.type !== "senac-request-audio") return;
+      const iframe = document.querySelector('iframe[src*="parchemin-senac"]');
+      if (!(iframe instanceof HTMLIFrameElement)) return;
+      if (e.source !== iframe.contentWindow) return;
+      const payload = {
+        type: "senac-audio" as const,
+        volume: Math.min(1, Math.max(0, masterVolumeRef.current)),
+        unlocked: playbackUnlockedRef.current,
+      };
+      try {
+        iframe.contentWindow?.postMessage(payload, window.location.origin);
+      } catch {
+        /* ignore */
+      }
+    };
+    window.addEventListener("message", onMsg);
+    return () => window.removeEventListener("message", onMsg);
+  }, [phase]);
 
   /** Délai avant le toast : laisser voir la carte + fond « célébration » sans masque plein écran. */
   const CHAPTER_TOAST_DELAY_MS = 3200;
@@ -242,6 +311,13 @@ export default function App() {
         }
         return;
       }
+      if (e.data?.type === "senac-credits-chrome") {
+        if (phaseRef.current !== "act2") return;
+        const iframe = document.querySelector('iframe[src*="parchemin-senac"]');
+        if (!(iframe instanceof HTMLIFrameElement) || e.source !== iframe.contentWindow) return;
+        setAct2VoyageCreditsOpen(e.data.open === true);
+        return;
+      }
       if (e.data?.type !== "senac-pointer") return;
       const x = e.data.x as number;
       const y = e.data.y as number;
@@ -286,11 +362,12 @@ export default function App() {
 
       <AnimatePresence mode="sync">
         {chapterToast && (
-          <ChapterCompleteToast
-            key="ch1-toast"
-            chapterTitle="La Naissance"
-            subtitle="Les cinq feux sont rallumés - la carte respire. Le voyage continue."
-          />
+          <Fragment key="ch1-toast">
+            <ChapterCompleteToast
+              chapterTitle="La Naissance"
+              subtitle="Les cinq feux sont rallumés - la carte respire. Le voyage continue."
+            />
+          </Fragment>
         )}
       </AnimatePresence>
 
@@ -300,26 +377,37 @@ export default function App() {
 
       <AnimatePresence>
         {introVideoOpen && (
-          <IntroVideoOverlay
-            key={`intro-video-${introVideoNonce}`}
-            onClose={() => setIntroVideoOpen(false)}
-          />
+          <Fragment key={`intro-video-${introVideoNonce}`}>
+            <IntroVideoOverlay onClose={() => setIntroVideoOpen(false)} />
+          </Fragment>
         )}
       </AnimatePresence>
 
       <AnimatePresence>
         {systemMenuOpen && (
-          <SystemMenu
-            key="sysmenu"
-            onClose={() => setSystemMenuOpen(false)}
-            onReplayIntroVideo={openIntroVideoOverlay}
-            onRestartExperience={restartExperience}
-          />
+          <Fragment key="sysmenu">
+            <SystemMenu
+              onClose={() => setSystemMenuOpen(false)}
+              onReplayIntroVideo={openIntroVideoOverlay}
+              onRestartExperience={restartExperience}
+              embeddedParcours={
+                !mdUp && phase !== "intro" ? (
+                  <ParcoursPanelInnerContent
+                    phase={phase}
+                    revelationCount={revelationCount}
+                    parcoursRailMidnight={
+                      phase === "act2" ? (act2ParcheminTone ?? "solar") === "midnight" : false
+                    }
+                  />
+                ) : undefined
+              }
+            />
+          </Fragment>
         )}
       </AnimatePresence>
 
-      {/* Backdrop invisible - ferme le rail Parcours si on clique à côté */}
-      {parcoursOpen && phase !== "intro" && (
+      {/* Fermeture du rail uniquement viewport md+ (le rail est masqué sous md). */}
+      {mdUp && parcoursOpen && phase !== "intro" && (
         <div
           className="fixed inset-0 z-[39] pointer-events-auto"
           onClick={() => setParcoursOpen(false)}
@@ -393,13 +481,12 @@ export default function App() {
         </>
       )}
 
-      {!systemMenuOpen && !introVideoOpen && (
-        <HintPanel
-          phase={phase}
-          act1Quest={phase === "act1" ? act1Quest : undefined}
-          act2Quest={phase === "act2" ? act2Quest : undefined}
-        />
-      )}
+      <HintPanel
+        phase={phase}
+        suppress={systemMenuOpen || introVideoOpen}
+        act1Quest={phase === "act1" ? act1Quest : undefined}
+        act2Quest={phase === "act2" ? act2Quest : undefined}
+      />
 
       {/* Nudge scroll - acte I uniquement, se démonte quand on quitte l'acte */}
       {phase === "act1" && !systemMenuOpen && !introVideoOpen && (
@@ -425,6 +512,11 @@ export default function App() {
                         goChapter2: () => setPhase("act2"),
                         goChapter3: () => {
                           window.location.assign(parcheminSenacHref("chapitre-3"));
+                        },
+                        previewCredits: () => {
+                          window.location.assign(
+                            parcheminSenacHref("chapitre-3", { previewCredits: true })
+                          );
                         },
                       }
                     : undefined
@@ -455,7 +547,7 @@ export default function App() {
                 onRevelationProgress={setRevelationCount}
                 onMemoryMapComplete={handleMemoryMapComplete}
                 onQuestStepComplete={onAct1QuestStep}
-                parcoursRailExpanded={parcoursOpen}
+                parcoursRailExpanded={mdUp && parcoursOpen}
               />
             </Suspense>
           </motion.div>
@@ -484,22 +576,42 @@ export default function App() {
       />
     </ReactLenis>
       {/* Hors Lenis - fluide + curseur : en acte II, coords relayées depuis l’iframe (postMessage). */}
-      <div style={{ visibility: systemMenuOpen || introVideoOpen ? "hidden" : "visible" }}>
-        <SplashCursor
-          key={phase === "act1" ? "splash-act1" : phase === "act2" ? "splash-act2" : "splash-default"}
-          syncPaletteFromAmbient
-          SIM_RESOLUTION={phase === "act1" ? 128 : 160}
-          DYE_RESOLUTION={phase === "act1" ? 512 : 720}
-          DENSITY_DISSIPATION={phase === "act1" ? 12 : 10}
-          VELOCITY_DISSIPATION={5}
-          PRESSURE={0.1}
-          CURL={10}
-          SPLAT_RADIUS={0.05}
-          SPLAT_FORCE={phase === "act1" ? 9000 : 12000}
-          COLOR_UPDATE_SPEED={10}
-        />
+      {finePointer && (
+      <div
+        style={{
+          visibility:
+            systemMenuOpen || introVideoOpen || act2VoyageCreditsOpen ? "hidden" : "visible",
+        }}
+      >
+        <Fragment
+          key={
+            phase === "act1"
+              ? "splash-act1"
+              : phase === "act2"
+                ? "splash-act2"
+                : "splash-default"
+          }
+        >
+          <SplashCursor
+            syncPaletteFromAmbient
+            SIM_RESOLUTION={phase === "act1" ? 128 : 160}
+            DYE_RESOLUTION={phase === "act1" ? 512 : 720}
+            DENSITY_DISSIPATION={phase === "act1" ? 12 : 10}
+            VELOCITY_DISSIPATION={5}
+            PRESSURE={0.1}
+            CURL={10}
+            SPLAT_RADIUS={0.05}
+            SPLAT_FORCE={phase === "act1" ? 9000 : 12000}
+            COLOR_UPDATE_SPEED={10}
+          />
+        </Fragment>
       </div>
-      <CustomCursor overlayOpen={systemMenuOpen || introVideoOpen} />
+      )}
+      {finePointer && (
+      <CustomCursor
+        overlayOpen={systemMenuOpen || introVideoOpen || act2VoyageCreditsOpen}
+      />
+      )}
     </>
   );
 }

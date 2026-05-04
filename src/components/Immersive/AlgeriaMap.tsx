@@ -938,7 +938,7 @@ export default function AlgeriaMap({
             role="status"
             aria-label="Acte I, L'algérie, La Naissance"
           >
-            <div className="min-w-0 pr-1 [box-shadow:0_0_32px_rgba(0,0,0,0.25)]">
+            <div className="min-w-0 pr-1">
               <p className="text-[10px] font-semibold uppercase leading-relaxed tracking-[0.4em] text-solar-gold/88 md:text-[11px] md:tracking-[0.42em] [text-shadow:0_1px_14px_rgba(0,0,0,0.9)]">
                 Acte I - L'algérie
               </p>

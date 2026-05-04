@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -20,7 +20,7 @@ const ACT2_QUEST_KEYS: (keyof Act2QuestProgress)[] = ['scroll'];
 type Phase = 'intro' | 'act1' | 'act2';
 
 interface Hint {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   desc: string;
 }
@@ -79,11 +79,13 @@ const TITLES: Record<Phase, string> = {
 
 interface Props {
   phase: Phase;
+  /** Masque les consignes sans démonter (menu pause / vidéo) — évite de réinitialiser « fermé par l’utilisateur » au remontage. */
+  suppress?: boolean;
   act1Quest?: Act1QuestProgress;
   act2Quest?: Act2QuestProgress;
 }
 
-export default function HintPanel({ phase, act1Quest, act2Quest }: Props) {
+export default function HintPanel({ phase, suppress = false, act1Quest, act2Quest }: Props) {
   const [visible, setVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [currentPhase, setCurrentPhase] = useState<Phase>(phase);
@@ -137,6 +139,8 @@ export default function HintPanel({ phase, act1Quest, act2Quest }: Props) {
   const act1Total = 3;
 
   if (dismissed || hints.length === 0) return null;
+
+  if (suppress) return null;
 
   return (
     <AnimatePresence>

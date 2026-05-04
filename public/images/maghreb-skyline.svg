@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 360" preserveAspectRatio="xMidYMax meet">
+  <defs>
+    <linearGradient id="s" x1="0%" y1="100%" x2="10%" y2="0%">
+      <stop offset="0%" stop-color="#0d1e3a"/>
+      <stop offset="55%" stop-color="#182e52"/>
+      <stop offset="100%" stop-color="#1f3a62"/>
+    </linearGradient>
+    <linearGradient id="d" x1="0%" y1="100%" x2="80%" y2="0%">
+      <stop offset="0%" stop-color="#162845"/>
+      <stop offset="100%" stop-color="#2a4a72"/>
+    </linearGradient>
+  </defs>
+
+  <!-- fond plein qui couvre le bas -->
+  <rect x="0" y="200" width="1920" height="160" fill="#0a1628"/>
+
+  <g fill="url(#s)">
+    <!-- === GAUCHE � m�dina, toits �tag�s === -->
+    <path d="
+      M0,360 L0,248
+      L30,248 L30,228 L60,228 L60,248
+      L88,248 L88,210 L120,210 L120,236
+      L158,236 L158,200 L196,200 L196,224
+      L230,224 L230,192 L268,192 L268,218
+      L304,218 L304,188 L340,188 L340,210
+      L374,210 L374,236 L414,236 L414,360 Z"/>
+
+    <!-- Kasbah escalier -->
+    <path d="
+      M390,360 L390,272 L410,272 L410,254
+      L432,254 L432,238 L456,238 L456,220
+      L480,220 L480,238 L504,238 L504,224
+      L528,224 L528,244 L556,244 L556,276
+      L556,360 Z"/>
+
+    <!-- Minaret 1 � f�t fin + lanterne + finial -->
+    <rect x="484" y="244" width="48" height="116" fill="#0e1f3c"/>
+    <rect x="498" y="88"  width="22" height="160" rx="2" fill="url(#s)"/>
+    <!-- balcons -->
+    <rect x="494" y="130" width="30" height="6"  rx="1" fill="#263f5c"/>
+    <rect x="494" y="174" width="30" height="6"  rx="1" fill="#263f5c"/>
+    <rect x="494" y="218" width="30" height="6"  rx="1" fill="#263f5c"/>
+    <!-- lanterne -->
+    <rect x="496" y="74"  width="26" height="18" rx="2" fill="#2a4862"/>
+    <!-- finial -->
+    <polygon points="509,74 509,56 518,44 527,56 527,74" fill="#2e5070"/>
+
+    <!-- === MOSQU�E principale === -->
+    <rect x="580" y="210" width="200" height="150" fill="#0c1b36"/>
+    <!-- toit taill� -->
+    <path d="M565,210 L615,182 L765,182 L800,210 Z" fill="#152840" opacity="0.7"/>
+    <!-- d�me principal -->
+    <ellipse cx="680" cy="182" rx="66" ry="36" fill="url(#d)"/>
+    <!-- petit d�me c�t� -->
+    <ellipse cx="748" cy="196" rx="32" ry="18" fill="url(#d)" opacity="0.85"/>
+    <!-- porte arche -->
+    <rect x="640" y="252" width="42" height="108" rx="4" fill="#0a1628"/>
+
+    <!-- Maisons centrales -->
+    <rect x="782" y="256" width="48" height="104"/>
+    <rect x="828" y="238" width="62" height="122"/>
+    <!-- fronton maison -->
+    <path d="M886,246 L886,206 L916,186 L950,206 L950,246 L950,360 L886,360 Z"/>
+    <rect x="950" y="268" width="44" height="92"/>
+
+    <!-- Minaret 2 -->
+    <rect x="1002" y="268" width="46" height="92"  fill="#0e1f3c"/>
+    <rect x="1014" y="106" width="22" height="166" rx="2" fill="url(#s)"/>
+    <rect x="1010" y="128" width="30" height="6"   rx="1" fill="#263f5c"/>
+    <rect x="1010" y="172" width="30" height="6"   rx="1" fill="#263f5c"/>
+    <rect x="1010" y="216" width="30" height="6"   rx="1" fill="#263f5c"/>
+    <rect x="1012" y="92"  width="26" height="18"  rx="2" fill="#2a4862"/>
+    <polygon points="1025,92 1025,74 1034,62 1043,74 1043,92" fill="#2e5070"/>
+
+    <!-- Rempart / longue fa�ade -->
+    <rect x="1066" y="246" width="252" height="114" fill="#0c1b36"/>
+    <path d="M1058,246 L1096,224 L1290,224 L1326,248 Z" fill="#152840" opacity="0.55"/>
+    <!-- cr�neaux -->
+    <rect x="1074" y="220" width="18" height="28" rx="1" fill="#142038"/>
+    <rect x="1102" y="220" width="18" height="28" rx="1" fill="#142038"/>
+    <rect x="1130" y="220" width="18" height="28" rx="1" fill="#142038"/>
+    <rect x="1158" y="220" width="18" height="28" rx="1" fill="#142038"/>
+    <rect x="1186" y="220" width="18" height="28" rx="1" fill="#142038"/>
+    <rect x="1214" y="220" width="18" height="28" rx="1" fill="#142038"/>
+    <rect x="1242" y="220" width="18" height="28" rx="1" fill="#142038"/>
+    <rect x="1270" y="220" width="18" height="28" rx="1" fill="#142038"/>
+    <rect x="1298" y="220" width="18" height="28" rx="1" fill="#142038"/>
+
+    <!-- Terrasses droite + d�me secondaire -->
+    <rect x="1296" y="232" width="104" height="128"/>
+    <rect x="1332" y="210" width="80" height="26" rx="1"/>
+    <rect x="1402" y="244" width="124" height="116"/>
+    <path d="M1402,244 L1444,210 L1504,228 L1530,246 Z" opacity="0.5" fill="#152840"/>
+    <ellipse cx="1462" cy="210" rx="40" ry="24" fill="url(#d)"/>
+    <rect x="1432" y="210" width="62" height="152"/>
+
+    <!-- Droite � maisons serr�es -->
+    <rect x="1524" y="270" width="56" height="90"/>
+    <rect x="1576" y="236" width="82" height="124"/>
+    <path d="M1654,254 L1654,214 L1680,198 L1726,198 L1752,216 L1752,254 L1752,360 L1654,360 Z"/>
+    <rect x="1752" y="244" width="100" height="116"/>
+    <rect x="1842" y="262" width="120" height="98"/>
+    <!-- bord droit -->
+    <path d="M1920,360 L1920,260 L1880,272 L1880,360 Z" opacity="0.7"/>
+  </g>
+</svg>

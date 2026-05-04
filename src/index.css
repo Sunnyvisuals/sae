@@ -26,7 +26,6 @@
     /* Pas d’overflow-x ici : Lenis (root) translate le documentElement — clip + transform = artefacts au scroll. */
     width: 100%;
     overscroll-behavior-x: none;
-    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='30' viewBox='0 0 22 30'%3E%3Cpolygon points='11,1 21,11 11,21 1,11' fill='rgba(197,160,89,0.13)' stroke='%23c5a059' stroke-width='1.2'/%3E%3Ccircle cx='11' cy='11' r='1.5' fill='%23e8d5a4'/%3E%3Cline x1='11' y1='21' x2='11' y2='27' stroke='%23c5a059' stroke-width='1' stroke-opacity='0.7'/%3E%3Cpolyline points='8,24 11,28 14,24' fill='none' stroke='%23c5a059' stroke-width='1' stroke-opacity='0.7' stroke-linejoin='round'/%3E%3C/svg%3E") 11 11, auto;
   }
 
   html::-webkit-scrollbar {
@@ -37,7 +36,6 @@
   
   body {
     @apply bg-solar-cream text-solar-gold font-sans selection:bg-solar-gold/20 antialiased;
-    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='30' viewBox='0 0 22 30'%3E%3Cpolygon points='11,1 21,11 11,21 1,11' fill='rgba(197,160,89,0.13)' stroke='%23c5a059' stroke-width='1.2'/%3E%3Ccircle cx='11' cy='11' r='1.5' fill='%23e8d5a4'/%3E%3Cline x1='11' y1='21' x2='11' y2='27' stroke='%23c5a059' stroke-width='1' stroke-opacity='0.7'/%3E%3Cpolyline points='8,24 11,28 14,24' fill='none' stroke='%23c5a059' stroke-width='1' stroke-opacity='0.7' stroke-linejoin='round'/%3E%3C/svg%3E") 11 11, auto;
     overflow-x: hidden;
     width: 100%;
     max-width: 100%;
@@ -66,30 +64,40 @@
   * {
     scrollbar-width: none;
   }
+}
 
-  /*
-   * Curseur personnalisé : losange sur tous les éléments cliquables.
-   * Solar : doré  |  Midnight : bleu
-   */
-  button,
-  [role="button"],
-  a,
-  label[for],
-  summary {
-    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='30' viewBox='0 0 22 30'%3E%3Cpolygon points='11,1 21,11 11,21 1,11' fill='rgba(197,160,89,0.22)' stroke='%23e8d5a4' stroke-width='1.4'/%3E%3Ccircle cx='11' cy='11' r='1.8' fill='%23e8d5a4'/%3E%3Cline x1='11' y1='21' x2='11' y2='27' stroke='%23e8d5a4' stroke-width='1' stroke-opacity='0.8'/%3E%3Cpolyline points='8,24 11,28 14,24' fill='none' stroke='%23e8d5a4' stroke-width='1' stroke-opacity='0.8' stroke-linejoin='round'/%3E%3C/svg%3E") 11 11, pointer !important;
-  }
+/* Losange : souris / trackpad précis uniquement (évite un gros curseur image sur tactile). */
+@media (hover: hover) and (pointer: fine) {
+  @layer base {
+    html {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='30' viewBox='0 0 22 30'%3E%3Cpolygon points='11,1 21,11 11,21 1,11' fill='rgba(197,160,89,0.13)' stroke='%23c5a059' stroke-width='1.2'/%3E%3Ccircle cx='11' cy='11' r='1.5' fill='%23e8d5a4'/%3E%3Cline x1='11' y1='21' x2='11' y2='27' stroke='%23c5a059' stroke-width='1' stroke-opacity='0.7'/%3E%3Cpolyline points='8,24 11,28 14,24' fill='none' stroke='%23c5a059' stroke-width='1' stroke-opacity='0.7' stroke-linejoin='round'/%3E%3C/svg%3E") 11 11, auto;
+    }
 
-  [data-theme="midnight"] button,
-  [data-theme="midnight"] [role="button"],
-  [data-theme="midnight"] a,
-  [data-theme="midnight"] label[for],
-  [data-theme="midnight"] summary {
-    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='30' viewBox='0 0 22 30'%3E%3Cpolygon points='11,1 21,11 11,21 1,11' fill='rgba(90,168,255,0.22)' stroke='%23cce8ff' stroke-width='1.4'/%3E%3Ccircle cx='11' cy='11' r='1.8' fill='%23cce8ff'/%3E%3Cline x1='11' y1='21' x2='11' y2='27' stroke='%23cce8ff' stroke-width='1' stroke-opacity='0.8'/%3E%3Cpolyline points='8,24 11,28 14,24' fill='none' stroke='%23cce8ff' stroke-width='1' stroke-opacity='0.8' stroke-linejoin='round'/%3E%3C/svg%3E") 11 11, pointer !important;
+    body {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='30' viewBox='0 0 22 30'%3E%3Cpolygon points='11,1 21,11 11,21 1,11' fill='rgba(197,160,89,0.13)' stroke='%23c5a059' stroke-width='1.2'/%3E%3Ccircle cx='11' cy='11' r='1.5' fill='%23e8d5a4'/%3E%3Cline x1='11' y1='21' x2='11' y2='27' stroke='%23c5a059' stroke-width='1' stroke-opacity='0.7'/%3E%3Cpolyline points='8,24 11,28 14,24' fill='none' stroke='%23c5a059' stroke-width='1' stroke-opacity='0.7' stroke-linejoin='round'/%3E%3C/svg%3E") 11 11, auto;
+    }
+
+    button,
+    [role="button"],
+    a,
+    label[for],
+    summary {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='30' viewBox='0 0 22 30'%3E%3Cpolygon points='11,1 21,11 11,21 1,11' fill='rgba(197,160,89,0.22)' stroke='%23e8d5a4' stroke-width='1.4'/%3E%3Ccircle cx='11' cy='11' r='1.8' fill='%23e8d5a4'/%3E%3Cline x1='11' y1='21' x2='11' y2='27' stroke='%23e8d5a4' stroke-width='1' stroke-opacity='0.8'/%3E%3Cpolyline points='8,24 11,28 14,24' fill='none' stroke='%23e8d5a4' stroke-width='1' stroke-opacity='0.8' stroke-linejoin='round'/%3E%3C/svg%3E") 11 11, pointer !important;
+    }
+
+    [data-theme="midnight"] button,
+    [data-theme="midnight"] [role="button"],
+    [data-theme="midnight"] a,
+    [data-theme="midnight"] label[for],
+    [data-theme="midnight"] summary {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='30' viewBox='0 0 22 30'%3E%3Cpolygon points='11,1 21,11 11,21 1,11' fill='rgba(90,168,255,0.22)' stroke='%23cce8ff' stroke-width='1.4'/%3E%3Ccircle cx='11' cy='11' r='1.8' fill='%23cce8ff'/%3E%3Cline x1='11' y1='21' x2='11' y2='27' stroke='%23cce8ff' stroke-width='1' stroke-opacity='0.8'/%3E%3Cpolyline points='8,24 11,28 14,24' fill='none' stroke='%23cce8ff' stroke-width='1' stroke-opacity='0.8' stroke-linejoin='round'/%3E%3C/svg%3E") 11 11, pointer !important;
+    }
   }
 }
 
 /* Tailwind cursor-* → losange doré (solar) ou bleu (midnight) */
-@layer utilities {
+@media (hover: hover) and (pointer: fine) {
+  @layer utilities {
   .cursor-pointer,
   .cursor-default,
   .cursor-auto,
@@ -121,7 +129,10 @@
   [data-theme="midnight"] .cursor-nwse-resize {
     cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='30' viewBox='0 0 22 30'%3E%3Cpolygon points='11,1 21,11 11,21 1,11' fill='rgba(90,168,255,0.13)' stroke='%238bd5ff' stroke-width='1.2'/%3E%3Ccircle cx='11' cy='11' r='1.5' fill='%23cce8ff'/%3E%3Cline x1='11' y1='21' x2='11' y2='27' stroke='%238bd5ff' stroke-width='1' stroke-opacity='0.7'/%3E%3Cpolyline points='8,24 11,28 14,24' fill='none' stroke='%238bd5ff' stroke-width='1' stroke-opacity='0.7' stroke-linejoin='round'/%3E%3C/svg%3E") 11 11, auto !important;
   }
+  }
+}
 
+@layer utilities {
   .cursor-none {
     cursor: none !important;
   }
@@ -283,29 +294,31 @@
 }
 
 /*
- * Curseur losange - hors @layer pour gagner sur Tailwind.
- * Solar (défaut) : doré   |   Midnight (act2) : bleu-cyan
+ * Curseur losange « global » (hors @layer) — seulement pointeur précis.
+ * Solar : doré   |   Midnight (act2) : bleu-cyan
  */
-html,
-body,
-#root,
-#root *,
-#root *::before,
-#root *::after {
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='30' viewBox='0 0 22 30'%3E%3Cpolygon points='11,1 21,11 11,21 1,11' fill='rgba(197,160,89,0.13)' stroke='%23c5a059' stroke-width='1.2'/%3E%3Ccircle cx='11' cy='11' r='1.5' fill='%23e8d5a4'/%3E%3Cline x1='11' y1='21' x2='11' y2='27' stroke='%23c5a059' stroke-width='1' stroke-opacity='0.7'/%3E%3Cpolyline points='8,24 11,28 14,24' fill='none' stroke='%23c5a059' stroke-width='1' stroke-opacity='0.7' stroke-linejoin='round'/%3E%3C/svg%3E") 11 11, auto !important;
-}
+@media (hover: hover) and (pointer: fine) {
+  html,
+  body,
+  #root,
+  #root *,
+  #root *::before,
+  #root *::after {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='30' viewBox='0 0 22 30'%3E%3Cpolygon points='11,1 21,11 11,21 1,11' fill='rgba(197,160,89,0.13)' stroke='%23c5a059' stroke-width='1.2'/%3E%3Ccircle cx='11' cy='11' r='1.5' fill='%23e8d5a4'/%3E%3Cline x1='11' y1='21' x2='11' y2='27' stroke='%23c5a059' stroke-width='1' stroke-opacity='0.7'/%3E%3Cpolyline points='8,24 11,28 14,24' fill='none' stroke='%23c5a059' stroke-width='1' stroke-opacity='0.7' stroke-linejoin='round'/%3E%3C/svg%3E") 11 11, auto !important;
+  }
 
-[data-theme="midnight"],
-[data-theme="midnight"] body,
-[data-theme="midnight"] #root,
-[data-theme="midnight"] #root *,
-[data-theme="midnight"] #root *::before,
-[data-theme="midnight"] #root *::after {
-  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='30' viewBox='0 0 22 30'%3E%3Cpolygon points='11,1 21,11 11,21 1,11' fill='rgba(90,168,255,0.15)' stroke='%238bd5ff' stroke-width='1.2'/%3E%3Ccircle cx='11' cy='11' r='1.5' fill='%23cce8ff'/%3E%3Cline x1='11' y1='21' x2='11' y2='27' stroke='%238bd5ff' stroke-width='1' stroke-opacity='0.7'/%3E%3Cpolyline points='8,24 11,28 14,24' fill='none' stroke='%238bd5ff' stroke-width='1' stroke-opacity='0.7' stroke-linejoin='round'/%3E%3C/svg%3E") 11 11, auto !important;
+  [data-theme="midnight"],
+  [data-theme="midnight"] body,
+  [data-theme="midnight"] #root,
+  [data-theme="midnight"] #root *,
+  [data-theme="midnight"] #root *::before,
+  [data-theme="midnight"] #root *::after {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='30' viewBox='0 0 22 30'%3E%3Cpolygon points='11,1 21,11 11,21 1,11' fill='rgba(90,168,255,0.15)' stroke='%238bd5ff' stroke-width='1.2'/%3E%3Ccircle cx='11' cy='11' r='1.5' fill='%23cce8ff'/%3E%3Cline x1='11' y1='21' x2='11' y2='27' stroke='%238bd5ff' stroke-width='1' stroke-opacity='0.7'/%3E%3Cpolyline points='8,24 11,28 14,24' fill='none' stroke='%238bd5ff' stroke-width='1' stroke-opacity='0.7' stroke-linejoin='round'/%3E%3C/svg%3E") 11 11, auto !important;
+  }
 }
 
 /*
- * Portail curseur custom - pas d’héritage du losange `body`; z-index dernier plan.
+ * Portail curseur custom - pas d'héritage du losange body; z-index dernier plan.
  */
 #__custom-cursor-root,
 #__custom-cursor-root * {

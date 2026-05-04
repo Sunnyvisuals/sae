@@ -98,20 +98,20 @@ export default function CustomCursor({
           zIndex: 1,
         }}
         animate={{
-          width: isHalo ? 80 : isFeather ? 60 : 44,
-          height: isHalo ? 80 : isFeather ? 60 : 44,
-          opacity: isHalo ? 0.24 : isFeather ? 0.14 : 0.18,
+          width: isHalo ? 128 : isFeather ? 78 : 56,
+          height: isHalo ? 128 : isFeather ? 78 : 56,
+          opacity: isHalo ? 0.22 : isFeather ? 0.14 : 0.18,
           background: isHalo
             ? night
-              ? 'radial-gradient(circle, rgba(139,213,255,0.88) 0%, transparent 70%)'
-              : 'radial-gradient(circle, rgba(197,160,89,0.9) 0%, transparent 70%)'
+              ? 'radial-gradient(circle, rgba(139,213,255,0.88) 0%, transparent 78%)'
+              : 'radial-gradient(circle, rgba(197,160,89,0.9) 0%, transparent 78%)'
             : isFeather
               ? night
-                ? 'radial-gradient(circle, rgba(220,238,255,0.75) 0%, transparent 70%)'
-                : 'radial-gradient(circle, rgba(253,248,238,0.7) 0%, transparent 70%)'
+                ? 'radial-gradient(circle, rgba(220,238,255,0.75) 0%, transparent 78%)'
+                : 'radial-gradient(circle, rgba(253,248,238,0.7) 0%, transparent 78%)'
               : night
-                ? 'radial-gradient(circle, rgba(100,185,235,0.7) 0%, transparent 70%)'
-                : 'radial-gradient(circle, rgba(197,160,89,0.65) 0%, transparent 70%)',
+                ? 'radial-gradient(circle, rgba(100,185,235,0.7) 0%, transparent 78%)'
+                : 'radial-gradient(circle, rgba(197,160,89,0.65) 0%, transparent 78%)',
         }}
         transition={{ duration: 0.52, ease: [0.22, 1, 0.36, 1] }}
       />

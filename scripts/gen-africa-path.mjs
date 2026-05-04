@@ -84,7 +84,7 @@ d += ' Z';
 const out = `/**
  * Contour du continent africain — union des 52 pays (Natural Earth 110m, REGION_UN Africa),
  * simplifié (Turf), projeté dans le repère 0–400 (aligné sur la carte Algérie).
- * Généré par scripts/gen-africa-path.mjs — ne pas éditer à la main.
+ * Généré par scripts/gen-africa-path.mjs (sortie scripts/africa-continent-path.generated.ts).
  */
 export const AFRICA_CONTINENT_PATH =
   '${d.replace(/'/g, "\\'")}';
@@ -92,6 +92,6 @@ export const AFRICA_CONTINENT_PATH =
 export const AFRICA_ALIGN_OFFSET = { x: 0, y: 0 } as const;
 `;
 
-const target = path.join(root, 'src/components/Immersive/africaContinentPath.ts');
+const target = path.join(root, 'scripts/africa-continent-path.generated.ts');
 fs.writeFileSync(target, out, 'utf8');
 console.log('Pays:', african.length, 'sommets anneau:', outer.length, 'caractères path:', d.length);

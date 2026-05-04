@@ -8,6 +8,8 @@ import { ALGERIA_PATH } from '../Immersive/algeriaOutlinePath';
 
 type PhaseLabel = 'intro' | 'act1' | 'act2';
 
+export type { PhaseLabel as ParcoursPhaseLabel };
+
 /** Largeur repliée (px) - alignée avec AlgeriaMap (indicateur échelle). */
 const PARCOURS_COLLAPSED_PX = 40;
 const EXPANDED_MAX_PX = 248;
@@ -193,6 +195,176 @@ function navItemClass(active: boolean, night: boolean) {
     : 'font-normal text-solar-gold/[0.38] [text-shadow:0_1px_10px_rgba(0,0,0,0.82)]';
 }
 
+/** Corps du rail Parcours (fil, flux acte II, mini-carte) — réemployé dans le menu pause sous `md`. */
+export function ParcoursPanelInnerContent({
+  phase,
+  revelationCount = 0,
+  parcoursRailMidnight,
+  className = '',
+}: Omit<Props, 'expanded' | 'onExpandedChange'> & { className?: string }) {
+  const prefersReducedMotion = useReducedMotion();
+  const nightRail =
+    phase === 'act2' ? (typeof parcoursRailMidnight === 'boolean' ? parcoursRailMidnight : true) : false;
+  const activeStep = PHASE_NAV_INDEX[phase];
+
+  const navRows: ParcoursRow[] = [
+    ...PARCOURS_PHASE_ORDER.map(({ label, phase: p }) => {
+      const stepIdx = PHASE_NAV_INDEX[p];
+      const variant: 'past' | 'current' | 'future' =
+        stepIdx < activeStep ? 'past' : stepIdx === activeStep ? 'current' : 'future';
+      return {
+        key: p,
+        phase: p,
+        label,
+        summary: PARCOURS_SUMMARIES[p],
+        variant,
+      };
+    }),
+    ...PARCOURS_PLACEHOLDERS_AFTER,
+  ];
+
+  return (
+    <div className={`flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden ${className}`}>
+      <nav
+        className="relative flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden pl-0.5"
+        aria-label="Fil d'Ariane"
+      >
+        <span
+          aria-hidden
+          className={
+            'pointer-events-none absolute left-[13px] top-4 bottom-4 z-0 w-px rounded-full ' +
+            (nightRail
+              ? 'bg-gradient-to-b from-[rgba(139,213,255,0.05)] via-[rgba(139,213,255,0.22)] to-[rgba(139,213,255,0.07)]'
+              : 'bg-gradient-to-b from-solar-gold/8 via-solar-gold/22 to-solar-gold/10')
+          }
+        />
+        {navRows.map(({ key, phase: rowPhase, label, variant, summary }) => {
+          const active = rowPhase !== null && phase === rowPhase;
+          const cryptic =
+            rowPhase === null || (rowPhase !== null && PHASE_NAV_INDEX[rowPhase] > activeStep);
+          const showCrypticCopy = cryptic && rowPhase !== null;
+          const rowLabel = showCrypticCopy ? lockedLabelForPhase(rowPhase) : label;
+          const rowSummary = showCrypticCopy ? '???' : summary;
+          return (
+            <div
+              key={key}
+              className={
+                'relative z-[1] flex items-start gap-3 py-3 pr-1 sm:py-3.5 ' +
+                (cryptic ? 'select-none' : '')
+              }
+            >
+              <div className="flex w-[22px] shrink-0 flex-col items-center pt-[3px]">
+                <TimelineDot cryptic={cryptic} variant={variant} night={nightRail} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p
+                  className={
+                    cryptic
+                      ? 'rounded-[2px] pl-0.5 pr-1 leading-snug ' + parcoursCrypticTitleClass(nightRail)
+                      : 'rounded-[2px] pl-0.5 pr-1 leading-snug text-[10px] tracking-wide sm:text-[11px] ' +
+                        navItemClass(active, nightRail)
+                  }
+                >
+                  {rowLabel}
+                </p>
+                <p
+                  className={
+                    cryptic
+                      ? 'mt-1.5 pl-0.5 pr-1 leading-relaxed ' + parcoursCrypticSummaryClass(nightRail)
+                      : 'mt-1.5 pl-0.5 pr-1 text-[9px] font-normal leading-relaxed sm:text-[10px] ' +
+                        navSummaryClass(active, nightRail)
+                  }
+                >
+                  {rowSummary}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </nav>
+
+      {phase === 'act2' && (
+        <div
+          className={
+            'mt-6 shrink-0 border-t pt-5 ' +
+            (nightRail ? 'border-[rgba(139,213,255,0.12)]' : 'border-solar-gold/[0.1]')
+          }
+        >
+          <p
+            className={
+              'text-center text-[8px] font-semibold uppercase tracking-[0.44em] ' +
+              (nightRail ? 'text-[rgba(234,215,164,0.48)]' : 'text-solar-gold/45')
+            }
+          >
+            Flux
+          </p>
+          <div
+            className={
+              'mx-auto mt-3 flex h-10 flex-col items-center justify-between gap-1.5 ' +
+              (!prefersReducedMotion ? 'parcours-flux-stagger' : '')
+            }
+            aria-hidden
+          >
+            <span
+              className={
+                nightRail
+                  ? 'h-1 w-1 rounded-full bg-[rgba(234,215,164,0.88)] shadow-[0_0_12px_rgba(90,168,255,0.35)]'
+                  : 'h-1 w-1 rounded-full bg-solar-gold/88 shadow-[0_0_10px_rgba(197,160,89,0.45)]'
+              }
+            />
+            <span
+              className={
+                nightRail
+                  ? 'h-1 w-1 rounded-full bg-[rgba(234,215,164,0.88)] shadow-[0_0_12px_rgba(90,168,255,0.35)]'
+                  : 'h-1 w-1 rounded-full bg-solar-gold/88 shadow-[0_0_10px_rgba(197,160,89,0.45)]'
+              }
+            />
+            <span
+              className={
+                nightRail
+                  ? 'h-1 w-1 rounded-full bg-[rgba(234,215,164,0.88)] shadow-[0_0_12px_rgba(90,168,255,0.35)]'
+                  : 'h-1 w-1 rounded-full bg-solar-gold/88 shadow-[0_0_10px_rgba(197,160,89,0.45)]'
+              }
+            />
+          </div>
+          <p
+            className={
+              'mt-3 text-center text-[9px] font-normal leading-relaxed ' +
+              (nightRail ? 'text-[rgba(250,246,235,0.42)]' : 'text-solar-gold/38')
+            }
+          >
+            Défiler pour poursuivre
+          </p>
+        </div>
+      )}
+
+      {phase === 'act1' && (
+        <div className="mt-6 shrink-0">
+          <p className="mb-2 text-[9px] font-medium uppercase tracking-[0.32em] text-solar-gold/40">
+            Mini-carte
+          </p>
+          <div className="relative aspect-square w-full overflow-hidden rounded-[2px] border border-solar-gold/18 bg-black/30 p-2">
+            <svg viewBox="0 0 400 400" className="h-full w-full text-solar-gold" aria-hidden>
+              <path
+                d={ALGERIA_PATH}
+                fill="currentColor"
+                fillOpacity={0.15}
+                stroke="currentColor"
+                strokeOpacity={0.9}
+                strokeWidth={1.85}
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span className="absolute bottom-1.5 right-1.5 text-[9px] font-medium tabular-nums text-solar-gold/60 [text-shadow:0_1px_6px_rgba(0,0,0,0.8)]">
+              {revelationCount}/5
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function useExpandedWidthPx() {
   const [px, setPx] = useState(() =>
     typeof window !== 'undefined'
@@ -219,12 +391,17 @@ export default function OrientationPanel({
   parcoursRailMidnight,
 }: Props) {
   const expandedW = useExpandedWidthPx();
-  const prefersReducedMotion = useReducedMotion();
   const shellRef = useRef<HTMLDivElement>(null);
   const didInit = useRef(false);
   const prevExpandedRef = useRef(expanded);
   /** Rail replié : au bout de 10 s, chrome du panneau retiré (texte + chevron seuls). */
   const [collapsedMinimal, setCollapsedMinimal] = useState(false);
+  /**
+   * contentOpen reste true pendant la fermeture le temps que le contenu
+   * fade out, puis passe à false pour démonter et afficher le bouton replié.
+   */
+  const [contentOpen, setContentOpen] = useState(expanded);
+  const contentCloseTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
 
   useEffect(() => {
     if (expanded) {
@@ -233,6 +410,25 @@ export default function OrientationPanel({
     }
     const id = window.setTimeout(() => setCollapsedMinimal(true), COLLAPSED_MINIMAL_AFTER_MS);
     return () => window.clearTimeout(id);
+  }, [expanded]);
+
+  /* Synchronise contentOpen avec expanded en ajoutant un délai à la fermeture */
+  useEffect(() => {
+    if (contentCloseTimerRef.current) {
+      window.clearTimeout(contentCloseTimerRef.current);
+      contentCloseTimerRef.current = null;
+    }
+    if (expanded) {
+      setContentOpen(true);
+    } else {
+      /* Laisse le temps à l'opacity de transitionner (300 ms) avant de démonter */
+      contentCloseTimerRef.current = window.setTimeout(() => {
+        setContentOpen(false);
+      }, 320);
+    }
+    return () => {
+      if (contentCloseTimerRef.current) window.clearTimeout(contentCloseTimerRef.current);
+    };
   }, [expanded]);
 
   useLayoutEffect(() => {
@@ -266,23 +462,6 @@ export default function OrientationPanel({
 
   const nightRail =
     phase === 'act2' ? (typeof parcoursRailMidnight === 'boolean' ? parcoursRailMidnight : true) : false;
-  const activeStep = PHASE_NAV_INDEX[phase];
-
-  const navRows: ParcoursRow[] = [
-    ...PARCOURS_PHASE_ORDER.map(({ label, phase: p }) => {
-      const stepIdx = PHASE_NAV_INDEX[p];
-      const variant: 'past' | 'current' | 'future' =
-        stepIdx < activeStep ? 'past' : stepIdx === activeStep ? 'current' : 'future';
-      return {
-        key: p,
-        phase: p,
-        label,
-        summary: PARCOURS_SUMMARIES[p],
-        variant,
-      };
-    }),
-    ...PARCOURS_PLACEHOLDERS_AFTER,
-  ];
 
   const quietCollapsed = !expanded && collapsedMinimal;
 
@@ -290,7 +469,7 @@ export default function OrientationPanel({
     <div
       ref={shellRef}
       className={
-        'pointer-events-auto fixed right-0 top-0 z-[40] h-full max-h-screen overflow-hidden ' +
+        'hidden md:block pointer-events-auto fixed right-0 top-0 z-[40] h-full max-h-screen overflow-hidden ' +
         'will-change-[width] ' +
         (quietCollapsed
           ? 'border-l border-transparent bg-transparent shadow-none backdrop-blur-none ' +
@@ -310,7 +489,7 @@ export default function OrientationPanel({
       }
       aria-expanded={expanded}
     >
-      {!expanded ? (
+      {!contentOpen ? (
         /* ── Bande repliée : clic = ouvrir ── */
         <button
           type="button"
@@ -362,8 +541,15 @@ export default function OrientationPanel({
           </span>
         </button>
       ) : (
-        /* ── Panneau ouvert ── */
-        <div className="flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden px-5 pb-8 pt-7">
+        /* ── Panneau ouvert (fade out à la fermeture) ── */
+        <div
+          className="flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden px-5 pb-8 pt-7"
+          style={{
+            opacity: expanded ? 1 : 0,
+            transition: 'opacity 0.28s ease',
+            pointerEvents: expanded ? undefined : 'none',
+          }}
+        >
 
           {/* En-tête : titre + zone de fermeture discrète sur toute la largeur */}
           <button
@@ -410,149 +596,11 @@ export default function OrientationPanel({
             </span>
           </button>
 
-          {/* Navigation + ligne de parcours verticale */}
-          <nav
-            className="relative flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden pl-0.5"
-            aria-label="Fil d'Ariane"
-          >
-            <span
-              aria-hidden
-              className={
-                'pointer-events-none absolute left-[13px] top-4 bottom-4 z-0 w-px rounded-full ' +
-                (nightRail
-                  ? 'bg-gradient-to-b from-[rgba(139,213,255,0.05)] via-[rgba(139,213,255,0.22)] to-[rgba(139,213,255,0.07)]'
-                  : 'bg-gradient-to-b from-solar-gold/8 via-solar-gold/22 to-solar-gold/10')
-              }
-            />
-            {navRows.map(({ key, phase: rowPhase, label, variant, summary }) => {
-              const active = rowPhase !== null && phase === rowPhase;
-              /** Étapes pas encore débloquées : même rendu que les jalons « ??? » (pas seulement phase === null). */
-              const cryptic =
-                rowPhase === null ||
-                (rowPhase !== null && PHASE_NAV_INDEX[rowPhase] > activeStep);
-              const showCrypticCopy = cryptic && rowPhase !== null;
-              const rowLabel = showCrypticCopy ? lockedLabelForPhase(rowPhase) : label;
-              const rowSummary = showCrypticCopy ? '???' : summary;
-              return (
-                <div
-                  key={key}
-                  className={
-                    'relative z-[1] flex items-start gap-3 py-3 pr-1 sm:py-3.5 ' +
-                    (cryptic ? 'select-none' : '')
-                  }
-                >
-                  <div className="flex w-[22px] shrink-0 flex-col items-center pt-[3px]">
-                    <TimelineDot cryptic={cryptic} variant={variant} night={nightRail} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p
-                      className={
-                        cryptic
-                          ? 'rounded-[2px] pl-0.5 pr-1 leading-snug ' +
-                            parcoursCrypticTitleClass(nightRail)
-                          : 'rounded-[2px] pl-0.5 pr-1 leading-snug text-[10px] tracking-wide sm:text-[11px] ' +
-                            navItemClass(active, nightRail)
-                      }
-                    >
-                      {rowLabel}
-                    </p>
-                    <p
-                      className={
-                        cryptic
-                          ? 'mt-1.5 pl-0.5 pr-1 leading-relaxed ' +
-                            parcoursCrypticSummaryClass(nightRail)
-                          : 'mt-1.5 pl-0.5 pr-1 text-[9px] font-normal leading-relaxed sm:text-[10px] ' +
-                            navSummaryClass(active, nightRail)
-                      }
-                    >
-                      {rowSummary}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </nav>
-
-          {/* Repère « flux » - acte II (parchemin : défilement) */}
-          {phase === 'act2' && (
-            <div
-              className={
-                'mt-6 shrink-0 border-t pt-5 ' +
-                (nightRail ? 'border-[rgba(139,213,255,0.12)]' : 'border-solar-gold/[0.1]')
-              }
-            >
-              <p
-                className={
-                  'text-center text-[8px] font-semibold uppercase tracking-[0.44em] ' +
-                  (nightRail ? 'text-[rgba(234,215,164,0.48)]' : 'text-solar-gold/45')
-                }
-              >
-                Flux
-              </p>
-              <div
-                className={
-                  'mx-auto mt-3 flex h-10 flex-col items-center justify-between gap-1.5 ' +
-                  (!prefersReducedMotion ? 'parcours-flux-stagger' : '')
-                }
-                aria-hidden
-              >
-                <span
-                  className={
-                    nightRail
-                      ? 'h-1 w-1 rounded-full bg-[rgba(234,215,164,0.88)] shadow-[0_0_12px_rgba(90,168,255,0.35)]'
-                      : 'h-1 w-1 rounded-full bg-solar-gold/88 shadow-[0_0_10px_rgba(197,160,89,0.45)]'
-                  }
-                />
-                <span
-                  className={
-                    nightRail
-                      ? 'h-1 w-1 rounded-full bg-[rgba(234,215,164,0.88)] shadow-[0_0_12px_rgba(90,168,255,0.35)]'
-                      : 'h-1 w-1 rounded-full bg-solar-gold/88 shadow-[0_0_10px_rgba(197,160,89,0.45)]'
-                  }
-                />
-                <span
-                  className={
-                    nightRail
-                      ? 'h-1 w-1 rounded-full bg-[rgba(234,215,164,0.88)] shadow-[0_0_12px_rgba(90,168,255,0.35)]'
-                      : 'h-1 w-1 rounded-full bg-solar-gold/88 shadow-[0_0_10px_rgba(197,160,89,0.45)]'
-                  }
-                />
-              </div>
-              <p
-                className={
-                  'mt-3 text-center text-[9px] font-normal leading-relaxed ' +
-                  (nightRail ? 'text-[rgba(250,246,235,0.42)]' : 'text-solar-gold/38')
-                }
-              >
-                Défiler pour poursuivre
-              </p>
-            </div>
-          )}
-
-          {/* Mini-carte acte I */}
-          {phase === 'act1' && (
-            <div className="mt-6 shrink-0">
-              <p className="mb-2 text-[9px] font-medium uppercase tracking-[0.32em] text-solar-gold/40">
-                Mini-carte
-              </p>
-              <div className="relative aspect-square w-full overflow-hidden rounded-[2px] border border-solar-gold/18 bg-black/30 p-2">
-                <svg viewBox="0 0 400 400" className="h-full w-full text-solar-gold" aria-hidden>
-                  <path
-                    d={ALGERIA_PATH}
-                    fill="currentColor"
-                    fillOpacity={0.15}
-                    stroke="currentColor"
-                    strokeOpacity={0.9}
-                    strokeWidth={1.85}
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                <span className="absolute bottom-1.5 right-1.5 text-[9px] font-medium tabular-nums text-solar-gold/60 [text-shadow:0_1px_6px_rgba(0,0,0,0.8)]">
-                  {revelationCount}/5
-                </span>
-              </div>
-            </div>
-          )}
+          <ParcoursPanelInnerContent
+            phase={phase}
+            revelationCount={revelationCount}
+            parcoursRailMidnight={parcoursRailMidnight}
+          />
         </div>
       )}
     </div>

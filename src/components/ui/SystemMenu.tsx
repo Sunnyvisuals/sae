@@ -1,8 +1,8 @@
-import type { ChangeEvent, ReactNode } from 'react';
-import { useId, useState } from 'react';
+import { Fragment, useId, useState, type ChangeEvent, type ReactNode } from 'react';
 import { motion } from 'motion/react';
 import { ChevronDown, Volume2, VolumeX, X } from 'lucide-react';
 import { useCursorStore } from '../../hooks/useCursorContext';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useMasterVolumeStore } from '../../stores/masterVolumeStore';
 import SplashCursor from '../SplashCursor';
 
@@ -11,6 +11,8 @@ type Props = {
   /** Ouvre uniquement la vidéo en surcouche - ne recharge pas la page ni l’acte */
   onReplayIntroVideo: () => void;
   onRestartExperience: () => void;
+  /** Petit écran (< md) : bloc Parcours dans le menu pause */
+  embeddedParcours?: ReactNode;
 };
 
 const easeMajestic = [0.22, 1, 0.36, 1] as const;
@@ -92,7 +94,7 @@ function MajesticButton({
 /** Barre de volume — filet léger + remplissage (comme l’ornement au-dessus), icône fantôme sans cadre. */
 function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
   const panelId = useId();
-  const [soundOpen, setSoundOpen] = useState(true);
+  const [soundOpen, setSoundOpen] = useState(false);
   const volume = useMasterVolumeStore((s) => s.volume);
   const setVolume = useMasterVolumeStore((s) => s.setVolume);
 
@@ -135,14 +137,19 @@ function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
   const pct = Math.round(volume * 100);
 
   const notchBtn =
-    'flex h-7 w-7 shrink-0 items-center justify-center rounded-[2px] border transition-[border-color,background-color,transform,color] duration-300 sm:h-8 sm:w-8 ' +
-    (midnight
-      ? 'border-[rgba(90,168,255,0.32)] bg-[rgba(4,12,28,0.45)] text-sky-300/78 hover:border-[rgba(139,213,255,0.5)] hover:bg-[rgba(8,20,40,0.55)]'
-      : 'border-solar-gold/30 bg-black/40 text-solar-gold/70 hover:border-solar-gold/48 hover:bg-black/55');
+    'flex h-7 w-7 shrink-0 items-center justify-center rounded-[2px] transition-[color,transform] duration-300 sm:h-8 sm:w-8 ' +
+    (midnight ? 'text-sky-300/70 hover:text-sky-100' : 'text-solar-gold/68 hover:text-solar-gold');
 
   return (
-    <motion.div variants={item} className="mt-9 w-full max-w-[min(100%,26rem)] px-0 sm:mt-10">
-      <div className="mb-0">
+    <motion.div variants={item} className="mt-8 w-full max-w-[min(100%,526px)] px-0 sm:mt-9">
+      <div
+        className={
+          'rounded-[2px] border px-3 py-2.5 sm:px-4 sm:py-3 ' +
+          (midnight
+            ? 'border-[rgba(90,168,255,0.2)] bg-[rgba(4,10,22,0.22)]'
+            : 'border-solar-gold/18 bg-black/12')
+        }
+      >
         <button
           type="button"
           id={panelId}
@@ -151,7 +158,7 @@ function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
           onClick={toggleSoundPanel}
           aria-labelledby={`${panelId}-label`}
           className={
-            'group flex w-full min-w-0 items-center gap-2.5 rounded-[2px] py-1.5 text-left outline-none transition-[opacity,background-color] duration-300 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent sm:gap-3 sm:py-2 ' +
+            'group flex w-full min-w-0 items-center justify-between gap-3 py-1 text-left outline-none transition-[opacity,color] duration-300 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent sm:py-1.5 ' +
             (midnight
               ? 'focus-visible:ring-[rgba(90,168,255,0.38)]'
               : 'focus-visible:ring-solar-gold/40')
@@ -166,14 +173,11 @@ function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
           <p
             id={`${panelId}-label`}
             className={
-              'flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 gap-y-1 text-[9px] uppercase tracking-[0.38em] sm:text-[10px] sm:tracking-[0.42em] ' +
+              'flex min-w-0 flex-1 items-baseline justify-between gap-x-2 text-[9px] uppercase tracking-[0.34em] sm:text-[10px] sm:tracking-[0.38em] ' +
               (midnight ? 'text-sky-400/62' : 'text-solar-gold/55')
             }
           >
             <span className="shrink-0">Son</span>
-            <span className={midnight ? 'font-sans text-sky-300/35' : 'font-sans text-solar-gold/30'} aria-hidden>
-              ·
-            </span>
             <span
               className={
                 'shrink-0 font-serif text-[11px] normal-case not-italic tabular-nums tracking-[0.12em] sm:text-[12px] ' +
@@ -185,22 +189,20 @@ function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
             </span>
           </p>
         </button>
-      </div>
-
-      <div
+        <div
         id={`${panelId}-soundscape`}
         role="region"
         aria-labelledby={panelId}
         aria-hidden={!soundOpen}
-        className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${soundOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
-      >
-        <div className={`min-h-0 overflow-hidden ${!soundOpen ? 'pointer-events-none' : ''}`}>
-          <div className="pt-2 sm:pt-2.5">
+          className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-out ${soundOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+        >
+          <div className={`min-h-0 overflow-hidden ${!soundOpen ? 'pointer-events-none' : ''}`}>
+            <div className="pt-2">
             <div
-              className={`pointer-events-none mb-4 h-px w-full bg-gradient-to-r sm:mb-5 ${haloLine}`}
+                className={`pointer-events-none mb-2.5 h-px w-full bg-gradient-to-r sm:mb-3 ${haloLine}`}
               aria-hidden
             />
-            <div className="flex items-center gap-3 sm:gap-5">
+              <div className="flex items-center gap-2.5 sm:gap-3.5">
               <button
                 type="button"
                 onClick={toggleSilent}
@@ -208,10 +210,10 @@ function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
                 aria-label={volume === 0 ? 'Réactiver le son ambiant' : 'Couper le son ambiant'}
                 className={
                   (soundOpen ? 'pointer-events-auto ' : 'pointer-events-none ') +
-                  '-ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-[color,background-color,opacity,transform] duration-300 ease-out outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent active:scale-[0.96] sm:h-12 sm:w-12 ' +
+                    'flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] border transition-[color,border-color,background-color,opacity,transform] duration-300 ease-out outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent active:scale-[0.96] sm:h-10 sm:w-10 ' +
                   (midnight
-                    ? 'text-sky-400/72 hover:bg-[rgba(90,168,255,0.06)] hover:text-sky-100 focus-visible:ring-[rgba(90,168,255,0.38)]'
-                    : 'text-solar-gold/58 hover:bg-[rgba(197,160,89,0.07)] hover:text-solar-gold focus-visible:ring-solar-gold/40')
+                    ? 'border-[rgba(90,168,255,0.26)] text-sky-400/72 hover:border-[rgba(139,213,255,0.48)] hover:bg-[rgba(90,168,255,0.08)] hover:text-sky-100 focus-visible:ring-[rgba(90,168,255,0.38)]'
+                    : 'border-solar-gold/26 text-solar-gold/58 hover:border-solar-gold/48 hover:bg-[rgba(197,160,89,0.07)] hover:text-solar-gold focus-visible:ring-solar-gold/40')
                 }
               >
                 {volume === 0 ? (
@@ -221,7 +223,7 @@ function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
                 )}
               </button>
 
-              <div className="relative flex min-h-[44px] min-w-0 flex-1 items-center py-1">
+                <div className="relative flex min-h-[40px] min-w-0 flex-1 items-center py-0.5">
                 <div
                   className={
                     'pointer-events-none absolute top-1/2 h-[7px] -translate-y-1/2 rounded-full border backdrop-blur-[1px] ' +
@@ -259,7 +261,7 @@ function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
                   aria-label="Volume du son"
                   disabled={!soundOpen}
                   className={
-                    'pointer-events-auto relative z-[2] h-11 w-full min-h-[44px] cursor-pointer appearance-none bg-transparent box-border px-[max(10px,0.55rem)] focus:outline-none focus-visible:ring-1 rounded-full ' +
+                      'pointer-events-auto relative z-[2] h-10 w-full min-h-[40px] cursor-pointer appearance-none rounded-full bg-transparent box-border px-[max(10px,0.55rem)] focus:outline-none focus-visible:ring-1 ' +
                     (midnight
                       ? 'focus-visible:ring-[rgba(90,168,255,0.38)] focus-visible:ring-offset-0 focus-visible:ring-offset-transparent'
                       : 'focus-visible:ring-solar-gold/38 focus-visible:ring-offset-0 focus-visible:ring-offset-transparent') +
@@ -275,6 +277,7 @@ function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
           </div>
         </div>
       </div>
+      </div>
     </motion.div>
   );
 }
@@ -282,8 +285,16 @@ function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
 /**
  * Menu pause - plein viewport, scroll si besoin, safe areas. Pas d’anneau animé (meilleure lisibilité mobile).
  */
-export default function SystemMenu({ onClose, onReplayIntroVideo, onRestartExperience }: Props) {
+export default function SystemMenu({
+  onClose,
+  onReplayIntroVideo,
+  onRestartExperience,
+  embeddedParcours,
+}: Props) {
   const midnight = useCursorStore((s) => s.ambient === 'midnight');
+  const finePointer = useMediaQuery('(hover: hover) and (pointer: fine)');
+
+  const shellCursor = finePointer ? 'cursor-none' : 'cursor-auto';
 
   return (
     <motion.div
@@ -296,27 +307,30 @@ export default function SystemMenu({ onClose, onReplayIntroVideo, onRestartExper
       transition={{ duration: 0.4 }}
       className={
         midnight
-          ? 'fixed inset-0 z-[560] flex min-h-dvh w-full cursor-none flex-col bg-[#030810] [padding-top:env(safe-area-inset-top)] [padding-bottom:env(safe-area-inset-bottom)]'
-          : 'fixed inset-0 z-[560] flex min-h-dvh w-full cursor-none flex-col bg-[#020100] [padding-top:env(safe-area-inset-top)] [padding-bottom:env(safe-area-inset-bottom)]'
+          ? `fixed inset-0 z-[560] flex min-h-dvh w-full ${shellCursor} flex-col bg-[#030810] [padding-top:env(safe-area-inset-top)] [padding-bottom:env(safe-area-inset-bottom)]`
+          : `fixed inset-0 z-[560] flex min-h-dvh w-full ${shellCursor} flex-col bg-[#020100] [padding-top:env(safe-area-inset-top)] [padding-bottom:env(safe-area-inset-bottom)]`
       }
     >
-      {/* Fluide intégré à la modale : au-dessus du fond, sous le contenu/menu. */}
+      {/* Fluide intégré à la modale : désactivé sur tactile (pas de précision curseur). */}
+      {finePointer && (
       <div className="pointer-events-none absolute inset-0 z-[1]" aria-hidden>
-        <SplashCursor
-          key={midnight ? 'menu-splash-midnight' : 'menu-splash-solar'}
-          syncPaletteFromAmbient
-          DYE_RESOLUTION={640}
-          SIM_RESOLUTION={128}
-          DENSITY_DISSIPATION={10}
-          VELOCITY_DISSIPATION={5}
-          PRESSURE={0.1}
-          CURL={10}
-          SPLAT_RADIUS={0.05}
-          SPLAT_FORCE={10000}
-          COLOR_UPDATE_SPEED={10}
-          zIndex={1}
-        />
+        <Fragment key={midnight ? 'menu-splash-midnight' : 'menu-splash-solar'}>
+          <SplashCursor
+            syncPaletteFromAmbient
+            DYE_RESOLUTION={640}
+            SIM_RESOLUTION={128}
+            DENSITY_DISSIPATION={10}
+            VELOCITY_DISSIPATION={5}
+            PRESSURE={0.1}
+            CURL={10}
+            SPLAT_RADIUS={0.05}
+            SPLAT_FORCE={10000}
+            COLOR_UPDATE_SPEED={10}
+            zIndex={1}
+          />
+        </Fragment>
       </div>
+      )}
 
       {/* Fond - halos solaire vs nuit saharienne */}
       <div className="pointer-events-none absolute inset-0 z-[2]" aria-hidden>
@@ -471,6 +485,40 @@ export default function SystemMenu({ onClose, onReplayIntroVideo, onRestartExper
             </motion.p>
 
             <PauseVolumeSlider midnight={midnight} />
+
+            {embeddedParcours && (
+              <motion.div variants={item} className="mt-8 w-full max-w-[min(100%,526px)] sm:mt-9">
+                <details
+                  className={
+                    'group rounded-[2px] border px-3 py-2.5 sm:px-4 sm:py-3 ' +
+                    (midnight
+                      ? 'border-[rgba(90,168,255,0.2)] bg-[rgba(4,10,22,0.22)]'
+                      : 'border-solar-gold/18 bg-black/12')
+                  }
+                >
+                  <summary
+                    className={
+                      'flex cursor-pointer list-none items-center justify-between gap-3 py-1 outline-none transition-[color,opacity] duration-300 marker:content-none [&::-webkit-details-marker]:hidden sm:py-1.5 ' +
+                      (midnight
+                        ? 'text-sky-400/72 focus-visible:ring-2 focus-visible:ring-[rgba(90,168,255,0.38)] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent'
+                        : 'text-solar-gold/65 focus-visible:ring-2 focus-visible:ring-solar-gold/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent')
+                    }
+                  >
+                    <span className="text-[9px] font-semibold uppercase tracking-[0.38em] sm:text-[10px] sm:tracking-[0.42em]">
+                      Parcours
+                    </span>
+                    <ChevronDown
+                      strokeWidth={1.35}
+                      className="h-3.5 w-3.5 shrink-0 opacity-85 transition-transform duration-300 ease-out group-open:-rotate-180 sm:h-4 sm:w-4"
+                      aria-hidden
+                    />
+                  </summary>
+                  <div className="mt-3 max-h-[min(52vh,420px)] overflow-y-auto overflow-x-hidden pb-2 pr-0.5 [-webkit-overflow-scrolling:touch]">
+                    {embeddedParcours}
+                  </div>
+                </details>
+              </motion.div>
+            )}
 
             <motion.nav
               variants={item}

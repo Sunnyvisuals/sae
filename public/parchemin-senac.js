@@ -15,8 +15,6 @@
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   /** Ambiance locale chapitre II (copiée dans /public). */
   const SENAC_AMBIENCE_SRC_PUBLIC = "/Emotional%20Arabian%20Oud.mp3";
-  /** Fallback dev absolu si besoin. */
-  const SENAC_AMBIENCE_SRC_DEV = "/@fs/E:/bouab/Emotional%20Arabian%20Oud.mp3";
   /** `a.scroll-cue` hero - évite flash avant GSAP (entrée puis disparition au scroll). */
   const scrollCueEarly = document.querySelector("header.hero a.scroll-cue");
   if (scrollCueEarly instanceof HTMLAnchorElement) {
@@ -25,7 +23,15 @@
 
   function setRevealStagger() {
     document.querySelectorAll("[data-reveal]").forEach((el, index) => {
-      el.style.setProperty("--stagger", String(Math.min(index * 54, 540)));
+      /**
+       * Rythme plus “ciné” : moins linéaire et moins lent au début.
+       * - départ rapide (les 6-8 premiers arrivent vite)
+       * - puis espacement qui s’étire doucement, sans dépasser un cap
+       */
+      const i = Math.max(0, index);
+      const base = Math.min(26 + i * 22, 520);
+      const pulse = Math.round(Math.sin(i * 0.85) * 8); // micro-variation organique
+      el.style.setProperty("--stagger", String(Math.max(0, base + pulse)));
     });
   }
 
@@ -33,6 +39,8 @@
   /** Lenis (scroll lissé) ; null si indisponible (reduced-motion ou échec import). */
   let yearGaugeLenis = null;
   let yearGaugeGsap = null;
+  /** Ré-appel depuis initLenis : figer scroll si le overlay de choix est encore là. */
+  let senacFreezeLenisForChoiceOverlay = /** @type {(() => void) | null} */ (null);
 
   /** Dernier mode chrome parent (réduit les postMessage lors du scroll). */
   let lastPostedSenacChromeMode = /** @type {"solar" | "midnight" | null} */ (null);
@@ -71,8 +79,7 @@
   let senacBarRatioSmooth = /** @type {number | null} */ (null);
 
 
-
-  /** sRGB puis mélange — un lerp entre teintes HSL traverse le cercle (verts/cyan « fantômes »). */
+  /** sRGB puis mélange - un lerp entre teintes HSL traverse le cercle (verts/cyan « fantômes »). */
   function rgbLerp(rgb1, rgb2, t) {
     const tt = Math.min(1, Math.max(0, t));
     return {
@@ -155,7 +162,7 @@
         ? Math.min(1, Math.max(0, emphasisScroll01))
         : u;
 
-    /** Ancres or / bleu (comme avant ton « trop orange ») — mélange toujours en sRGB. */
+    /** Ancres or / bleu (comme avant ton « trop orange ») - mélange toujours en sRGB. */
     let hSol = 36 + u * 18;
     let sSol = 48 + u * 12;
     let lSol = 48 - u * 10;
@@ -580,7 +587,7 @@
   }
 
   /**
-   * Brume / fumée diffuse + poussière lumineuse — calque plein cadre, sous le texte (z-index CSS),
+   * Brume / fumée diffuse + poussière lumineuse - calque plein cadre, sous le texte (z-index CSS),
    * parallax lié au scroll (comme le ciel), teinte ambre → bleu avec l’immersion.
    */
   function initFog() {
@@ -744,6 +751,371 @@
     resize();
     window.addEventListener("resize", resize, { passive: true });
     requestAnimationFrame(drawFog);
+  }
+
+  /** @type {{ stop: () => void } | null} */
+  let voyageCreditsParticlesHandle = null;
+
+  /** Parallax ciel / brume des crédits : dérivé du défilement du rouleau (pas la souris). */
+  let voyageCreditsRollParallaxActive = false;
+  let voyageCreditsRollParallaxStartMs = 0;
+  let voyageCreditsRollParallaxDurationMs = 0;
+
+  function beginVoyageCreditsRollParallaxClock(durationSec) {
+    voyageCreditsRollParallaxActive = true;
+    voyageCreditsRollParallaxStartMs = performance.now();
+    voyageCreditsRollParallaxDurationMs = Math.max(1, durationSec * 1000);
+  }
+
+  function resetVoyageCreditsRollParallaxClock() {
+    voyageCreditsRollParallaxActive = false;
+    voyageCreditsRollParallaxStartMs = 0;
+    voyageCreditsRollParallaxDurationMs = 0;
+  }
+
+  function stopVoyageCreditsParticles() {
+    voyageCreditsParticlesHandle?.stop();
+  }
+
+  /**
+   * Même rendu 2D que #sky-canvas + #fog-canvas (frise), sur le générique de fin.
+   * Parallax : même équations que la frise, mais `sp` suit la progression du rouleau (générique).
+   */
+  function startVoyageCreditsParticles(overlay) {
+    if (reducedMotion || voyageCreditsParticlesHandle) return;
+    const skyCanvas = document.getElementById("voyage-credits-sky-canvas");
+    const fogCanvas = document.getElementById("voyage-credits-fog-canvas");
+    if (!(skyCanvas instanceof HTMLCanvasElement) || !(fogCanvas instanceof HTMLCanvasElement)) return;
+
+    const sctx = skyCanvas.getContext("2d");
+    const fctx = fogCanvas.getContext("2d");
+    if (!sctx || !fctx) return;
+
+    function readCreditsScrollTarget() {
+      if (voyageCreditsRollParallaxActive && voyageCreditsRollParallaxDurationMs > 0) {
+        const elapsed = performance.now() - voyageCreditsRollParallaxStartMs;
+        const t = Math.min(1, Math.max(0, elapsed / voyageCreditsRollParallaxDurationMs));
+        /* Amplitude proche d’un scroll de frise (px) pour réutiliser skyParallaxFor / brouillard. */
+        return t * 1180;
+      }
+      return 0;
+    }
+
+    let skyStopped = false;
+    let fogStopped = false;
+
+    let sw = 0;
+    let sh = 0;
+    let sdpr = 1;
+    /** @type {{ x: number; y: number; r: number; a: number; tw: number; phase: number; drift: number; gold: boolean; connect: boolean; pz: number }[]} */
+    let stars = [];
+    /** @type {{ x: number; y: number; vx: number; vy: number; life: number; maxLife: number }[]} */
+    let comets = [];
+    let scrollParallaxSmooth = readCreditsScrollTarget();
+
+    function skyParallaxFor(pzRaw, sx) {
+      const pz = Math.min(1, Math.max(0, pzRaw));
+      const oy = sx * -(0.028 + pz * 0.44);
+      const ox = sx * (-0.01 + pz * 0.085);
+      return { ox, oy };
+    }
+
+    function blendSkyRadial(t) {
+      const u = Math.min(1, Math.max(0, t));
+      const cx = sw * 0.5;
+      const cy = sh * 0.175;
+      const bg = sctx.createRadialGradient(cx, cy, 0, cx, cy * 1.06, sw * 0.76);
+      bg.addColorStop(
+        0,
+        `rgba(${Math.round(48 - 36 * u)}, ${Math.round(36 + 22 * u)}, ${Math.round(22 + 96 * u)}, ${0.18 + u * 0.16})`
+      );
+      bg.addColorStop(
+        0.38,
+        `rgba(${Math.round(22 - 18 * u)}, ${Math.round(16 + 10 * u)}, ${Math.round(12 + 56 * u)}, ${0.12 + u * 0.06})`
+      );
+      bg.addColorStop(1, "rgba(0, 2, 8, 0)");
+      return bg;
+    }
+
+    const srand = (min, max) => min + Math.random() * (max - min);
+
+    function skyResize() {
+      sdpr = Math.min(window.devicePixelRatio || 1, 2);
+      sw = window.innerWidth;
+      sh = window.innerHeight;
+      skyCanvas.width = Math.floor(sw * sdpr);
+      skyCanvas.height = Math.floor(sh * sdpr);
+      skyCanvas.style.width = `${sw}px`;
+      skyCanvas.style.height = `${sh}px`;
+      sctx.setTransform(sdpr, 0, 0, sdpr, 0, 0);
+      stars.length = 0;
+      comets.length = 0;
+      const count = Math.round(Math.min(260, Math.max(140, (sw * sh) / 7600)));
+      for (let i = 0; i < count; i += 1) {
+        stars.push({
+          x: Math.random() * sw,
+          y: Math.random() * sh,
+          r: srand(0.32, 1.75),
+          a: srand(0.16, 0.92),
+          tw: srand(0.007, 0.026),
+          phase: srand(0, Math.PI * 2),
+          drift: srand(0.025, 0.16),
+          gold: Math.random() > 0.76,
+          connect: Math.random() > 0.76,
+          pz: srand(0, 1),
+        });
+      }
+      scrollParallaxSmooth = readCreditsScrollTarget();
+    }
+
+    function spawnComet() {
+      if (comets.length > 3 || Math.random() > 0.026) return;
+      comets.push({
+        x: srand(sw * 0.2, sw * 0.95),
+        y: srand(-sh * 0.1, sh * 0.35),
+        vx: srand(-1.55, -0.58),
+        vy: srand(0.68, 1.35),
+        life: srand(135, 235),
+        maxLife: 235,
+      });
+    }
+
+    function creditsSkyDraw(time) {
+      if (skyStopped) return;
+      sctx.clearRect(0, 0, sw, sh);
+      const scrollTarget = readCreditsScrollTarget();
+      scrollParallaxSmooth += (scrollTarget - scrollParallaxSmooth) * 0.125;
+      const sp = scrollParallaxSmooth;
+      const roll01 = Math.min(1, Math.max(0, sp / 1180));
+      const ht = Math.min(1, Math.max(0.76, 0.76 + 0.24 * roll01));
+      sctx.fillStyle = blendSkyRadial(ht);
+      sctx.fillRect(0, 0, sw, sh);
+
+      sctx.save();
+      sctx.globalCompositeOperation = "lighter";
+      for (let i = 0; i < stars.length; i += 1) {
+        const a = stars[i];
+        if (!a.connect || a.y > sh * 0.72) continue;
+        const pa = skyParallaxFor(a.pz ?? 0.4, sp);
+        const ax = a.x + pa.ox;
+        const ay = a.y + pa.oy;
+        for (let j = i + 1; j < Math.min(i + 18, stars.length); j += 1) {
+          const b = stars[j];
+          if (!b.connect || b.y > sh * 0.72) continue;
+          const pb = skyParallaxFor(b.pz ?? 0.4, sp);
+          const bx = b.x + pb.ox;
+          const by = b.y + pb.oy;
+          const dx = ax - bx;
+          const dy = ay - by;
+          const dist = Math.hypot(dx, dy);
+          if (dist > 115) continue;
+          const alpha = (1 - dist / 115) * 0.12;
+          sctx.strokeStyle = `rgba(139, 213, 255, ${alpha})`;
+          sctx.lineWidth = 0.7;
+          sctx.beginPath();
+          sctx.moveTo(ax, ay);
+          sctx.lineTo(bx, by);
+          sctx.stroke();
+        }
+      }
+      sctx.restore();
+
+      for (const star of stars) {
+        const twinkle = star.a + Math.sin(time * star.tw + star.phase) * 0.18;
+        star.y -= star.drift * 0.08;
+        if (star.y < -4) star.y = sh + 4;
+        const pp = skyParallaxFor(star.pz ?? 0.4, sp);
+        const px = star.x + pp.ox;
+        const py = star.y + pp.oy;
+        sctx.beginPath();
+        sctx.arc(px, py, star.r, 0, Math.PI * 2);
+        sctx.fillStyle = star.gold
+          ? `rgba(234, 215, 164, ${Math.max(0.08, twinkle)})`
+          : `rgba(165, 215, 255, ${Math.max(0.08, twinkle)})`;
+        sctx.fill();
+      }
+
+      spawnComet();
+      const comPx = sp * -0.016;
+      const comPy = sp * -0.062;
+      for (let i = comets.length - 1; i >= 0; i -= 1) {
+        const c = comets[i];
+        c.x += c.vx;
+        c.y += c.vy;
+        c.life -= 1;
+        const ox = c.x + comPx;
+        const oy = c.y + comPy;
+        const opacity = Math.max(0, c.life / c.maxLife);
+        const grad = sctx.createLinearGradient(ox, oy, ox - c.vx * 52, oy - c.vy * 52);
+        grad.addColorStop(0, `rgba(234, 215, 164, ${0.82 * opacity})`);
+        grad.addColorStop(0.35, `rgba(139, 213, 255, ${0.38 * opacity})`);
+        grad.addColorStop(1, "rgba(121, 183, 255, 0)");
+        sctx.strokeStyle = grad;
+        sctx.lineWidth = 1.8;
+        sctx.beginPath();
+        sctx.moveTo(ox, oy);
+        sctx.lineTo(ox - c.vx * 58, oy - c.vy * 58);
+        sctx.stroke();
+        if (c.life <= 0 || c.y > sh + 80 || c.x < -120) comets.splice(i, 1);
+      }
+
+      requestAnimationFrame(creditsSkyDraw);
+    }
+
+    let fw = 0;
+    let fh = 0;
+    let fdpr = 1;
+    /** @type {{ x: number; y: number; rx: number; ry: number; rot: number; vx: number; vy: number; vr: number; phase: number; layer: number; baseA: number }[]} */
+    let puffs = [];
+    /** @type {{ x: number; y: number; r: number; vx: number; vy: number; tw: number; phase: number; gold: boolean; pz: number }[]} */
+    let motes = [];
+    let scrollSmooth = readCreditsScrollTarget();
+
+    function frand(a, b) {
+      return a + Math.random() * (b - a);
+    }
+
+    function fogResize() {
+      fdpr = Math.min(window.devicePixelRatio || 1, 2);
+      fw = window.innerWidth;
+      fh = window.innerHeight;
+      fogCanvas.width = Math.floor(fw * fdpr);
+      fogCanvas.height = Math.floor(fh * fdpr);
+      fogCanvas.style.width = `${fw}px`;
+      fogCanvas.style.height = `${fh}px`;
+      fctx.setTransform(fdpr, 0, 0, fdpr, 0, 0);
+      puffs = [];
+      const np = Math.round(Math.min(48, Math.max(26, (fw * fh) / 38000)));
+      for (let i = 0; i < np; i += 1) {
+        puffs.push({
+          x: frand(-fw * 0.18, fw * 1.15),
+          y: frand(-fh * 0.12, fh * 1.1),
+          rx: frand(72, 290),
+          ry: frand(54, 230),
+          rot: frand(0, Math.PI * 2),
+          vx: frand(-0.42, 0.42),
+          vy: frand(-0.2, 0.14),
+          vr: frand(-0.0018, 0.0018),
+          phase: frand(0, Math.PI * 2),
+          layer: Math.random(),
+          baseA: frand(0.038, 0.105),
+        });
+      }
+      motes = [];
+      const nm = Math.round(Math.min(200, Math.max(85, (fw * fh) / 3400)));
+      for (let i = 0; i < nm; i += 1) {
+        motes.push({
+          x: Math.random() * fw,
+          y: Math.random() * fh,
+          r: frand(0.35, 2.25),
+          vx: frand(-0.28, 0.28),
+          vy: frand(-0.52, -0.06),
+          tw: frand(0.007, 0.023),
+          phase: frand(0, Math.PI * 2),
+          gold: Math.random() > 0.58,
+          pz: Math.random(),
+        });
+      }
+      scrollSmooth = readCreditsScrollTarget();
+    }
+
+    function creditsFogDraw(time) {
+      if (fogStopped) return;
+      const scrollTarget = readCreditsScrollTarget();
+      scrollSmooth += (scrollTarget - scrollSmooth) * 0.118;
+      const sp = scrollSmooth;
+      const roll01 = Math.min(1, Math.max(0, sp / 1180));
+      const imm = Math.min(1, Math.max(0.78, 0.78 + 0.22 * roll01));
+      fctx.clearRect(0, 0, fw, fh);
+
+      const rMist = Math.round(238 - imm * 105);
+      const gMist = Math.round(208 + imm * 28);
+      const bMist = Math.round(155 + imm * 95);
+
+      fctx.save();
+      fctx.globalCompositeOperation = "screen";
+
+      for (let i = 0; i < puffs.length; i += 1) {
+        const p = puffs[i];
+        p.rot += p.vr;
+        p.x += p.vx + Math.sin(time * 0.00032 + p.phase) * 0.26;
+        p.y += p.vy + Math.cos(time * 0.00026 + p.phase * 1.2) * 0.18;
+        if (p.x < -p.rx * 2.2) p.x += fw + p.rx * 3;
+        if (p.x > fw + p.rx * 2.2) p.x -= fw + p.rx * 3;
+        if (p.y < -p.ry * 2) p.y += fh + p.ry * 2.5;
+        if (p.y > fh + p.ry * 2) p.y -= fh + p.ry * 2.5;
+
+        const ox = sp * (-0.016 - p.layer * 0.058);
+        const oy = sp * (-0.048 - p.layer * 0.13);
+        const cx = p.x + ox;
+        const cy = p.y + oy;
+
+        const a0 = p.baseA * (0.82 + imm * 0.35);
+        fctx.globalAlpha = 0.92;
+        fctx.save();
+        fctx.translate(cx, cy);
+        fctx.rotate(p.rot);
+        fctx.scale(p.rx / 100, p.ry / 100);
+        const grd = fctx.createRadialGradient(0, 0, 0, 0, 0, 100);
+        grd.addColorStop(0, `rgba(${rMist}, ${gMist}, ${bMist}, ${a0})`);
+        grd.addColorStop(0.42, `rgba(${rMist}, ${gMist}, ${bMist}, ${a0 * 0.42})`);
+        grd.addColorStop(1, "rgba(8, 14, 28, 0)");
+        fctx.fillStyle = grd;
+        fctx.beginPath();
+        fctx.arc(0, 0, 100, 0, Math.PI * 2);
+        fctx.fill();
+        fctx.restore();
+      }
+
+      fctx.globalCompositeOperation = "lighter";
+      for (let i = 0; i < motes.length; i += 1) {
+        const m = motes[i];
+        const twinkle = 0.62 + Math.sin(time * m.tw + m.phase) * 0.24;
+        const pa = sp * (-0.011 - m.pz * 0.048);
+        const pb = sp * (-0.038 - m.pz * 0.09);
+        m.x += m.vx * 0.09 + Math.sin(time * 0.0004 + m.phase) * 0.06;
+        m.y += m.vy * 0.07;
+        if (m.y < -6) m.y = fh + 6;
+        if (m.x < -4) m.x = fw + 4;
+        if (m.x > fw + 4) m.x = -4;
+
+        const mtx = m.x + pa;
+        const mty = m.y + pb;
+        const alpha = Math.max(0.06, Math.min(0.72, twinkle * (0.52 + imm * 0.38)));
+        fctx.globalAlpha = 1;
+        fctx.fillStyle = m.gold
+          ? `rgba(236, 212, 168, ${alpha})`
+          : `rgba(165, 210, 255, ${alpha})`;
+        fctx.beginPath();
+        fctx.arc(mtx, mty, m.r, 0, Math.PI * 2);
+        fctx.fill();
+      }
+
+      fctx.restore();
+      requestAnimationFrame(creditsFogDraw);
+    }
+
+    function onResizeCreditsParticles() {
+      skyResize();
+      fogResize();
+    }
+
+    voyageCreditsParticlesHandle = {
+      stop() {
+        skyStopped = true;
+        fogStopped = true;
+        resetVoyageCreditsRollParallaxClock();
+        window.removeEventListener("resize", onResizeCreditsParticles);
+        voyageCreditsParticlesHandle = null;
+      },
+    };
+
+    resetVoyageCreditsRollParallaxClock();
+    skyResize();
+    fogResize();
+    window.addEventListener("resize", onResizeCreditsParticles, { passive: true });
+    requestAnimationFrame(creditsSkyDraw);
+    requestAnimationFrame(creditsFogDraw);
   }
 
   /**
@@ -959,33 +1331,182 @@
 
   function initPointerGlow() {
     if (reducedMotion) return;
-    let tx = 50;
-    let ty = 18;
-    let cx = tx;
-    let cy = ty;
-    /** Ne recalcule --mx/--my que si le pointeur bouge (réduit le travail par frame). */
-    let pointerDirty = true;
+
+    const finePointer =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+    /* ── Curseur losange (identique à CustomCursor.tsx React) - non monté sur tactile ── */
+    const cursorEl = document.createElement("div");
+    cursorEl.id = "senac-diamond-cursor";
+
+    /* Halo flou derrière le losange (lent, spring souple) */
+    const haloEl = document.createElement("div");
+    haloEl.className = "dc-halo";
+
+    /* Losange SVG + queue */
+    const shapeEl = document.createElement("div");
+    shapeEl.className = "dc-shape";
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("width", "22");
+    svg.setAttribute("height", "30");
+    svg.setAttribute("viewBox", "0 0 22 30");
+    svg.setAttribute("fill", "none");
+
+    const poly = document.createElementNS(ns, "polygon");
+    poly.setAttribute("points", "11,1 21,11 11,21 1,11");
+    poly.setAttribute("stroke-width", "1.35");
+
+    const dot = document.createElementNS(ns, "circle");
+    dot.setAttribute("cx", "11");
+    dot.setAttribute("cy", "11");
+    dot.setAttribute("r", "1.65");
+
+    const tail = document.createElementNS(ns, "line");
+    tail.setAttribute("x1", "11"); tail.setAttribute("y1", "21");
+    tail.setAttribute("x2", "11"); tail.setAttribute("y2", "27");
+    tail.setAttribute("stroke-width", "1");
+    tail.setAttribute("stroke-opacity", "0.85");
+
+    const arrow = document.createElementNS(ns, "polyline");
+    arrow.setAttribute("points", "8,24 11,28 14,24");
+    arrow.setAttribute("stroke-width", "1");
+    arrow.setAttribute("stroke-opacity", "0.85");
+    arrow.setAttribute("stroke-linejoin", "round");
+    arrow.setAttribute("fill", "none");
+
+    svg.appendChild(poly);
+    svg.appendChild(dot);
+    svg.appendChild(tail);
+    svg.appendChild(arrow);
+    shapeEl.appendChild(svg);
+    cursorEl.appendChild(haloEl);
+    cursorEl.appendChild(shapeEl);
+    if (finePointer) {
+      document.body.appendChild(cursorEl);
+    }
+
+    /* Dans l'iframe React (act2) : le curseur parent s'occupe du rendu -
+       on masque le nôtre pour éviter le doublon (pointeur précis uniquement). */
+    if (finePointer && window.parent !== window) {
+      cursorEl.style.display = "none";
+    }
+
+    /* Couleurs : or désert ↔ bleu constellation selon --immersive-shift */
+    const GOLD_STROKE = "#e8d5a4";
+    const GOLD_FILL   = "rgba(197,160,89,0.14)";
+    const GOLD_TAIL   = "#c5a059";
+    const GOLD_HALO   = "radial-gradient(circle, rgba(197,160,89,0.65) 0%, transparent 70%)";
+
+    const BLUE_STROKE = "#cce8ff";
+    const BLUE_FILL   = "rgba(90,168,255,0.14)";
+    const BLUE_TAIL   = "#8bd5ff";
+    const BLUE_HALO   = "radial-gradient(circle, rgba(100,185,235,0.7) 0%, transparent 70%)";
+
+    let lastShift = -1;
+
+    function applyColors(shift) {
+      if (
+        !finePointer ||
+        !poly ||
+        !dot ||
+        !tail ||
+        !arrow ||
+        !cursorEl ||
+        !haloEl
+      ) {
+        return;
+      }
+      if (Math.abs(shift - lastShift) < 0.02) return;
+      lastShift = shift;
+      const night = shift >= 0.46;
+      const stroke = night ? BLUE_STROKE : GOLD_STROKE;
+      const fill   = night ? BLUE_FILL   : GOLD_FILL;
+      const tailC  = night ? BLUE_TAIL   : GOLD_TAIL;
+      const halo   = night ? BLUE_HALO   : GOLD_HALO;
+      poly.setAttribute("fill",   fill);
+      poly.setAttribute("stroke", stroke);
+      dot.setAttribute("fill",    stroke);
+      tail.setAttribute("stroke", tailC);
+      arrow.setAttribute("stroke", tailC);
+      haloEl.style.background = halo;
+    }
+    applyColors(0);
+
+    /* Positions : rapide pour le losange, souple pour le halo */
+    let rawX = -200, rawY = -200;
+    /* Halo : lerp plus lent (comme `tx/ty` dans CustomCursor) */
+    let hx = rawX, hy = rawY;
+    /* Losange : lerp plus rapide (comme `sx/sy`) */
+    let lx = rawX, ly = rawY;
+
+    /* Pour --mx/--my de l'ambiance de fond */
+    let mx_pct = 50, my_pct = 18;
+
+    /* Portrait tilt */
+    let prx = 0, pry = 0, crx = 0, cry = 0;
+    const TILT_MAX = 10, DEPTH_MAX = 8, LERP_TILT = 0.06;
 
     window.addEventListener(
       "pointermove",
       (event) => {
-        tx = (event.clientX / window.innerWidth) * 100;
-        ty = (event.clientY / window.innerHeight) * 100;
-        pointerDirty = true;
+        rawX = event.clientX;
+        rawY = event.clientY;
+        mx_pct = (rawX / window.innerWidth)  * 100;
+        my_pct = (rawY / window.innerHeight) * 100;
+
+        const nx = (rawX / window.innerWidth  - 0.5) * 2;
+        const ny = (rawY / window.innerHeight - 0.5) * 2;
+        prx = -ny * TILT_MAX;
+        pry =  nx * TILT_MAX;
       },
       { passive: true }
     );
 
     const loop = () => {
-      if (pointerDirty || Math.abs(tx - cx) > 0.04 || Math.abs(ty - cy) > 0.04) {
-        cx += (tx - cx) * 0.08;
-        cy += (ty - cy) * 0.08;
-        root.style.setProperty("--mx", `${cx}%`);
-        root.style.setProperty("--my", `${cy}%`);
-        if (Math.abs(tx - cx) < 0.05 && Math.abs(ty - cy) < 0.05) {
-          pointerDirty = false;
-        }
+      /* Halo ambiance (--mx/--my) */
+      root.style.setProperty("--mx", `${mx_pct.toFixed(1)}%`);
+      root.style.setProperty("--my", `${my_pct.toFixed(1)}%`);
+
+      /* Losange (rapide) */
+      lx += (rawX - lx) * 0.22;
+      ly += (rawY - ly) * 0.22;
+
+      /* Halo (souple, décalé) */
+      hx += (rawX - hx) * 0.065;
+      hy += (rawY - hy) * 0.065;
+
+      if (finePointer && cursorEl && haloEl) {
+        cursorEl.style.transform = `translate(${lx.toFixed(1)}px, ${ly.toFixed(1)}px)`;
+        haloEl.style.left = `${(hx - lx).toFixed(1)}px`;
+        haloEl.style.top = `${(hy - ly).toFixed(1)}px`;
       }
+
+      /* Couleurs selon immersion */
+      const ht = parseFloat(root.style.getPropertyValue("--hero-t")  || "0");
+      const ft = parseFloat(root.style.getPropertyValue("--frise-t") || "0");
+      applyColors(Math.min(1, ht + ft * 0.42));
+
+      /* Portrait tilt */
+      crx += (prx - crx) * LERP_TILT;
+      cry += (pry - cry) * LERP_TILT;
+      const nrx = crx / TILT_MAX;
+      const nry = cry / TILT_MAX;
+      const ptx = -nry * DEPTH_MAX;
+      const pty =  nrx * DEPTH_MAX;
+      const gx  = 50 + nry * 38;
+      const gy  = 35 + nrx * 28;
+      const go  = Math.min(0.9, (Math.abs(nrx) + Math.abs(nry)) * 0.75);
+
+      root.style.setProperty("--portrait-rx", `${crx.toFixed(2)}deg`);
+      root.style.setProperty("--portrait-ry", `${cry.toFixed(2)}deg`);
+      root.style.setProperty("--portrait-tx", `${ptx.toFixed(2)}px`);
+      root.style.setProperty("--portrait-ty", `${pty.toFixed(2)}px`);
+      root.style.setProperty("--portrait-gx", `${gx.toFixed(1)}%`);
+      root.style.setProperty("--portrait-gy", `${gy.toFixed(1)}%`);
+      root.style.setProperty("--portrait-go", `${go.toFixed(3)}`);
+
       requestAnimationFrame(loop);
     };
     requestAnimationFrame(loop);
@@ -1018,6 +1539,7 @@
       root.classList.add("senac-parallax-live");
       yearGaugeLenis = lenis;
       applyScrollDerivedState(lenis.scroll);
+      if (senacFreezeLenisForChoiceOverlay) senacFreezeLenisForChoiceOverlay();
       return true;
     } catch {
       return false;
@@ -1213,43 +1735,388 @@
 
     let inChapterThree = false;
     let lastSwitchAt = 0;
-    const COOLDOWN_MS = reducedMotion ? 180 : 520;
+    const COOLDOWN_MS = reducedMotion ? 120 : 240;
+    let curtainHideT = 0;
 
-    function playCurtain() {
-      if (!curtain) return;
-      curtain.classList.remove("is-active");
-      // Force reflow to replay the fade every time (down and up).
-      void curtain.offsetWidth;
-      curtain.classList.add("is-active");
-      window.setTimeout(() => {
-        curtain.classList.remove("is-active");
-      }, reducedMotion ? 350 : 950);
+    function hideChapterCurtain() {
+      if (curtainHideT) { window.clearTimeout(curtainHideT); curtainHideT = 0; }
+      if (curtain) curtain.classList.remove("is-active");
     }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          const now = performance.now();
-          const nextInChapter =
-            entry.isIntersecting && entry.intersectionRatio >= 0.18;
-          if (nextInChapter === inChapterThree) continue;
-          if (now - lastSwitchAt < COOLDOWN_MS) continue;
+    function playCurtain(durationMs) {
+      if (!curtain) return;
+      if (curtainHideT) { window.clearTimeout(curtainHideT); curtainHideT = 0; }
+      curtain.classList.remove("is-active");
+      void curtain.offsetWidth;
+      curtain.classList.add("is-active");
+      curtainHideT = window.setTimeout(() => {
+        curtainHideT = 0;
+        curtain.classList.remove("is-active");
+      }, reducedMotion ? 300 : durationMs);
+    }
 
-          inChapterThree = nextInChapter;
-          lastSwitchAt = now;
+    /**
+     * Progression 0→1 quand la section traverse le viewport - pour couches parallax.
+     */
+    function updateChapterThreeParallax() {
+      if (!(target instanceof HTMLElement)) return;
+      if (reducedMotion) {
+        target.style.removeProperty("--ch3-scroll");
+        target.style.removeProperty("--ch3-scroll-soft");
+        return;
+      }
+      const rect = target.getBoundingClientRect();
+      const vh = window.innerHeight;
+      let t = 0;
+      if (rect.top >= vh || rect.bottom <= 0) {
+        t = rect.bottom <= 0 ? 1 : 0;
+      } else {
+        const denom = Math.max(rect.height + vh, 1);
+        t = Math.min(1, Math.max(0, (vh - rect.top) / denom));
+      }
+      const soft = t * t;
+      target.style.setProperty("--ch3-scroll", t.toFixed(4));
+      target.style.setProperty("--ch3-scroll-soft", soft.toFixed(4));
+    }
 
-          if (inChapterThree) {
-            inner.classList.add("is-visible");
-          } else {
-            inner.classList.remove("is-visible");
-          }
-          playCurtain();
+    /* ── Détection par scroll (réactive - volet + parallax tous les événements) ── */
+    let tickingVisibility = false;
+    function onScrollCh3() {
+      updateChapterThreeParallax();
+
+      if (tickingVisibility) return;
+      tickingVisibility = true;
+      requestAnimationFrame(() => {
+        tickingVisibility = false;
+
+        const now = performance.now();
+        if (now - lastSwitchAt < COOLDOWN_MS) return;
+
+        const rect = target.getBoundingClientRect();
+        /* Entré dans Ch3 : le haut de l'élément franchit 55 % du viewport vers le haut */
+        const entering = rect.top < window.innerHeight * 0.55 && rect.bottom > 0;
+
+        if (entering === inChapterThree) return;
+
+        inChapterThree = entering;
+        lastSwitchAt = now;
+
+        if (inChapterThree) {
+          inner.classList.add("is-visible");
+          playCurtain(900);
+        } else {
+          inner.classList.remove("is-visible");
+          /* Fondu au noir aussi au retour vers Ch2 */
+          playCurtain(700);
         }
-      },
-      { threshold: [0.12, 0.18, 0.24] }
-    );
+      });
+    }
 
-    observer.observe(target);
+    /* Brancher sur Lenis ou scroll natif */
+    function attachScrollListener() {
+      if (yearGaugeLenis && typeof yearGaugeLenis.on === "function") {
+        yearGaugeLenis.on("scroll", onScrollCh3);
+      } else {
+        window.addEventListener("scroll", onScrollCh3, { passive: true });
+      }
+      onScrollCh3(); /* état initial */
+    }
+
+    /* Lenis peut ne pas être prêt au moment de l'init - on attend qu'il soit disponible */
+    if (yearGaugeLenis) {
+      attachScrollListener();
+    } else {
+      const poll = window.setInterval(() => {
+        if (!yearGaugeLenis) return;
+        window.clearInterval(poll);
+        attachScrollListener();
+      }, 80);
+      /* Fallback si Lenis ne charge jamais */
+      window.setTimeout(() => {
+        window.clearInterval(poll);
+        if (!yearGaugeLenis) window.addEventListener("scroll", onScrollCh3, { passive: true });
+      }, 3000);
+    }
+  }
+
+  /** Générique de fin façon cinéma - scroll vertical, Lenis figé, Escape / passer pour fermer. */
+  function initVoyageCredits() {
+    const overlay = document.getElementById("voyage-credits");
+    const roll = document.getElementById("voyage-credits-roll");
+    const skipBtn = document.getElementById("voyage-credits-skip");
+    const trigger = document.getElementById("voyage-credits-trigger");
+    const ctaWrap = document.getElementById("voyage-credits-cta");
+    if (
+      !(overlay instanceof HTMLElement) ||
+      !(roll instanceof HTMLElement) ||
+      !skipBtn ||
+      !trigger ||
+      !(ctaWrap instanceof HTMLElement)
+    ) {
+      return;
+    }
+
+    const bgVideo = overlay.querySelector(".voyage-credits-bg-video");
+
+    function notifyParentCreditsChrome(isOpen) {
+      if (window.parent === window) return;
+      try {
+        window.parent.postMessage(
+          { type: "senac-credits-chrome", open: isOpen },
+          window.location.origin
+        );
+      } catch {
+        /* ignore */
+      }
+    }
+
+    let open = false;
+    const motionReduced =
+      reducedMotion || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function stopPageScroll() {
+      document.documentElement.classList.add("voyage-credits-active");
+      document.body.classList.add("voyage-credits-active");
+      if (yearGaugeLenis && typeof yearGaugeLenis.stop === "function") {
+        try {
+          yearGaugeLenis.stop();
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+
+    function resumePageScroll() {
+      document.documentElement.classList.remove("voyage-credits-active");
+      document.body.classList.remove("voyage-credits-active");
+      if (yearGaugeLenis && typeof yearGaugeLenis.start === "function") {
+        try {
+          yearGaugeLenis.start();
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+
+    function stripPreviewCreditsParam() {
+      try {
+        const url = new URL(window.location.href);
+        if (!url.searchParams.has("previewCredits")) return;
+        url.searchParams.delete("previewCredits");
+        const next = `${url.pathname}${url.search}${url.hash}`;
+        window.history.replaceState({}, "", next);
+      } catch {
+        /* ignore */
+      }
+    }
+
+    /** Retour à l’app React (même cible que « Retour à l’expérience »). */
+    function goToMainExperience() {
+      const home = `${window.location.origin}/`;
+      try {
+        if (window.parent !== window) {
+          window.top.location.href = home;
+        } else {
+          window.location.href = home;
+        }
+      } catch {
+        try {
+          window.location.href = home;
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+
+    let creditsExitUnlocked = false;
+    /** @type {(() => void) | null} */
+    let staticScrollCleanup = null;
+    /** Très court battement après la fin du rouleau avant le CTA (ms). */
+    const CREDITS_REVEAL_DELAY_MS = 48;
+    let revealTimer = 0;
+
+    function clearRevealTimer() {
+      if (revealTimer) {
+        window.clearTimeout(revealTimer);
+        revealTimer = 0;
+      }
+    }
+
+    function clearStaticScrollListener() {
+      if (typeof staticScrollCleanup === "function") {
+        staticScrollCleanup();
+        staticScrollCleanup = null;
+      }
+    }
+
+    function detachCreditsPointer() {
+      window.removeEventListener("pointermove", onCreditsPointerMove);
+      overlay.style.removeProperty("--credits-mx");
+      overlay.style.removeProperty("--credits-my");
+    }
+
+    /** @param {PointerEvent} e */
+    function onCreditsPointerMove(e) {
+      if (!open || creditsExitUnlocked || motionReduced) return;
+      const mx = e.clientX / Math.max(window.innerWidth, 1);
+      const my = e.clientY / Math.max(window.innerHeight, 1);
+      overlay.style.setProperty("--credits-mx", mx.toFixed(4));
+      overlay.style.setProperty("--credits-my", my.toFixed(4));
+    }
+
+    function playCreditsVideo() {
+      if (!(bgVideo instanceof HTMLVideoElement)) return;
+      try {
+        bgVideo.currentTime = 0;
+        const p = bgVideo.play();
+        if (p !== undefined) void p.catch(() => {});
+      } catch {
+        /* ignore */
+      }
+    }
+
+    function pauseCreditsVideo() {
+      if (!(bgVideo instanceof HTMLVideoElement)) return;
+      try {
+        bgVideo.pause();
+        bgVideo.currentTime = 0;
+      } catch {
+        /* ignore */
+      }
+    }
+
+    function lockExitControls() {
+      creditsExitUnlocked = false;
+      ctaWrap.classList.add("is-locked-out");
+      skipBtn.setAttribute("tabindex", "-1");
+      skipBtn.setAttribute("aria-hidden", "true");
+    }
+
+    function revealExitControls() {
+      creditsExitUnlocked = true;
+      ctaWrap.classList.remove("is-locked-out");
+      skipBtn.removeAttribute("tabindex");
+      skipBtn.setAttribute("aria-hidden", "false");
+      try {
+        skipBtn.focus({ preventScroll: true });
+      } catch {
+        /* ignore */
+      }
+    }
+
+    /** @param {KeyboardEvent} e */
+    function onKeyEscape(e) {
+      if (e.key !== "Escape") return;
+      if (!creditsExitUnlocked) return;
+      exitCreditsToHome();
+    }
+
+    function scheduleRevealAfterCreditsDone() {
+      clearRevealTimer();
+      revealTimer = window.setTimeout(() => {
+        revealTimer = 0;
+        revealExitControls();
+      }, CREDITS_REVEAL_DELAY_MS);
+    }
+
+    /** @param {AnimationEvent} e */
+    function onCreditsRollAnimationEnd(e) {
+      if (e.animationName !== "voyage-credits-marquee") return;
+      roll.removeEventListener("animationend", onCreditsRollAnimationEnd);
+      scheduleRevealAfterCreditsDone();
+    }
+
+    /** Liste statique : débloquer le retour quand le bas des crédits a été atteint dans le clip. */
+    function attachStaticScrollFinish() {
+      clearStaticScrollListener();
+      const clip = overlay.querySelector(".voyage-credits-roll-clip");
+      if (!(clip instanceof HTMLElement)) return;
+
+      function checkScrollEnd() {
+        if (creditsExitUnlocked || !open) return;
+        if (clip.scrollTop + clip.clientHeight >= clip.scrollHeight - 36) {
+          clearStaticScrollListener();
+          scheduleRevealAfterCreditsDone();
+        }
+      }
+
+      clip.addEventListener("scroll", checkScrollEnd, { passive: true });
+      staticScrollCleanup = () => {
+        clip.removeEventListener("scroll", checkScrollEnd);
+      };
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(checkScrollEnd);
+      });
+    }
+
+    function exitCreditsToHome() {
+      if (!open || !creditsExitUnlocked) return;
+      notifyParentCreditsChrome(false);
+      stopVoyageCreditsParticles();
+      open = false;
+      creditsExitUnlocked = false;
+      roll.removeEventListener("animationend", onCreditsRollAnimationEnd);
+      clearStaticScrollListener();
+      detachCreditsPointer();
+      pauseCreditsVideo();
+      overlay.classList.remove("is-open");
+      overlay.classList.remove("voyage-credits--static");
+      overlay.setAttribute("aria-hidden", "true");
+      roll.classList.remove("is-rolling");
+      stripPreviewCreditsParam();
+      resumePageScroll();
+      window.removeEventListener("keydown", onKeyEscape);
+      clearRevealTimer();
+      lockExitControls();
+      goToMainExperience();
+    }
+
+    function openCredits() {
+      if (open) return;
+      open = true;
+      clearRevealTimer();
+      lockExitControls();
+      clearStaticScrollListener();
+      detachCreditsPointer();
+      overlay.classList.add("is-open");
+      overlay.setAttribute("aria-hidden", "false");
+
+      stopPageScroll();
+      notifyParentCreditsChrome(true);
+      startVoyageCreditsParticles(overlay);
+      window.addEventListener("keydown", onKeyEscape);
+
+      playCreditsVideo();
+
+      if (motionReduced) {
+        overlay.classList.add("voyage-credits--static");
+        roll.classList.remove("is-rolling");
+        attachStaticScrollFinish();
+        return;
+      }
+
+      overlay.style.setProperty("--credits-mx", "0.5");
+      overlay.style.setProperty("--credits-my", "0.5");
+      window.addEventListener("pointermove", onCreditsPointerMove, { passive: true });
+
+      overlay.classList.remove("voyage-credits--static");
+      roll.classList.remove("is-rolling");
+      void roll.offsetHeight;
+      const h = roll.scrollHeight;
+      /** Défilement vertical : plus lent qu’avant (~38-92 s selon la hauteur du texte). */
+      const duration = Math.min(92, Math.max(38, h / 28));
+      roll.style.setProperty("--credits-duration", `${duration}s`);
+      void roll.offsetHeight;
+      roll.classList.add("is-rolling");
+      beginVoyageCreditsRollParallaxClock(duration);
+      roll.addEventListener("animationend", onCreditsRollAnimationEnd);
+    }
+
+    trigger.addEventListener("click", () => openCredits());
+    skipBtn.addEventListener("click", () => {
+      if (!creditsExitUnlocked) return;
+      exitCreditsToHome();
+    });
   }
 
   /**
@@ -1318,6 +2185,8 @@
     audio.setAttribute("playsinline", "");
 
     let started = false;
+    /** Évite de spammer audio.play() à chaque frame si le navigateur bloque encore la lecture. */
+    let lastPlayAttempt = 0;
     let fadeTimer = 0;
     let rafId = 0;
     let hidden = document.hidden;
@@ -1395,15 +2264,29 @@
       const tick = () => {
         wantedVolume = computeWantedVolume();
 
-        if (started && wantedVolume > 0.003 && audio.paused) {
-          void audio.play().catch(() => {});
+        /**
+         * Lecture : dès que le parent a débloqué (`parentUnlocked`) et qu’on veut du volume,
+         * on retente play() (throttle) - évite de dépendre uniquement du 1er postMessage,
+         * souvent envoyé avant que cet écouteur soit prêt.
+         */
+        if (parentUnlocked && wantedVolume > 0.003 && audio.paused) {
+          const now = performance.now();
+          if (now - lastPlayAttempt > 560) {
+            lastPlayAttempt = now;
+            void audio
+              .play()
+              .then(() => {
+                started = true;
+              })
+              .catch(() => {});
+          }
         }
 
         /** Inertie plus lente pour lisser l’aller-retour autour du seuil du chapitre III. */
         const k = hidden ? 0.08 : 0.045;
         audio.volume += (wantedVolume - audio.volume) * k;
 
-        if (started && wantedVolume < 0.002 && audio.volume < 0.006 && !audio.paused) {
+        if (wantedVolume < 0.002 && audio.volume < 0.006 && !audio.paused) {
           audio.pause();
         }
 
@@ -1414,20 +2297,16 @@
 
     async function tryStart() {
       if (started && !audio.paused) {
-        syncTargetVolume();
+        startUpdateLoop();
         return;
       }
       started = true;
       try {
         await audio.play();
       } catch (_) {
-        try {
-          audio.src = SENAC_AMBIENCE_SRC_DEV;
-          await audio.play();
-        } catch (_) {
-          started = false;
-          return;
-        }
+        started = false;
+        startUpdateLoop();
+        return;
       }
       fadeTo(0, 0);
       startUpdateLoop();
@@ -1442,7 +2321,7 @@
 
     function onVisibility() {
       hidden = document.hidden;
-      if (!hidden && started && !audio.paused) {
+      if (!hidden && parentUnlocked) {
         void audio.play().catch(() => {});
       }
     }
@@ -1455,7 +2334,7 @@
         parentVolume = Math.min(1, Math.max(0, data.volume));
       }
       parentUnlocked = Boolean(data.unlocked);
-      if (parentUnlocked && !started) {
+      if (parentUnlocked) {
         void tryStart();
       }
     }
@@ -1466,6 +2345,18 @@
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("message", onParentAudioMessage);
 
+    /** Boucle toujours active : volume + retry play si le 1er envoi parent est arrivé trop tôt. */
+    startUpdateLoop();
+
+    /** Demande l’état audio au parent une fois l’écouteur `message` en place (évite messages perdus). */
+    if (window.parent !== window) {
+      try {
+        window.parent.postMessage({ type: "senac-request-audio" }, window.location.origin);
+      } catch (_) {
+        /* ignore */
+      }
+    }
+
     window.addEventListener("beforeunload", () => {
       clearFadeTimer();
       if (rafId) cancelAnimationFrame(rafId);
@@ -1473,6 +2364,298 @@
       audio.src = "";
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("message", onParentAudioMessage);
+    });
+  }
+
+  /**
+   * Choix d'entrée Cinéma / Exploration + toggle permanent bas-gauche.
+   * Mode Cinéma : défilement auto uniquement (molette/clavier tactile bloqués) jusqu'en bas ;
+   * l'utilisateur doit activer Exploration pour continuer (pas de passage auto).
+   */
+  function initScrollModeChoice() {
+    const choiceEl  = document.getElementById("scroll-mode-choice");
+    const backdropEl= document.getElementById("smc-backdrop");
+    const toggleEl  = document.getElementById("scroll-mode-toggle");
+    const cinemaBtn = document.getElementById("smc-cinema");
+    const exploreBtn= document.getElementById("smc-explore");
+    const tmtCinema = document.getElementById("smt-cinema-btn");
+    const tmtExplore= document.getElementById("smt-explore-btn");
+
+    if (!choiceEl || !toggleEl || !cinemaBtn || !exploreBtn || !tmtCinema || !tmtExplore) return;
+
+    /* ── État : scroll bloqué jusqu'à fermeture visuelle complète du modal ── */
+    let mode = /** @type {"cinema"|"explore"|null} */ (null);
+    /** Bloque entrées scroll tant que l'overlay (ou son fondu de sortie) peut encore être vu */
+    let choiceOverlayScrollLock = true;
+    let retryTimer = 0;
+    let cinemaExploreCalloutEl = /** @type {HTMLElement|null} */ (null);
+    const SPEED_PX_S = 44;
+    const SCROLL_BLOCK_KEYS = new Set([
+      "ArrowDown",
+      "ArrowUp",
+      "PageDown",
+      "PageUp",
+      "Home",
+      "End",
+      " ",
+      "Spacebar",
+    ]);
+
+    /* ── Auto-scroll via Lenis natif (durée calculée, pas de RAF custom) ── */
+    function startAutoScroll() {
+      if (retryTimer) { window.clearTimeout(retryTimer); retryTimer = 0; }
+
+      const lenis = yearGaugeLenis;
+      if (!lenis || typeof lenis.scrollTo !== "function") {
+        /* Lenis pas encore prêt - réessaye dans 150 ms */
+        retryTimer = window.setTimeout(startAutoScroll, 150);
+        return;
+      }
+
+      const curY  = lenis.scroll;
+      const maxY  = getScrollMax();
+      const remaining = maxY - curY;
+      if (remaining < 2) {
+        showCinemaExploreCallout();
+        return;
+      }
+
+      const duration = remaining / SPEED_PX_S;   /* secondes */
+      lenis.scrollTo(maxY, {
+        duration,
+        easing: (t) => t,                         /* vitesse constante */
+        onComplete: () => {
+          if (mode === "cinema") showCinemaExploreCallout();
+        },
+      });
+    }
+
+    function stopAutoScroll() {
+      if (retryTimer) { window.clearTimeout(retryTimer); retryTimer = 0; }
+      /* Annule le scroll Lenis en cours en ciblant la position actuelle */
+      const lenis = yearGaugeLenis;
+      if (lenis && typeof lenis.scrollTo === "function") {
+        lenis.scrollTo(lenis.scroll, { immediate: true });
+      }
+    }
+
+    /** Laisse passer clavier depuis boutons/champs interactifs uniquement */
+    function cinemaKeyTargetIsPassthrough(el) {
+      if (!el || typeof el.closest !== "function") return false;
+      return !!(
+        el.closest("button,a[href],[role='button'],input,textarea,select,[contenteditable='true']")
+      );
+    }
+
+    /** Bloque scroll tant que le modal impose le gel ou que le mode Cinéma impose le gel */
+    function scrollGuardActive() {
+      return choiceOverlayScrollLock || mode === "cinema";
+    }
+
+    function onWheelCinemaLock(e) {
+      if (!scrollGuardActive()) return;
+      e.preventDefault();
+      try {
+        e.stopImmediatePropagation();
+      } catch (_) {
+        /* ignore */
+      }
+    }
+
+    function onTouchMoveCinemaLock(e) {
+      if (!scrollGuardActive()) return;
+      e.preventDefault();
+      try {
+        e.stopImmediatePropagation();
+      } catch (_) {
+        /* ignore */
+      }
+    }
+
+    function onKeydownCinemaLock(e) {
+      if (!scrollGuardActive()) return;
+      if (!SCROLL_BLOCK_KEYS.has(e.key)) return;
+      if (cinemaKeyTargetIsPassthrough(/** @type {Element} */ (e.target))) return;
+      e.preventDefault();
+    }
+
+    document.addEventListener("wheel", onWheelCinemaLock, { passive: false, capture: true });
+    document.addEventListener("touchmove", onTouchMoveCinemaLock, {
+      passive: false,
+      capture: true,
+    });
+    window.addEventListener("keydown", onKeydownCinemaLock);
+
+    /**
+     * Appel après init Lenis ou à chaque besoin - Lenis ignore overflow:hidden tant qu'il roule au RAF :
+     * on stop() tant que l'overlay bloque encore la navigation.
+     */
+    function freezeLenisIfOverlayBlocks() {
+      if (!choiceOverlayScrollLock || !yearGaugeLenis || typeof yearGaugeLenis.stop !== "function") return;
+      yearGaugeLenis.stop();
+    }
+    senacFreezeLenisForChoiceOverlay = freezeLenisIfOverlayBlocks;
+    freezeLenisIfOverlayBlocks();
+
+    function hideCinemaExploreCallout() {
+      toggleEl.classList.remove("senac-highlight-explore");
+      cinemaExploreCalloutEl = null;
+      document.querySelectorAll(".senac-cinema-explore-callout").forEach((n) => n.remove());
+    }
+
+    /** Fin du film : aucun défilement manuel avant passage en Exploration */
+    function showCinemaExploreCallout() {
+      if (mode !== "cinema") return;
+      hideCinemaExploreCallout();
+      const wrap = document.createElement("div");
+      wrap.className = "senac-cinema-explore-callout";
+      wrap.setAttribute("role", "status");
+      wrap.setAttribute("aria-live", "polite");
+      wrap.innerHTML = `
+        <p class="senac-cinema-explore-callout__text">
+          Pour continuer, appuie sur <strong>Exploration</strong> en bas à gauche.
+        </p>
+        <div class="senac-cinema-explore-callout__arrows" aria-hidden="true">
+          <span class="senac-ce-arrow"></span>
+          <span class="senac-ce-arrow"></span>
+          <span class="senac-ce-arrow"></span>
+        </div>`;
+      document.body.appendChild(wrap);
+      cinemaExploreCalloutEl = wrap;
+      toggleEl.classList.add("senac-highlight-explore");
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => wrap.classList.add("is-visible"));
+      });
+    }
+
+    /* ── Applique un mode ── */
+    function setMode(newMode, fromChoice) {
+      mode = newMode;
+
+      hideCinemaExploreCallout();
+
+      document.documentElement.classList.toggle("senac-cinema-mode", mode === "cinema");
+      document.body.classList.toggle("senac-cinema-mode", mode === "cinema");
+
+      /* Toggle UI */
+      toggleEl.removeAttribute("hidden");
+      toggleEl.classList.add("is-visible");
+      tmtCinema.classList.toggle("is-active",  mode === "cinema");
+      tmtExplore.classList.toggle("is-active", mode === "explore");
+
+      if (mode === "cinema") {
+        startAutoScroll();
+      } else {
+        stopAutoScroll();
+      }
+    }
+
+    /* ── Overlay de choix ── */
+    function showChoice() {
+      if (backdropEl) backdropEl.classList.add("is-visible");
+      choiceEl.classList.add("is-visible");
+      window.setTimeout(() => cinemaBtn.focus(), 50);
+    }
+
+    function showScrollNudge() {
+      /* Cache le scroll-cue du hero pour éviter le doublon */
+      const heroCue = document.querySelector("a.scroll-cue");
+      if (heroCue instanceof HTMLElement) {
+        heroCue.style.opacity = "0";
+        heroCue.style.pointerEvents = "none";
+      }
+
+      const nudge = document.createElement("div");
+      nudge.className = "senac-scroll-nudge";
+      nudge.setAttribute("aria-hidden", "true");
+      nudge.innerHTML = `
+        <svg width="44" height="48" viewBox="0 0 44 48" fill="none" focusable="false">
+          <path d="M22 4c-5.5 0-10 4-10 9.2V28c0 5.2 4.5 9.2 10 9.2s10-4 10-9.2V13.2C32 8 27.5 4 22 4Z"
+            stroke="hsla(var(--ui-hue),55%,62%,0.48)" stroke-width="1.25"/>
+          <g class="scroll-cue-wheel-wrap">
+            <rect x="19" y="14" width="6" height="7" rx="1.2"
+              fill="hsla(var(--ui-hue),66%,62%,0.92)"/>
+          </g>
+          <path d="M22 1.2l-3.2 3.2 1.2 1.1 2-2 2 2 1.2-1.1L22 1.2Z"
+            fill="hsla(var(--ui-hue),58%,62%,0.55)"/>
+          <path d="M22 40l3.2-3.2-1.2-1.1-2 2-2-2-1.2 1.1L22 40Z"
+            fill="hsla(var(--ui-hue),58%,62%,0.55)"/>
+          <line x1="12" y1="22" x2="32" y2="22"
+            stroke="hsla(var(--ui-hue),55%,62%,0.12)" stroke-width="0.6"/>
+        </svg>
+        <span class="senac-scroll-nudge-label">Faire défiler</span>`;
+      document.body.appendChild(nudge);
+
+      /* Apparition */
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => nudge.classList.add("is-visible"));
+      });
+
+      /* Disparaît au premier scroll ou après 5 s */
+      let nudgeGone = false;
+      function removeNudge() {
+        if (nudgeGone) return;
+        nudgeGone = true;
+        nudge.classList.add("is-leaving");
+        window.removeEventListener("wheel",     removeNudge);
+        window.removeEventListener("touchmove", removeNudge);
+        window.setTimeout(() => nudge.remove(), 550);
+      }
+      window.setTimeout(removeNudge, 5000);
+      window.addEventListener("wheel",     removeNudge, { passive: true, once: true });
+      window.addEventListener("touchmove", removeNudge, { passive: true, once: true });
+    }
+
+    function dismissChoice(chosen) {
+      if (backdropEl) {
+        backdropEl.classList.remove("is-visible");
+      }
+      choiceEl.classList.add("is-leaving");
+
+      if (yearGaugeLenis && typeof yearGaugeLenis.start === "function") {
+        yearGaugeLenis.start();
+      }
+      setMode(chosen, true);
+
+      const unlockMs =
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? 120
+          : 420;
+
+      window.setTimeout(() => {
+        choiceOverlayScrollLock = false;
+        if (backdropEl) {
+          backdropEl.style.display = "none";
+        }
+        choiceEl.style.display = "none";
+        document.documentElement.classList.remove("senac-choice-pending");
+        document.body.classList.remove("senac-choice-pending");
+      }, unlockMs);
+
+      if (chosen === "explore") {
+        window.setTimeout(showScrollNudge, Math.max(unlockMs, 260));
+      }
+    }
+
+    cinemaBtn.addEventListener("click",  () => dismissChoice("cinema"));
+    exploreBtn.addEventListener("click", () => dismissChoice("explore"));
+
+    /* Clavier dans l'overlay */
+    choiceEl.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") dismissChoice("explore");
+    });
+
+    /* Toggle bas-gauche */
+    tmtCinema.addEventListener("click",  () => { if (mode !== "cinema")  setMode("cinema",  false); });
+    tmtExplore.addEventListener("click", () => { if (mode !== "explore") setMode("explore", false); });
+
+    /* Bloque tout de suite ; l'overlay s'affiche au prochain frame (Lenis ignore overflow:hidden tant qu'il n'est pas stoppé). */
+    document.documentElement.classList.add("senac-choice-pending");
+    document.body.classList.add("senac-choice-pending");
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(showChoice);
     });
   }
 
@@ -1487,6 +2670,7 @@
     }
   });
   initAct2QuestBridge();
+  initScrollModeChoice();
   initChapterTwoAmbience();
 
   import("https://esm.sh/gsap")
@@ -1500,6 +2684,86 @@
       initScrollCue(null);
     });
 
+  /**
+   * Divise chaque h2 et chaque blockquote en <span class="sq-word"> pour l'animation mot-par-mot.
+   * Doit tourner avant initReveal() - les mots doivent etre en place quand is-visible est ajoute.
+   */
+  function initWordSplits() {
+    if (reducedMotion) return;
+
+    /** Scinde un noeud texte en spans, en preservant les <br> */
+    function splitNode(parent) {
+      const nodes = Array.from(parent.childNodes);
+      parent.innerHTML = "";
+      let wordIndex = 0;
+      nodes.forEach((node) => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          const words = node.textContent.split(/(\s+)/);
+          words.forEach((chunk) => {
+            if (/^\s+$/.test(chunk)) {
+              parent.appendChild(document.createTextNode(chunk));
+            } else if (chunk) {
+              const sp = document.createElement("span");
+              sp.className = "sq-word";
+              sp.style.setProperty("--wi", String(wordIndex++));
+              sp.textContent = chunk;
+              parent.appendChild(sp);
+            }
+          });
+        } else if (node.nodeType === Node.ELEMENT_NODE && node.tagName === "BR") {
+          parent.appendChild(node.cloneNode());
+        } else if (node.nodeType === Node.ELEMENT_NODE && node.tagName === "EM") {
+          const em = document.createElement("em");
+          const words = node.textContent.split(/(\s+)/);
+          words.forEach((chunk) => {
+            if (/^\s+$/.test(chunk)) {
+              em.appendChild(document.createTextNode(chunk));
+            } else if (chunk) {
+              const sp = document.createElement("span");
+              sp.className = "sq-word";
+              sp.style.setProperty("--wi", String(wordIndex++));
+              sp.textContent = chunk;
+              em.appendChild(sp);
+            }
+          });
+          parent.appendChild(em);
+        } else {
+          parent.appendChild(node);
+        }
+      });
+    }
+
+    document.querySelectorAll(".story-panel h2").forEach((h2) => {
+      splitNode(h2);
+    });
+
+    document.querySelectorAll(".quote-break blockquote").forEach((bq) => {
+      const nodes = Array.from(bq.childNodes);
+      bq.innerHTML = "";
+      let wordIndex = 0;
+      nodes.forEach((node) => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          const words = node.textContent.split(/(\s+)/);
+          words.forEach((chunk) => {
+            if (/^\s+$/.test(chunk)) {
+              bq.appendChild(document.createTextNode(chunk));
+            } else if (chunk) {
+              const sp = document.createElement("span");
+              sp.className = "sq-word sq-word--quote";
+              sp.style.setProperty("--wi", String(wordIndex++));
+              sp.textContent = chunk;
+              bq.appendChild(sp);
+            }
+          });
+        } else if (node.nodeType === Node.ELEMENT_NODE && node.tagName === "BR") {
+          bq.appendChild(node.cloneNode());
+        } else {
+          bq.appendChild(node);
+        }
+      });
+    });
+  }
+
   initLenis().then((lenisOk) => {
     if (!lenisOk) {
       if (!reducedMotion) initImmersionFromWindowScroll();
@@ -1507,11 +2771,27 @@
     }
     senacPostLenisReady = true;
     tryScheduleSenacScrollTriggerEffects();
+    initWordSplits();
     initReveal();
     initChapterThree();
+    initVoyageCredits();
 
     window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(scrollToHashChapterIfNeeded);
+      window.requestAnimationFrame(() => {
+        scrollToHashChapterIfNeeded();
+        try {
+          const params = new URLSearchParams(window.location.search);
+          if (params.has("previewCredits")) {
+            window.requestAnimationFrame(() => {
+              document.getElementById("voyage-credits-trigger")?.dispatchEvent(
+                new MouseEvent("click", { bubbles: true })
+              );
+            });
+          }
+        } catch {
+          /* ignore */
+        }
+      });
     });
   });
 
