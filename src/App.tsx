@@ -81,7 +81,8 @@ export default function App() {
     phase === "act2" && (act2ParcheminTone ?? "solar") === "midnight";
 
   const mdUp = useMediaQuery("(min-width: 768px)");
-  const finePointer = useMediaQuery("(hover: hover) and (pointer: fine)");
+  /** `(any-pointer: fine)` inclut souris/stylus/trackpad même si `(hover:hover)` est faux sur hybrides. */
+  const finePointer = useMediaQuery("(any-pointer: fine)");
 
   phaseRef.current = phase;
 
@@ -99,13 +100,18 @@ export default function App() {
   const [senacIframeScrollRatio, setSenacIframeScrollRatio] = useState(0);
   /** Générique fin de voyage (iframe) : masque le fluide parent et remonte le curseur comme pour l’intro. */
   const [act2VoyageCreditsOpen, setAct2VoyageCreditsOpen] = useState(false);
+  /** Aligné synchrone avec les messages iframe (`senac-credits-chrome` avant les `senac-pointer`). */
+  const act2VoyageCreditsOpenRef = useRef(false);
 
   useEffect(() => {
     if (phase !== "act2") {
       setSenacIframeScrollRatio(0);
       setAct2VoyageCreditsOpen(false);
+      act2VoyageCreditsOpenRef.current = false;
     }
   }, [phase]);
+
+  act2VoyageCreditsOpenRef.current = act2VoyageCreditsOpen;
 
   /** Déverrouille l'audio au premier geste utilisateur (autoplay policy navigateur). */
   useEffect(() => {
@@ -287,6 +293,57 @@ export default function App() {
   useEffect(() => {
     if (phase !== "act2") return;
     const expectedOrigin = window.location.origin;
+    let iframeSenacCached: HTMLIFrameElement | null = null;
+    let pointerRaf = 0;
+    let pendingIframeXY: { x: number; y: number } | null = null;
+
+    const resolveSenacIframe = (): HTMLIFrameElement | null => {
+      if (iframeSenacCached?.isConnected) return iframeSenacCached;
+      const el = document.querySelector('iframe[src*="parchemin-senac"]');
+      iframeSenacCached = el instanceof HTMLIFrameElement ? el : null;
+      return iframeSenacCached;
+    };
+
+    const invalidateIframeCache = () => {
+      iframeSenacCached = null;
+    };
+
+    const relayPointerFlush = () => {
+      pointerRaf = 0;
+      if (!pendingIframeXY) return;
+      const { x, y } = pendingIframeXY;
+      pendingIframeXY = null;
+      const iframe = resolveSenacIframe();
+      let gx = x;
+      let gy = y;
+      if (iframe) {
+        const r = iframe.getBoundingClientRect();
+        gx = x + r.left;
+        gy = y + r.top;
+      }
+      /** Générique crédits : fluide Splash masqué → pas de faux `mousemove` vers WebGL idle. */
+      if (!act2VoyageCreditsOpenRef.current) {
+        window.dispatchEvent(
+          new MouseEvent("mousemove", {
+            clientX: gx,
+            clientY: gy,
+            bubbles: true,
+            view: window,
+          })
+        );
+      }
+      window.dispatchEvent(
+        new PointerEvent("pointermove", {
+          clientX: gx,
+          clientY: gy,
+          bubbles: true,
+          pointerId: 1,
+          pointerType: "mouse",
+          view: window,
+        })
+      );
+    };
+
     const onMsg = (e: MessageEvent) => {
       if (e.origin !== expectedOrigin) return;
       const d = e.data as Record<string, unknown>;
@@ -315,42 +372,28 @@ export default function App() {
         if (phaseRef.current !== "act2") return;
         const iframe = document.querySelector('iframe[src*="parchemin-senac"]');
         if (!(iframe instanceof HTMLIFrameElement) || e.source !== iframe.contentWindow) return;
-        setAct2VoyageCreditsOpen(e.data.open === true);
+        const openNow = e.data.open === true;
+        act2VoyageCreditsOpenRef.current = openNow;
+        setAct2VoyageCreditsOpen(openNow);
         return;
       }
       if (e.data?.type !== "senac-pointer") return;
       const x = e.data.x as number;
       const y = e.data.y as number;
       if (typeof x !== "number" || typeof y !== "number") return;
-      const iframe = document.querySelector('iframe[src*="parchemin-senac"]');
-      let gx = x;
-      let gy = y;
-      if (iframe instanceof HTMLIFrameElement) {
-        const r = iframe.getBoundingClientRect();
-        gx = x + r.left;
-        gy = y + r.top;
-      }
-      window.dispatchEvent(
-        new MouseEvent("mousemove", {
-          clientX: gx,
-          clientY: gy,
-          bubbles: true,
-          view: window,
-        })
-      );
-      window.dispatchEvent(
-        new PointerEvent("pointermove", {
-          clientX: gx,
-          clientY: gy,
-          bubbles: true,
-          pointerId: 1,
-          pointerType: "mouse",
-          view: window,
-        })
-      );
+      pendingIframeXY = { x, y };
+      if (pointerRaf !== 0) return;
+      pointerRaf = window.requestAnimationFrame(relayPointerFlush);
     };
+
     window.addEventListener("message", onMsg);
-    return () => window.removeEventListener("message", onMsg);
+    window.addEventListener("resize", invalidateIframeCache, { passive: true });
+    return () => {
+      window.removeEventListener("message", onMsg);
+      window.removeEventListener("resize", invalidateIframeCache);
+      iframeSenacCached = null;
+      if (pointerRaf !== 0) window.cancelAnimationFrame(pointerRaf);
+    };
   }, [phase]);
 
   return (
@@ -398,6 +441,7 @@ export default function App() {
                     parcoursRailMidnight={
                       phase === "act2" ? (act2ParcheminTone ?? "solar") === "midnight" : false
                     }
+                    act2VoyageCreditsOpen={phase === "act2" ? act2VoyageCreditsOpen : false}
                   />
                 ) : undefined
               }
@@ -477,6 +521,7 @@ export default function App() {
             parcoursRailMidnight={
               phase === "act2" ? (act2ParcheminTone ?? "solar") === "midnight" : false
             }
+            act2VoyageCreditsOpen={phase === "act2" ? act2VoyageCreditsOpen : false}
           />
         </>
       )}
@@ -568,6 +613,39 @@ export default function App() {
         )}
       </main>
 
+      {/* Fluide curseur plein viewport : au-dessus scène (~z-20) et HUD carte (~110) ; sous ScrollProgressBar / modales. */}
+      {finePointer && (
+        <div
+          style={{
+            visibility:
+              systemMenuOpen || introVideoOpen || act2VoyageCreditsOpen ? "hidden" : "visible",
+          }}
+        >
+          <Fragment
+            key={
+              phase === "act1"
+                ? "splash-act1"
+                : phase === "act2"
+                  ? "splash-act2"
+                  : "splash-default"
+            }
+          >
+            <SplashCursor
+              syncPaletteFromAmbient
+              SIM_RESOLUTION={phase === "act1" ? 128 : 160}
+              DYE_RESOLUTION={phase === "act1" ? 512 : 720}
+              DENSITY_DISSIPATION={phase === "act1" ? 12 : 10}
+              VELOCITY_DISSIPATION={5}
+              PRESSURE={0.1}
+              CURL={10}
+              SPLAT_RADIUS={0.05}
+              SPLAT_FORCE={phase === "act1" ? 9000 : 12000}
+              COLOR_UPDATE_SPEED={10}
+            />
+          </Fragment>
+        </div>
+      )}
+
       {/* Acte II : iframe parchemin a sa propre barre (--senac-scroll-progress) ; ici elle serait au-dessus et à ~0 %. */}
       <ScrollProgressBar
         tone={act2AmbientMidnight ? "midnight" : "solar"}
@@ -575,38 +653,7 @@ export default function App() {
         aboveChrome={phase === "act2"}
       />
     </ReactLenis>
-      {/* Hors Lenis - fluide + curseur : en acte II, coords relayées depuis l’iframe (postMessage). */}
-      {finePointer && (
-      <div
-        style={{
-          visibility:
-            systemMenuOpen || introVideoOpen || act2VoyageCreditsOpen ? "hidden" : "visible",
-        }}
-      >
-        <Fragment
-          key={
-            phase === "act1"
-              ? "splash-act1"
-              : phase === "act2"
-                ? "splash-act2"
-                : "splash-default"
-          }
-        >
-          <SplashCursor
-            syncPaletteFromAmbient
-            SIM_RESOLUTION={phase === "act1" ? 128 : 160}
-            DYE_RESOLUTION={phase === "act1" ? 512 : 720}
-            DENSITY_DISSIPATION={phase === "act1" ? 12 : 10}
-            VELOCITY_DISSIPATION={5}
-            PRESSURE={0.1}
-            CURL={10}
-            SPLAT_RADIUS={0.05}
-            SPLAT_FORCE={phase === "act1" ? 9000 : 12000}
-            COLOR_UPDATE_SPEED={10}
-          />
-        </Fragment>
-      </div>
-      )}
+      {/* Curseur custom (portail body) — au-dessus du fluide. */}
       {finePointer && (
       <CustomCursor
         overlayOpen={systemMenuOpen || introVideoOpen || act2VoyageCreditsOpen}

@@ -152,9 +152,12 @@
     <div id="smc-backdrop" class="smc-backdrop" aria-hidden="true"></div>
 
     <!-- Choix de mode à l'arrivée -->
-    <div id="scroll-mode-choice" class="scroll-mode-choice" role="dialog" aria-modal="true" aria-label="Choisissez votre mode de navigation">
+    <div id="scroll-mode-choice" class="scroll-mode-choice" role="dialog" aria-modal="true" aria-label="Choisissez votre mode de navigation" aria-describedby="smc-choose-caption">
       <div class="smc-inner">
         <p class="smc-kicker">Comment traverser cette nuit ?</p>
+        <p id="smc-choose-caption" class="smc-choose-caption">
+          Choisis ci-dessous <span class="smc-caption-em">un mode</span> pour entrer dans la nuit.
+        </p>
         <div class="smc-buttons">
           <button type="button" id="smc-cinema" class="smc-btn smc-btn--cinema">
             <span class="smc-btn-icon" aria-hidden="true">
@@ -166,9 +169,6 @@
             <span class="smc-btn-label">Cinéma</span>
             <span class="smc-btn-sub">défilement automatique</span>
           </button>
-          <div class="smc-choice-nudge" aria-hidden="true">
-            <span class="smc-choice-nudge-line"></span>
-          </div>
           <button type="button" id="smc-explore" class="smc-btn smc-btn--explore">
             <span class="smc-btn-icon" aria-hidden="true">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

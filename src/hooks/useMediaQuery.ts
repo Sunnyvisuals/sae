@@ -1,19 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from "react";
+
+function subscribeMq(query: string, onStoreChange: () => void): () => void {
+  const mq = window.matchMedia(query);
+  mq.addEventListener("change", onStoreChange);
+  return () => mq.removeEventListener("change", onStoreChange);
+}
 
 /**
- * SSR-safe : valeur initiale `false` jusqu’au montage puis sync via `matchMedia`.
+ * SSR-safe (`false` tant que pas d’hydratation) ; lecture synchrone au premier paint client —
+ * évite un tour `useEffect` où `SplashCursor` ne montait pas / restait désactivé.
  */
 export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia(query);
-    const onChange = () => setMatches(mq.matches);
-    onChange();
-
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, [query]);
-
-  return matches;
+  return useSyncExternalStore(
+    (cb) => subscribeMq(query, cb),
+    () => window.matchMedia(query).matches,
+    () => false
+  );
 }

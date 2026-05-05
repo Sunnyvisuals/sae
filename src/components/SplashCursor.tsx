@@ -56,7 +56,7 @@ function SplashCursor({
   TRANSPARENT = true,
   palette = "solar",
   syncPaletteFromAmbient = false,
-  zIndex = 30,
+  zIndex = 120,
   layer = 'cursor',
   scrollImpulse = 1,
   iframeScrollRatio,
@@ -1138,7 +1138,7 @@ function SplashCursor({
     let firstMouseMoveHandled = false;
     let isHovering = false;
     let lastHoverProbe = 0;
-    function handleMouseMove(e) {
+    function handleMouseMove(e: PointerEvent | MouseEvent) {
       let pointer = pointers[0];
       let posX = scaleByPixelRatio(e.clientX);
       let posY = scaleByPixelRatio(e.clientY);
@@ -1198,7 +1198,7 @@ function SplashCursor({
     // Add event listeners (mode curseur uniquement)
     if (!isBackgroundLayer) {
       window.addEventListener('mousedown', handleMouseDown);
-      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('pointermove', handleMouseMove, { passive: true });
       window.addEventListener('touchstart', handleTouchStart);
       window.addEventListener('touchmove', handleTouchMove, false);
       window.addEventListener('touchend', handleTouchEnd);
@@ -1241,7 +1241,7 @@ function SplashCursor({
       // Remove event listeners
       if (!isBackgroundLayer) {
         window.removeEventListener('mousedown', handleMouseDown);
-        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('pointermove', handleMouseMove);
         window.removeEventListener('touchstart', handleTouchStart);
         window.removeEventListener('touchmove', handleTouchMove);
         window.removeEventListener('touchend', handleTouchEnd);
@@ -1301,7 +1301,8 @@ function SplashCursor({
               width: '100%',
               height: '100%',
             } as const)),
-        /* Sous UI (40+) et curseur custom ; au-dessus acte I (z-20). Évite WebGL au-dessus du curseur. */
+        /* Plein viewport : au-dessus carte / HUD acte (~110), sous barre progression (~220+) et modales (190+).
+           pointer-events: none → clics passent jusqu’aux boutons (z-[40]). */
         zIndex,
         pointerEvents: 'none',
         ...(layer === 'background'

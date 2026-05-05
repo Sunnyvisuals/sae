@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>404 · Al-Rihla</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Lora:ital,wght@1,400&display=swap" rel="stylesheet" />
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+      html, body {
+        width: 100%; height: 100%;
+        background: #000208;
+        overflow: hidden;
+        font-family: "Inter", sans-serif;
+      }
+
+      @media (hover: hover) and (pointer: fine) {
+        html { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='30' viewBox='0 0 22 30'%3E%3Cpolygon points='11,1 21,11 11,21 1,11' fill='rgba(197,160,89,0.13)' stroke='%23c5a059' stroke-width='1.2'/%3E%3Ccircle cx='11' cy='11' r='1.5' fill='%23e8d5a4'/%3E%3Cline x1='11' y1='21' x2='11' y2='27' stroke='%23c5a059' stroke-width='1' stroke-opacity='0.7'/%3E%3Cpolyline points='8,24 11,28 14,24' fill='none' stroke='%23c5a059' stroke-width='1' stroke-opacity='0.7' stroke-linejoin='round'/%3E%3C/svg%3E") 11 11, auto; }
+      }
+
+      /* ── Canvas plein fond ── */
+      #bg { position: fixed; inset: 0; z-index: 0; }
+
+      /* ── Vignette ── */
+      .vig {
+        position: fixed; inset: 0; z-index: 1; pointer-events: none;
+        background: radial-gradient(ellipse 85% 85% at 50% 50%, transparent 35%, rgba(0,1,6,0.85) 100%);
+      }
+
+      /* ── Grain ── */
+      .grain {
+        position: fixed; inset: 0; z-index: 2; pointer-events: none;
+        opacity: 0.038;
+        background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+        background-size: 200px;
+      }
+
+      /* ── Scène ── */
+      .scene {
+        position: relative; z-index: 10;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        min-height: 100dvh;
+        padding: 2rem 1.5rem;
+        text-align: center;
+        user-select: none;
+        animation: scene-in 2s cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+
+      @keyframes scene-in {
+        from { opacity: 0; filter: blur(12px); transform: translateY(14px); }
+        to   { opacity: 1; filter: none;       transform: none; }
+      }
+
+      /* ── Losange ── */
+      .diamond {
+        margin-bottom: 3rem;
+      }
+
+      /* ── 404 ── */
+      .num {
+        font-family: "Lora", Georgia, serif;
+        font-style: italic;
+        font-size: clamp(5rem, 16vw, 10.5rem);
+        font-weight: 400;
+        line-height: 1;
+        letter-spacing: -0.025em;
+        /* gradient animé bleu → or piloté par JS via custom property */
+        background: linear-gradient(135deg, var(--c-a, rgba(139,213,255,0.28)) 0%, var(--c-b, rgba(234,215,164,0.22)) 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        margin-bottom: 2.2rem;
+      }
+
+      /* ── Trait ── */
+      .rule {
+        width: 1px; height: 2.75rem;
+        background: linear-gradient(180deg, transparent, var(--rule-c, rgba(197,160,89,0.45)), transparent);
+        margin-bottom: 2.2rem;
+        animation: rule-in 2.2s cubic-bezier(0.22,1,0.36,1) both 0.6s;
+        transition: background 1.4s ease;
+      }
+
+      @keyframes rule-in {
+        from { transform: scaleY(0); opacity: 0; }
+        to   { transform: scaleY(1); opacity: 1; }
+      }
+
+      /* ── Kicker ── */
+      .kicker {
+        font-family: "Inter", sans-serif;
+        font-size: 0.58rem;
+        font-weight: 500;
+        letter-spacing: 0.42em;
+        text-transform: uppercase;
+        color: rgba(234,215,164,0.38);
+        margin-bottom: 0.75rem;
+      }
+
+      /* ── Ligne poétique ── */
+      .line {
+        font-family: "Lora", Georgia, serif;
+        font-style: italic;
+        font-size: clamp(1rem, 2.8vw, 1.35rem);
+        line-height: 1.6;
+        color: rgba(250, 246, 235, 0.68);
+        max-width: 22rem;
+        margin-bottom: 3rem;
+        text-shadow: 0 2px 30px rgba(0,0,0,0.95);
+      }
+
+      /* ── Bouton — copie exacte des cartes Cinéma/Exploration ── */
+      .btn {
+        position: relative;
+        isolation: isolate;
+        overflow: visible;
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 1.15rem 2.2rem;
+        border-radius: 2px;
+        border: 1px solid rgba(197,160,89,0.26);
+        background: linear-gradient(165deg, rgba(14,12,8,0.82) 0%, rgba(6,5,4,0.78) 100%);
+        backdrop-filter: blur(14px);
+        text-decoration: none;
+        outline: none;
+        transition:
+          border-color .45s cubic-bezier(0.22,1,0.36,1),
+          background   .45s cubic-bezier(0.22,1,0.36,1),
+          transform    .45s cubic-bezier(0.22,1,0.36,1),
+          box-shadow   .45s cubic-bezier(0.22,1,0.36,1);
+      }
+
+      .btn::before {
+        content: "";
+        position: absolute;
+        inset: -10px;
+        border-radius: 3px;
+        border: 1px solid rgba(197,160,89,0.14);
+        background: radial-gradient(ellipse 72% 88% at 50% 48%, rgba(197,160,89,0.07) 0%, transparent 68%);
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .btn-icon {
+        color: rgba(197,160,89,0.76);
+        display: flex;
+        opacity: 0.92;
+        position: relative; z-index: 1;
+      }
+
+      .btn-label {
+        font-family: "Inter", sans-serif;
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.32em;
+        text-transform: uppercase;
+        color: rgba(253,248,238,0.94);
+        position: relative; z-index: 1;
+      }
+
+      .btn-sub {
+        font-family: "Inter", sans-serif;
+        font-size: 0.6rem;
+        font-weight: 400;
+        letter-spacing: 0.14em;
+        color: rgba(197,160,89,0.44);
+        position: relative; z-index: 1;
+      }
+
+      .btn:hover {
+        border-color: rgba(234,215,164,0.52);
+        background: rgba(14,12,9,0.9);
+        box-shadow: 0 0 36px rgba(197,160,89,0.08), 0 14px 40px rgba(0,0,0,0.35);
+        transform: translateY(-2px);
+      }
+
+      .btn:active {
+        transform: scale(1.08);
+        border-color: rgba(234,215,164,0.72);
+        box-shadow:
+          0 0 52px rgba(197,160,89,0.22),
+          0 0 18px rgba(197,160,89,0.14),
+          inset 0 1px 0 rgba(255,252,245,0.12);
+        transition: transform .08s cubic-bezier(0.22,1,0.36,1), border-color .08s ease, box-shadow .08s ease;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="bg" aria-hidden="true"></canvas>
+    <div class="vig"   aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+
+    <main class="scene" role="main">
+
+      <!-- Losange -->
+      <div class="diamond" aria-hidden="true">
+        <svg id="diamond-svg" width="46" height="60" viewBox="0 0 22 30" fill="none">
+          <polygon id="d-poly" points="11,1 21,11 11,21 1,11"
+            fill="rgba(197,160,89,0.08)" stroke="rgba(197,160,89,0.5)" stroke-width="1.15"/>
+          <circle id="d-dot" cx="11" cy="11" r="1.55" fill="rgba(234,215,164,0.85)"/>
+          <line x1="11" y1="21" x2="11" y2="27"
+            stroke="rgba(197,160,89,0.48)" stroke-width="1"/>
+          <polyline points="8,24 11,28 14,24"
+            fill="none" stroke="rgba(197,160,89,0.48)" stroke-width="1" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <p class="num" id="num404" aria-label="Erreur 404">404</p>
+
+      <div class="rule" id="rule"></div>
+
+      <p class="kicker">Al-Rihla · Médiation culturelle</p>
+      <p class="line">La nuit ne mène pas ici.</p>
+
+      <a href="/" class="btn" aria-label="Retourner à l'expérience Al-Rihla">
+        <span class="btn-icon" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <polygon points="8,1 15,8 8,15 1,8" fill="none" stroke="currentColor" stroke-width="1.35"/>
+            <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
+          </svg>
+        </span>
+        <span class="btn-label">Reprendre le voyage</span>
+        <span class="btn-sub">retour à l'expérience</span>
+      </a>
+
+    </main>
+
+    <script>
+    (function () {
+      const canvas = document.getElementById("bg");
+      const ctx = canvas.getContext("2d");
+      const num = document.getElementById("num404");
+      const rule = document.getElementById("rule");
+      const dPoly = document.getElementById("d-poly");
+      const dDot  = document.getElementById("d-dot");
+
+      let W, H, mx = 0.5, my = 0.5, targetMx = 0.5, targetMy = 0.5;
+
+      /* ── Palette : 0 = bleu minuit (Acte II), 1 = or désert (Acte I) ── */
+      const PALETTES = {
+        blue: {
+          bg0:     [0,   2,  8],
+          bg1:     [1,   5, 19],
+          halo0:   [25, 85, 160],
+          halo1:   [5,  30, 90],
+          star:    [200, 230, 255],
+          gold0:   [139, 213, 255],
+          gold1:   [90, 168, 255],
+        },
+        solar: {
+          bg0:     [8,   5,  2],
+          bg1:     [18, 13,  6],
+          halo0:   [160, 100, 30],
+          halo1:   [80,  50, 10],
+          star:    [240, 225, 195],
+          gold0:   [234, 215, 164],
+          gold1:   [197, 160, 89],
+        },
+      };
+
+      /* Cycle lent : 0→1→0 toutes les ~18 s */
+      let shift = 0;        // 0 = bleu, 1 = or
+      let shiftDir = 1;
+      const SHIFT_SPEED = 0.000018;
+
+      function lerp3(a, b, t) {
+        return [
+          a[0] + (b[0]-a[0])*t | 0,
+          a[1] + (b[1]-a[1])*t | 0,
+          a[2] + (b[2]-a[2])*t | 0,
+        ];
+      }
+      function rgb(c, a) { return `rgba(${c[0]},${c[1]},${c[2]},${a})`; }
+
+      function getPalette(t) {
+        return {
+          bg0:   lerp3(PALETTES.blue.bg0,   PALETTES.solar.bg0,   t),
+          bg1:   lerp3(PALETTES.blue.bg1,   PALETTES.solar.bg1,   t),
+          halo0: lerp3(PALETTES.blue.halo0, PALETTES.solar.halo0, t),
+          halo1: lerp3(PALETTES.blue.halo1, PALETTES.solar.halo1, t),
+          star:  lerp3(PALETTES.blue.star,  PALETTES.solar.star,  t),
+          gold0: lerp3(PALETTES.blue.gold0, PALETTES.solar.gold0, t),
+          gold1: lerp3(PALETTES.blue.gold1, PALETTES.solar.gold1, t),
+        };
+      }
+
+      /* ── Particules ── */
+      const N = 180;
+      let particles = [];
+
+      function mkParticle() {
+        return {
+          x:     Math.random() * W,
+          y:     Math.random() * H,
+          r:     Math.random() * 1.1 + 0.1,
+          a:     Math.random() * 0.48 + 0.06,
+          ph:    Math.random() * Math.PI * 2,
+          sp:    (Math.random() * 0.55 + 0.3) * 0.00032,
+          vx:    (Math.random() - 0.5) * 0.12,
+          vy:    (Math.random() - 0.5) * 0.06,
+          /* distance d'influence souris */
+          mass:  Math.random() * 0.6 + 0.2,
+        };
+      }
+
+      function resize() {
+        W = canvas.width  = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+        particles = Array.from({ length: N }, mkParticle);
+      }
+
+      /* ── Souris ── */
+      window.addEventListener("pointermove", e => {
+        targetMx = e.clientX / W;
+        targetMy = e.clientY / H;
+      }, { passive: true });
+
+      /* ── Boucle principale ── */
+      function draw(t) {
+        /* Lerp souris */
+        mx += (targetMx - mx) * 0.04;
+        my += (targetMy - my) * 0.04;
+
+        /* Shift palette */
+        shift += SHIFT_SPEED * shiftDir;
+        if (shift >= 1) { shift = 1; shiftDir = -1; }
+        if (shift <= 0) { shift = 0; shiftDir =  1; }
+
+        const P = getPalette(shift);
+
+        /* ── Fond dégradé ── */
+        const gBg = ctx.createRadialGradient(W*0.5, H*0.5, 0, W*0.5, H*0.5, Math.max(W,H)*0.72);
+        gBg.addColorStop(0, rgb(P.bg1, 1));
+        gBg.addColorStop(1, rgb(P.bg0, 1));
+        ctx.fillStyle = gBg;
+        ctx.fillRect(0, 0, W, H);
+
+        /* Halos souris */
+        const hx = mx * W, hy = my * H;
+
+        const gH1 = ctx.createRadialGradient(hx, hy, 0, hx, hy, W * 0.42);
+        gH1.addColorStop(0, rgb(P.halo0, 0.1));
+        gH1.addColorStop(1, rgb(P.halo0, 0));
+        ctx.fillStyle = gH1;
+        ctx.fillRect(0, 0, W, H);
+
+        const gH2 = ctx.createRadialGradient(W*0.5, H, 0, W*0.5, H, H * 0.7);
+        gH2.addColorStop(0, rgb(P.halo1, 0.12));
+        gH2.addColorStop(1, rgb(P.halo1, 0));
+        ctx.fillStyle = gH2;
+        ctx.fillRect(0, 0, W, H);
+
+        /* ── Particules ── */
+        for (const s of particles) {
+          /* Répulsion/attraction douce vers la souris */
+          const dx = s.x - hx, dy = s.y - hy;
+          const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+          const force = Math.min(90 / (dist * dist), 0.18) * s.mass;
+          s.vx += (dx / dist) * force * 0.4;
+          s.vy += (dy / dist) * force * 0.4;
+
+          /* Amortissement */
+          s.vx *= 0.975; s.vy *= 0.975;
+
+          s.x += s.vx; s.y += s.vy;
+
+          /* Dérive lente naturelle */
+          s.x += Math.cos(t * s.sp * 500 + s.ph) * 0.08;
+          s.y += Math.sin(t * s.sp * 700 + s.ph * 1.3) * 0.05;
+
+          /* Boucle au bord */
+          if (s.x < -4)  s.x = W + 4;
+          if (s.x > W+4) s.x = -4;
+          if (s.y < -4)  s.y = H + 4;
+          if (s.y > H+4) s.y = -4;
+
+          /* Scintillement */
+          const alpha = s.a + Math.sin(t * s.sp * 1000 + s.ph) * s.a * 0.45;
+
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fillStyle = rgb(P.star, Math.min(alpha, 0.92));
+          ctx.fill();
+        }
+
+        /* ── Sync CSS ── */
+        const g0 = `rgba(${P.gold0[0]},${P.gold0[1]},${P.gold0[2]},0.28)`;
+        const g1 = `rgba(${P.gold1[0]},${P.gold1[1]},${P.gold1[2]},0.22)`;
+        num.style.setProperty("--c-a", g0);
+        num.style.setProperty("--c-b", g1);
+
+        /* Rafraîchit le dégradé background-clip */
+        num.style.backgroundImage = `linear-gradient(135deg, ${g0} 0%, ${g1} 100%)`;
+
+        /* Bordure losange */
+        const strokeC = `rgba(${P.gold0[0]},${P.gold0[1]},${P.gold0[2]},0.52)`;
+        const fillC   = `rgba(${P.gold0[0]},${P.gold0[1]},${P.gold0[2]},0.09)`;
+        const dotC    = `rgba(${P.gold1[0]},${P.gold1[1]},${P.gold1[2]},0.88)`;
+        dPoly.setAttribute("stroke", strokeC);
+        dPoly.setAttribute("fill",   fillC);
+        dDot.setAttribute("fill",    dotC);
+
+        /* Trait vertical */
+        rule.style.background = `linear-gradient(180deg, transparent, rgba(${P.gold0[0]},${P.gold0[1]},${P.gold0[2]},0.48), transparent)`;
+
+        requestAnimationFrame(draw);
+      }
+
+      window.addEventListener("resize", resize, { passive: true });
+      resize();
+      requestAnimationFrame(draw);
+    })();
+    </script>
+  </body>
+</html>

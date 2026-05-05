@@ -23,6 +23,8 @@ type Props = {
   onExpandedChange: (expanded: boolean) => void;
   /** Acte II : rail « nuit » (bleu) vs doré selon l’immersion iframe parchemin. Si absent, comportement précédent (nuit tant qu’on est en acte II). */
   parcoursRailMidnight?: boolean;
+  /** Générique de fin voyage (iframe) : le rail affiche « Crédits » comme étape en cours. */
+  act2VoyageCreditsOpen?: boolean;
 };
 
 const PHASE_NAV_INDEX: Record<PhaseLabel, number> = { intro: 0, act1: 1, act2: 2 };
@@ -52,6 +54,8 @@ type ParcoursRow = {
   label: string;
   summary: string;
   variant: 'past' | 'current' | 'future';
+  /** Ligne « Crédits » : affichage révélé (non cryptique) même si `phase` est null. */
+  forceReveal?: boolean;
 };
 
 const PARCOURS_PHASE_ORDER: { label: string; phase: PhaseLabel }[] = [
@@ -200,6 +204,7 @@ export function ParcoursPanelInnerContent({
   phase,
   revelationCount = 0,
   parcoursRailMidnight,
+  act2VoyageCreditsOpen = false,
   className = '',
 }: Omit<Props, 'expanded' | 'onExpandedChange'> & { className?: string }) {
   const prefersReducedMotion = useReducedMotion();
@@ -207,21 +212,41 @@ export function ParcoursPanelInnerContent({
     phase === 'act2' ? (typeof parcoursRailMidnight === 'boolean' ? parcoursRailMidnight : true) : false;
   const activeStep = PHASE_NAV_INDEX[phase];
 
-  const navRows: ParcoursRow[] = [
-    ...PARCOURS_PHASE_ORDER.map(({ label, phase: p }) => {
-      const stepIdx = PHASE_NAV_INDEX[p];
-      const variant: 'past' | 'current' | 'future' =
-        stepIdx < activeStep ? 'past' : stepIdx === activeStep ? 'current' : 'future';
-      return {
-        key: p,
-        phase: p,
-        label,
-        summary: PARCOURS_SUMMARIES[p],
-        variant,
-      };
-    }),
-    ...PARCOURS_PLACEHOLDERS_AFTER,
-  ];
+  const navRows: ParcoursRow[] = (() => {
+    const baseRows: ParcoursRow[] = [
+      ...PARCOURS_PHASE_ORDER.map(({ label, phase: p }) => {
+        const stepIdx = PHASE_NAV_INDEX[p];
+        const variant: 'past' | 'current' | 'future' =
+          stepIdx < activeStep ? 'past' : stepIdx === activeStep ? 'current' : 'future';
+        return {
+          key: p,
+          phase: p,
+          label,
+          summary: PARCOURS_SUMMARIES[p],
+          variant,
+        };
+      }),
+      ...PARCOURS_PLACEHOLDERS_AFTER,
+    ];
+    if (phase === 'act2' && act2VoyageCreditsOpen) {
+      return [
+        ...baseRows.map((row) =>
+          row.phase !== null
+            ? { ...row, variant: 'past' as const }
+            : row
+        ),
+        {
+          key: 'credits',
+          phase: null,
+          label: 'Crédits',
+          summary: 'Générique de fin, remerciements et fermeture de ce voyage.',
+          variant: 'current' as const,
+          forceReveal: true,
+        },
+      ];
+    }
+    return baseRows;
+  })();
 
   return (
     <div className={`flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden ${className}`}>
@@ -238,10 +263,13 @@ export function ParcoursPanelInnerContent({
               : 'bg-gradient-to-b from-solar-gold/8 via-solar-gold/22 to-solar-gold/10')
           }
         />
-        {navRows.map(({ key, phase: rowPhase, label, variant, summary }) => {
-          const active = rowPhase !== null && phase === rowPhase;
+        {navRows.map(({ key, phase: rowPhase, label, variant, summary, forceReveal }) => {
+          /** Quand les crédits sont ouverts, seule la ligne Crédits (forceReveal) est active. */
+          const creditsMode = phase === 'act2' && act2VoyageCreditsOpen;
+          const active = !!forceReveal || (!creditsMode && rowPhase !== null && phase === rowPhase);
           const cryptic =
-            rowPhase === null || (rowPhase !== null && PHASE_NAV_INDEX[rowPhase] > activeStep);
+            !forceReveal &&
+            (rowPhase === null || (rowPhase !== null && PHASE_NAV_INDEX[rowPhase] > activeStep));
           const showCrypticCopy = cryptic && rowPhase !== null;
           const rowLabel = showCrypticCopy ? lockedLabelForPhase(rowPhase) : label;
           const rowSummary = showCrypticCopy ? '???' : summary;
@@ -333,7 +361,9 @@ export function ParcoursPanelInnerContent({
               (nightRail ? 'text-[rgba(250,246,235,0.42)]' : 'text-solar-gold/38')
             }
           >
-            Défiler pour poursuivre
+            {act2VoyageCreditsOpen
+              ? 'Générique : laisse défiler puis Échapper pour fermer quand les commandes sont visibles.'
+              : 'Défiler pour poursuivre'}
           </p>
         </div>
       )}
@@ -389,6 +419,7 @@ export default function OrientationPanel({
   expanded,
   onExpandedChange,
   parcoursRailMidnight,
+  act2VoyageCreditsOpen,
 }: Props) {
   const expandedW = useExpandedWidthPx();
   const shellRef = useRef<HTMLDivElement>(null);
@@ -600,6 +631,7 @@ export default function OrientationPanel({
             phase={phase}
             revelationCount={revelationCount}
             parcoursRailMidnight={parcoursRailMidnight}
+            act2VoyageCreditsOpen={act2VoyageCreditsOpen}
           />
         </div>
       )}

@@ -2795,15 +2795,29 @@
     });
   });
 
-  /** Relais souris → parent (React) : curseur custom + fluide suivent au-dessus de l’iframe. */
+  /** Relais souris → parent (React) — max ~1 msg / frame pour réduire rafales (curseur + SplashCursor parent). */
   if (window.parent !== window) {
+    let relayRaf = 0;
+    let relayX = 0;
+    let relayY = 0;
+    const flushRelay = () => {
+      relayRaf = 0;
+      try {
+        window.parent.postMessage(
+          { type: "senac-pointer", x: relayX, y: relayY },
+          window.location.origin
+        );
+      } catch {
+        /* ignore */
+      }
+    };
     window.addEventListener(
       "pointermove",
       (e) => {
-        window.parent.postMessage(
-          { type: "senac-pointer", x: e.clientX, y: e.clientY },
-          window.location.origin
-        );
+        relayX = e.clientX;
+        relayY = e.clientY;
+        if (relayRaf !== 0) return;
+        relayRaf = window.requestAnimationFrame(flushRelay);
       },
       { passive: true }
     );

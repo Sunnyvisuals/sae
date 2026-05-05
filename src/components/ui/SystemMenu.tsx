@@ -292,7 +292,7 @@ export default function SystemMenu({
   embeddedParcours,
 }: Props) {
   const midnight = useCursorStore((s) => s.ambient === 'midnight');
-  const finePointer = useMediaQuery('(hover: hover) and (pointer: fine)');
+  const finePointer = useMediaQuery('(any-pointer: fine)');
 
   const shellCursor = finePointer ? 'cursor-none' : 'cursor-auto';
 

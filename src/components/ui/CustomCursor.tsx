@@ -1,4 +1,4 @@
-import { useEffect, useState, useLayoutEffect } from 'react';
+import { useEffect, useState, useLayoutEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, useMotionValue, useSpring } from 'motion/react';
 import { useCursorStore } from '../../hooks/useCursorContext';
@@ -31,10 +31,27 @@ export default function CustomCursor({
   const night = ambient === 'midnight';
   const mx = useMotionValue(-100);
   const my = useMotionValue(-100);
-  const sx = useSpring(mx, { damping: 28, stiffness: 300, mass: 0.5 });
-  const sy = useSpring(my, { damping: 28, stiffness: 300, mass: 0.5 });
-  const tx = useSpring(mx, { damping: 40, stiffness: 120, mass: 0.8 });
-  const ty = useSpring(my, { damping: 40, stiffness: 120, mass: 0.8 });
+
+  /** Overlays modaux + générique crédits (iframe GPU) : ressorts un peu plus secs → moins de « gel » / jitter. */
+  const leadSpring = useMemo(
+    () =>
+      overlayOpen
+        ? { damping: 40, stiffness: 420, mass: 0.45 }
+        : { damping: 28, stiffness: 300, mass: 0.5 },
+    [overlayOpen]
+  );
+  const haloSpring = useMemo(
+    () =>
+      overlayOpen
+        ? { damping: 52, stiffness: 198, mass: 0.7 }
+        : { damping: 40, stiffness: 120, mass: 0.8 },
+    [overlayOpen]
+  );
+
+  const sx = useSpring(mx, leadSpring);
+  const sy = useSpring(my, leadSpring);
+  const tx = useSpring(mx, haloSpring);
+  const ty = useSpring(my, haloSpring);
 
   useEffect(() => {
     setMounted(true);
@@ -60,11 +77,11 @@ export default function CustomCursor({
   useLayoutEffect(() => {
     reparentCursorPortalToBodyEnd();
     if (!overlayOpen) return;
-    const t0 = window.setTimeout(reparentCursorPortalToBodyEnd, 0);
-    const t1 = window.setTimeout(reparentCursorPortalToBodyEnd, 120);
+    const af = window.requestAnimationFrame(() => reparentCursorPortalToBodyEnd());
+    const to = window.setTimeout(reparentCursorPortalToBodyEnd, 132);
     return () => {
-      window.clearTimeout(t0);
-      window.clearTimeout(t1);
+      window.cancelAnimationFrame(af);
+      window.clearTimeout(to);
     };
   }, [portalHost, overlayOpen]);
 
