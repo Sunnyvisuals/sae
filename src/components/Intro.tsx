@@ -771,27 +771,34 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
             <motion.div
               animate={{ opacity: isStarting ? 0 : 1, y: isStarting ? 40 : 0 }}
               transition={{ duration: 0.5 }}
-              className="flex flex-col items-center"
+              className="flex flex-col items-center text-center"
             >
-              <motion.div
-                initial={{ opacity: 0, scaleX: 0.3 }}
-                animate={{ opacity: 1, scaleX: 1 }}
-                transition={{ duration: 1.1, delay: 0.85, ease: [0.22, 1, 0.36, 1] }}
-                className={
-                  "mx-auto h-px w-12 origin-center bg-solar-gold/40 " +
-                  (compactDesktop ? "mt-6 mb-3" : "mt-10 mb-4")
-                }
-              />
+              {/* Glose dans la même DA que la ligne auteur : or, capitales élégantes, interlettrage — pas un second corps serif. */}
               <motion.p
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1.2, delay: 1.1, ease: [0.22, 1, 0.36, 1] }}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: isStarting ? 0 : 1, y: isStarting ? -4 : 0 }}
+                transition={{ duration: 0.95, delay: 0.72, ease: [0.22, 1, 0.36, 1] }}
                 className={
-                  "text-[10px] font-light uppercase tracking-[0.6em] text-solar-gold " +
-                  (compactDesktop ? "mb-8" : "mb-12")
+                  "mx-auto px-6 " +
+                  (compactDesktop ? "mt-5 mb-2" : "mt-7 mb-4") +
+                  (language === "ar-dz"
+                    ? " max-w-[18rem] font-bahlull text-[11px] font-normal leading-relaxed tracking-[0.12em] text-solar-gold/88 [font-feature-settings:'kern'_1] "
+                    : " max-w-[24rem] text-[10px] font-light tracking-[0.58em] text-solar-gold/78")
                 }
+                style={{
+                  textShadow:
+                    language === "ar-dz"
+                      ? "0 0 18px rgba(0,0,0,0.65)"
+                      : "0 1px 12px rgba(0,0,0,0.75), 0 0 20px rgba(197,160,89,0.08)",
+                }}
               >
-                {copy.introJeanSenacSubtitle}
+                <span className={language === "ar-dz" ? "text-solar-gold/42" : "text-solar-gold/44"} aria-hidden>
+                  {language === "ar-dz" ? "\u00ab\u00a0" : "\u00ab\u202f"}
+                </span>
+                {copy.introAlRihlaSubtitle}
+                <span className={language === "ar-dz" ? "text-solar-gold/42" : "text-solar-gold/44"} aria-hidden>
+                  {language === "ar-dz" ? "\u00a0\u00bb" : "\u202f\u00bb"}
+                </span>
               </motion.p>
 
             <motion.div
@@ -800,8 +807,8 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                 opacity: isStarting ? 0 : 1,
                 y: isStarting ? 48 : 0,
               }}
-              transition={{ duration: 0.9, delay: 1.2, ease: [0.22, 1, 0.36, 1] }}
-              className={compactDesktop ? "mt-14" : "mt-24"}
+              transition={{ duration: 0.9, delay: 1.05, ease: [0.22, 1, 0.36, 1] }}
+              className={compactDesktop ? "mt-12" : "mt-20"}
             >
             <motion.button
               onClick={startExperience}
@@ -869,6 +876,38 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
               </motion.p>
             </motion.button>
             </motion.div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: isStarting ? 0 : 1, y: 0 }}
+              transition={{ duration: 1.05, delay: 1.05, ease: [0.22, 1, 0.36, 1] }}
+              className="pointer-events-none absolute bottom-[max(1.25rem,calc(env(safe-area-inset-bottom)+0.85rem))] left-0 right-0 z-[5] flex flex-col items-center gap-1.5 px-6 text-center"
+            >
+              <span
+                aria-hidden
+                className="select-none text-[5px] leading-none text-solar-gold/45 [text-shadow:0_0_12px_rgba(197,160,89,0.25)] rotate-45"
+              >
+                ◆
+              </span>
+              <motion.p
+                className={
+                  "max-w-[min(22rem,92vw)] font-bahlull italic leading-tight text-transparent " +
+                  (language === "ar-dz"
+                    ? "text-[12px] tracking-[0.1em] sm:text-[13px]"
+                    : "text-[11px] tracking-[0.08em] sm:text-[12px] md:tracking-[0.1em]")
+                }
+                style={{
+                  backgroundImage:
+                    "linear-gradient(168deg, #f6eed8 0%, #e2c78a 32%, #c5a059 56%, #9a7240 100%)",
+                  WebkitBackgroundClip: "text",
+                  backgroundClip: "text",
+                  filter:
+                    "drop-shadow(0 0 16px rgba(197,160,89,0.28)) drop-shadow(0 2px 14px rgba(0,0,0,0.82))",
+                }}
+              >
+                {copy.introJeanSenacSubtitle}
+              </motion.p>
             </motion.div>
             </motion.div>
 

@@ -167,7 +167,11 @@ export default function HintPanel({ phase, suppress = false, act1Quest, act2Ques
           exit={{ opacity: 0, y: 6 }}
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
           className={
-            'pointer-events-auto fixed z-[50] select-none ' +
+            'pointer-events-auto fixed select-none ' +
+            (currentPhase === 'act2'
+              ? /* Au-dessus de la scène (z-20), sous tout le chrome / halo — traitement « arrière-plan » */
+                'z-[21] '
+              : 'z-[50] ') +
             'left-[max(1rem,calc(env(safe-area-inset-left)+0.5rem))] md:left-[max(1.5rem,calc(env(safe-area-inset-left)+0.75rem))] ' +
             (currentPhase === 'act1'
               ? 'top-[max(7.25rem,calc(env(safe-area-inset-top)+5.5rem))] md:top-[max(9rem,calc(env(safe-area-inset-top)+7rem))]'

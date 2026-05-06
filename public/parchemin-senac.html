@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr" translate="no" class="notranslate">
   <head>
     <meta charset="UTF-8" />
@@ -7,39 +7,42 @@
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
     <meta name="google" content="notranslate" />
-    <title>Jean Sénac - Nuit saharienne</title>
+    <title>Al-Rihla â€” Chapitre II : La Nuit saharienne Â· Jean SÃ©nac</title>
+    <meta name="description" content="Traversez la nuit saharienne avec Jean SÃ©nac â€” chapitre II de l'expÃ©rience Al-Rihla. PoÃ¨mes, archives et fragments d'une vie entre Alger et le dÃ©sert." />
+    <meta name="robots" content="noindex" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="stylesheet" href="/parchemin-senac.css" />
   </head>
   <body class="senac-night">
-    <!-- SVG filter : warp + chromatic aberration portrait (piloté par JS) -->
+    <!-- SVG filter : warp + chromatic aberration portrait (pilotÃ© par JS) -->
     <svg id="portrait-filter-defs" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false">
       <defs>
         <filter id="portrait-chroma" x="-12%" y="-12%" width="124%" height="124%" color-interpolation-filters="sRGB">
-          <!-- Warp subtil : turbulence statique, scale animé par JS -->
+          <!-- Warp subtil : turbulence statique, scale animÃ© par JS -->
           <feTurbulence type="fractalNoise" baseFrequency="0.028 0.016" numOctaves="3" seed="12" result="warp-noise"/>
           <feDisplacementMap in="SourceGraphic" in2="warp-noise" scale="0"
             xChannelSelector="R" yChannelSelector="G" result="warped" id="pf-warp"/>
-          <!-- Canal rouge : décalé vers la droite/haut -->
+          <!-- Canal rouge : dÃ©calÃ© vers la droite/haut -->
           <feOffset in="warped" dx="0" dy="0" result="r-raw" id="pf-r"/>
           <feColorMatrix in="r-raw" type="matrix"
             values="1 0 0 0 0
                     0 0 0 0 0
                     0 0 0 0 0
                     0 0 0 1 0" result="r-ch"/>
-          <!-- Canal vert : centré -->
+          <!-- Canal vert : centrÃ© -->
           <feColorMatrix in="warped" type="matrix"
             values="0 0 0 0 0
                     0 1 0 0 0
                     0 0 0 0 0
                     0 0 0 1 0" result="g-ch"/>
-          <!-- Canal bleu : décalé vers la gauche/bas -->
+          <!-- Canal bleu : dÃ©calÃ© vers la gauche/bas -->
           <feOffset in="warped" dx="0" dy="0" result="b-raw" id="pf-b"/>
           <feColorMatrix in="b-raw" type="matrix"
             values="0 0 0 0 0
                     0 0 0 0 0
                     0 0 1 0 0
                     0 0 0 1 0" result="b-ch"/>
-          <!-- Fusion screen des 3 canaux → aberration chromatique -->
+          <!-- Fusion screen des 3 canaux â†’ aberration chromatique -->
           <feBlend in="r-ch" in2="g-ch" mode="screen" result="rg"/>
           <feBlend in="rg"   in2="b-ch" mode="screen" result="rgb-blended"/>
           <!-- Restaure l'alpha original pour ne pas rendre opaques les zones transparentes du PNG -->
@@ -62,7 +65,7 @@
     <div id="senac-sandstorm" aria-hidden="true"></div>
     <div id="senac-crescent-moon" aria-hidden="true"></div>
 
-    <!-- Lanternes arabes - minimalistes, fond, réactives scroll + survol -->
+    <!-- Lanternes arabes - minimalistes, fond, rÃ©actives scroll + survol -->
     <div class="senac-lantern senac-lantern--a" aria-hidden="true">
       <div class="lantern-chain"></div>
       <div class="lantern-body">
@@ -76,9 +79,9 @@
           <line x1="16" y1="15" x2="16" y2="55" stroke="rgba(200,148,52,0.22)" stroke-width="0.6"/>
           <line x1="20" y1="15" x2="20" y2="55" stroke="rgba(200,148,52,0.22)" stroke-width="0.6"/>
           <line x1="24" y1="15" x2="24" y2="55" stroke="rgba(200,148,52,0.22)" stroke-width="0.6"/>
-          <!-- étoile à 6 branches -->
+          <!-- Ã©toile Ã  6 branches -->
           <polygon points="20,22 22,27 27,27 23,30 25,35 20,32 15,35 17,30 13,27 18,27" fill="rgba(245,190,75,0.28)" stroke="rgba(245,190,75,0.4)" stroke-width="0.4"/>
-          <!-- lueur intérieure animée -->
+          <!-- lueur intÃ©rieure animÃ©e -->
           <radialGradient id="lg-a" cx="50%" cy="55%" r="35%" gradientUnits="objectBoundingBox">
             <stop offset="0%" stop-color="rgba(255,205,90,0.55)"/>
             <stop offset="100%" stop-color="rgba(255,160,30,0)"/>
@@ -149,10 +152,10 @@
     <div class="grain" aria-hidden="true"></div>
     <div id="chapter-curtain" class="chapter-curtain" aria-hidden="true"></div>
 
-    <!-- Backdrop flou derrière le choix de mode -->
+    <!-- Backdrop flou derriÃ¨re le choix de mode -->
     <div id="smc-backdrop" class="smc-backdrop" aria-hidden="true"></div>
 
-    <!-- Choix de mode à l'arrivée -->
+    <!-- Choix de mode Ã  l'arrivÃ©e -->
     <div id="scroll-mode-choice" class="scroll-mode-choice" role="dialog" aria-modal="true" data-i18n-aria="smc_aria" aria-label="Choisissez votre mode de navigation" aria-describedby="smc-choose-caption">
       <div class="smc-inner">
         <p class="smc-kicker" data-i18n="smc_kicker">Comment traverser cette nuit ?</p>
@@ -167,8 +170,8 @@
                 <line x1="1" y1="2" x2="1" y2="14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
               </svg>
             </span>
-            <span class="smc-btn-label" data-i18n="smc_cinema_label">Cinéma</span>
-            <span class="smc-btn-sub" data-i18n="smc_cinema_sub">défilement automatique</span>
+            <span class="smc-btn-label" data-i18n="smc_cinema_label">CinÃ©ma</span>
+            <span class="smc-btn-sub" data-i18n="smc_cinema_sub">dÃ©filement automatique</span>
           </button>
           <button type="button" id="smc-explore" class="smc-btn smc-btn--explore">
             <span class="smc-btn-icon" aria-hidden="true">
@@ -178,20 +181,20 @@
               </svg>
             </span>
             <span class="smc-btn-label" data-i18n="smc_explore_label">Exploration</span>
-            <span class="smc-btn-sub" data-i18n="smc_explore_sub">à ton rythme</span>
+            <span class="smc-btn-sub" data-i18n="smc_explore_sub">Ã  ton rythme</span>
           </button>
         </div>
       </div>
     </div>
 
     <!-- Toggle mode permanent (bas gauche) -->
-    <div id="scroll-mode-toggle" class="scroll-mode-toggle" data-i18n-aria="smt_aria" aria-label="Mode de défilement" hidden>
-      <button type="button" id="smt-cinema-btn" class="smt-btn smt-btn--cinema" data-i18n-title="smt_cinema_title" title="Mode Cinéma (défilement auto)">
+    <div id="scroll-mode-toggle" class="scroll-mode-toggle" data-i18n-aria="smt_aria" aria-label="Mode de dÃ©filement" hidden>
+      <button type="button" id="smt-cinema-btn" class="smt-btn smt-btn--cinema" data-i18n-title="smt_cinema_title" title="Mode CinÃ©ma (dÃ©filement auto)">
         <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
           <polygon points="5,2 14,8 5,14" fill="currentColor" opacity="0.9"/>
           <line x1="1" y1="2" x2="1" y2="14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
         </svg>
-        <span data-i18n="smt_cinema">Cinéma</span>
+        <span data-i18n="smt_cinema">CinÃ©ma</span>
       </button>
       <button type="button" id="smt-explore-btn" class="smt-btn smt-btn--explore" data-i18n-title="smt_explore_title" title="Mode Exploration (manuel)">
         <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
@@ -205,29 +208,29 @@
     <main class="chapter chapter-two">
       <header class="hero" data-reveal>
         <p class="kicker" data-i18n="hero_kicker">Acte II - nuits sahariennes</p>
-        <h1>Jean Sénac</h1>
+        <h1>Jean SÃ©nac</h1>
         <p class="hero-subtitle" data-i18n="hero_subtitle">une vie en versants</p>
         <p class="hero-copy" data-i18n="hero_copy">
-          Une frise comme une traversée nocturne : les dates deviennent constellations,
-          les fragments s'allument au passage, et la voix de Sénac avance dans le bleu.
+          Une frise comme une traversÃ©e nocturne : les dates deviennent constellations,
+          les fragments s'allument au passage, et la voix de SÃ©nac avance dans le bleu.
         </p>
         <figure class="hero-portrait" data-reveal>
           <div class="hero-portrait-frame">
             <img
               src="/images/jean-senac-portrait.png"
               data-i18n-alt="hero_img_alt"
-              alt="Jean Sénac assis sur des rochers, face à la mer."
+              alt="Jean SÃ©nac assis sur des rochers, face Ã  la mer."
               width="720"
               height="720"
               loading="eager"
               decoding="async"
             />
           </div>
-          <figcaption data-i18n="hero_figcaption">Jean Sénac - portrait d'archive</figcaption>
+          <figcaption data-i18n="hero_figcaption">Jean SÃ©nac - portrait d'archive</figcaption>
         </figure>
-        <a class="scroll-cue" href="#timeline-start" data-i18n-aria="scroll_cue_aria" aria-label="Faire défiler vers la frise narrative">
+        <a class="scroll-cue" href="#timeline-start" data-i18n-aria="scroll_cue_aria" aria-label="Faire dÃ©filer vers la frise narrative">
           <span class="scroll-cue-mouse" aria-hidden="true">
-            <!-- Même motif qu’Acte I (<ScrollNudge /> - souris / molette) -->
+            <!-- MÃªme motif quâ€™Acte I (<ScrollNudge /> - souris / molette) -->
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="44"
@@ -269,11 +272,11 @@
               />
             </svg>
           </span>
-          <span class="scroll-cue-label" data-i18n="scroll_cue_label">Faire défiler</span>
+          <span class="scroll-cue-label" data-i18n="scroll_cue_label">Faire dÃ©filer</span>
         </a>
       </header>
 
-      <section id="timeline-start" class="timeline" data-i18n-aria="timeline_aria" aria-label="Frise narrative Jean Sénac">
+      <section id="timeline-start" class="timeline" data-i18n-aria="timeline_aria" aria-label="Frise narrative Jean SÃ©nac">
         <article class="story-card story-card--right" data-reveal>
           <div class="date-ghost">1926</div>
           <div class="pin" aria-hidden="true"></div>
@@ -281,9 +284,9 @@
             <p class="story-date" data-i18n="s1926_date">29 novembre - Alger, Belcourt</p>
             <h2 data-i18n="s1926_h2">Naissance</h2>
             <p data-i18n="s1926_p">
-              Naissance à Alger, à Belcourt, dans une famille modeste. L'enfance
-              magnétise déjà la ville, la mer, les langues qui se croisent - un socle
-              sensible pour tout ce qui viendra après.
+              Naissance Ã  Alger, Ã  Belcourt, dans une famille modeste. L'enfance
+              magnÃ©tise dÃ©jÃ  la ville, la mer, les langues qui se croisent - un socle
+              sensible pour tout ce qui viendra aprÃ¨s.
             </p>
           </div>
         </article>
@@ -291,35 +294,35 @@
         <figure class="archive-window archive-window--round senac-fragment" data-reveal role="button" tabindex="0">
           <div class="archive-media archive-media--photo archive-media--pos-coast">
             <img
-              src="/images/jean-senac-portrait.png"
+              src="/images/jean-senac-jeunesse.png"
               data-i18n-alt="fig1_alt"
-              alt="Jean Sénac au bord de la mer."
+              alt="Jean SÃ©nac jeune, portrait noir et blanc."
               width="720"
               height="720"
               loading="lazy"
               decoding="async"
             />
           </div>
-          <figcaption data-i18n="fig1_cap">Jeunesse à Alger - mer, rochers, premiers horizons</figcaption>
+          <figcaption data-i18n="fig1_cap">Jeunesse Ã  Alger - mer, rochers, premiers horizons</figcaption>
         </figure>
 
         <article class="story-card story-card--left" data-reveal>
           <div class="date-ghost">1940</div>
           <div class="pin" aria-hidden="true"></div>
           <div class="story-panel">
-            <p class="story-date" data-i18n="s1940_date">Années sombres</p>
+            <p class="story-date" data-i18n="s1940_date">AnnÃ©es sombres</p>
             <h2 data-i18n="s1940_h2">L'adolescence et la guerre</h2>
             <p data-i18n="s1940_p">
-              Guerre, privations, adolescence précipitée : le monde bascule, et la poésie
-              devient refuge et révolte à la fois. Les premiers textes cherchent une voix
-              franche, incisive, impossible à réduire.
+              Guerre, privations, adolescence prÃ©cipitÃ©e : le monde bascule, et la poÃ©sie
+              devient refuge et rÃ©volte Ã  la fois. Les premiers textes cherchent une voix
+              franche, incisive, impossible Ã  rÃ©duire.
             </p>
           </div>
         </article>
 
         <section class="quote-break senac-fragment" data-reveal role="button" tabindex="0">
           <blockquote data-i18n-html="quote1_html">Je parle avec l'accent<br />de ma solitude.</blockquote>
-          <cite data-i18n="quote1_cite">Jean Sénac</cite>
+          <cite data-i18n="quote1_cite">Jean SÃ©nac</cite>
         </section>
 
         <article class="story-card story-card--right" data-reveal>
@@ -327,15 +330,15 @@
           <div class="pin" aria-hidden="true"></div>
           <div class="story-panel">
             <p class="story-date" data-i18n="s1950_date">1950 - 1960</p>
-            <h2 data-i18n="s1950_h2">L'engagement littéraire</h2>
+            <h2 data-i18n="s1950_h2">L'engagement littÃ©raire</h2>
             <p data-i18n="s1950_p1">
-              Publications, revues, amitiés littéraires : Sénac trace une trajectoire
-              d'écrivain engagé, entre Alger et Paris, portant haut l'idée d'une
-              littérature algérienne de langue française, libre et exigeante.
+              Publications, revues, amitiÃ©s littÃ©raires : SÃ©nac trace une trajectoire
+              d'Ã©crivain engagÃ©, entre Alger et Paris, portant haut l'idÃ©e d'une
+              littÃ©rature algÃ©rienne de langue franÃ§aise, libre et exigeante.
             </p>
             <p data-i18n="s1950_p2">
-              À la radio comme à la plume, il défend la parole poétique comme lieu de
-              vérité - jamais décor, jamais poudre aux yeux.
+              Ã€ la radio comme Ã  la plume, il dÃ©fend la parole poÃ©tique comme lieu de
+              vÃ©ritÃ© - jamais dÃ©cor, jamais poudre aux yeux.
             </p>
           </div>
         </article>
@@ -352,7 +355,7 @@
               decoding="async"
             />
           </div>
-          <figcaption data-i18n="fig2_cap">Alger, années 1950-1960 - scène littéraire et engagement</figcaption>
+          <figcaption data-i18n="fig2_cap">Alger, annÃ©es 1950-1960 - scÃ¨ne littÃ©raire et engagement</figcaption>
         </figure>
 
         <article class="story-card story-card--left" data-reveal>
@@ -360,18 +363,18 @@
           <div class="pin" aria-hidden="true"></div>
           <div class="story-panel">
             <p class="story-date" data-i18n="s_soleils_date">1949 - livre</p>
-            <h2 data-i18n="s_soleils_h2">Soleils séparés</h2>
+            <h2 data-i18n="s_soleils_h2">Soleils sÃ©parÃ©s</h2>
             <p data-i18n-html="s_soleils_p_html">
-              Parmi les livres qui marquent son œuvre, <em>Soleils séparés</em> condense
-              une tension constante : celle d'un destin partagé entre cultures, entre
+              Parmi les livres qui marquent son Å“uvre, <em>Soleils sÃ©parÃ©s</em> condense
+              une tension constante : celle d'un destin partagÃ© entre cultures, entre
               amours, entre fronts politiques et intimes.
             </p>
           </div>
         </article>
 
         <section class="quote-break quote-break--title senac-fragment" data-reveal role="button" tabindex="0">
-          <span aria-hidden="true">✦</span>
-          <blockquote data-i18n="quote2_bq">Soleils séparés</blockquote>
+          <span aria-hidden="true">âœ¦</span>
+          <blockquote data-i18n="quote2_bq">Soleils sÃ©parÃ©s</blockquote>
           <cite data-i18n="quote2_cite">un titre comme une constellation</cite>
         </section>
 
@@ -379,12 +382,12 @@
           <div class="date-ghost date-ghost--word" data-i18n="ghost_corps">Corps</div>
           <div class="pin" aria-hidden="true"></div>
           <div class="story-panel">
-            <p class="story-date" data-i18n="s_corps_date">Présence assumée</p>
-            <h2 data-i18n="s_corps_h2">Engagement &amp; désir</h2>
+            <p class="story-date" data-i18n="s_corps_date">PrÃ©sence assumÃ©e</p>
+            <h2 data-i18n="s_corps_h2">Engagement &amp; dÃ©sir</h2>
             <p data-i18n="s_corps_p">
-              Homosexuel assumé dans un contexte de censure et de rejet, il incarne une
-              visibilité rare et courageuse. Sa poésie politique et amoureuse ne se
-              dissocie pas : même souffle, même risque.
+              Homosexuel assumÃ© dans un contexte de censure et de rejet, il incarne une
+              visibilitÃ© rare et courageuse. Sa poÃ©sie politique et amoureuse ne se
+              dissocie pas : mÃªme souffle, mÃªme risque.
             </p>
           </div>
         </article>
@@ -394,25 +397,25 @@
             <img
               src="/images/jean-senac-bureau.png"
               data-i18n-alt="fig3_alt"
-              alt="Jean Sénac à son bureau, lisant un manuscrit."
+              alt="Jean SÃ©nac Ã  son bureau, lisant un manuscrit."
               width="720"
               height="720"
               loading="lazy"
               decoding="async"
             />
           </div>
-          <figcaption data-i18n="fig3_cap">Sénac à son bureau - le poète au travail</figcaption>
+          <figcaption data-i18n="fig3_cap">SÃ©nac Ã  son bureau - le poÃ¨te au travail</figcaption>
         </figure>
 
         <article class="story-card story-card--left" data-reveal>
           <div class="date-ghost">1973</div>
           <div class="pin" aria-hidden="true"></div>
           <div class="story-panel">
-            <p class="story-date" data-i18n="s1973_date">30 août - Alger</p>
-            <h2 data-i18n="s1973_h2">La mort à Alger</h2>
+            <p class="story-date" data-i18n="s1973_date">30 aoÃ»t - Alger</p>
+            <h2 data-i18n="s1973_h2">La mort Ã  Alger</h2>
             <p data-i18n="s1973_p">
-              Mort à Alger, dans la violence d'un geste obscur. La nouvelle traverse la
-              littérature francophone comme un coup porté au langage lui-même - mais les
+              Mort Ã  Alger, dans la violence d'un geste obscur. La nouvelle traverse la
+              littÃ©rature francophone comme un coup portÃ© au langage lui-mÃªme - mais les
               textes demeurent, intacts dans leur feu.
             </p>
           </div>
@@ -423,14 +426,14 @@
             <img
               src="/images/jean-senac-souvenir-photo.png"
               data-i18n-alt="fig4_alt"
-              alt="Jean Sénac, souvenir photographique."
+              alt="Jean SÃ©nac, souvenir photographique."
               width="720"
               height="720"
               loading="lazy"
               decoding="async"
             />
           </div>
-          <figcaption data-i18n="fig4_cap">Mémoire de Sénac - derniers feux d'une voix libre</figcaption>
+          <figcaption data-i18n="fig4_cap">MÃ©moire de SÃ©nac - derniers feux d'une voix libre</figcaption>
         </figure>
 
         <article class="story-card story-card--right" data-reveal>
@@ -440,8 +443,8 @@
             <p class="story-date" data-i18n="s_legs_date">Aujourd'hui</p>
             <h2 data-i18n="s_legs_h2">La trace vive</h2>
             <p data-i18n="s_legs_p">
-              Poète, animateur, figure tutélaire d'une modernité algérienne, Sénac
-              continue d'éclairer les traversées entre mémoire et désir, entre terre natale
+              PoÃ¨te, animateur, figure tutÃ©laire d'une modernitÃ© algÃ©rienne, SÃ©nac
+              continue d'Ã©clairer les traversÃ©es entre mÃ©moire et dÃ©sir, entre terre natale
               et langue d'adoption.
             </p>
           </div>
@@ -463,15 +466,15 @@
         </p>
         <div class="chapter-three-actions">
           <button type="button" id="voyage-credits-trigger" class="chapter-three-actions-secondary" data-i18n="ch3_btn_credits">
-            Crédits du voyage
+            CrÃ©dits du voyage
           </button>
-          <a href="/" data-i18n="ch3_back">Retour à l'expérience</a>
+          <a href="/" data-i18n="ch3_back">Retour Ã  l'expÃ©rience</a>
           <a href="/parchemin-senac.html" data-i18n="ch3_replay">Revoir la frise</a>
         </div>
       </div>
     </section>
 
-    <!-- Générique de fin (cinéma) - plein écran après la traversée -->
+    <!-- GÃ©nÃ©rique de fin (cinÃ©ma) - plein Ã©cran aprÃ¨s la traversÃ©e -->
     <div
       id="voyage-credits"
       class="voyage-credits"
@@ -499,50 +502,62 @@
       <div class="voyage-credits-roll-clip">
         <div id="voyage-credits-roll" class="voyage-credits-roll">
           <p id="voyage-credits-title" class="voyage-credits-main-title" data-i18n="vc_title">Al-Rihla</p>
-          <p class="voyage-credits-subtitle" data-i18n="vc_subtitle">Médiation culturelle - Jean Sénac</p>
+          <p class="voyage-credits-subtitle" data-i18n="vc_subtitle">MÃ©diation culturelle - Jean SÃ©nac</p>
           <p class="voyage-credits-gap">&nbsp;</p>
 
-          <h3 class="voyage-credits-heading" data-i18n="vc_h_conception">Conception & réalisation</h3>
+          <h3 class="voyage-credits-heading" data-i18n="vc_h_conception">Conception & rÃ©alisation</h3>
           <ul class="voyage-credits-list">
-            <li data-i18n="vc_l_conception_1">Direction artistique et développement expérience interactive</li>
-            <li data-i18n="vc_l_conception_2">Parcours : Carte mémoire - Frise narrative - Clôture</li>
+            <li data-i18n="vc_l_conception_1">Direction artistique et dÃ©veloppement expÃ©rience interactive</li>
+            <li data-i18n="vc_l_conception_2">Parcours : Carte mÃ©moire - Frise narrative - ClÃ´ture</li>
           </ul>
 
           <h3 class="voyage-credits-heading" data-i18n="vc_h_textes">Textes & citations</h3>
           <ul class="voyage-credits-list voyage-credits-list--narrow">
             <li data-i18n="vc_l_textes_1">
-              Fragments poétiques et titres d’œuvres : Jean Sénac - à compléter avec références précises
-              (éditions, années).
+              Fragments poÃ©tiques et titres dâ€™Å“uvres : Jean SÃ©nac - Ã  complÃ©ter avec rÃ©fÃ©rences prÃ©cises
+              (Ã©ditions, annÃ©es).
             </li>
-            <li data-i18n="vc_l_textes_2">Citations affichées sur la frise : vérifier droits et sources dans votre dossier.</li>
+            <li data-i18n="vc_l_textes_2">Citations affichÃ©es sur la frise : vÃ©rifier droits et sources dans votre dossier.</li>
           </ul>
 
           <h3 class="voyage-credits-heading" data-i18n="vc_h_images">Images & archives</h3>
           <ul class="voyage-credits-list voyage-credits-list--narrow">
-            <li data-i18n="vc_l_images">Photographies et portraits intégrés au parchemin : crédits à reporter (institution, photographe, date).</li>
+            <li data-i18n="vc_l_images">Photographies et portraits intÃ©grÃ©s au parchemin : crÃ©dits Ã  reporter (institution, photographe, date).</li>
           </ul>
 
-          <h3 class="voyage-credits-heading" data-i18n="vc_h_video">Vidéo</h3>
+          <h3 class="voyage-credits-heading" data-i18n="vc_h_video">VidÃ©o</h3>
           <ul class="voyage-credits-list voyage-credits-list--narrow">
-            <li data-i18n-html="vc_l_video"><cite>Al-Rihla</cite> - fichier média du projet ; auteurs image / son / musique à mentionner ici.</li>
+            <li data-i18n-html="vc_l_video"><cite>Al-Rihla</cite> - fichier mÃ©dia du projet ; auteurs image / son / musique Ã  mentionner ici.</li>
           </ul>
 
           <h3 class="voyage-credits-heading" data-i18n="vc_h_audio">Musique & sons</h3>
           <ul class="voyage-credits-list voyage-credits-list--narrow">
-            <li data-i18n="vc_l_audio">Ambiances et pistes utilisées : crédits et licences (ex. Creative Commons, bibliothèque).</li>
+            <li data-i18n="vc_l_audio">Ambiances et pistes utilisÃ©es : crÃ©dits et licences (ex. Creative Commons, bibliothÃ¨que).</li>
           </ul>
 
           <h3 class="voyage-credits-heading" data-i18n="vc_h_outils">Outils</h3>
           <ul class="voyage-credits-list">
             <li data-i18n="vc_l_outils_1">React, Vite, Motion - Parchemin : Lenis, canvas & WebGL (selon activation).</li>
             <li data-i18n="vc_l_outils_2">
-              Création &amp; post-production : Adobe Photoshop, Premiere Pro, After Effects, Blackmagic DaVinci
+              CrÃ©ation &amp; post-production : Adobe Photoshop, Premiere Pro, After Effects, Blackmagic DaVinci
               Resolve.
             </li>
           </ul>
 
           <p class="voyage-credits-gap">&nbsp;</p>
-          <p class="voyage-credits-fin" data-i18n="vc_fin">Merci d’avoir traversé cette nuit.</p>
+          <h3 class="voyage-credits-heading">Cadre l&eacute;gal &amp; droits</h3>
+          <ul class="voyage-credits-list voyage-credits-list--narrow">
+            <li>Projet scolaire r&eacute;alis&eacute; dans le cadre d&apos;une SA&Eacute; (Situation d&apos;Apprentissage et d&apos;&Eacute;valuation) - BUT M&eacute;tiers du Multim&eacute;dia et de l&apos;Internet.</li>
+            <li>Usage strictement non commercial et non lucratif.</li>
+            <li>Les textes, extraits po&eacute;tiques et citations de Jean S&eacute;nac sont reproduits &agrave; titre p&eacute;dagogique, conform&eacute;ment &agrave; l&apos;exception p&eacute;dagogique du Code de la propri&eacute;t&eacute; intellectuelle (art.&nbsp;L.&nbsp;122-5 CPI).</li>
+            <li>Les photographies et archives sont reproduites &agrave; titre illustratif dans un cadre &eacute;ducatif. Tous droits r&eacute;serv&eacute;s &agrave; leurs auteurs et institutions respectifs.</li>
+            <li>Toute reproduction ou r&eacute;utilisation &agrave; des fins commerciales de ce projet est interdite sans autorisation pr&eacute;alable des auteurs.</li>
+          </ul>
+
+          <p class="voyage-credits-gap">&nbsp;</p>
+          <p class="voyage-credits-fin" data-i18n="vc_fin">Merci d&apos;avoir travers&eacute; cette nuit.</p>
+          <p class="voyage-credits-gap">&nbsp;</p>
+
           <p class="voyage-credits-gap">&nbsp;</p>
         </div>
       </div>
@@ -559,10 +574,10 @@
             id="voyage-credits-skip"
             class="voyage-credits-skip"
             data-i18n-title="vc_skip_title"
-            title="Retour à l’expérience principale (affiché à la fin du générique)"
+            title="Retour Ã  lâ€™expÃ©rience principale (affichÃ© Ã  la fin du gÃ©nÃ©rique)"
             data-i18n="vc_skip_btn"
           >
-            Revenir à l'expérience
+            Revenir Ã  l'expÃ©rience
           </button>
         </div>
       </div>
@@ -572,3 +587,5 @@
     <script type="module" src="/parchemin-senac.js"></script>
   </body>
 </html>
+
+

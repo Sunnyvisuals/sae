@@ -60,13 +60,9 @@ function parcheminSenacHref(hash: string, options?: { previewCredits?: boolean }
 function SettingsIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.6"
-        d="M12 3.5l1.4 1.1a2 2 0 0 0 2 .3l1.7-.7 1.4 2.4-1.3 1.2a2 2 0 0 0-.5 1.9l.3 1.8 2 .7v2.8l-2 .7-.3 1.8a2 2 0 0 0 .5 1.9l1.3 1.2-1.4 2.4-1.7-.7a2 2 0 0 0-2 .3L12 20.5l-1.4-1.1a2 2 0 0 0-2-.3l-1.7.7-1.4-2.4 1.3-1.2a2 2 0 0 0 .5-1.9l-.3-1.8-2-.7V9.8l2-.7.3-1.8a2 2 0 0 0-.5-1.9L5.5 4.2l1.4-2.4 1.7.7a2 2 0 0 0 2-.3L12 3.5z"
-      />
-      <circle cx="12" cy="12" r="2.7" strokeWidth="1.6" />
+      <line x1="4" y1="7"  x2="20" y2="7"  strokeWidth="1.7" strokeLinecap="round" />
+      <line x1="4" y1="12" x2="20" y2="12" strokeWidth="1.7" strokeLinecap="round" />
+      <line x1="4" y1="17" x2="20" y2="17" strokeWidth="1.7" strokeLinecap="round" />
     </svg>
   );
 }
@@ -492,7 +488,7 @@ export default function App() {
         className="isolate min-h-0 w-full will-change-[opacity,filter,transform]"
       >
       <GrainOverlay opacity={0.04} />
-      <CinematicOverlay />
+      <CinematicOverlay elevateOverHints={phase === "act2"} />
       <Soundscape enabled={phase !== "act2"} />
 
       <AnimatePresence mode="sync">
@@ -631,12 +627,14 @@ export default function App() {
         </>
       )}
 
-      <HintPanel
-        phase={phase}
-        suppress={systemMenuOpen || introVideoOpen}
-        act1Quest={phase === "act1" ? act1Quest : undefined}
-        act2Quest={phase === "act2" ? act2Quest : undefined}
-      />
+      {/* HintPanel : acte I uniquement — le parchemin (acte II) gère sa propre navigation (mode Cinéma / Exploration). */}
+      {phase !== "act2" && (
+        <HintPanel
+          phase={phase}
+          suppress={systemMenuOpen || introVideoOpen}
+          act1Quest={phase === "act1" ? act1Quest : undefined}
+        />
+      )}
 
       {/* Nudge scroll - acte I uniquement, masqué dès que le zoom est acquis */}
       {phase === "act1" && !systemMenuOpen && !introVideoOpen && !act1Quest.zoom && (

@@ -157,6 +157,7 @@ body.senac-night {
   body.senac-night {
     cursor: none;
   }
+
 }
 
 body.senac-night::before {
@@ -2377,6 +2378,28 @@ body.voyage-credits-active #scroll-mode-toggle {
   font-style: italic;
   font-size: clamp(1.05rem, 2.8vw, 1.35rem);
   color: rgba(255, 252, 242, 0.88);
+}
+
+.voyage-credits-logos {
+  margin: 2.5rem auto 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3rem;
+  opacity: 0.55;
+  filter: brightness(1.1);
+}
+
+.voyage-credits-logo-img {
+  display: block;
+  width: auto;
+  height: 52px;
+  object-fit: contain;
+}
+
+.voyage-credits-logo-img--crop {
+  height: 44px;
 }
 
 /** Proposition centrée - au-dessus du rouleau ; masquée jusqu’à la fin du défilement */

@@ -58,6 +58,7 @@ export default function ActOnePhraseStrip({ revelationFound, chapterComplete, ha
 
   const has = (w: RevelationWord) => revelationFound.includes(w);
   const allDone = REVELATION_WORDS.every((w) => has(w));
+  const hasAnyRevelation = REVELATION_WORDS.some((w) => has(w));
 
   const firstMissing = REVELATION_WORDS.findIndex((w) => !has(w));
   const activeIdx = firstMissing === -1 ? 0 : firstMissing;
@@ -87,7 +88,32 @@ export default function ActOnePhraseStrip({ revelationFound, chapterComplete, ha
             </motion.p>
           ) : (
             <>
-              <div className="relative min-h-[5rem] overflow-hidden sm:min-h-[5.5rem]">
+              <div
+                id="act1-phrase-context"
+                className="mx-auto mb-4 max-w-[min(34rem,100%)] border-b border-white/[0.07] pb-4 sm:mb-5 sm:pb-5"
+              >
+                <p
+                  className="mb-2 font-sans text-[10px] font-medium uppercase tracking-[0.28em] text-[rgba(197,160,89,0.78)] sm:text-[11px] sm:tracking-[0.32em]"
+                  style={{ textShadow: '0 0 18px rgba(0,0,0,0.75)' }}
+                >
+                  {copy.act1PhraseContextKicker}
+                </p>
+                {!hasAnyRevelation && (
+                  <p
+                    className="mx-auto font-serif text-[13px] italic leading-relaxed text-white/[0.78] sm:text-[14px] sm:leading-relaxed md:text-[15px]"
+                    style={{
+                      textShadow:
+                        '0 0 20px rgba(0,0,0,0.9), 0 1px 10px rgba(0,0,0,0.85)',
+                    }}
+                  >
+                    {copy.act1PhraseContextIntro}
+                  </p>
+                )}
+              </div>
+              <div
+                className="relative min-h-[5rem] overflow-hidden sm:min-h-[5.5rem]"
+                aria-describedby={!hasAnyRevelation ? 'act1-phrase-context' : undefined}
+              >
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={step.word}
