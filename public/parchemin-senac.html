@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" translate="no" class="notranslate">
   <head>
     <meta charset="UTF-8" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
+    <meta name="google" content="notranslate" />
     <title>Jean Sénac - Nuit saharienne</title>
     <link rel="stylesheet" href="/parchemin-senac.css" />
   </head>
@@ -152,10 +153,10 @@
     <div id="smc-backdrop" class="smc-backdrop" aria-hidden="true"></div>
 
     <!-- Choix de mode à l'arrivée -->
-    <div id="scroll-mode-choice" class="scroll-mode-choice" role="dialog" aria-modal="true" aria-label="Choisissez votre mode de navigation" aria-describedby="smc-choose-caption">
+    <div id="scroll-mode-choice" class="scroll-mode-choice" role="dialog" aria-modal="true" data-i18n-aria="smc_aria" aria-label="Choisissez votre mode de navigation" aria-describedby="smc-choose-caption">
       <div class="smc-inner">
-        <p class="smc-kicker">Comment traverser cette nuit ?</p>
-        <p id="smc-choose-caption" class="smc-choose-caption">
+        <p class="smc-kicker" data-i18n="smc_kicker">Comment traverser cette nuit ?</p>
+        <p id="smc-choose-caption" class="smc-choose-caption" data-i18n-html="smc_caption_html">
           Choisis ci-dessous <span class="smc-caption-em">un mode</span> pour entrer dans la nuit.
         </p>
         <div class="smc-buttons">
@@ -166,8 +167,8 @@
                 <line x1="1" y1="2" x2="1" y2="14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
               </svg>
             </span>
-            <span class="smc-btn-label">Cinéma</span>
-            <span class="smc-btn-sub">défilement automatique</span>
+            <span class="smc-btn-label" data-i18n="smc_cinema_label">Cinéma</span>
+            <span class="smc-btn-sub" data-i18n="smc_cinema_sub">défilement automatique</span>
           </button>
           <button type="button" id="smc-explore" class="smc-btn smc-btn--explore">
             <span class="smc-btn-icon" aria-hidden="true">
@@ -176,37 +177,37 @@
                 <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
               </svg>
             </span>
-            <span class="smc-btn-label">Exploration</span>
-            <span class="smc-btn-sub">à ton rythme</span>
+            <span class="smc-btn-label" data-i18n="smc_explore_label">Exploration</span>
+            <span class="smc-btn-sub" data-i18n="smc_explore_sub">à ton rythme</span>
           </button>
         </div>
       </div>
     </div>
 
     <!-- Toggle mode permanent (bas gauche) -->
-    <div id="scroll-mode-toggle" class="scroll-mode-toggle" aria-label="Mode de défilement" hidden>
-      <button type="button" id="smt-cinema-btn" class="smt-btn smt-btn--cinema" title="Mode Cinéma (défilement auto)">
+    <div id="scroll-mode-toggle" class="scroll-mode-toggle" data-i18n-aria="smt_aria" aria-label="Mode de défilement" hidden>
+      <button type="button" id="smt-cinema-btn" class="smt-btn smt-btn--cinema" data-i18n-title="smt_cinema_title" title="Mode Cinéma (défilement auto)">
         <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
           <polygon points="5,2 14,8 5,14" fill="currentColor" opacity="0.9"/>
           <line x1="1" y1="2" x2="1" y2="14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
         </svg>
-        <span>Cinéma</span>
+        <span data-i18n="smt_cinema">Cinéma</span>
       </button>
-      <button type="button" id="smt-explore-btn" class="smt-btn smt-btn--explore" title="Mode Exploration (manuel)">
+      <button type="button" id="smt-explore-btn" class="smt-btn smt-btn--explore" data-i18n-title="smt_explore_title" title="Mode Exploration (manuel)">
         <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
           <polygon points="8,1 15,8 8,15 1,8" fill="none" stroke="currentColor" stroke-width="1.35"/>
           <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
         </svg>
-        <span>Exploration</span>
+        <span data-i18n="smt_explore">Exploration</span>
       </button>
     </div>
 
     <main class="chapter chapter-two">
       <header class="hero" data-reveal>
-        <p class="kicker">Acte II - nuits sahariennes</p>
+        <p class="kicker" data-i18n="hero_kicker">Acte II - nuits sahariennes</p>
         <h1>Jean Sénac</h1>
-        <p class="hero-subtitle">une vie en versants</p>
-        <p class="hero-copy">
+        <p class="hero-subtitle" data-i18n="hero_subtitle">une vie en versants</p>
+        <p class="hero-copy" data-i18n="hero_copy">
           Une frise comme une traversée nocturne : les dates deviennent constellations,
           les fragments s'allument au passage, et la voix de Sénac avance dans le bleu.
         </p>
@@ -214,6 +215,7 @@
           <div class="hero-portrait-frame">
             <img
               src="/images/jean-senac-portrait.png"
+              data-i18n-alt="hero_img_alt"
               alt="Jean Sénac assis sur des rochers, face à la mer."
               width="720"
               height="720"
@@ -221,9 +223,9 @@
               decoding="async"
             />
           </div>
-          <figcaption>Jean Sénac - portrait d'archive</figcaption>
+          <figcaption data-i18n="hero_figcaption">Jean Sénac - portrait d'archive</figcaption>
         </figure>
-        <a class="scroll-cue" href="#timeline-start" aria-label="Faire défiler vers la frise narrative">
+        <a class="scroll-cue" href="#timeline-start" data-i18n-aria="scroll_cue_aria" aria-label="Faire défiler vers la frise narrative">
           <span class="scroll-cue-mouse" aria-hidden="true">
             <!-- Même motif qu’Acte I (<ScrollNudge /> - souris / molette) -->
             <svg
@@ -267,18 +269,18 @@
               />
             </svg>
           </span>
-          <span class="scroll-cue-label">Faire défiler</span>
+          <span class="scroll-cue-label" data-i18n="scroll_cue_label">Faire défiler</span>
         </a>
       </header>
 
-      <section id="timeline-start" class="timeline" aria-label="Frise narrative Jean Sénac">
+      <section id="timeline-start" class="timeline" data-i18n-aria="timeline_aria" aria-label="Frise narrative Jean Sénac">
         <article class="story-card story-card--right" data-reveal>
           <div class="date-ghost">1926</div>
           <div class="pin" aria-hidden="true"></div>
           <div class="story-panel">
-            <p class="story-date">29 novembre - Alger, Belcourt</p>
-            <h2>Naissance</h2>
-            <p>
+            <p class="story-date" data-i18n="s1926_date">29 novembre - Alger, Belcourt</p>
+            <h2 data-i18n="s1926_h2">Naissance</h2>
+            <p data-i18n="s1926_p">
               Naissance à Alger, à Belcourt, dans une famille modeste. L'enfance
               magnétise déjà la ville, la mer, les langues qui se croisent - un socle
               sensible pour tout ce qui viendra après.
@@ -290,6 +292,7 @@
           <div class="archive-media archive-media--photo archive-media--pos-coast">
             <img
               src="/images/jean-senac-portrait.png"
+              data-i18n-alt="fig1_alt"
               alt="Jean Sénac au bord de la mer."
               width="720"
               height="720"
@@ -297,16 +300,16 @@
               decoding="async"
             />
           </div>
-          <figcaption>Jeunesse à Alger - mer, rochers, premiers horizons</figcaption>
+          <figcaption data-i18n="fig1_cap">Jeunesse à Alger - mer, rochers, premiers horizons</figcaption>
         </figure>
 
         <article class="story-card story-card--left" data-reveal>
           <div class="date-ghost">1940</div>
           <div class="pin" aria-hidden="true"></div>
           <div class="story-panel">
-            <p class="story-date">Années sombres</p>
-            <h2>L'adolescence et la guerre</h2>
-            <p>
+            <p class="story-date" data-i18n="s1940_date">Années sombres</p>
+            <h2 data-i18n="s1940_h2">L'adolescence et la guerre</h2>
+            <p data-i18n="s1940_p">
               Guerre, privations, adolescence précipitée : le monde bascule, et la poésie
               devient refuge et révolte à la fois. Les premiers textes cherchent une voix
               franche, incisive, impossible à réduire.
@@ -315,22 +318,22 @@
         </article>
 
         <section class="quote-break senac-fragment" data-reveal role="button" tabindex="0">
-          <blockquote>Je parle avec l'accent<br />de ma solitude.</blockquote>
-          <cite>Jean Sénac</cite>
+          <blockquote data-i18n-html="quote1_html">Je parle avec l'accent<br />de ma solitude.</blockquote>
+          <cite data-i18n="quote1_cite">Jean Sénac</cite>
         </section>
 
         <article class="story-card story-card--right" data-reveal>
           <div class="date-ghost">1950</div>
           <div class="pin" aria-hidden="true"></div>
           <div class="story-panel">
-            <p class="story-date">1950 - 1960</p>
-            <h2>L'engagement littéraire</h2>
-            <p>
+            <p class="story-date" data-i18n="s1950_date">1950 - 1960</p>
+            <h2 data-i18n="s1950_h2">L'engagement littéraire</h2>
+            <p data-i18n="s1950_p1">
               Publications, revues, amitiés littéraires : Sénac trace une trajectoire
               d'écrivain engagé, entre Alger et Paris, portant haut l'idée d'une
               littérature algérienne de langue française, libre et exigeante.
             </p>
-            <p>
+            <p data-i18n="s1950_p2">
               À la radio comme à la plume, il défend la parole poétique comme lieu de
               vérité - jamais décor, jamais poudre aux yeux.
             </p>
@@ -341,6 +344,7 @@
           <div class="archive-media archive-media--photo archive-media--pos-wide">
             <img
               src="/images/alger-vue-port.png"
+              data-i18n-alt="fig2_alt"
               alt="Vue d'Alger et de son port, photographie d'archive."
               width="1200"
               height="675"
@@ -348,16 +352,16 @@
               decoding="async"
             />
           </div>
-          <figcaption>Alger, années 1950-1960 - scène littéraire et engagement</figcaption>
+          <figcaption data-i18n="fig2_cap">Alger, années 1950-1960 - scène littéraire et engagement</figcaption>
         </figure>
 
         <article class="story-card story-card--left" data-reveal>
-          <div class="date-ghost date-ghost--word">Soleils</div>
+          <div class="date-ghost date-ghost--word" data-i18n="ghost_soleils">Soleils</div>
           <div class="pin" aria-hidden="true"></div>
           <div class="story-panel">
-            <p class="story-date">1949 - livre</p>
-            <h2>Soleils séparés</h2>
-            <p>
+            <p class="story-date" data-i18n="s_soleils_date">1949 - livre</p>
+            <h2 data-i18n="s_soleils_h2">Soleils séparés</h2>
+            <p data-i18n-html="s_soleils_p_html">
               Parmi les livres qui marquent son œuvre, <em>Soleils séparés</em> condense
               une tension constante : celle d'un destin partagé entre cultures, entre
               amours, entre fronts politiques et intimes.
@@ -367,17 +371,17 @@
 
         <section class="quote-break quote-break--title senac-fragment" data-reveal role="button" tabindex="0">
           <span aria-hidden="true">✦</span>
-          <blockquote>Soleils séparés</blockquote>
-          <cite>un titre comme une constellation</cite>
+          <blockquote data-i18n="quote2_bq">Soleils séparés</blockquote>
+          <cite data-i18n="quote2_cite">un titre comme une constellation</cite>
         </section>
 
         <article class="story-card story-card--right" data-reveal>
-          <div class="date-ghost date-ghost--word">Corps</div>
+          <div class="date-ghost date-ghost--word" data-i18n="ghost_corps">Corps</div>
           <div class="pin" aria-hidden="true"></div>
           <div class="story-panel">
-            <p class="story-date">Présence assumée</p>
-            <h2>Engagement &amp; désir</h2>
-            <p>
+            <p class="story-date" data-i18n="s_corps_date">Présence assumée</p>
+            <h2 data-i18n="s_corps_h2">Engagement &amp; désir</h2>
+            <p data-i18n="s_corps_p">
               Homosexuel assumé dans un contexte de censure et de rejet, il incarne une
               visibilité rare et courageuse. Sa poésie politique et amoureuse ne se
               dissocie pas : même souffle, même risque.
@@ -389,6 +393,7 @@
           <div class="archive-media archive-media--photo archive-media--pos-face">
             <img
               src="/images/jean-senac-bureau.png"
+              data-i18n-alt="fig3_alt"
               alt="Jean Sénac à son bureau, lisant un manuscrit."
               width="720"
               height="720"
@@ -396,16 +401,16 @@
               decoding="async"
             />
           </div>
-          <figcaption>Sénac à son bureau - le poète au travail</figcaption>
+          <figcaption data-i18n="fig3_cap">Sénac à son bureau - le poète au travail</figcaption>
         </figure>
 
         <article class="story-card story-card--left" data-reveal>
           <div class="date-ghost">1973</div>
           <div class="pin" aria-hidden="true"></div>
           <div class="story-panel">
-            <p class="story-date">30 août - Alger</p>
-            <h2>La mort à Alger</h2>
-            <p>
+            <p class="story-date" data-i18n="s1973_date">30 août - Alger</p>
+            <h2 data-i18n="s1973_h2">La mort à Alger</h2>
+            <p data-i18n="s1973_p">
               Mort à Alger, dans la violence d'un geste obscur. La nouvelle traverse la
               littérature francophone comme un coup porté au langage lui-même - mais les
               textes demeurent, intacts dans leur feu.
@@ -417,6 +422,7 @@
           <div class="archive-media archive-media--photo archive-media--pos-memory">
             <img
               src="/images/jean-senac-souvenir-photo.png"
+              data-i18n-alt="fig4_alt"
               alt="Jean Sénac, souvenir photographique."
               width="720"
               height="720"
@@ -424,16 +430,16 @@
               decoding="async"
             />
           </div>
-          <figcaption>Mémoire de Sénac - derniers feux d'une voix libre</figcaption>
+          <figcaption data-i18n="fig4_cap">Mémoire de Sénac - derniers feux d'une voix libre</figcaption>
         </figure>
 
         <article class="story-card story-card--right" data-reveal>
-          <div class="date-ghost date-ghost--word">Legs</div>
+          <div class="date-ghost date-ghost--word" data-i18n="ghost_legs">Legs</div>
           <div class="pin" aria-hidden="true"></div>
           <div class="story-panel">
-            <p class="story-date">Aujourd'hui</p>
-            <h2>La trace vive</h2>
-            <p>
+            <p class="story-date" data-i18n="s_legs_date">Aujourd'hui</p>
+            <h2 data-i18n="s_legs_h2">La trace vive</h2>
+            <p data-i18n="s_legs_p">
               Poète, animateur, figure tutélaire d'une modernité algérienne, Sénac
               continue d'éclairer les traversées entre mémoire et désir, entre terre natale
               et langue d'adoption.
@@ -450,17 +456,17 @@
         <div class="ch3-layer ch3-layer--near"></div>
       </div>
       <div class="chapter-three-inner">
-        <p class="kicker">Suite du voyage</p>
-        <h2 id="chapter-three-title">Chapitre III</h2>
-        <p>
+        <p class="kicker" data-i18n="ch3_kicker">Suite du voyage</p>
+        <h2 id="chapter-three-title" data-i18n="ch3_h2">Chapitre III</h2>
+        <p data-i18n="ch3_p">
           La nuit se dissipe. Le fil d'or quitte la frise et ouvre un autre territoire.
         </p>
         <div class="chapter-three-actions">
-          <button type="button" id="voyage-credits-trigger" class="chapter-three-actions-secondary">
+          <button type="button" id="voyage-credits-trigger" class="chapter-three-actions-secondary" data-i18n="ch3_btn_credits">
             Crédits du voyage
           </button>
-          <a href="/">Retour à l'expérience</a>
-          <a href="/parchemin-senac.html">Revoir la frise</a>
+          <a href="/" data-i18n="ch3_back">Retour à l'expérience</a>
+          <a href="/parchemin-senac.html" data-i18n="ch3_replay">Revoir la frise</a>
         </div>
       </div>
     </section>
@@ -492,51 +498,51 @@
       <div class="voyage-credits-vignette" aria-hidden="true"></div>
       <div class="voyage-credits-roll-clip">
         <div id="voyage-credits-roll" class="voyage-credits-roll">
-          <p id="voyage-credits-title" class="voyage-credits-main-title">Al-Rihla</p>
-          <p class="voyage-credits-subtitle">Médiation culturelle - Jean Sénac</p>
+          <p id="voyage-credits-title" class="voyage-credits-main-title" data-i18n="vc_title">Al-Rihla</p>
+          <p class="voyage-credits-subtitle" data-i18n="vc_subtitle">Médiation culturelle - Jean Sénac</p>
           <p class="voyage-credits-gap">&nbsp;</p>
 
-          <h3 class="voyage-credits-heading">Conception & réalisation</h3>
+          <h3 class="voyage-credits-heading" data-i18n="vc_h_conception">Conception & réalisation</h3>
           <ul class="voyage-credits-list">
-            <li>Direction artistique et développement expérience interactive</li>
-            <li>Parcours : Carte mémoire - Frise narrative - Clôture</li>
+            <li data-i18n="vc_l_conception_1">Direction artistique et développement expérience interactive</li>
+            <li data-i18n="vc_l_conception_2">Parcours : Carte mémoire - Frise narrative - Clôture</li>
           </ul>
 
-          <h3 class="voyage-credits-heading">Textes & citations</h3>
+          <h3 class="voyage-credits-heading" data-i18n="vc_h_textes">Textes & citations</h3>
           <ul class="voyage-credits-list voyage-credits-list--narrow">
-            <li>
+            <li data-i18n="vc_l_textes_1">
               Fragments poétiques et titres d’œuvres : Jean Sénac - à compléter avec références précises
               (éditions, années).
             </li>
-            <li>Citations affichées sur la frise : vérifier droits et sources dans votre dossier.</li>
+            <li data-i18n="vc_l_textes_2">Citations affichées sur la frise : vérifier droits et sources dans votre dossier.</li>
           </ul>
 
-          <h3 class="voyage-credits-heading">Images & archives</h3>
+          <h3 class="voyage-credits-heading" data-i18n="vc_h_images">Images & archives</h3>
           <ul class="voyage-credits-list voyage-credits-list--narrow">
-            <li>Photographies et portraits intégrés au parchemin : crédits à reporter (institution, photographe, date).</li>
+            <li data-i18n="vc_l_images">Photographies et portraits intégrés au parchemin : crédits à reporter (institution, photographe, date).</li>
           </ul>
 
-          <h3 class="voyage-credits-heading">Vidéo</h3>
+          <h3 class="voyage-credits-heading" data-i18n="vc_h_video">Vidéo</h3>
           <ul class="voyage-credits-list voyage-credits-list--narrow">
-            <li><cite>Al-Rihla</cite> - fichier média du projet ; auteurs image / son / musique à mentionner ici.</li>
+            <li data-i18n-html="vc_l_video"><cite>Al-Rihla</cite> - fichier média du projet ; auteurs image / son / musique à mentionner ici.</li>
           </ul>
 
-          <h3 class="voyage-credits-heading">Musique & sons</h3>
+          <h3 class="voyage-credits-heading" data-i18n="vc_h_audio">Musique & sons</h3>
           <ul class="voyage-credits-list voyage-credits-list--narrow">
-            <li>Ambiances et pistes utilisées : crédits et licences (ex. Creative Commons, bibliothèque).</li>
+            <li data-i18n="vc_l_audio">Ambiances et pistes utilisées : crédits et licences (ex. Creative Commons, bibliothèque).</li>
           </ul>
 
-          <h3 class="voyage-credits-heading">Outils</h3>
+          <h3 class="voyage-credits-heading" data-i18n="vc_h_outils">Outils</h3>
           <ul class="voyage-credits-list">
-            <li>React, Vite, Motion - Parchemin : Lenis, canvas & WebGL (selon activation).</li>
-            <li>
+            <li data-i18n="vc_l_outils_1">React, Vite, Motion - Parchemin : Lenis, canvas & WebGL (selon activation).</li>
+            <li data-i18n="vc_l_outils_2">
               Création &amp; post-production : Adobe Photoshop, Premiere Pro, After Effects, Blackmagic DaVinci
               Resolve.
             </li>
           </ul>
 
           <p class="voyage-credits-gap">&nbsp;</p>
-          <p class="voyage-credits-fin">Merci d’avoir traversé cette nuit.</p>
+          <p class="voyage-credits-fin" data-i18n="vc_fin">Merci d’avoir traversé cette nuit.</p>
           <p class="voyage-credits-gap">&nbsp;</p>
         </div>
       </div>
@@ -552,7 +558,9 @@
             type="button"
             id="voyage-credits-skip"
             class="voyage-credits-skip"
+            data-i18n-title="vc_skip_title"
             title="Retour à l’expérience principale (affiché à la fin du générique)"
+            data-i18n="vc_skip_btn"
           >
             Revenir à l'expérience
           </button>
@@ -560,6 +568,7 @@
       </div>
     </div>
 
+    <script src="/static-i18n.js"></script>
     <script type="module" src="/parchemin-senac.js"></script>
   </body>
 </html>

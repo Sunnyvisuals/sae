@@ -8,9 +8,8 @@
   useTransform,
   useReducedMotion,
 } from "motion/react";
-import React, { useState, useEffect, useRef, useId } from "react";
-import { Volume2, VolumeX, Volume1 } from "lucide-react";
-import PoetryGame from "./PoetryGame";
+import React, { useState, useEffect, useRef, useId, lazy, Suspense } from "react";
+const PoetryGame = lazy(() => import("./PoetryGame"));
 import AuroraMeshBackground from "./AuroraMeshBackground";
 import {
   applyVolumeKeyStep,
@@ -18,17 +17,49 @@ import {
   shouldIgnoreVolumeKeyboardTarget,
 } from "../lib/volumeKeyboard";
 import { playSuspenseLoadCompleteChime, primeSuspenseAudio } from "../lib/suspenseLoadChime";
+import { useLanguageStore } from "../stores/languageStore";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import { useAppCopy } from "../hooks/useAppCopy";
 
 // --- CONFIGURATION VIDÉO ---
 const VIDEO_SOURCE = "/al-rihla.mp4";
 
-const INTRO_CTA_WORDS = ["Cliquer", "ou", "Entrée"] as const;
+const INTRO_CTA_WORDS_FR = ["Cliquer", "ou", "Entrée"] as const;
+const INTRO_CTA_WORDS_AR = ["إضغط", "أو", "إنتر"] as const;
 
 type AnimatedTitleProps = {
   text: string;
   className?: string;
   heroMotion?: boolean;
 };
+
+function Volume2Icon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
+      <path d="M4 10v4h4l5 4V6l-5 4H4z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+      <path d="M16 9a4 4 0 010 6" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+      <path d="M18.5 6.5a7.5 7.5 0 010 11" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+function Volume1Icon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
+      <path d="M4 10v4h4l5 4V6l-5 4H4z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+      <path d="M16 9a4 4 0 010 6" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+function VolumeXIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
+      <path d="M4 10v4h4l5 4V6l-5 4H4z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+      <path d="M16 10l5 5M21 10l-5 5" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+    </svg>
+  );
+}
 
 const AnimatedTitle = ({ text, className, heroMotion = false }: AnimatedTitleProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -96,8 +127,8 @@ const AnimatedTitle = ({ text, className, heroMotion = false }: AnimatedTitlePro
         {characters.map((char, i) => (
           <motion.span
             key={i}
-            initial={{ opacity: 0, y: 14, filter: "blur(8px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{
               duration: 0.85,
               delay: i * 0.06,
@@ -240,15 +271,15 @@ function SuspenseOverlay({ prefersReducedMotion }: { prefersReducedMotion: boole
         <motion.p
           className="font-bahlull text-[clamp(2.2rem,7.5vw,4.2rem)] italic leading-[1.1] tracking-tight text-white"
           style={{ textShadow: isClimax ? "0 0 120px rgba(197,160,89,0.55), 0 8px 48px rgba(0,0,0,0.9)" : "0 0 80px rgba(197,160,89,0.25), 0 8px 48px rgba(0,0,0,0.9)" }}
-          initial={{ opacity: 0, y: 32, filter: "blur(14px)" }}
+          initial={{ opacity: 0, y: 32 }}
           animate={
             isClimax && !prefersReducedMotion
-              ? { opacity: 1, y: [0, -1.5, 1, -0.8, 0], filter: "blur(0px)", scale: [1, 1.012, 1] }
-              : { opacity: 1, y: 0, filter: "blur(0px)" }
+              ? { opacity: 1, y: [0, -1.5, 1, -0.8, 0], scale: [1, 1.012, 1] }
+              : { opacity: 1, y: 0 }
           }
           transition={
             isClimax
-              ? { y: { duration: 0.38, repeat: Infinity, ease: "easeInOut" }, scale: { duration: 0.38, repeat: Infinity }, opacity: { duration: 0 }, filter: { duration: 0 } }
+              ? { y: { duration: 0.38, repeat: Infinity, ease: "easeInOut" }, scale: { duration: 0.38, repeat: Infinity }, opacity: { duration: 0 } }
               : { duration: 1.3, delay: 0.9, ease: [0.22, 1, 0.36, 1] }
           }
         >
@@ -350,7 +381,38 @@ interface IntroProps {
 }
 
 export default function Intro({ onComplete, isExploring, onVideoStart, devChapterJumps }: IntroProps) {
+  const language = useLanguageStore((s) => s.language);
+  const hasConfirmedChoice = useLanguageStore((s) => s.hasConfirmedChoice);
+  const confirmLanguage = useLanguageStore((s) => s.confirmLanguage);
+  const isArabic = language === "ar-dz";
+  const copy = useAppCopy();
+  const introCtaWords = isArabic ? INTRO_CTA_WORDS_AR : INTRO_CTA_WORDS_FR;
+  const ui = isArabic
+    ? {
+        shortcuts: "اختصارات المطور",
+        secretFragment: "قطعة من سيناك",
+        openGame: "فتح اللعبة",
+        secretHint: "هناك سر هنا...",
+        skipIntro: "تخطي المقدمة",
+        languageTitle: "✦ اللغة ✦",
+        languageSubtitle: "اختر لغة العرض قبل بدء الرحلة",
+        french: copy.languageFrenchBtn,
+        arabicDz: copy.languageArabicBtn,
+      }
+    : {
+        shortcuts: "Raccourcis dev",
+        secretFragment: "Fragment de Senac",
+        openGame: "Ouvrir le jeu",
+        secretHint: "Un secret est cache ici...",
+        skipIntro: "Passer l'introduction",
+        languageTitle: "✦ LANGUE ✦",
+        languageSubtitle: "Choisissez la langue de l'experience avant de commencer",
+        french: copy.languageFrenchBtn,
+        arabicDz: copy.languageArabicBtn,
+      };
+
   const prefersReducedMotion = useReducedMotion();
+  const compactDesktop = useMediaQuery("(min-width: 1600px) and (max-height: 1100px)");
   const [videoStarted, setVideoStarted] = useState(false);
   const [showInitialTitle, setShowInitialTitle] = useState(true);
   const [volume, setVolume] = useState(0.1);
@@ -409,6 +471,11 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
   }, []);
 
   useEffect(() => {
+    if (!isEasterEggFound) return;
+    void import("./PoetryGame");
+  }, [isEasterEggFound]);
+
+  useEffect(() => {
     if (videoStarted && !showSkip) {
       const showTimer = setTimeout(() => setShowSkip(true), 4000);
       const hideTimer = setTimeout(() => setShowSkip(false), 12000);
@@ -422,6 +489,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
   }, [videoStarted]);
 
   const startExperience = () => {
+    if (!hasConfirmedChoice) return;
     if (isStarting || videoStarted) return;
     primeSuspenseAudio();
     setIsStarting(true);
@@ -509,13 +577,15 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
 
   return (
     <>
-      <PoetryGame
-        isOpen={isPoetryGameOpen}
-        onClose={() => {
-          setIsPoetryGameOpen(false);
-          setEasterEggPromptHidden(true);
-        }}
-      />
+      <Suspense fallback={null}>
+        <PoetryGame
+          isOpen={isPoetryGameOpen}
+          onClose={() => {
+            setIsPoetryGameOpen(false);
+            setEasterEggPromptHidden(true);
+          }}
+        />
+      </Suspense>
 
       {devChapterJumps && (
         <div
@@ -526,7 +596,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
           }}
         >
           <p className="m-0 text-[8px] font-medium uppercase tracking-[0.35em] text-solar-gold/50">
-            Raccourcis dev
+            {ui.shortcuts}
           </p>
           <div className="flex flex-wrap gap-1.5">
             <button
@@ -554,7 +624,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
               type="button"
               onClick={devChapterJumps.previewCredits}
               className="rounded-sm border border-solar-gold/30 bg-black/40 px-2.5 py-1.5 text-[9px] uppercase tracking-[0.18em] text-solar-gold/90 transition-colors hover:border-solar-gold/50 hover:bg-solar-gold/10"
-              title="Prévisualiser le générique de fin (?previewCredits=1)"
+              title={copy.introDevPreviewCreditsTitle}
             >
               Crédits
             </button>
@@ -576,13 +646,13 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
         <AnimatePresence>
           {isEasterEggFound && !easterEggPromptHidden && (
             <motion.button
-              initial={{ opacity: 0, x: 20, filter: "blur(10px)" }}
-              animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
-              exit={{ opacity: 0, x: 20, filter: "blur(10px)" }}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
               onClick={() => setIsPoetryGameOpen(true)}
               className="border border-solar-gold/35 bg-black/50 px-5 py-2.5 text-[10px] uppercase tracking-[0.45em] text-solar-gold shadow-[0_0_18px_rgba(197,160,89,0.15)] backdrop-blur-md transition-all duration-500 hover:border-solar-gold hover:bg-solar-gold/10 hover:shadow-[0_0_24px_rgba(197,160,89,0.25)]"
             >
-              <span className="relative z-10">Fragment de Senac</span>
+              <span className="relative z-10">{ui.secretFragment}</span>
             </motion.button>
           )}
         </AnimatePresence>
@@ -600,7 +670,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
           }}
           className={`relative flex h-[4.25rem] min-w-[3.25rem] shrink-0 items-center justify-center overflow-visible transition-opacity duration-300 ease-[0.22,1,0.36,1] focus:outline-none focus-visible:ring-2 focus-visible:ring-solar-gold/35 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent rounded-sm
             ${isEasterEggFound ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
-          title={isEasterEggFound ? "Ouvrir le jeu" : "Un secret est cache ici..."}
+          title={isEasterEggFound ? ui.openGame : ui.secretHint}
         >
           <span aria-hidden className="pointer-events-none absolute -bottom-0.5 left-1/2 h-[2px] w-10 -translate-x-1/2 bg-gradient-to-r from-transparent via-solar-gold/50 to-transparent opacity-60 transition-opacity duration-500 group-hover:opacity-100" />
           <span aria-hidden className="pointer-events-none absolute -top-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-solar-gold/35 blur-[1px] opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
@@ -628,12 +698,36 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
         {showInitialTitle && (
           <motion.div
             key="initial-title"
-            initial={{ opacity: 0, filter: "blur(10px)" }}
-            animate={{ opacity: 1, filter: "blur(0px)" }}
-            exit={{ opacity: 0, filter: "blur(30px)", scale: 1.08 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, scale: 1.08 }}
             transition={{ duration: 2, ease: [0.22, 1, 0.36, 1] }}
             className="absolute inset-0 z-20 flex flex-col items-center justify-center overflow-hidden"
           >
+          {!hasConfirmedChoice && (
+            <div className="pointer-events-auto absolute inset-0 z-[35] flex items-center justify-center bg-black/68 px-5">
+              <div className="w-full max-w-md border border-solar-gold/35 bg-[#050302]/92 p-6 text-center backdrop-blur-md">
+                <p className="text-[10px] uppercase tracking-[0.45em] text-solar-gold/65">{ui.languageTitle}</p>
+                <p className="mt-3 text-sm text-solar-gold/85">{ui.languageSubtitle}</p>
+                <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => confirmLanguage("fr")}
+                    className="border border-solar-gold/35 bg-black/35 px-3 py-2 text-xs uppercase tracking-[0.25em] text-solar-gold transition-colors hover:border-solar-gold/65"
+                  >
+                    {ui.french}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => confirmLanguage("ar-dz")}
+                    className="border border-solar-gold/35 bg-black/35 px-3 py-2 text-xs text-solar-gold transition-colors hover:border-solar-gold/65"
+                  >
+                    {ui.arabicDz}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           <motion.div
               className="absolute inset-0 flex flex-col items-center justify-center origin-center will-change-transform"
               animate={{ scale: prefersReducedMotion ? 1 : isStarting ? 1.14 : 1 }}
@@ -660,7 +754,6 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
               animate={{
                 opacity: isStarting ? 0 : 1,
                 y: isStarting ? -28 : 0,
-                filter: isStarting ? "blur(12px)" : "blur(0px)",
               }}
               transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
               className="relative z-[2]"
@@ -668,12 +761,15 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
               <AnimatedTitle
                 heroMotion
                 text="Al-Rihla"
-                className="font-bahlull text-7xl md:text-9xl text-white tracking-tighter italic drop-shadow-[0_0_22px_rgba(197,160,89,0.35)]"
+                className={
+                  "font-bahlull text-white tracking-tighter italic drop-shadow-[0_0_22px_rgba(197,160,89,0.35)] " +
+                  (compactDesktop ? "text-6xl md:text-8xl" : "text-7xl md:text-9xl")
+                }
               />
             </motion.div>
 
             <motion.div
-              animate={{ opacity: isStarting ? 0 : 1, y: isStarting ? 40 : 0, filter: isStarting ? "blur(10px)" : "blur(0px)" }}
+              animate={{ opacity: isStarting ? 0 : 1, y: isStarting ? 40 : 0 }}
               transition={{ duration: 0.5 }}
               className="flex flex-col items-center"
             >
@@ -681,26 +777,31 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                 initial={{ opacity: 0, scaleX: 0.3 }}
                 animate={{ opacity: 1, scaleX: 1 }}
                 transition={{ duration: 1.1, delay: 0.85, ease: [0.22, 1, 0.36, 1] }}
-                className="mx-auto mt-10 mb-4 h-px w-12 origin-center bg-solar-gold/40"
+                className={
+                  "mx-auto h-px w-12 origin-center bg-solar-gold/40 " +
+                  (compactDesktop ? "mt-6 mb-3" : "mt-10 mb-4")
+                }
               />
               <motion.p
-                initial={{ opacity: 0, y: 12, filter: "blur(8px)" }}
-                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 1.2, delay: 1.1, ease: [0.22, 1, 0.36, 1] }}
-                className="mb-12 text-[10px] font-light uppercase tracking-[0.6em] text-solar-gold"
+                className={
+                  "text-[10px] font-light uppercase tracking-[0.6em] text-solar-gold " +
+                  (compactDesktop ? "mb-8" : "mb-12")
+                }
               >
-                Jean Senac
+                {copy.introJeanSenacSubtitle}
               </motion.p>
 
             <motion.div
-              initial={{ opacity: 0, y: 24, filter: "blur(10px)" }}
+              initial={{ opacity: 0, y: 24 }}
               animate={{
                 opacity: isStarting ? 0 : 1,
                 y: isStarting ? 48 : 0,
-                filter: isStarting ? "blur(12px)" : "blur(0px)",
               }}
               transition={{ duration: 0.9, delay: 1.2, ease: [0.22, 1, 0.36, 1] }}
-              className="mt-24"
+              className={compactDesktop ? "mt-14" : "mt-24"}
             >
             <motion.button
               onClick={startExperience}
@@ -764,7 +865,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                   ease: [0.4, 0, 0.6, 1],
                 }}
               >
-                {INTRO_CTA_WORDS.join(" ")}
+                {introCtaWords.join(" ")}
               </motion.p>
             </motion.button>
             </motion.div>
@@ -777,11 +878,10 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                   key="intro-suspense"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  exit={{ opacity: 0, scale: 1.06, filter: "blur(22px)" }}
+                  exit={{ opacity: 0, scale: 1.06 }}
                   transition={{
                     opacity: { duration: prefersReducedMotion ? 0.2 : 0.65, delay: prefersReducedMotion ? 0 : 0.35, ease: [0.22, 1, 0.36, 1] },
                     scale: { duration: 1.0, ease: [0.22, 1, 0.36, 1] },
-                    filter: { duration: 1.0 },
                   }}
                   className="absolute inset-0 z-[26]"
                 >
@@ -795,8 +895,8 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
       {videoStarted && (
         <motion.div
           key="video-container"
-          initial={{ opacity: 0, filter: "blur(10px)" }}
-          animate={{ opacity: 1, filter: "blur(0px)" }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 2.5, ease: "easeInOut" }}
           className="absolute inset-0 w-full h-full z-10"
@@ -822,7 +922,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
               key="intro-volume"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20, filter: "blur(10px)" }}
+              exit={{ opacity: 0, x: 20 }}
               transition={{ delay: 1, duration: 1 }}
               className="absolute top-16 right-16 z-50 flex items-center gap-4 group"
             >
@@ -831,7 +931,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                   className="w-10 h-10 border border-solar-gold/40 bg-black/40 backdrop-blur-md rotate-45 flex items-center justify-center cursor-none hover:border-solar-gold transition-colors group-hover:shadow-[0_0_15px_rgba(197,160,89,0.5)]"
                 >
                   <div className="-rotate-45 text-white group-hover:text-solar-gold transition-colors">
-                    {isMuted || volume === 0 ? <VolumeX size={16} /> : volume < 0.5 ? <Volume1 size={16} /> : <Volume2 size={16} />}
+                    {isMuted || volume === 0 ? <VolumeXIcon width={16} height={16} /> : volume < 0.5 ? <Volume1Icon width={16} height={16} /> : <Volume2Icon width={16} height={16} />}
                   </div>
                 </div>
                 <div className="w-0 group-hover:w-32 overflow-hidden transition-all duration-700 ease-[0.22,1,0.36,1] flex items-center bg-black/40 backdrop-blur-md rounded-full px-0 group-hover:px-4 h-8 border border-transparent group-hover:border-solar-gold/20">
@@ -852,9 +952,9 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
           <AnimatePresence>
             {showSkip && (
               <motion.div
-                initial={{ opacity: 0, x: 40, filter: "blur(10px)" }}
-                animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
-                exit={{ opacity: 0, x: 20, filter: "blur(10px)" }}
+                initial={{ opacity: 0, x: 40 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
                 transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
                 className="absolute bottom-16 right-16 z-50 pointer-events-auto"
               >
@@ -865,7 +965,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                 >
                   <div className="flex min-w-0 flex-col items-end gap-1.5">
                     <span className="text-[10px] font-light uppercase tracking-[0.6em] text-solar-gold/70 transition-colors duration-500 group-hover:text-solar-gold">
-                      Passer l&apos;introduction
+                      {ui.skipIntro}
                     </span>
                     <div className="relative mt-0.5 h-[2px] w-[min(17rem,72vw)] overflow-hidden rounded-full bg-solar-gold/15">
                       <motion.div

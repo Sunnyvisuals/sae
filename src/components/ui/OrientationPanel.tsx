@@ -2,9 +2,10 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
-import { ChevronLeft } from 'lucide-react';
+import { IconChevronLeft } from './icons';
 import { useReducedMotion } from 'motion/react';
 import { ALGERIA_PATH } from '../Immersive/algeriaOutlinePath';
+import { useAppCopy } from '../../hooks/useAppCopy';
 
 type PhaseLabel = 'intro' | 'act1' | 'act2';
 
@@ -29,23 +30,6 @@ type Props = {
 
 const PHASE_NAV_INDEX: Record<PhaseLabel, number> = { intro: 0, act1: 1, act2: 2 };
 
-/** Titre « verrouillé » tant que l’étape n’est pas atteinte (même logique que Actes III / IV). */
-function lockedLabelForPhase(p: PhaseLabel): string {
-  if (p === 'intro') return 'Intro - ?';
-  if (p === 'act1') return 'Acte I - ?';
-  return 'Acte II - ?';
-}
-
-/** Résumés d’étape affichés dans le panneau (léger récap.). */
-const PARCOURS_SUMMARIES: Record<PhaseLabel, string> = {
-  intro:
-    'Voix et paysage désert avant d\'entrer dans la carte-mémoire.',
-  act1:
-    'Une carte où cinq fragments viennent compléter le vers de Sénac dans l\'Algérie.',
-  act2:
-    'Le rouleau nocturne : le poème, les archives au fil du défilement dans le bleu.',
-};
-
 /** Lignes fixes du fil (actes réels + jalons à venir). */
 type ParcoursRow = {
   key: string;
@@ -57,29 +41,6 @@ type ParcoursRow = {
   /** Ligne « Crédits » : affichage révélé (non cryptique) même si `phase` est null. */
   forceReveal?: boolean;
 };
-
-const PARCOURS_PHASE_ORDER: { label: string; phase: PhaseLabel }[] = [
-  { label: 'Intro - Prologue', phase: 'intro' },
-  { label: 'Acte I - L\'algérie', phase: 'act1' },
-  { label: 'Acte II - (suite)', phase: 'act2' },
-];
-
-const PARCOURS_PLACEHOLDERS_AFTER: ParcoursRow[] = [
-  {
-    key: 'act3-suivante',
-    phase: null,
-    label: 'Acte III - ?',
-    summary: '???',
-    variant: 'future',
-  },
-  {
-    key: 'act4-suivante',
-    phase: null,
-    label: 'Acte IV - ?',
-    summary: '???',
-    variant: 'future',
-  },
-];
 
 function navSummaryClass(active: boolean, night: boolean) {
   if (night) {
@@ -208,13 +169,27 @@ export function ParcoursPanelInnerContent({
   className = '',
 }: Omit<Props, 'expanded' | 'onExpandedChange'> & { className?: string }) {
   const prefersReducedMotion = useReducedMotion();
+  const copy = useAppCopy();
   const nightRail =
     phase === 'act2' ? (typeof parcoursRailMidnight === 'boolean' ? parcoursRailMidnight : true) : false;
   const activeStep = PHASE_NAV_INDEX[phase];
 
+  const lockedTitle = (p: PhaseLabel) =>
+    p === 'intro'
+      ? copy.orientationLockedIntro
+      : p === 'act1'
+        ? copy.orientationLockedAct1
+        : copy.orientationLockedAct2;
+
   const navRows: ParcoursRow[] = (() => {
+    const order: { label: string; phase: PhaseLabel }[] = [
+      { label: copy.orientationPhaseIntroLabel, phase: 'intro' },
+      { label: copy.orientationPhaseAct1Label, phase: 'act1' },
+      { label: copy.orientationPhaseAct2Label, phase: 'act2' },
+    ];
+    const sums = copy.orientationSummaries;
     const baseRows: ParcoursRow[] = [
-      ...PARCOURS_PHASE_ORDER.map(({ label, phase: p }) => {
+      ...order.map(({ label, phase: p }) => {
         const stepIdx = PHASE_NAV_INDEX[p];
         const variant: 'past' | 'current' | 'future' =
           stepIdx < activeStep ? 'past' : stepIdx === activeStep ? 'current' : 'future';
@@ -222,24 +197,35 @@ export function ParcoursPanelInnerContent({
           key: p,
           phase: p,
           label,
-          summary: PARCOURS_SUMMARIES[p],
+          summary: sums[p],
           variant,
         };
       }),
-      ...PARCOURS_PLACEHOLDERS_AFTER,
+      {
+        key: 'act3-suivante',
+        phase: null,
+        label: copy.orientationFutureAct3,
+        summary: '???',
+        variant: 'future' as const,
+      },
+      {
+        key: 'act4-suivante',
+        phase: null,
+        label: copy.orientationFutureAct4,
+        summary: '???',
+        variant: 'future' as const,
+      },
     ];
     if (phase === 'act2' && act2VoyageCreditsOpen) {
       return [
         ...baseRows.map((row) =>
-          row.phase !== null
-            ? { ...row, variant: 'past' as const }
-            : row
+          row.phase !== null ? { ...row, variant: 'past' as const } : row
         ),
         {
           key: 'credits',
           phase: null,
-          label: 'Crédits',
-          summary: 'Générique de fin, remerciements et fermeture de ce voyage.',
+          label: copy.orientationCreditsLabel,
+          summary: copy.orientationCreditsSummary,
           variant: 'current' as const,
           forceReveal: true,
         },
@@ -252,7 +238,7 @@ export function ParcoursPanelInnerContent({
     <div className={`flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden ${className}`}>
       <nav
         className="relative flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden pl-0.5"
-        aria-label="Fil d'Ariane"
+        aria-label={copy.orientationBreadcrumbAria}
       >
         <span
           aria-hidden
@@ -271,7 +257,7 @@ export function ParcoursPanelInnerContent({
             !forceReveal &&
             (rowPhase === null || (rowPhase !== null && PHASE_NAV_INDEX[rowPhase] > activeStep));
           const showCrypticCopy = cryptic && rowPhase !== null;
-          const rowLabel = showCrypticCopy ? lockedLabelForPhase(rowPhase) : label;
+          const rowLabel = showCrypticCopy ? lockedTitle(rowPhase) : label;
           const rowSummary = showCrypticCopy ? '???' : summary;
           return (
             <div
@@ -324,7 +310,7 @@ export function ParcoursPanelInnerContent({
               (nightRail ? 'text-[rgba(234,215,164,0.48)]' : 'text-solar-gold/45')
             }
           >
-            Flux
+            {copy.orientationFlux}
           </p>
           <div
             className={
@@ -362,8 +348,8 @@ export function ParcoursPanelInnerContent({
             }
           >
             {act2VoyageCreditsOpen
-              ? 'Générique : laisse défiler puis Échapper pour fermer quand les commandes sont visibles.'
-              : 'Défiler pour poursuivre'}
+              ? copy.orientationFluxCredits
+              : copy.orientationFluxScroll}
           </p>
         </div>
       )}
@@ -371,7 +357,7 @@ export function ParcoursPanelInnerContent({
       {phase === 'act1' && (
         <div className="mt-6 shrink-0">
           <p className="mb-2 text-[9px] font-medium uppercase tracking-[0.32em] text-solar-gold/40">
-            Mini-carte
+            {copy.orientationMiniMap}
           </p>
           <div className="relative aspect-square w-full overflow-hidden rounded-[2px] border border-solar-gold/18 bg-black/30 p-2">
             <svg viewBox="0 0 400 400" className="h-full w-full text-solar-gold" aria-hidden>
@@ -421,6 +407,7 @@ export default function OrientationPanel({
   parcoursRailMidnight,
   act2VoyageCreditsOpen,
 }: Props) {
+  const copy = useAppCopy();
   const expandedW = useExpandedWidthPx();
   const shellRef = useRef<HTMLDivElement>(null);
   const didInit = useRef(false);
@@ -529,7 +516,7 @@ export default function OrientationPanel({
             'group flex h-full w-full min-w-0 flex-col items-center justify-center gap-3 bg-transparent px-0 py-10 focus-visible:outline-none focus-visible:ring-1 ' +
             (nightRail ? 'focus-visible:ring-[rgba(139,213,255,0.35)]' : 'focus-visible:ring-solar-gold/35')
           }
-          aria-label="Ouvrir le panneau Parcours"
+          aria-label={copy.orientationOpenPanel}
         >
           <span
             className={
@@ -542,7 +529,7 @@ export default function OrientationPanel({
             }
             aria-hidden
           />
-          <ChevronLeft
+          <IconChevronLeft
             className={
               'relative h-4 w-4 shrink-0 transition-[color,transform,filter] duration-[850ms] ease-out group-hover:-translate-x-px ' +
               (quietCollapsed
@@ -568,7 +555,7 @@ export default function OrientationPanel({
                   (nightRail ? 'text-[rgba(234,215,164,0.58)]' : 'text-solar-gold/60'))
             }
           >
-            Parcours
+            {copy.orientationParcours}
           </span>
         </button>
       ) : (
@@ -592,7 +579,7 @@ export default function OrientationPanel({
                 ? 'border-[rgba(139,213,255,0.14)] focus-visible:ring-[rgba(139,213,255,0.3)]'
                 : 'border-solar-gold/[0.12] focus-visible:ring-solar-gold/30')
             }
-            aria-label="Réduire le panneau Parcours"
+            aria-label={copy.orientationCollapsePanel}
           >
             {/* Trait décoratif gauche */}
             <span
@@ -609,7 +596,7 @@ export default function OrientationPanel({
                   : 'text-solar-gold/55 group-hover:text-solar-gold/80')
               }
             >
-              Parcours
+              {copy.orientationParcours}
             </span>
             {/* Indicateur de fermeture : fine flèche vers la droite */}
             <span

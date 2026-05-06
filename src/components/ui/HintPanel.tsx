@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
-import { Check } from 'lucide-react';
+import { useEffect, useState, type ReactNode, useMemo } from 'react';
+import { IconCheck } from './icons';
 import { motion, AnimatePresence } from 'motion/react';
+import { useAppCopy } from '../../hooks/useAppCopy';
 
 export type Act1QuestProgress = {
   hover: boolean;
@@ -25,77 +26,91 @@ interface Hint {
   desc: string;
 }
 
-const HINTS: Record<Phase, Hint[]> = {
-  intro: [],
-  act1: [
-    {
-      icon: (
-        <svg width="11" height="11" viewBox="0 0 13 13" fill="none">
-          <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" strokeWidth="1.1"/>
-          <circle cx="6.5" cy="6.5" r="2" fill="currentColor"/>
-        </svg>
-      ),
-      label: 'Survolez',
-      desc: 'Passez la souris sur un mot pour le faire briller',
-    },
-    {
-      icon: (
-        <svg width="11" height="11" viewBox="0 0 13 13" fill="none">
-          <path d="M6.5 1L8.2 4.5L12 5.1L9.25 7.8L9.9 11.6L6.5 9.8L3.1 11.6L3.75 7.8L1 5.1L4.8 4.5L6.5 1Z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round"/>
-        </svg>
-      ),
-      label: 'Cliquez',
-      desc: "Cliquez sur le fragment attendu pour le valider",
-    },
-    {
-      icon: (
-        <svg width="11" height="11" viewBox="0 0 13 13" fill="none">
-          <path d="M6.5 2v9M2 6.5h9" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
-          <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" strokeWidth="1.1"/>
-        </svg>
-      ),
-      label: 'Zoom',
-      desc: 'Molette ou pincement pour zoomer sur la carte',
-    },
-  ],
-  act2: [
-    {
-      icon: (
-        <svg width="11" height="11" viewBox="0 0 13 13" fill="none">
-          <path d="M6.5 2L6.5 11M3 5L6.5 2L10 5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      ),
-      label: 'Défilez',
-      desc: 'Faites défiler pour traverser le poème - les fragments se révèlent au passage',
-    },
-  ],
-};
+const ACT1_ICONS: ReactNode[] = [
+  (
+    <svg width="11" height="11" viewBox="0 0 13 13" fill="none">
+      <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" strokeWidth="1.1" />
+      <circle cx="6.5" cy="6.5" r="2" fill="currentColor" />
+    </svg>
+  ),
+  (
+    <svg width="11" height="11" viewBox="0 0 13 13" fill="none">
+      <path
+        d="M6.5 1L8.2 4.5L12 5.1L9.25 7.8L9.9 11.6L6.5 9.8L3.1 11.6L3.75 7.8L1 5.1L4.8 4.5L6.5 1Z"
+        stroke="currentColor"
+        strokeWidth="1.1"
+        strokeLinejoin="round"
+      />
+    </svg>
+  ),
+  (
+    <svg width="11" height="11" viewBox="0 0 13 13" fill="none">
+      <path d="M6.5 2v9M2 6.5h9" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+      <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" strokeWidth="1.1" />
+    </svg>
+  ),
+];
 
-const TITLES: Record<Phase, string> = {
-  intro: '',
-  act1: 'Premiers gestes',
-  act2: 'Comment naviguer',
-};
+const ACT2_ICONS: ReactNode[] = [
+  (
+    <svg width="11" height="11" viewBox="0 0 13 13" fill="none">
+      <path
+        d="M6.5 2L6.5 11M3 5L6.5 2L10 5"
+        stroke="currentColor"
+        strokeWidth="1.1"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  ),
+];
 
 interface Props {
   phase: Phase;
-  /** Masque les consignes sans démonter (menu pause / vidéo) — évite de réinitialiser « fermé par l’utilisateur » au remontage. */
+  /** Masque les consignes sans démonter (menu pause / vidéo) — évite de réinitialiser « fermé par l'utilisateur » au remontage. */
   suppress?: boolean;
   act1Quest?: Act1QuestProgress;
   act2Quest?: Act2QuestProgress;
 }
 
 export default function HintPanel({ phase, suppress = false, act1Quest, act2Quest }: Props) {
+  const copy = useAppCopy();
   const [visible, setVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [currentPhase, setCurrentPhase] = useState<Phase>(phase);
+
+  const HINTS: Record<Phase, Hint[]> = useMemo(
+    () => ({
+      intro: [],
+      act1: copy.hintStepsAct1.map((t, i) => ({
+        icon: ACT1_ICONS[i]!,
+        label: t.label,
+        desc: t.desc,
+      })),
+      act2: copy.hintStepsAct2.map((t, i) => ({
+        icon: ACT2_ICONS[i]!,
+        label: t.label,
+        desc: t.desc,
+      })),
+    }),
+    [copy],
+  );
+
+  const TITLES: Record<Phase, string> = useMemo(
+    () => ({
+      intro: '',
+      act1: copy.hintTitles.act1,
+      act2: copy.hintTitles.act2,
+    }),
+    [copy],
+  );
 
   useEffect(() => {
     if (phase === 'intro') return;
     setDismissed(false);
     setCurrentPhase(phase);
     const t = window.setTimeout(() => setVisible(true), 900);
-    return () => clearTimeout(t);
+    return () => window.clearTimeout(t);
   }, [phase]);
 
   /** Fermeture auto une fois tous les gestes validés (« compris ») */
@@ -116,13 +131,13 @@ export default function HintPanel({ phase, suppress = false, act1Quest, act2Ques
 
     const lingerMs = 1100;
     const exitMotionMs = 580;
-    const t = window.setTimeout(() => {
+    const timer = window.setTimeout(() => {
       setVisible(false);
       window.setTimeout(() => {
         setDismissed(true);
       }, exitMotionMs);
     }, lingerMs);
-    return () => window.clearTimeout(t);
+    return () => window.clearTimeout(timer);
   }, [phase, dismissed, visible, act1Quest, act2Quest]);
 
   const hints = HINTS[currentPhase] ?? [];
@@ -167,8 +182,6 @@ export default function HintPanel({ phase, suppress = false, act1Quest, act2Ques
                 : 'border border-solar-gold/[0.28] bg-[#080604]/[0.88] shadow-[0_16px_48px_rgba(0,0,0,0.65),0_0_0_1px_rgba(197,160,89,0.06)]')
             }
           >
-
-            {/* Coin décoratif haut-gauche */}
             <span
               className={
                 'pointer-events-none absolute left-2 top-2 h-2.5 w-2.5 border-l border-t ' +
@@ -177,7 +190,6 @@ export default function HintPanel({ phase, suppress = false, act1Quest, act2Ques
               aria-hidden
             />
 
-            {/* Header */}
             <div className="flex items-center justify-between gap-2 px-3.5 pt-3 pb-2.5">
               <div className="min-w-0 flex items-baseline gap-2.5">
                 <p
@@ -211,31 +223,31 @@ export default function HintPanel({ phase, suppress = false, act1Quest, act2Ques
               </div>
               <button
                 type="button"
-                onClick={() => { setVisible(false); setDismissed(true); }}
+                onClick={() => {
+                  setVisible(false);
+                  setDismissed(true);
+                }}
                 className={
                   'flex h-5 w-5 shrink-0 items-center justify-center transition-colors duration-200 focus-visible:outline-none ' +
                   (nightChapter
                     ? 'text-[rgba(139,213,255,0.28)] hover:text-[rgba(234,215,164,0.55)]'
                     : 'text-solar-gold/20 hover:text-solar-gold/50')
                 }
-                aria-label="Fermer les consignes"
+                aria-label={copy.hintCloseAria}
               >
                 <svg width="7" height="7" viewBox="0 0 8 8" fill="none">
-                  <line x1="1" y1="1" x2="7" y2="7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-                  <line x1="7" y1="1" x2="1" y2="7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+                  <line x1="1" y1="1" x2="7" y2="7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+                  <line x1="7" y1="1" x2="1" y2="7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
                 </svg>
               </button>
             </div>
 
-            {/* Séparateur */}
             <div
               className={
-                'mx-3.5 h-px ' +
-                (nightChapter ? 'bg-[rgba(139,213,255,0.14)]' : 'bg-solar-gold/[0.1]')
+                'mx-3.5 h-px ' + (nightChapter ? 'bg-[rgba(139,213,255,0.14)]' : 'bg-solar-gold/[0.1]')
               }
             />
 
-            {/* Consignes */}
             <ul className="flex flex-col">
               {hints.map((hint, i) => {
                 const questKey =
@@ -266,7 +278,6 @@ export default function HintPanel({ phase, suppress = false, act1Quest, act2Ques
                       (done ? (nightChapter ? 'bg-[rgba(90,168,255,0.06)]' : 'bg-[rgba(197,160,89,0.05)]') : '')
                     }
                   >
-                    {/* Icône / check */}
                     <div className="mt-px flex h-4 w-4 shrink-0 items-center justify-center">
                       {done ? (
                         <motion.span
@@ -281,7 +292,7 @@ export default function HintPanel({ phase, suppress = false, act1Quest, act2Ques
                           }
                           aria-hidden
                         >
-                          <Check className="h-2.5 w-2.5" strokeWidth={2.8} aria-hidden />
+                          <IconCheck className="h-2.5 w-2.5" aria-hidden />
                         </motion.span>
                       ) : (
                         <span
@@ -294,7 +305,6 @@ export default function HintPanel({ phase, suppress = false, act1Quest, act2Ques
                       )}
                     </div>
 
-                    {/* Texte */}
                     <div className="min-w-0">
                       <p
                         className={
@@ -330,7 +340,6 @@ export default function HintPanel({ phase, suppress = false, act1Quest, act2Ques
               })}
             </ul>
 
-            {/* Coin décoratif bas-droite */}
             <span
               className={
                 'pointer-events-none absolute bottom-2 right-2 h-2.5 w-2.5 border-b border-r ' +

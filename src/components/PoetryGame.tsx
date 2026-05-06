@@ -1,43 +1,28 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, RefreshCw, Sparkles } from "lucide-react";
+import { IconRefreshCw, IconSparkles, IconX } from "./ui/icons";
+import { useAppCopy } from "../hooks/useAppCopy";
 
 interface PoetryGameProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const POEMS = [
-  {
-    text: "Le soleil est mon corps, le sable est ma mémoire.",
-    missing: ["soleil", "sable", "mémoire"],
-    options: ["soleil", "sable", "mémoire", "vent", "mer", "silence"],
-  },
-  {
-    text: "Un cri de lumière dans l'immensité du désert.",
-    missing: ["cri", "lumière", "désert"],
-    options: ["cri", "lumière", "désert", "chant", "ombre", "ciel"],
-  },
-  {
-    text: "Écrire c'est tracer un chemin de feu sur l'eau.",
-    missing: ["Écrire", "chemin", "feu"],
-    options: ["Écrire", "chemin", "feu", "Lire", "rêve", "sang"],
-  },
-];
-
 export default function PoetryGame({ isOpen, onClose }: PoetryGameProps) {
+  const copy = useAppCopy();
+  const poems = copy.poetryLevels;
   const [currentLevel, setCurrentLevel] = useState(0);
   const [slots, setSlots] = useState<(string | null)[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const poem = POEMS[currentLevel];
+  const poem = poems[currentLevel]!;
 
   useEffect(() => {
     if (isOpen) {
       setSlots(new Array(poem.missing.length).fill(null));
       setShowSuccess(false);
     }
-  }, [isOpen, currentLevel]);
+  }, [isOpen, currentLevel, poem]);
 
   const handleDrop = (word: string, index: number) => {
     const newSlots = [...slots];
@@ -55,7 +40,7 @@ export default function PoetryGame({ isOpen, onClose }: PoetryGameProps) {
   };
 
   const nextLevel = () => {
-    if (currentLevel < POEMS.length - 1) {
+    if (currentLevel < poems.length - 1) {
       setCurrentLevel((prev) => prev + 1);
     } else {
       setCurrentLevel(0);
@@ -74,9 +59,9 @@ export default function PoetryGame({ isOpen, onClose }: PoetryGameProps) {
         className="fixed inset-0 z-[10000] flex items-center justify-center bg-[#06040a]/92 backdrop-blur-xl p-4"
       >
         <motion.div
-          initial={{ scale: 0.96, y: 24, opacity: 0, filter: "blur(12px)" }}
-          animate={{ scale: 1, y: 0, opacity: 1, filter: "blur(0px)" }}
-          exit={{ scale: 0.96, y: 24, opacity: 0, filter: "blur(12px)" }}
+          initial={{ scale: 0.96, y: 24, opacity: 0 }}
+          animate={{ scale: 1, y: 0, opacity: 1 }}
+          exit={{ scale: 0.96, y: 24, opacity: 0 }}
           transition={{ type: "spring", damping: 28, stiffness: 140 }}
           className="relative w-full max-w-2xl overflow-hidden border border-solar-gold/25 bg-black/55 p-8 shadow-[0_0_60px_rgba(0,0,0,0.6)] md:p-14"
           style={{ borderRadius: "1.25rem" }}
@@ -94,17 +79,17 @@ export default function PoetryGame({ isOpen, onClose }: PoetryGameProps) {
             whileTap={{ scale: 0.95 }}
             onClick={onClose}
             className="absolute right-5 top-5 z-10 text-solar-gold/50 transition-colors hover:text-solar-gold"
-            aria-label="Fermer"
+            aria-label={copy.poetry.ariaClose}
           >
-            <X size={20} strokeWidth={1.25} />
+            <IconX width={20} height={20} />
           </motion.button>
 
           <div className="relative mb-12 text-center">
             <span className="mb-3 block text-[9px] font-light uppercase tracking-[0.55em] text-solar-gold/45">
-              Fragment {currentLevel + 1} / {POEMS.length}
+              {copy.poetry.fragment(currentLevel + 1, poems.length)}
             </span>
             <h3 className="font-bahlull text-3xl italic text-white drop-shadow-[0_0_20px_rgba(197,160,89,0.15)] md:text-4xl">
-              Reconstituez le vers
+              {copy.poetry.rebuildVerse}
             </h3>
             <div className="mx-auto mt-4 h-px w-16 bg-gradient-to-r from-transparent via-solar-gold/40 to-transparent" />
           </div>
@@ -131,8 +116,8 @@ export default function PoetryGame({ isOpen, onClose }: PoetryGameProps) {
                       {slots[missingIndex] ? (
                         <motion.span
                           key="word"
-                          initial={{ scale: 0.5, opacity: 0, filter: "blur(8px)" }}
-                          animate={{ scale: 1, opacity: 1, filter: "blur(0px)" }}
+                          initial={{ scale: 0.5, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
                           className="text-lg font-medium tracking-tight"
                         >
                           {slots[missingIndex]}
@@ -203,7 +188,7 @@ export default function PoetryGame({ isOpen, onClose }: PoetryGameProps) {
               onClick={resetLevel}
               className="flex items-center gap-2 text-[9px] uppercase tracking-[0.35em] text-solar-gold/35 transition-colors hover:text-solar-gold"
             >
-              <RefreshCw size={12} strokeWidth={1.5} /> Réinitialiser
+              <IconRefreshCw width={12} height={12} /> {copy.poetry.reset}
             </motion.button>
           </div>
 
@@ -223,15 +208,15 @@ export default function PoetryGame({ isOpen, onClose }: PoetryGameProps) {
                 >
                   <div className="relative mb-8 flex h-16 w-16 rotate-45 items-center justify-center border border-solar-gold/40 bg-solar-gold/10 shadow-[0_0_28px_rgba(197,160,89,0.2)]">
                     <div className="-rotate-45">
-                      <Sparkles className="h-7 w-7 text-solar-gold" strokeWidth={1.3} />
+                      <IconSparkles className="h-7 w-7 text-solar-gold" />
                     </div>
                   </div>
 
                   <h4 className="font-bahlull text-4xl italic text-white md:text-5xl">
-                    Éclatant
+                    {copy.poetry.successTitle}
                   </h4>
                   <p className="mb-10 mt-4 text-[10px] leading-relaxed tracking-[0.35em] text-solar-gold/55">
-                    Vous avez restauré un fragment de lumière
+                    {copy.poetry.successBody}
                   </p>
 
                   <motion.button
@@ -241,7 +226,7 @@ export default function PoetryGame({ isOpen, onClose }: PoetryGameProps) {
                     className="w-full border border-solar-gold/50 bg-solar-gold/90 py-4 text-[9px] font-semibold uppercase tracking-[0.4em] text-solar-brown shadow-[0_0_24px_rgba(197,160,89,0.25)] transition-colors hover:bg-solar-gold"
                     style={{ borderRadius: "2px" }}
                   >
-                    {currentLevel < POEMS.length - 1 ? "Fragment suivant" : "Retour au voyage"}
+                    {currentLevel < poems.length - 1 ? copy.poetry.nextFragment : copy.poetry.backToJourney}
                   </motion.button>
                 </motion.div>
               </motion.div>

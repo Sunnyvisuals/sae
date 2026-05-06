@@ -1,4 +1,5 @@
 import { motion } from 'motion/react';
+import { useAppCopy } from '../../hooks/useAppCopy';
 
 type Props = {
   chapterTitle: string;
@@ -9,6 +10,7 @@ type Props = {
  * Chapitre accompli - entrée sobre (pas de zoom / flou agressif), alignée carte / or du projet.
  */
 export default function ChapterCompleteToast({ chapterTitle, subtitle }: Props) {
+  const copy = useAppCopy();
   return (
     <motion.div
       role="status"
@@ -32,7 +34,7 @@ export default function ChapterCompleteToast({ chapterTitle, subtitle }: Props) 
           transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1], delay: 0.12 }}
           className="text-[10px] uppercase tracking-[0.52em] text-solar-gold/48"
         >
-          Chapitre accompli
+          {copy.chapterToastKicker}
         </motion.p>
         <motion.h2
           initial={{ opacity: 0, y: 10 }}

@@ -833,9 +833,19 @@ function SplashCursor({
       return dt;
     }
 
+    let cachedCssWidth = canvas.clientWidth;
+    let cachedCssHeight = canvas.clientHeight;
+    const sizeObserver = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      cachedCssWidth = entry.contentRect.width;
+      cachedCssHeight = entry.contentRect.height;
+    });
+    sizeObserver.observe(canvas);
+
     function resizeCanvas() {
-      let width = scaleByPixelRatio(canvas.clientWidth);
-      let height = scaleByPixelRatio(canvas.clientHeight);
+      let width = scaleByPixelRatio(cachedCssWidth);
+      let height = scaleByPixelRatio(cachedCssHeight);
       if (canvas.width !== width || canvas.height !== height) {
         canvas.width = width;
         canvas.height = height;
@@ -1051,50 +1061,6 @@ function SplashCursor({
       };
     }
 
-    function HSVtoRGB(h, s, v) {
-      let r, g, b, i, f, p, q, t;
-      i = Math.floor(h * 6);
-      f = h * 6 - i;
-      p = v * (1 - s);
-      q = v * (1 - f * s);
-      t = v * (1 - (1 - f) * s);
-      switch (i % 6) {
-        case 0:
-          r = v;
-          g = t;
-          b = p;
-          break;
-        case 1:
-          r = q;
-          g = v;
-          b = p;
-          break;
-        case 2:
-          r = p;
-          g = v;
-          b = t;
-          break;
-        case 3:
-          r = p;
-          g = q;
-          b = v;
-          break;
-        case 4:
-          r = t;
-          g = p;
-          b = v;
-          break;
-        case 5:
-          r = v;
-          g = p;
-          b = q;
-          break;
-        default:
-          break;
-      }
-      return { r, g, b };
-    }
-
     function wrap(value, min, max) {
       const range = max - min;
       if (range === 0) return min;
@@ -1149,12 +1115,11 @@ function SplashCursor({
         const rawTarget = e.target;
         const target = rawTarget instanceof HTMLElement ? rawTarget : null;
         // Cible absente (p.ex. MouseEvent synthétique depuis l’iframe) - pas de détection hover DOM.
+        // Avoid layout/style reads in the pointer-move hot path.
         isHovering = !!(
           target &&
-          (window.getComputedStyle(target).cursor === "pointer" ||
-            target.tagName === "BUTTON" ||
-            target.closest("button") ||
-            target.closest("a"))
+          (target.matches('button, a, [role="button"], [data-cursor="pointer"]') ||
+            target.closest('button, a, [role="button"], [data-cursor="pointer"]'))
         );
       }
 
@@ -1246,6 +1211,7 @@ function SplashCursor({
         window.removeEventListener('touchmove', handleTouchMove);
         window.removeEventListener('touchend', handleTouchEnd);
       }
+      sizeObserver.disconnect();
       document.removeEventListener('visibilitychange', resumeFluidWhenVisible);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reconstruction WebGL voulue quand palette / résolution changes

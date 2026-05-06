@@ -1,4 +1,5 @@
 import { motion, useScroll, useTransform } from "motion/react";
+import { NOISE_DATA_URI } from "../lib/noiseDataUri";
 
 export default function CinematicOverlay() {
   const { scrollYProgress } = useScroll();
@@ -11,7 +12,7 @@ export default function CinematicOverlay() {
     <div className="fixed inset-0 pointer-events-none z-[11]">
       {/* 1. Grain/Noise Layer */}
       <div className="absolute inset-0 opacity-[0.08] mix-blend-overlay pointer-events-none">
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] w-full h-full" />
+        <div className="absolute inset-0 w-full h-full" style={{ backgroundImage: `url("${NOISE_DATA_URI}")` }} />
       </div>
 
       {/* 2. Dynamic Light Leak - Amber/Solar Glow */}

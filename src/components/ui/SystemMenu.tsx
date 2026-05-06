@@ -1,10 +1,12 @@
-import { Fragment, useId, useState, type ChangeEvent, type ReactNode } from 'react';
+import { Fragment, useId, useState, type ChangeEvent, type ReactNode, type SVGProps } from 'react';
 import { motion } from 'motion/react';
-import { ChevronDown, Volume2, VolumeX, X } from 'lucide-react';
 import { useCursorStore } from '../../hooks/useCursorContext';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { useLanguageStore } from '../../stores/languageStore';
+import { useAppCopy } from '../../hooks/useAppCopy';
 import { useMasterVolumeStore } from '../../stores/masterVolumeStore';
 import SplashCursor from '../SplashCursor';
+import { NOISE_DATA_URI } from '../../lib/noiseDataUri';
 
 type Props = {
   onClose: () => void;
@@ -16,6 +18,41 @@ type Props = {
 };
 
 const easeMajestic = [0.22, 1, 0.36, 1] as const;
+
+function IconChevronDown(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
+      <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+function IconVolume2(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
+      <path d="M4 10v4h4l5 4V6l-5 4H4z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+      <path d="M16 9a4 4 0 010 6" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+      <path d="M18.5 6.5a7.5 7.5 0 010 11" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+function IconVolumeX(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
+      <path d="M4 10v4h4l5 4V6l-5 4H4z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+      <path d="M16 10l5 5M21 10l-5 5" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+function IconX(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
+      <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+    </svg>
+  );
+}
 
 const container = {
   hidden: { opacity: 0 },
@@ -93,6 +130,7 @@ function MajesticButton({
 
 /** Barre de volume — filet léger + remplissage (comme l’ornement au-dessus), icône fantôme sans cadre. */
 function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
+  const copy = useAppCopy();
   const panelId = useId();
   const [soundOpen, setSoundOpen] = useState(false);
   const volume = useMasterVolumeStore((s) => s.volume);
@@ -158,14 +196,14 @@ function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
           onClick={toggleSoundPanel}
           aria-labelledby={`${panelId}-label`}
           className={
-            'group flex w-full min-w-0 items-center justify-between gap-3 py-1 text-left outline-none transition-[opacity,color] duration-300 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent sm:py-1.5 ' +
+            'group flex w-full min-w-0 items-center justify-between gap-3 py-1 text-start outline-none transition-[opacity,color] duration-300 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent sm:py-1.5 ' +
             (midnight
               ? 'focus-visible:ring-[rgba(90,168,255,0.38)]'
               : 'focus-visible:ring-solar-gold/40')
           }
         >
           <span className={notchBtn} aria-hidden>
-            <ChevronDown
+            <IconChevronDown
               strokeWidth={1.35}
               className={`h-3.5 w-3.5 shrink-0 transition-transform duration-300 ease-out sm:h-4 sm:w-4 ${soundOpen ? 'rotate-0' : '-rotate-90'}`}
             />
@@ -177,7 +215,7 @@ function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
               (midnight ? 'text-sky-400/62' : 'text-solar-gold/55')
             }
           >
-            <span className="shrink-0">Son</span>
+            <span className="shrink-0">{copy.menuSound}</span>
             <span
               className={
                 'shrink-0 font-serif text-[11px] normal-case not-italic tabular-nums tracking-[0.12em] sm:text-[12px] ' +
@@ -207,7 +245,7 @@ function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
                 type="button"
                 onClick={toggleSilent}
                 tabIndex={soundOpen ? 0 : -1}
-                aria-label={volume === 0 ? 'Réactiver le son ambiant' : 'Couper le son ambiant'}
+                aria-label={volume === 0 ? copy.menuAmbientMuteOn : copy.menuAmbientMuteOff}
                 className={
                   (soundOpen ? 'pointer-events-auto ' : 'pointer-events-none ') +
                     'flex h-9 w-9 shrink-0 items-center justify-center rounded-[2px] border transition-[color,border-color,background-color,opacity,transform] duration-300 ease-out outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent active:scale-[0.96] sm:h-10 sm:w-10 ' +
@@ -217,9 +255,9 @@ function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
                 }
               >
                 {volume === 0 ? (
-                  <VolumeX className="h-[17px] w-[17px] sm:h-[18px] sm:w-[18px]" strokeWidth={1.15} aria-hidden />
+                  <IconVolumeX className="h-[17px] w-[17px] sm:h-[18px] sm:w-[18px]" aria-hidden />
                 ) : (
-                  <Volume2 className="h-[17px] w-[17px] sm:h-[18px] sm:w-[18px]" strokeWidth={1.15} aria-hidden />
+                  <IconVolume2 className="h-[17px] w-[17px] sm:h-[18px] sm:w-[18px]" aria-hidden />
                 )}
               </button>
 
@@ -258,7 +296,7 @@ function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
                   step={0.02}
                   value={volume}
                   onChange={onRange}
-                  aria-label="Volume du son"
+                  aria-label={copy.menuAmbientVolume}
                   disabled={!soundOpen}
                   className={
                       'pointer-events-auto relative z-[2] h-10 w-full min-h-[40px] cursor-pointer appearance-none rounded-full bg-transparent box-border px-[max(10px,0.55rem)] focus:outline-none focus-visible:ring-1 ' +
@@ -282,6 +320,131 @@ function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
   );
 }
 
+/** Langue — même schéma que la section son (ligne cliquable + panneau repliable). */
+function PauseLanguagePicker({ midnight }: { midnight: boolean }) {
+  const copy = useAppCopy();
+  const panelId = useId();
+  const [languageOpen, setLanguageOpen] = useState(false);
+  const language = useLanguageStore((s) => s.language);
+  const setLanguageWithTransition = useLanguageStore((s) => s.setLanguageWithTransition);
+
+  const toggleLanguagePanel = () => setLanguageOpen((o) => !o);
+
+  const currentLabel = language === 'ar-dz' ? copy.languageArabicBtn : copy.languageFrenchBtn;
+
+  const notchBtn =
+    'flex h-7 w-7 shrink-0 items-center justify-center rounded-[2px] transition-[color,transform] duration-300 sm:h-8 sm:w-8 ' +
+    (midnight ? 'text-sky-300/70 hover:text-sky-100' : 'text-solar-gold/68 hover:text-solar-gold');
+
+  const haloLine = midnight
+    ? 'from-[rgba(90,168,255,0.06)] via-[rgba(139,213,255,0.52)] to-[rgba(139,213,255,0.06)]'
+    : 'from-solar-gold/[0.04] via-solar-gold/45 to-solar-gold/[0.04]';
+
+  return (
+    <motion.div variants={item} className="mt-8 w-full max-w-[min(100%,526px)] px-0 sm:mt-9">
+      <div
+        className={
+          'rounded-[2px] border px-3 py-2.5 sm:px-4 sm:py-3 ' +
+          (midnight
+            ? 'border-[rgba(90,168,255,0.2)] bg-[rgba(4,10,22,0.22)]'
+            : 'border-solar-gold/18 bg-black/12')
+        }
+      >
+        <button
+          type="button"
+          id={panelId}
+          aria-expanded={languageOpen}
+          aria-controls={`${panelId}-language`}
+          onClick={toggleLanguagePanel}
+          aria-labelledby={`${panelId}-label`}
+          className={
+            'group flex w-full min-w-0 items-center justify-between gap-3 py-1 text-start outline-none transition-[opacity,color] duration-300 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent sm:py-1.5 ' +
+            (midnight
+              ? 'focus-visible:ring-[rgba(90,168,255,0.38)]'
+              : 'focus-visible:ring-solar-gold/40')
+          }
+        >
+          <span className={notchBtn} aria-hidden>
+            <IconChevronDown
+              strokeWidth={1.35}
+              className={`h-3.5 w-3.5 shrink-0 transition-transform duration-300 ease-out sm:h-4 sm:w-4 ${languageOpen ? 'rotate-0' : '-rotate-90'}`}
+            />
+          </span>
+          <p
+            id={`${panelId}-label`}
+            className={
+              'flex min-w-0 flex-1 items-baseline justify-between gap-x-2 text-[9px] uppercase tracking-[0.34em] sm:text-[10px] sm:tracking-[0.38em] ' +
+              (midnight ? 'text-sky-400/62' : 'text-solar-gold/55')
+            }
+          >
+            <span className="shrink-0">{copy.languageSectionHeading}</span>
+            <span
+              className={
+                'min-w-0 max-w-[min(100%,18ch)] truncate text-end font-serif text-[10px] normal-case tracking-[0.06em] sm:text-[11px] ' +
+                (midnight ? 'text-sky-300/78' : 'text-[rgba(253,248,238,0.62)]')
+              }
+              title={currentLabel}
+            >
+              {currentLabel}
+            </span>
+          </p>
+        </button>
+        <div
+          id={`${panelId}-language`}
+          role="region"
+          aria-labelledby={panelId}
+          aria-hidden={!languageOpen}
+          className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-out ${languageOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+        >
+          <div className={`min-h-0 overflow-hidden ${!languageOpen ? 'pointer-events-none' : ''}`}>
+            <div className="pt-2">
+              <div className={`pointer-events-none mb-2.5 h-px w-full bg-gradient-to-r sm:mb-3 ${haloLine}`} aria-hidden />
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => setLanguageWithTransition('fr')}
+                  tabIndex={languageOpen ? 0 : -1}
+                  className={
+                    'rounded-[2px] border px-3 py-2 text-[10px] uppercase tracking-[0.2em] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ' +
+                    (!languageOpen ? 'pointer-events-none opacity-40 ' : 'pointer-events-auto ') +
+                    (language === 'fr'
+                      ? midnight
+                        ? 'border-sky-300/60 bg-sky-500/10 text-sky-100 focus-visible:ring-[rgba(90,168,255,0.38)]'
+                        : 'border-solar-gold/70 bg-solar-gold/10 text-solar-gold focus-visible:ring-solar-gold/40'
+                      : midnight
+                        ? 'border-sky-400/25 text-sky-300/75 hover:border-sky-300/45 focus-visible:ring-[rgba(90,168,255,0.38)]'
+                        : 'border-solar-gold/30 text-solar-gold/75 hover:border-solar-gold/55 focus-visible:ring-solar-gold/40')
+                  }
+                >
+                  {copy.languageFrenchBtn}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLanguageWithTransition('ar-dz')}
+                  tabIndex={languageOpen ? 0 : -1}
+                  className={
+                    'rounded-[2px] border px-3 py-2 text-[10px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ' +
+                    (!languageOpen ? 'pointer-events-none opacity-40 ' : 'pointer-events-auto ') +
+                    (language === 'ar-dz'
+                      ? midnight
+                        ? 'border-sky-300/60 bg-sky-500/10 text-sky-100 focus-visible:ring-[rgba(90,168,255,0.38)]'
+                        : 'border-solar-gold/70 bg-solar-gold/10 text-solar-gold focus-visible:ring-solar-gold/40'
+                      : midnight
+                        ? 'border-sky-400/25 text-sky-300/75 hover:border-sky-300/45 focus-visible:ring-[rgba(90,168,255,0.38)]'
+                        : 'border-solar-gold/30 text-solar-gold/75 hover:border-solar-gold/55 focus-visible:ring-solar-gold/40')
+                  }
+                >
+                  {copy.languageArabicBtn}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 /**
  * Menu pause - plein viewport, scroll si besoin, safe areas. Pas d’anneau animé (meilleure lisibilité mobile).
  */
@@ -293,6 +456,7 @@ export default function SystemMenu({
 }: Props) {
   const midnight = useCursorStore((s) => s.ambient === 'midnight');
   const finePointer = useMediaQuery('(any-pointer: fine)');
+  const copy = useAppCopy();
 
   const shellCursor = finePointer ? 'cursor-none' : 'cursor-auto';
 
@@ -350,7 +514,7 @@ export default function SystemMenu({
         <div
           className="absolute inset-0 opacity-[0.06]"
           style={{
-            backgroundImage: `url("https://grainy-gradients.vercel.app/noise.svg")`,
+            backgroundImage: `url("${NOISE_DATA_URI}")`,
             backgroundRepeat: 'repeat',
           }}
         />
@@ -359,7 +523,7 @@ export default function SystemMenu({
       <motion.button
         type="button"
         onClick={onClose}
-        aria-label="Fermer le menu (Échap)"
+        aria-label={copy.menuClose}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.35, delay: 0.1 }}
@@ -369,7 +533,7 @@ export default function SystemMenu({
             : 'pointer-events-auto fixed z-[570] flex h-10 w-10 items-center justify-center rounded-[2px] border border-solar-gold/35 bg-black/55 text-solar-gold/85 shadow-[inset_0_1px_0_rgba(253,248,238,0.05),0_8px_28px_rgba(0,0,0,0.45)] backdrop-blur-sm transition-[color,border-color,background-color,box-shadow] duration-300 hover:border-solar-gold/55 hover:bg-black/70 hover:text-solar-gold focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-solar-gold/40 sm:h-11 sm:w-11 top-[max(1rem,calc(env(safe-area-inset-top)+0.5rem))] right-[max(1rem,calc(env(safe-area-inset-right)+0.5rem))] md:top-[max(1.25rem,calc(env(safe-area-inset-top)+0.75rem))] md:right-[max(1.25rem,calc(env(safe-area-inset-right)+0.75rem))]'
         }
       >
-        <X className="h-5 w-5 sm:h-[22px] sm:w-[22px]" strokeWidth={1.35} aria-hidden />
+        <IconX className="h-5 w-5 sm:h-[22px] sm:w-[22px]" aria-hidden />
       </motion.button>
 
       {/* Plein viewport + centrage réel (flex) ; zone scroll limitée si trop haut */}
@@ -415,7 +579,7 @@ export default function SystemMenu({
                     : '-mt-1 text-[8px] uppercase tracking-[0.72em] text-solar-gold/55 sm:-mt-2 sm:text-[9px] sm:tracking-[0.8em] md:text-[10px]'
                 }
               >
-                Pause
+                {copy.menuPause}
               </p>
               <h2
                 className="font-bahlull mx-auto mt-5 mb-5 box-border flex w-full max-w-[min(100%,28ch)] flex-col items-center justify-center overflow-visible px-0.5 pb-1.5 pt-0.5 text-[clamp(2.35rem,8vw,4rem)] italic leading-[1.18] text-transparent sm:mt-5 sm:mb-5"
@@ -480,11 +644,13 @@ export default function SystemMenu({
               }
             >
               <span className={midnight ? 'text-sky-300/42' : 'text-solar-gold/35'}>«</span>
-              &nbsp;Reprenez le voyage, ou ouvrez un autre passage.&nbsp;
+              &nbsp;{copy.menuQuote}&nbsp;
               <span className={midnight ? 'text-sky-300/42' : 'text-solar-gold/35'}>»</span>
             </motion.p>
 
             <PauseVolumeSlider midnight={midnight} />
+
+            <PauseLanguagePicker midnight={midnight} />
 
             {embeddedParcours && (
               <motion.div variants={item} className="mt-8 w-full max-w-[min(100%,526px)] sm:mt-9">
@@ -505,9 +671,9 @@ export default function SystemMenu({
                     }
                   >
                     <span className="text-[9px] font-semibold uppercase tracking-[0.38em] sm:text-[10px] sm:tracking-[0.42em]">
-                      Parcours
+                      {copy.menuEmbeddedParcours}
                     </span>
-                    <ChevronDown
+                    <IconChevronDown
                       strokeWidth={1.35}
                       className="h-3.5 w-3.5 shrink-0 opacity-85 transition-transform duration-300 ease-out group-open:-rotate-180 sm:h-4 sm:w-4"
                       aria-hidden
@@ -523,10 +689,10 @@ export default function SystemMenu({
             <motion.nav
               variants={item}
               className="mt-9 flex w-full flex-col gap-3.5 sm:mt-11 sm:gap-[1.15rem]"
-              aria-label="Actions du menu pause"
+              aria-label={copy.menuNavAria}
             >
               <MajesticButton variant="gold" midnight={midnight} onClick={onClose}>
-                Continuer
+                {copy.menuContinue}
               </MajesticButton>
 
               <div className="flex flex-col gap-1.5">
@@ -537,14 +703,14 @@ export default function SystemMenu({
                     onReplayIntroVideo();
                   }}
                 >
-                  Revoir la vidéo d’introduction
+                  {copy.menuReplayVideo}
                 </MajesticButton>
                 <p
                   className={
                     midnight ? 'text-center text-[10px] leading-relaxed text-sky-300/42 sm:text-[11px]' : 'text-center text-[10px] leading-relaxed text-solar-gold/36 sm:text-[11px]'
                   }
                 >
-                  Lecture par-dessus l’expérience, pas de rechargement, votre progression est conservée.
+                  {copy.menuReplayHint}
                 </p>
               </div>
 
@@ -556,7 +722,7 @@ export default function SystemMenu({
                   onRestartExperience();
                 }}
               >
-                Recommencer l’expérience
+                {copy.menuRestart}
               </MajesticButton>
             </motion.nav>
           </div>
@@ -588,7 +754,7 @@ export default function SystemMenu({
               : 'text-[7px] font-medium uppercase leading-relaxed tracking-[0.3em] text-solar-gold/52 sm:text-[8px] sm:tracking-[0.36em] md:text-[9px] md:tracking-[0.4em]'
           }
         >
-          Une création de{' '}
+          {copy.menuCreditsBy}{' '}
           <span
             className={
               midnight ? 'font-bold text-sky-200/72' : 'font-bold text-solar-gold/62'
@@ -609,7 +775,7 @@ export default function SystemMenu({
               : 'text-[7px] font-medium uppercase leading-relaxed tracking-[0.28em] text-solar-gold/45 sm:text-[8px] sm:tracking-[0.32em] md:text-[9px] md:tracking-[0.36em]'
           }
         >
-          Musique · © Rafael Krux
+          {copy.menuMusicLine}
         </motion.p>
       </div>
     </motion.div>

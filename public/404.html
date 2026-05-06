@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" translate="no" class="notranslate">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="google" content="notranslate" />
     <title>404 · Al-Rihla</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -34,7 +35,7 @@
       .grain {
         position: fixed; inset: 0; z-index: 2; pointer-events: none;
         opacity: 0.038;
-        background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
         background-size: 200px;
       }
 
@@ -211,26 +212,27 @@
         </svg>
       </div>
 
-      <p class="num" id="num404" aria-label="Erreur 404">404</p>
+      <p class="num" id="num404" data-i18n-aria="p404_err_aria" aria-label="Erreur 404">404</p>
 
       <div class="rule" id="rule"></div>
 
-      <p class="kicker">Al-Rihla · Médiation culturelle</p>
-      <p class="line">La nuit ne mène pas ici.</p>
+      <p class="kicker" data-i18n="p404_kicker">Al-Rihla · Médiation culturelle</p>
+      <p class="line" data-i18n="p404_line">La nuit ne mène pas ici.</p>
 
-      <a href="/" class="btn" aria-label="Retourner à l'expérience Al-Rihla">
+      <a href="/" class="btn" data-i18n-aria="p404_btn_aria" aria-label="Retourner à l'expérience Al-Rihla">
         <span class="btn-icon" aria-hidden="true">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
             <polygon points="8,1 15,8 8,15 1,8" fill="none" stroke="currentColor" stroke-width="1.35"/>
             <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
           </svg>
         </span>
-        <span class="btn-label">Reprendre le voyage</span>
-        <span class="btn-sub">retour à l'expérience</span>
+        <span class="btn-label" data-i18n="p404_btn_label">Reprendre le voyage</span>
+        <span class="btn-sub" data-i18n="p404_btn_sub">retour à l'expérience</span>
       </a>
 
     </main>
 
+    <script src="/static-i18n.js"></script>
     <script>
     (function () {
       const canvas = document.getElementById("bg");

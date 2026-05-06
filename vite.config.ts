@@ -21,6 +21,8 @@ export default defineConfig(({mode}) => {
       hmr: process.env.DISABLE_HMR !== 'true',
     },
     build: {
+      /** Navigateurs récents : moins de transpilation / polyfills → JS un peu plus léger. */
+      target: 'es2022',
       rollupOptions: {
         output: {
           manualChunks(id) {

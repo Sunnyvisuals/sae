@@ -2511,8 +2511,10 @@
       wrap.className = "senac-cinema-explore-callout";
       wrap.setAttribute("role", "status");
       wrap.setAttribute("aria-live", "polite");
-      wrap.innerHTML = `
-        <p class="senac-cinema-explore-callout__text">
+      wrap.innerHTML =
+        typeof window.SENAC_T === 'function'
+          ? window.SENAC_T('js_cinema_callout_html')
+          : `<p class="senac-cinema-explore-callout__text">
           Pour continuer, appuie sur <strong>Exploration</strong> en bas à gauche.
         </p>
         <div class="senac-cinema-explore-callout__arrows" aria-hidden="true">
@@ -2568,6 +2570,10 @@
       const nudge = document.createElement("div");
       nudge.className = "senac-scroll-nudge";
       nudge.setAttribute("aria-hidden", "true");
+      const nudgeLabel =
+        typeof window.SENAC_T === "function"
+          ? window.SENAC_T("js_scroll_nudge_label")
+          : "Faire défiler";
       nudge.innerHTML = `
         <svg width="44" height="48" viewBox="0 0 44 48" fill="none" focusable="false">
           <path d="M22 4c-5.5 0-10 4-10 9.2V28c0 5.2 4.5 9.2 10 9.2s10-4 10-9.2V13.2C32 8 27.5 4 22 4Z"
@@ -2583,7 +2589,7 @@
           <line x1="12" y1="22" x2="32" y2="22"
             stroke="hsla(var(--ui-hue),55%,62%,0.12)" stroke-width="0.6"/>
         </svg>
-        <span class="senac-scroll-nudge-label">Faire défiler</span>`;
+        <span class="senac-scroll-nudge-label">${nudgeLabel}</span>`;
       document.body.appendChild(nudge);
 
       /* Apparition */

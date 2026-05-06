@@ -4,6 +4,7 @@ import { useEffect, useRef, type CSSProperties } from 'react';
 import SplashCursor from './SplashCursor';
 import DesertDustParticles from './DesertDustParticles';
 import ShootingStars from './ShootingStars';
+import { NOISE_DATA_URI } from '../lib/noiseDataUri';
 
 /**
  * Fond mesh interactif - désert / Maghreb / oriental (sable, ocre, or chaud).
@@ -163,7 +164,7 @@ export default function AuroraMeshBackground({
       <div
         className="absolute inset-0 opacity-[0.035] mix-blend-soft-light"
         style={{
-          backgroundImage: 'url("https://grainy-gradients.vercel.app/noise.svg")',
+          backgroundImage: `url("${NOISE_DATA_URI}")`,
           backgroundSize: '200px',
         }}
       />

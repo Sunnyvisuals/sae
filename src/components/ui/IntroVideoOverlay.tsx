@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, type ChangeEvent, type MouseEvent } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
-import { Volume2, VolumeX, Volume1 } from 'lucide-react';
+import { IconVolume1, IconVolume2, IconVolumeX } from './icons';
 import {
   applyVolumeKeyStep,
   getVolumeKeyDirection,
   shouldIgnoreVolumeKeyboardTarget,
 } from '../../lib/volumeKeyboard';
+import { useAppCopy } from '../../hooks/useAppCopy';
 
 const INTRO_VIDEO_SRC = '/al-rihla.mp4';
 
@@ -19,6 +20,7 @@ type Props = {
  * Surcouche uniquement - la phase et la progression ne changent pas.
  */
 export default function IntroVideoOverlay({ onClose }: Props) {
+  const copy = useAppCopy();
   const prefersReducedMotion = useReducedMotion();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [volume, setVolume] = useState(0.35);
@@ -97,7 +99,7 @@ export default function IntroVideoOverlay({ onClose }: Props) {
     <motion.div
       role="dialog"
       aria-modal="true"
-      aria-label="Introduction - Al-Rihla"
+      aria-label={copy.introVideoAria}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -105,8 +107,8 @@ export default function IntroVideoOverlay({ onClose }: Props) {
       className="fixed inset-0 z-[620] cursor-none bg-black"
     >
       <motion.div
-        initial={{ opacity: 0, filter: 'blur(8px)' }}
-        animate={{ opacity: 1, filter: 'blur(0px)' }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ duration: 1.2, ease: 'easeInOut' }}
         className="absolute inset-0 h-full w-full"
       >
@@ -127,7 +129,7 @@ export default function IntroVideoOverlay({ onClose }: Props) {
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20, filter: 'blur(10px)' }}
+            exit={{ opacity: 0, x: 20 }}
             transition={{ delay: 0.6, duration: 0.9 }}
             className="pointer-events-auto absolute right-6 top-12 z-50 flex items-center gap-3 group sm:right-16 sm:top-16 sm:gap-4"
           >
@@ -135,15 +137,15 @@ export default function IntroVideoOverlay({ onClose }: Props) {
               type="button"
               onClick={toggleMute}
               className="flex h-10 w-10 rotate-45 cursor-none items-center justify-center border border-solar-gold/40 bg-black/40 backdrop-blur-md transition-colors hover:border-solar-gold hover:shadow-[0_0_15px_rgba(197,160,89,0.5)]"
-              aria-label={isMuted || volume === 0 ? 'Activer le son' : 'Couper le son'}
+              aria-label={isMuted || volume === 0 ? copy.introVideoMuteOff : copy.introVideoMuteOn}
             >
               <div className="-rotate-45 text-white transition-colors group-hover:text-solar-gold">
                 {isMuted || volume === 0 ? (
-                  <VolumeX size={16} />
+                  <IconVolumeX width={16} height={16} />
                 ) : volume < 0.5 ? (
-                  <Volume1 size={16} />
+                  <IconVolume1 width={16} height={16} />
                 ) : (
-                  <Volume2 size={16} />
+                  <IconVolume2 width={16} height={16} />
                 )}
               </div>
             </button>
@@ -156,7 +158,7 @@ export default function IntroVideoOverlay({ onClose }: Props) {
                 value={isMuted ? 0 : volume}
                 onChange={handleVolumeChange}
                 className="h-0.5 w-24 cursor-none appearance-none rounded-full bg-solar-gold/20 accent-solar-gold"
-                aria-label="Volume"
+                aria-label={copy.introVideoVolumeRange}
               />
             </div>
           </motion.div>
@@ -167,9 +169,9 @@ export default function IntroVideoOverlay({ onClose }: Props) {
       <AnimatePresence>
         {showSkip && (
           <motion.div
-            initial={{ opacity: 0, x: 40, filter: 'blur(10px)' }}
-            animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, x: 20, filter: 'blur(10px)' }}
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
             transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
             className="pointer-events-auto absolute bottom-10 right-6 z-50 sm:bottom-16 sm:right-16"
           >
@@ -181,7 +183,7 @@ export default function IntroVideoOverlay({ onClose }: Props) {
             >
               <div className="flex min-w-0 flex-col items-end gap-1.5">
                 <span className="max-w-[85vw] text-right text-[9px] font-light uppercase tracking-[0.55em] text-solar-gold/70 transition-colors duration-500 group-hover:text-solar-gold sm:text-[10px] sm:tracking-[0.6em]">
-                  Passer l&apos;introduction
+                  {copy.introVideoSkip}
                 </span>
                 <div className="relative mt-0.5 h-[2px] w-[min(17rem,72vw)] overflow-hidden rounded-full bg-solar-gold/15">
                   <motion.div

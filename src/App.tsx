@@ -8,22 +8,29 @@ import {
   useMemo,
   Fragment,
 } from "react";
-import { Settings } from "lucide-react";
 import { ReactLenis } from "lenis/react";
 import { AnimatePresence, motion } from "motion/react";
 
 import Intro from "./components/Intro";
 const AlgeriaMap = lazy(() => import("./components/Immersive/AlgeriaMap"));
 const Act2 = lazy(() => import("./components/Immersive/Act2"));
+
+const loadOrientationPanelMod = () => import("./components/ui/OrientationPanel");
+const OrientationPanel = lazy(() =>
+  loadOrientationPanelMod().then((m) => ({ default: m.default }))
+);
+const ParcoursPanelInnerContent = lazy(() =>
+  loadOrientationPanelMod().then((m) => ({ default: m.ParcoursPanelInnerContent }))
+);
+const SystemMenu = lazy(() => import("./components/ui/SystemMenu"));
+const IntroVideoOverlay = lazy(() => import("./components/ui/IntroVideoOverlay"));
+
 import CustomCursor from "./components/ui/CustomCursor";
 import GrainOverlay from "./components/ui/GrainOverlay";
 import CinematicOverlay from "./components/CinematicOverlay";
 import Soundscape from "./components/Soundscape";
 import SplashCursor from "./components/SplashCursor";
-import SystemMenu from "./components/ui/SystemMenu";
-import OrientationPanel, { ParcoursPanelInnerContent } from "./components/ui/OrientationPanel";
 import ChapterCompleteToast from "./components/ui/ChapterCompleteToast";
-import IntroVideoOverlay from "./components/ui/IntroVideoOverlay";
 import HintPanel from "./components/ui/HintPanel";
 import ScrollNudge from "./components/ui/ScrollNudge";
 import ScrollProgressBar from "./components/ui/ScrollProgressBar";
@@ -31,7 +38,15 @@ import type { Act1QuestProgress, Act2QuestProgress } from "./components/ui/HintP
 import type { Act1QuestStep } from "./components/Immersive/AlgeriaMap";
 import { useCursorStore } from "./hooks/useCursorContext";
 import { useMediaQuery } from "./hooks/useMediaQuery";
+import {
+  useLanguageStore,
+  LANGUAGE_MORPH_IN_MS,
+  LANGUAGE_MORPH_OUT_MS,
+} from "./stores/languageStore";
+import { useAppCopy } from "./hooks/useAppCopy";
 import { useMasterVolumeStore } from "./stores/masterVolumeStore";
+import { NOISE_DATA_URI } from "./lib/noiseDataUri";
+import type { SVGProps } from "react";
 
 /** Page statique parchemin (ch. II / III) - respecte `import.meta.env.BASE_URL` (déploiement sous sous-chemin). */
 function parcheminSenacHref(hash: string, options?: { previewCredits?: boolean }) {
@@ -40,6 +55,20 @@ function parcheminSenacHref(hash: string, options?: { previewCredits?: boolean }
   const h = hash.startsWith("#") ? hash : `#${hash}`;
   const q = options?.previewCredits ? "?previewCredits=1" : "";
   return `${prefix}parchemin-senac.html${q}${h}`;
+}
+
+function SettingsIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.6"
+        d="M12 3.5l1.4 1.1a2 2 0 0 0 2 .3l1.7-.7 1.4 2.4-1.3 1.2a2 2 0 0 0-.5 1.9l.3 1.8 2 .7v2.8l-2 .7-.3 1.8a2 2 0 0 0 .5 1.9l1.3 1.2-1.4 2.4-1.7-.7a2 2 0 0 0-2 .3L12 20.5l-1.4-1.1a2 2 0 0 0-2-.3l-1.7.7-1.4-2.4 1.3-1.2a2 2 0 0 0 .5-1.9l-.3-1.8-2-.7V9.8l2-.7.3-1.8a2 2 0 0 0-.5-1.9L5.5 4.2l1.4-2.4 1.7.7a2 2 0 0 0 2-.3L12 3.5z"
+      />
+      <circle cx="12" cy="12" r="2.7" strokeWidth="1.6" />
+    </svg>
+  );
 }
 
 export default function App() {
@@ -83,6 +112,12 @@ export default function App() {
   const mdUp = useMediaQuery("(min-width: 768px)");
   /** `(any-pointer: fine)` inclut souris/stylus/trackpad même si `(hover:hover)` est faux sur hybrides. */
   const finePointer = useMediaQuery("(any-pointer: fine)");
+  const language = useLanguageStore((s) => s.language);
+  const isLanguageMorphing = useLanguageStore((s) => s.isLanguageMorphing);
+  const copy = useAppCopy();
+
+  /** Palettes du voile langue — alignées acte II minuit sinon doré désert */
+  const languageMorphMidnight = phase === "act2" && act2AmbientMidnight;
 
   phaseRef.current = phase;
 
@@ -95,6 +130,28 @@ export default function App() {
     setCursorAmbient(theme);
     document.documentElement.setAttribute("data-theme", theme);
   }, [phase, act2AmbientMidnight, setCursorAmbient]);
+
+  useEffect(() => {
+    const html = document.documentElement;
+    const isArabic = language === "ar-dz";
+    html.lang = isArabic ? "ar-DZ" : "fr";
+    html.dir = isArabic ? "rtl" : "ltr";
+  }, [language]);
+
+  /** Chunks menu pause + rail Parcours (GSAP) : chargés en idle pour réduire le JS initial sans bloquer le premier rendu. */
+  useEffect(() => {
+    const prefetch = () => {
+      void loadOrientationPanelMod();
+      void import("./components/ui/SystemMenu");
+      void import("./components/ui/IntroVideoOverlay");
+    };
+    if (typeof requestIdleCallback !== "undefined") {
+      const id = requestIdleCallback(prefetch);
+      return () => cancelIdleCallback(id);
+    }
+    const t = window.setTimeout(prefetch, 500);
+    return () => clearTimeout(t);
+  }, []);
 
   /** Ratio scroll parchemin (postMessage depuis l’iframe) — même barre en z élevée au-dessus du rail. */
   const [senacIframeScrollRatio, setSenacIframeScrollRatio] = useState(0);
@@ -399,6 +456,41 @@ export default function App() {
   return (
     <>
     <ReactLenis root options={lenisOptions}>
+      <motion.div
+        initial={false}
+        animate={
+          isLanguageMorphing
+            ? languageMorphMidnight
+              ? {
+                  opacity: 0.72,
+                  scale: 0.989,
+                  filter: "blur(8px) saturate(1.08) brightness(0.88)",
+                }
+              : phase === "intro"
+                ? {
+                    opacity: 0.78,
+                    scale: 0.987,
+                    filter: "blur(5px) saturate(0.88) brightness(0.96) sepia(0.1)",
+                  }
+                : {
+                    opacity: 0.76,
+                    scale: 0.987,
+                    filter: "blur(6px) saturate(0.9) brightness(0.94)",
+                  }
+            : {
+                opacity: 1,
+                scale: 1,
+                filter: "blur(0px) saturate(1) brightness(1) sepia(0)",
+              }
+        }
+        transition={{
+          duration:
+            isLanguageMorphing ? LANGUAGE_MORPH_OUT_MS / 1000 : LANGUAGE_MORPH_IN_MS / 1000,
+          ease: [0.22, 1, 0.36, 1],
+        }}
+        style={{ transformOrigin: "50% 40%" }}
+        className="isolate min-h-0 w-full will-change-[opacity,filter,transform]"
+      >
       <GrainOverlay opacity={0.04} />
       <CinematicOverlay />
       <Soundscape enabled={phase !== "act2"} />
@@ -407,8 +499,8 @@ export default function App() {
         {chapterToast && (
           <Fragment key="ch1-toast">
             <ChapterCompleteToast
-              chapterTitle="La Naissance"
-              subtitle="Les cinq feux sont rallumés - la carte respire. Le voyage continue."
+              chapterTitle={copy.chapterToastTitle}
+              subtitle={copy.chapterToastSubtitle}
             />
           </Fragment>
         )}
@@ -421,7 +513,9 @@ export default function App() {
       <AnimatePresence>
         {introVideoOpen && (
           <Fragment key={`intro-video-${introVideoNonce}`}>
-            <IntroVideoOverlay onClose={() => setIntroVideoOpen(false)} />
+            <Suspense fallback={null}>
+              <IntroVideoOverlay onClose={() => setIntroVideoOpen(false)} />
+            </Suspense>
           </Fragment>
         )}
       </AnimatePresence>
@@ -429,23 +523,34 @@ export default function App() {
       <AnimatePresence>
         {systemMenuOpen && (
           <Fragment key="sysmenu">
-            <SystemMenu
-              onClose={() => setSystemMenuOpen(false)}
-              onReplayIntroVideo={openIntroVideoOverlay}
-              onRestartExperience={restartExperience}
-              embeddedParcours={
-                !mdUp && phase !== "intro" ? (
-                  <ParcoursPanelInnerContent
-                    phase={phase}
-                    revelationCount={revelationCount}
-                    parcoursRailMidnight={
-                      phase === "act2" ? (act2ParcheminTone ?? "solar") === "midnight" : false
-                    }
-                    act2VoyageCreditsOpen={phase === "act2" ? act2VoyageCreditsOpen : false}
-                  />
-                ) : undefined
+            <Suspense
+              fallback={
+                <div
+                  className="fixed inset-0 z-[120] bg-black/55 backdrop-blur-[2px]"
+                  aria-hidden
+                />
               }
-            />
+            >
+              <SystemMenu
+                onClose={() => setSystemMenuOpen(false)}
+                onReplayIntroVideo={openIntroVideoOverlay}
+                onRestartExperience={restartExperience}
+                embeddedParcours={
+                  !mdUp && phase !== "intro" ? (
+                    <Suspense fallback={<div className="min-h-[100px] w-full" aria-hidden />}>
+                      <ParcoursPanelInnerContent
+                        phase={phase}
+                        revelationCount={revelationCount}
+                        parcoursRailMidnight={
+                          phase === "act2" ? (act2ParcheminTone ?? "solar") === "midnight" : false
+                        }
+                        act2VoyageCreditsOpen={phase === "act2" ? act2VoyageCreditsOpen : false}
+                      />
+                    </Suspense>
+                  ) : undefined
+                }
+              />
+            </Suspense>
           </Fragment>
         )}
       </AnimatePresence>
@@ -474,7 +579,7 @@ export default function App() {
             }
             aria-haspopup="dialog"
             aria-expanded={systemMenuOpen}
-            aria-label="Menu - options et pause"
+            aria-label={copy.menuAria}
           >
             <motion.span
               aria-hidden
@@ -489,11 +594,9 @@ export default function App() {
                   ? {
                       background:
                         "radial-gradient(circle at 50% 50%, rgba(100,172,235,0.16) 0%, transparent 58%, rgba(197,160,89,0.05) 100%)",
-                      filter: "blur(7px)",
                     }
                   : {
                       background: "radial-gradient(circle at 50% 50%, rgba(197,160,89,0.2) 0%, transparent 75%)",
-                      filter: "blur(6px)",
                     }
               }
             />
@@ -510,19 +613,21 @@ export default function App() {
               }}
               transition={{ duration: 0.55, ease: [0.34, 1.56, 0.64, 1] }}
             >
-              <Settings className="h-5 w-5" strokeWidth={1.25} aria-hidden />
+              <SettingsIcon className="h-5 w-5" aria-hidden />
             </motion.span>
           </motion.button>
-          <OrientationPanel
-            phase={phase}
-            revelationCount={revelationCount}
-            expanded={parcoursOpen}
-            onExpandedChange={setParcoursOpen}
-            parcoursRailMidnight={
-              phase === "act2" ? (act2ParcheminTone ?? "solar") === "midnight" : false
-            }
-            act2VoyageCreditsOpen={phase === "act2" ? act2VoyageCreditsOpen : false}
-          />
+          <Suspense fallback={null}>
+            <OrientationPanel
+              phase={phase}
+              revelationCount={revelationCount}
+              expanded={parcoursOpen}
+              onExpandedChange={setParcoursOpen}
+              parcoursRailMidnight={
+                phase === "act2" ? (act2ParcheminTone ?? "solar") === "midnight" : false
+              }
+              act2VoyageCreditsOpen={phase === "act2" ? act2VoyageCreditsOpen : false}
+            />
+          </Suspense>
         </>
       )}
 
@@ -533,12 +638,12 @@ export default function App() {
         act2Quest={phase === "act2" ? act2Quest : undefined}
       />
 
-      {/* Nudge scroll - acte I uniquement, se démonte quand on quitte l'acte */}
-      {phase === "act1" && !systemMenuOpen && !introVideoOpen && (
+      {/* Nudge scroll - acte I uniquement, masqué dès que le zoom est acquis */}
+      {phase === "act1" && !systemMenuOpen && !introVideoOpen && !act1Quest.zoom && (
         <ScrollNudge key="scroll-nudge-act1" />
       )}
 
-      <main className="relative w-full min-h-screen" style={{ background: "#0a0806" }}>
+      <main className="relative w-full min-h-dvh" style={{ background: "#0a0806" }}>
         <AnimatePresence>
           {phase === "intro" && (
             <motion.div
@@ -618,7 +723,12 @@ export default function App() {
         <div
           style={{
             visibility:
-              systemMenuOpen || introVideoOpen || act2VoyageCreditsOpen ? "hidden" : "visible",
+              systemMenuOpen ||
+              introVideoOpen ||
+              act2VoyageCreditsOpen ||
+              isLanguageMorphing
+                ? "hidden"
+                : "visible",
           }}
         >
           <Fragment
@@ -652,18 +762,268 @@ export default function App() {
         iframeFillRatio={phase === "act2" ? senacIframeScrollRatio : undefined}
         aboveChrome={phase === "act2"}
       />
+      </motion.div>
+      <LanguageMorphHud visible={isLanguageMorphing} midnight={languageMorphMidnight} />
     </ReactLenis>
       {/* Curseur custom (portail body) — au-dessus du fluide. */}
       {finePointer && (
       <CustomCursor
-        overlayOpen={systemMenuOpen || introVideoOpen || act2VoyageCreditsOpen}
+        overlayOpen={
+          systemMenuOpen ||
+          introVideoOpen ||
+          act2VoyageCreditsOpen ||
+          isLanguageMorphing
+        }
       />
       )}
     </>
   );
 }
 
+/** Pastille + voile DA (même vocabulaire que le passage chapitre II : halos, grain, losange). */
+function LanguageMorphHud({
+  visible,
+  midnight,
+}: {
+  visible: boolean;
+  midnight: boolean;
+}) {
+  const copy = useAppCopy();
+  const language = useLanguageStore((s) => s.language);
+
+  const solarBase =
+    "radial-gradient(ellipse 70% 55% at 50% 48%, rgba(197,160,89,0.28), transparent 58%), linear-gradient(180deg, #130d07 0%, #070503 100%)";
+  const midnightBase =
+    "radial-gradient(ellipse 75% 55% at 50% 32%, rgba(90,168,255,0.32), transparent 62%), radial-gradient(ellipse 45% 35% at 70% 58%, rgba(197,160,89,0.12), transparent 64%), linear-gradient(180deg, #041331 0%, #01030a 100%)";
+
+  const cornerCls = midnight
+    ? "border-[rgba(139,213,255,0.34)]"
+    : "border-solar-gold/[0.34]";
+  const kickerClr = midnight ? "text-sky-400/55" : "text-[#ead7a4]/55";
+  const lineVia = midnight
+    ? "from-transparent via-[rgba(139,213,255,0.38)] to-transparent"
+    : "from-transparent via-[rgba(232,212,164,0.38)] to-transparent";
+  const serifBody = midnight ? "text-[#d4e9ff]/72" : "text-[#ead7a4]/70";
+  const losangeStroke = midnight ? "rgba(186,226,255,0.65)" : "rgba(232,212,164,0.78)";
+  const losangeFill = midnight ? "rgba(90,168,255,0.1)" : "rgba(197,160,89,0.12)";
+  const ringBorder = midnight ? "border-[rgba(121,183,255,0.16)]" : "border-[rgba(234,215,164,0.16)]";
+
+  return (
+    <AnimatePresence mode="sync">
+      {visible && (
+        <motion.div
+          key="lang-morph-overlay"
+          role="presentation"
+          className="pointer-events-none fixed inset-0 z-[562] flex items-center justify-center overflow-hidden bg-[#02040c]"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <motion.div
+            aria-hidden
+            className="absolute inset-0"
+            animate={{ opacity: [0.88, 1, 0.88] }}
+            transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
+            style={{ background: midnight ? midnightBase : solarBase }}
+          />
+
+          <div
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,transparent_0%,rgba(0,0,0,0.62)_100%)]"
+            aria-hidden
+          />
+
+          {/* Grain discret — même donnée que GrainOverlay ; pas de translation (évite moiré / grain « qui glisse »). */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{
+              opacity: 0.065,
+              backgroundImage: `url("${NOISE_DATA_URI}")`,
+              backgroundRepeat: "repeat",
+              backgroundSize: "128px 128px",
+              mixBlendMode: "overlay",
+            }}
+          />
+
+          {/* Fil de lumière type transition chapitre */}
+          <motion.div
+            aria-hidden
+            className="absolute inset-y-0 left-0 w-[110vw] origin-left opacity-80"
+            style={{
+              background:
+                "linear-gradient(100deg, transparent 0%, rgba(234,215,164,0.0) 26%, rgba(234,215,164,0.12) 42%, rgba(90,168,255,0.2) 54%, transparent 72%)",
+            }}
+            initial={{ x: "-108%", skewX: -5 }}
+            animate={{ x: ["-108%", "-18%", "-108%"], skewX: [-5, -1, -5] }}
+            transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+          />
+
+          <motion.div
+            aria-hidden
+            className={`absolute left-8 top-8 h-12 w-12 sm:left-11 sm:top-11 sm:h-14 sm:w-14 ${cornerCls} border-l border-t`}
+          />
+          <motion.div
+            aria-hidden
+            className={`absolute right-8 top-8 h-12 w-12 sm:right-11 sm:top-11 sm:h-14 sm:w-14 ${cornerCls} border-r border-t`}
+          />
+          <motion.div
+            aria-hidden
+            className={`absolute bottom-8 left-8 h-12 w-12 sm:bottom-11 sm:left-11 sm:h-14 sm:w-14 ${cornerCls} border-b border-l`}
+          />
+          <motion.div
+            aria-hidden
+            className={`absolute bottom-8 right-8 h-12 w-12 sm:bottom-11 sm:right-11 sm:h-14 sm:w-14 ${cornerCls} border-b border-r`}
+          />
+
+          <motion.div
+            aria-hidden
+            className="absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#ead7a4]"
+            animate={{
+              boxShadow: midnight
+                ? [
+                    "0 0 26px rgba(234,215,164,0.45),0 0 58px rgba(90,168,255,0.32)",
+                    "0 0 40px rgba(234,215,164,0.55),0 0 80px rgba(90,168,255,0.22)",
+                    "0 0 26px rgba(234,215,164,0.45),0 0 58px rgba(90,168,255,0.32)",
+                  ]
+                : [
+                    "0 0 28px rgba(234,215,164,0.5),0 0 50px rgba(197,160,89,0.25)",
+                    "0 0 44px rgba(234,215,164,0.62),0 0 72px rgba(197,160,89,0.2)",
+                    "0 0 28px rgba(234,215,164,0.5),0 0 50px rgba(197,160,89,0.25)",
+                  ],
+            }}
+            transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+          />
+
+          <motion.div
+            aria-hidden
+            className={`pointer-events-none absolute left-1/2 top-1/2 h-[min(56vw,18rem)] w-[min(56vw,18rem)] -translate-x-1/2 -translate-y-1/2 rounded-full border ${ringBorder}`}
+            animate={{ scale: [1, 1.04, 1], opacity: [0.22, 0.38, 0.22] }}
+            transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+          />
+
+          <motion.div
+            aria-hidden
+            className={
+              midnight
+                ? "pointer-events-none absolute left-1/2 top-1/2 h-[min(78vw,24rem)] w-[min(78vw,24rem)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#79b7ff]/14"
+                : "pointer-events-none absolute left-1/2 top-1/2 h-[min(78vw,24rem)] w-[min(78vw,24rem)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#ead7a4]/14"
+            }
+            animate={{
+              scale: [1, 1.065, 1],
+              opacity: [0.1, 0.26, 0.1],
+              rotate: [0, 10, 0],
+            }}
+            transition={{ duration: 3.1, repeat: Infinity, ease: "easeInOut" }}
+          />
+
+          <span className="sr-only" role="status" aria-live="polite">
+            {copy.languageMorphLive}
+          </span>
+
+          <motion.div
+            className="relative z-10 flex max-w-lg flex-col items-center px-8 text-center"
+            initial={{ opacity: 0, y: 22 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 12 }}
+            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <div className="flex w-full max-w-xs items-center gap-2 sm:max-w-sm">
+              <div className={`h-px flex-1 bg-gradient-to-r ${lineVia}`} aria-hidden />
+              <div
+                aria-hidden
+                className={`h-2.5 w-2.5 shrink-0 rotate-45 border ${cornerCls} shadow-[0_0_18px_rgba(197,160,89,0.12)]`}
+              />
+              <div className={`h-px flex-1 bg-gradient-to-l ${lineVia}`} aria-hidden />
+            </div>
+
+            <p
+              className={`mt-8 text-[10px] uppercase tracking-[0.6em] ${kickerClr} sm:text-[10px] sm:tracking-[0.62em]`}
+            >
+              {copy.languageMorphKicker}
+            </p>
+
+            <motion.div
+              aria-hidden
+              className="mt-6 flex items-center justify-center"
+              animate={{ filter: ["brightness(0.95)", "brightness(1.12)", "brightness(0.95)"] }}
+              transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <svg width="56" height="76" viewBox="0 0 22 30" fill="none" className="drop-shadow-[0_0_24px_rgba(90,168,255,0.2)]">
+                <polygon
+                  points="11,1 21,11 11,21 1,11"
+                  fill={losangeFill}
+                  stroke={losangeStroke}
+                  strokeWidth="1.15"
+                />
+                <circle cx="11" cy="11" r="1.55" fill="#ead7a4" fillOpacity="0.88" />
+                <line x1="11" y1="21" x2="11" y2="27" stroke={losangeStroke} strokeWidth="1" strokeOpacity="0.72" />
+                <polyline
+                  points="8,24 11,28 14,24"
+                  fill="none"
+                  stroke={losangeStroke}
+                  strokeWidth="1"
+                  strokeOpacity="0.72"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </motion.div>
+
+            {language === "ar-dz" ? (
+              <p
+                className={`font-serif mt-7 text-sm italic leading-snug sm:text-base ${serifBody}`}
+                style={{
+                  textShadow: midnight
+                    ? "0 0 40px rgba(90,168,255,0.2),0 0 24px rgba(197,160,89,0.1)"
+                    : "0 0 36px rgba(197,160,89,0.18)",
+                }}
+              >
+                {copy.languageMorphVisible}
+              </p>
+            ) : (
+              <p
+                className="font-bahlull mx-auto mt-7 max-w-[22ch] text-xl italic leading-tight text-transparent sm:text-2xl"
+                style={
+                  midnight
+                    ? {
+                        backgroundImage:
+                          "linear-gradient(135deg, #e8f6ff 0%, #94c8ff 40%, #5aa8ff 55%, #e0f4ff 100%)",
+                        WebkitBackgroundClip: "text",
+                        backgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                        filter: "drop-shadow(0 0 24px rgba(90,168,255,0.22))",
+                      }
+                    : {
+                        backgroundImage:
+                          "linear-gradient(135deg, #fdfaf6 0%, #e8d4a8 38%, #c5a059 56%, #fdfaf6 100%)",
+                        WebkitBackgroundClip: "text",
+                        backgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                        filter: "drop-shadow(0 0 22px rgba(197,160,89,0.2))",
+                      }
+                }
+              >
+                {copy.languageMorphVisible}
+              </p>
+            )}
+
+            <div className="mt-8 flex w-full max-w-xs items-center gap-2 sm:max-w-sm">
+              <div className={`h-px flex-1 bg-gradient-to-r ${lineVia}`} aria-hidden />
+              <div
+                aria-hidden
+                className={`h-2.5 w-2.5 shrink-0 rotate-45 border ${cornerCls}`}
+              />
+              <div className={`h-px flex-1 bg-gradient-to-l ${lineVia}`} aria-hidden />
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 function ChapterDaTransition() {
+  const copy = useAppCopy();
   return (
     <motion.div
       role="status"
@@ -671,7 +1031,7 @@ function ChapterDaTransition() {
       className="pointer-events-auto fixed inset-0 z-[205] flex items-center justify-center overflow-hidden bg-[#02040c]"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0, filter: "blur(18px)" }}
+      exit={{ opacity: 0 }}
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
     >
       <motion.div
@@ -688,16 +1048,25 @@ function ChapterDaTransition() {
         transition={{ duration: 2.15, ease: [0.22, 1, 0.36, 1] }}
       />
 
-      <motion.div
+      <div
         aria-hidden
-        className="absolute inset-0 opacity-35 mix-blend-screen"
+        className="pointer-events-none absolute inset-0"
         style={{
           backgroundImage:
-            "url('https://grainy-gradients.vercel.app/noise.svg'), radial-gradient(circle at 50% 40%, rgba(255,255,255,0.12), transparent 45%)",
-          backgroundSize: "240px, 100% 100%",
+            "radial-gradient(circle at 50% 40%, rgba(255,255,255,0.085), transparent 46%)",
         }}
-        animate={{ x: ["0%", "-2%", "1%", "0%"], y: ["0%", "1%", "-1%", "0%"] }}
-        transition={{ duration: 2.6, repeat: Infinity, ease: "linear" }}
+      />
+
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          opacity: 0.07,
+          backgroundImage: `url("${NOISE_DATA_URI}")`,
+          backgroundRepeat: "repeat",
+          backgroundSize: "128px 128px",
+          mixBlendMode: "overlay",
+        }}
       />
 
       <motion.div
@@ -714,7 +1083,6 @@ function ChapterDaTransition() {
         style={{
           background:
             "linear-gradient(100deg, transparent 0%, rgba(234,215,164,0.0) 20%, rgba(234,215,164,0.28) 38%, rgba(90,168,255,0.46) 52%, rgba(4,19,49,0.96) 66%, #01030a 100%)",
-          filter: "blur(0.5px)",
         }}
         initial={{ x: "-115%", skewX: -9 }}
         animate={{ x: "18%", skewX: 0 }}
@@ -739,19 +1107,19 @@ function ChapterDaTransition() {
 
       <motion.div
         className="relative z-10 max-w-xl px-6 text-center"
-        initial={{ opacity: 0, y: 28, filter: "blur(14px)" }}
-        animate={{ opacity: [0, 1, 1, 0], y: [28, 0, 0, -16], filter: ["blur(14px)", "blur(0px)", "blur(0px)", "blur(10px)"] }}
+        initial={{ opacity: 0, y: 28 }}
+        animate={{ opacity: [0, 1, 1, 0], y: [28, 0, 0, -16] }}
         transition={{ duration: 2.35, times: [0, 0.28, 0.72, 1], ease: [0.22, 1, 0.36, 1] }}
       >
-        <p className="text-[10px] uppercase tracking-[0.6em] text-[#ead7a4]/55">Changement de ciel</p>
+        <p className="text-[10px] uppercase tracking-[0.6em] text-[#ead7a4]/55">{copy.daKicker}</p>
         <h2
           className="font-bahlull mt-4 text-4xl italic text-white md:text-6xl"
           style={{ textShadow: "0 0 70px rgba(90,168,255,0.34), 0 0 44px rgba(197,160,89,0.18)" }}
         >
-          La nuit s'ouvre
+          {copy.daTitle}
         </h2>
         <p className="mx-auto mt-5 max-w-md font-serif text-lg italic leading-relaxed text-[#ead7a4]/65">
-          Le désert quitte l'or chaud. Le fil devient constellation.
+          {copy.daSubtitle}
         </p>
       </motion.div>
     </motion.div>

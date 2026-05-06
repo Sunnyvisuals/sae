@@ -1,10 +1,10 @@
 import { useEffect, useRef } from 'react';
-import { Howl } from 'howler';
 
 import { useMasterVolumeStore } from '../stores/masterVolumeStore';
 
 const SOUNDS = {
-  ambient: 'https://assets.mixkit.co/music/preview/mixkit-ethereal-meditation-151.mp3',
+  // Keep ambient optional until a local licensed asset is added.
+  ambient: null as string | null,
 };
 
 /** Intensité max du morceau ambient (gain global régler via menu pause). */
@@ -15,7 +15,17 @@ type SoundscapeProps = {
 };
 
 export default function Soundscape({ enabled = true }: SoundscapeProps) {
-  const ambientRef = useRef<Howl | null>(null);
+  const ambientRef = useRef<{
+    stop: () => void;
+    pause: () => void;
+    playing: () => boolean;
+    fade: (from: number, to: number, ms: number) => void;
+    volume: {
+      (): number;
+      (value: number): void;
+    };
+    play: () => void;
+  } | null>(null);
   const volume = useMasterVolumeStore((s) => s.volume);
   const playbackUnlocked = useMasterVolumeStore((s) => s.playbackUnlocked);
   const unlockPlayback = useMasterVolumeStore((s) => s.unlockPlayback);
@@ -25,13 +35,20 @@ export default function Soundscape({ enabled = true }: SoundscapeProps) {
     window.addEventListener('click', onInteract, { passive: true });
     window.addEventListener('keydown', onInteract);
 
-    ambientRef.current = new Howl({
-      src: [SOUNDS.ambient],
-      loop: true,
-      volume: 0,
-    });
+    let disposed = false;
+    if (SOUNDS.ambient) {
+      import('howler').then(({ Howl }) => {
+        if (disposed || !SOUNDS.ambient) return;
+        ambientRef.current = new Howl({
+          src: [SOUNDS.ambient],
+          loop: true,
+          volume: 0,
+        });
+      });
+    }
 
     return () => {
+      disposed = true;
       window.removeEventListener('click', onInteract);
       window.removeEventListener('keydown', onInteract);
       ambientRef.current?.stop();

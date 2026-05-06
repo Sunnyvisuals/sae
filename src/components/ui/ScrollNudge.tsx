@@ -2,10 +2,12 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useAppCopy } from '../../hooks/useAppCopy';
 
 const DELAY_MS = 5000;
 
 export default function ScrollNudge() {
+  const copy = useAppCopy();
   const [visible, setVisible] = useState(false);
   const dismissedRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -41,10 +43,9 @@ export default function ScrollNudge() {
           key="nudge-indicator"
           aria-hidden
           className={
-            'pointer-events-none fixed z-[199] flex flex-col items-center gap-1.5 ' +
-            /* Bas-centre - évite le titre "La Naissance" (bas-gauche) et le rail Parcours (droite) */
+            'pointer-events-none fixed z-[199] flex flex-col items-center gap-1 ' +
             'left-1/2 -translate-x-1/2 ' +
-            'bottom-[max(2.25rem,calc(env(safe-area-inset-bottom)+1.5rem))]'
+            'bottom-[max(0.35rem,calc(env(safe-area-inset-bottom)+0.2rem))]'
           }
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -92,7 +93,7 @@ export default function ScrollNudge() {
           </motion.svg>
 
           <p className="text-[7.5px] font-semibold uppercase tracking-[0.44em] text-solar-gold/45 [text-shadow:0_1px_8px_rgba(0,0,0,0.9)]">
-            Molette
+            {copy.scrollNudge}
           </p>
         </motion.div>
       )}
