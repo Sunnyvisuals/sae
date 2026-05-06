@@ -82,6 +82,7 @@ type Copy = {
   menuEmbeddedParcours: string;
   menuNavAria: string;
   introDevPreviewCreditsTitle: string;
+  introAlRihlaSubtitle: string;
   introJeanSenacSubtitle: string;
   scrollNudge: string;
   chapterCompleteAria: string;
@@ -195,6 +196,7 @@ const FR: Copy = {
   menuEmbeddedParcours: "Parcours",
   menuNavAria: "Actions du menu pause",
   introDevPreviewCreditsTitle: "Prévisualiser le générique de fin (?previewCredits=1)",
+  introAlRihlaSubtitle: "La traversée",
   introJeanSenacSubtitle: "Jean Sénac",
   scrollNudge: "Molette",
   chapterCompleteAria: "révélation carte-mémoire",
@@ -362,6 +364,7 @@ const AR: Copy = {
   menuEmbeddedParcours: "مسار الرحلة",
   menuNavAria: "أزرار قائمة الوقفة",
   introDevPreviewCreditsTitle: "تشوف التذييل النهاية (?previewCredits=1)",
+  introAlRihlaSubtitle: "الرّحلة",
   introJeanSenacSubtitle: "جان ساناك",
   scrollNudge: "الحرّاف",
   chapterCompleteAria: "كشوف خريطة الذاكرة",
