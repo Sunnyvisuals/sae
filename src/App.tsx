@@ -25,6 +25,8 @@ const ParcoursPanelInnerContent = lazy(() =>
 const SystemMenu = lazy(() => import("./components/ui/SystemMenu"));
 const IntroVideoOverlay = lazy(() => import("./components/ui/IntroVideoOverlay"));
 
+import type { SVGProps } from "react";
+import type { ParcoursPhaseLabel } from "./components/ui/OrientationPanel";
 import CustomCursor from "./components/ui/CustomCursor";
 import GrainOverlay from "./components/ui/GrainOverlay";
 import CinematicOverlay from "./components/CinematicOverlay";
@@ -46,7 +48,6 @@ import {
 import { useAppCopy } from "./hooks/useAppCopy";
 import { useMasterVolumeStore } from "./stores/masterVolumeStore";
 import { NOISE_DATA_URI } from "./lib/noiseDataUri";
-import type { SVGProps } from "react";
 
 /** Page statique parchemin (ch. II / III) - respecte `import.meta.env.BASE_URL` (déploiement sous sous-chemin). */
 function parcheminSenacHref(hash: string, options?: { previewCredits?: boolean }) {
@@ -67,6 +68,9 @@ function SettingsIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+/** Persistance : traversée complète → navigation libre entre les actes. */
+const JOURNEY_REPLAY_STORAGE_KEY = "al-rihla-journey-complete";
+
 export default function App() {
   const phaseRef = useRef<"intro" | "act1" | "act2">("intro");
   const [phase, setPhase] = useState<"intro" | "act1" | "act2">("intro");
@@ -80,6 +84,14 @@ export default function App() {
   const [revelationCount, setRevelationCount] = useState(0);
   /** Rail Parcours : ouvert / replié (animation GSAP dans OrientationPanel). */
   const [parcoursOpen, setParcoursOpen] = useState(false);
+  /** Après Ch. III / générique : retour intro + navigation libre entre actes (Parcours cliquable). */
+  const [journeyReplayUnlocked, setJourneyReplayUnlocked] = useState(() => {
+    try {
+      return typeof window !== "undefined" && window.localStorage.getItem(JOURNEY_REPLAY_STORAGE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
   const [act1Quest, setAct1Quest] = useState<Act1QuestProgress>({
     hover: false,
     clickWord: false,
@@ -127,6 +139,17 @@ export default function App() {
     document.documentElement.setAttribute("data-theme", theme);
   }, [phase, act2AmbientMidnight, setCursorAmbient]);
 
+  /** Acte I / II : pas de scroll documentaire — évite Lenis + fond body crème qui « fuient » sous la scène fixed. */
+  useEffect(() => {
+    const rootEl = document.documentElement;
+    rootEl.classList.remove("phase-act1-root", "phase-act2-root");
+    if (phase === "act1") rootEl.classList.add("phase-act1-root");
+    if (phase === "act2") rootEl.classList.add("phase-act2-root");
+    return () => {
+      rootEl.classList.remove("phase-act1-root", "phase-act2-root");
+    };
+  }, [phase]);
+
   useEffect(() => {
     const html = document.documentElement;
     const isArabic = language === "ar-dz";
@@ -149,8 +172,6 @@ export default function App() {
     return () => clearTimeout(t);
   }, []);
 
-  /** Ratio scroll parchemin (postMessage depuis l’iframe) — même barre en z élevée au-dessus du rail. */
-  const [senacIframeScrollRatio, setSenacIframeScrollRatio] = useState(0);
   /** Générique fin de voyage (iframe) : masque le fluide parent et remonte le curseur comme pour l’intro. */
   const [act2VoyageCreditsOpen, setAct2VoyageCreditsOpen] = useState(false);
   /** Aligné synchrone avec les messages iframe (`senac-credits-chrome` avant les `senac-pointer`). */
@@ -158,7 +179,6 @@ export default function App() {
 
   useEffect(() => {
     if (phase !== "act2") {
-      setSenacIframeScrollRatio(0);
       setAct2VoyageCreditsOpen(false);
       act2VoyageCreditsOpenRef.current = false;
     }
@@ -280,8 +300,48 @@ export default function App() {
     setIntroVideoOpen(true);
   }, []);
 
+  const openIntroVideoOverlayRef = useRef(openIntroVideoOverlay);
+  openIntroVideoOverlayRef.current = openIntroVideoOverlay;
+
   const restartExperience = useCallback(() => {
+    try {
+      window.localStorage.removeItem(JOURNEY_REPLAY_STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
     window.location.reload();
+  }, []);
+
+  const navigateParcoursPhase = useCallback((next: ParcoursPhaseLabel) => {
+    setParcoursOpen(false);
+    setSystemMenuOpen(false);
+    setPhase(next);
+  }, []);
+
+  useEffect(() => {
+    const expectedOrigin = window.location.origin;
+    const onMsg = (e: MessageEvent) => {
+      if (e.origin !== expectedOrigin) return;
+      const d = e.data as Record<string, unknown>;
+      if (d?.type !== "senac-journey-complete") return;
+      const iframe = document.querySelector('iframe[src*="parchemin-senac"]');
+      if (!(iframe instanceof HTMLIFrameElement) || e.source !== iframe.contentWindow) return;
+      try {
+        window.localStorage.setItem(JOURNEY_REPLAY_STORAGE_KEY, "1");
+      } catch {
+        /* ignore */
+      }
+      setJourneyReplayUnlocked(true);
+      setIntroKey((k) => k + 1);
+      pendingAct2.current = false;
+      setParcoursOpen(false);
+      setSystemMenuOpen(false);
+      act2VoyageCreditsOpenRef.current = false;
+      setAct2VoyageCreditsOpen(false);
+      setPhase("intro");
+    };
+    window.addEventListener("message", onMsg);
+    return () => window.removeEventListener("message", onMsg);
   }, []);
 
   const onAct1QuestStep = useCallback((step: Act1QuestStep) => {
@@ -319,26 +379,26 @@ export default function App() {
         setSystemMenuOpen(false);
         return;
       }
-      if (parcoursOpen && phase !== "intro") {
+      if (parcoursOpen) {
         e.preventDefault();
         setParcoursOpen(false);
         return;
       }
-      if (phase === "intro") return;
+      if (phase === "intro" && !journeyReplayUnlocked) return;
       e.preventDefault();
       setSystemMenuOpen(true);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [systemMenuOpen, chapterToast, chapterDaTransition, phase, introVideoOpen, parcoursOpen]);
+  }, [systemMenuOpen, chapterToast, chapterDaTransition, phase, introVideoOpen, parcoursOpen, journeyReplayUnlocked]);
 
   /** Rail Parcours ouvert : la molette / le trackpad le referme (comme un clic sur le voile). */
   useEffect(() => {
-    if (!parcoursOpen || phase === "intro") return;
+    if (!parcoursOpen || (phase === "intro" && !journeyReplayUnlocked)) return;
     const onWheel = () => setParcoursOpen(false);
     window.addEventListener("wheel", onWheel, { passive: true });
     return () => window.removeEventListener("wheel", onWheel);
-  }, [parcoursOpen, phase]);
+  }, [parcoursOpen, phase, journeyReplayUnlocked]);
 
   /**
    * Acte II : iframe - relais souris + progression « Défilez » (postMessage).
@@ -400,13 +460,6 @@ export default function App() {
     const onMsg = (e: MessageEvent) => {
       if (e.origin !== expectedOrigin) return;
       const d = e.data as Record<string, unknown>;
-      if (d?.type === "senac-scroll-progress") {
-        const ratio = typeof d.ratio === "number" ? d.ratio : NaN;
-        if (phaseRef.current === "act2" && Number.isFinite(ratio)) {
-          setSenacIframeScrollRatio(Math.min(1, Math.max(0, ratio)));
-        }
-        return;
-      }
       if (e.data?.type === "senac-quest") {
         const step = e.data.step as string;
         if (step === "scroll") {
@@ -428,6 +481,32 @@ export default function App() {
         const openNow = e.data.open === true;
         act2VoyageCreditsOpenRef.current = openNow;
         setAct2VoyageCreditsOpen(openNow);
+        return;
+      }
+      if (d?.type === "senac-navigate") {
+        if (phaseRef.current !== "act2") return;
+        const iframe = document.querySelector('iframe[src*="parchemin-senac"]');
+        if (!(iframe instanceof HTMLIFrameElement) || e.source !== iframe.contentWindow) return;
+        const target = typeof d.target === "string" ? d.target : "";
+        if (target === "intro-video") {
+          openIntroVideoOverlayRef.current();
+          return;
+        }
+        if (target === "act1-map") {
+          setPhase("act1");
+          return;
+        }
+        /** Chapitre III : retour intro sans valider la traversée complète (réservée à la sortie du générique). */
+        if (target === "intro") {
+          pendingAct2.current = false;
+          setParcoursOpen(false);
+          setSystemMenuOpen(false);
+          act2VoyageCreditsOpenRef.current = false;
+          setAct2VoyageCreditsOpen(false);
+          setIntroKey((k) => k + 1);
+          setPhase("intro");
+          return;
+        }
         return;
       }
       if (e.data?.type !== "senac-pointer") return;
@@ -485,10 +564,15 @@ export default function App() {
           ease: [0.22, 1, 0.36, 1],
         }}
         style={{ transformOrigin: "50% 40%" }}
-        className="isolate min-h-0 w-full will-change-[opacity,filter,transform]"
+        className={
+          phase === "act1" || phase === "act2"
+            ? "isolate h-dvh max-h-dvh min-h-0 w-full overflow-hidden will-change-[opacity,filter,transform]"
+            : "isolate min-h-0 w-full will-change-[opacity,filter,transform]"
+        }
       >
-      <GrainOverlay opacity={0.04} />
-      <CinematicOverlay elevateOverHints={phase === "act2"} />
+      <GrainOverlay opacity={phase === "act2" ? 0 : 0.04} />
+      {/* Acte II : pas d’overlay ciné (z-[52]) au-dessus de l’iframe — vignette = bande sombre « pied de page ». */}
+      {phase !== "act2" && <CinematicOverlay />}
       <Soundscape enabled={phase !== "act2"} />
 
       <AnimatePresence mode="sync">
@@ -532,7 +616,7 @@ export default function App() {
                 onReplayIntroVideo={openIntroVideoOverlay}
                 onRestartExperience={restartExperience}
                 embeddedParcours={
-                  !mdUp && phase !== "intro" ? (
+                  !mdUp && (phase !== "intro" || journeyReplayUnlocked) ? (
                     <Suspense fallback={<div className="min-h-[100px] w-full" aria-hidden />}>
                       <ParcoursPanelInnerContent
                         phase={phase}
@@ -541,6 +625,8 @@ export default function App() {
                           phase === "act2" ? (act2ParcheminTone ?? "solar") === "midnight" : false
                         }
                         act2VoyageCreditsOpen={phase === "act2" ? act2VoyageCreditsOpen : false}
+                        journeyReplayUnlocked={journeyReplayUnlocked}
+                        onNavigatePhase={journeyReplayUnlocked ? navigateParcoursPhase : undefined}
                       />
                     </Suspense>
                   ) : undefined
@@ -552,7 +638,7 @@ export default function App() {
       </AnimatePresence>
 
       {/* Fermeture du rail uniquement viewport md+ (le rail est masqué sous md). */}
-      {mdUp && parcoursOpen && phase !== "intro" && (
+      {mdUp && parcoursOpen && (phase !== "intro" || journeyReplayUnlocked) && (
         <div
           className="fixed inset-0 z-[39] pointer-events-auto"
           onClick={() => setParcoursOpen(false)}
@@ -560,7 +646,7 @@ export default function App() {
         />
       )}
 
-      {phase !== "intro" && (
+      {(phase !== "intro" || journeyReplayUnlocked) && (
         <>
           <motion.button
             type="button"
@@ -622,6 +708,8 @@ export default function App() {
                 phase === "act2" ? (act2ParcheminTone ?? "solar") === "midnight" : false
               }
               act2VoyageCreditsOpen={phase === "act2" ? act2VoyageCreditsOpen : false}
+              journeyReplayUnlocked={journeyReplayUnlocked}
+              onNavigatePhase={journeyReplayUnlocked ? navigateParcoursPhase : undefined}
             />
           </Suspense>
         </>
@@ -641,7 +729,14 @@ export default function App() {
         <ScrollNudge key="scroll-nudge-act1" />
       )}
 
-      <main className="relative w-full min-h-dvh" style={{ background: "#0a0806" }}>
+      <main
+        className={
+          phase === "act1"
+            ? "relative h-dvh max-h-dvh min-h-0 w-full overflow-hidden"
+            : "relative w-full min-h-dvh"
+        }
+        style={{ background: "#0a0806" }}
+      >
         <AnimatePresence>
           {phase === "intro" && (
             <motion.div
@@ -709,15 +804,16 @@ export default function App() {
             animate={{ opacity: 1 }}
             transition={{ duration: 1.2, ease: "easeInOut" }}
           >
-            <Suspense fallback={<div className="fixed inset-0 bg-[#0a0806]" aria-hidden />}>
+            <Suspense fallback={<div className="fixed inset-0 bg-[#05080f]" aria-hidden />}>
               <Act2 />
             </Suspense>
           </motion.div>
         )}
       </main>
 
-      {/* Fluide curseur plein viewport : au-dessus scène (~z-20) et HUD carte (~110) ; sous ScrollProgressBar / modales. */}
-      {finePointer && (
+      {/* Fluide curseur plein viewport : au-dessus scène (~z-20) et HUD carte (~110) ; sous ScrollProgressBar / modales.
+          Acte II : désactivé — le canvas fixed en 100vh se superposait mal à l’iframe parchemin (100dvh), bande sombre en bas. */}
+      {finePointer && phase !== "act2" && (
         <div
           style={{
             visibility:
@@ -729,15 +825,7 @@ export default function App() {
                 : "visible",
           }}
         >
-          <Fragment
-            key={
-              phase === "act1"
-                ? "splash-act1"
-                : phase === "act2"
-                  ? "splash-act2"
-                  : "splash-default"
-            }
-          >
+          <Fragment key={phase === "act1" ? "splash-act1" : "splash-default"}>
             <SplashCursor
               syncPaletteFromAmbient
               SIM_RESOLUTION={phase === "act1" ? 128 : 160}
@@ -754,12 +842,13 @@ export default function App() {
         </div>
       )}
 
-      {/* Acte II : iframe parchemin a sa propre barre (--senac-scroll-progress) ; ici elle serait au-dessus et à ~0 %. */}
-      <ScrollProgressBar
-        tone={act2AmbientMidnight ? "midnight" : "solar"}
-        iframeFillRatio={phase === "act2" ? senacIframeScrollRatio : undefined}
-        aboveChrome={phase === "act2"}
-      />
+      {/* Intro / Acte I uniquement — Acte II : barre retirée (elle « poussait » au scroll via iframe → parent). */}
+      {phase !== "act2" && (
+        <ScrollProgressBar
+          tone={act2AmbientMidnight ? "midnight" : "solar"}
+          aboveChrome={false}
+        />
+      )}
       </motion.div>
       <LanguageMorphHud visible={isLanguageMorphing} midnight={languageMorphMidnight} />
     </ReactLenis>

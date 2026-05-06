@@ -17,7 +17,7 @@ export default function ActOneAmbiance({ chapterComplete = false }: Props) {
         animate={{ filter: chapterComplete ? 'brightness(1.08) saturate(1.12)' : 'brightness(1) saturate(1)' }}
         transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
       >
-        <AuroraMeshBackground fillContainer hideShootingStars={false} className="z-0" />
+        <AuroraMeshBackground fillContainer hideShootingStars={false} compactDust className="z-0" />
       </motion.div>
 
       <motion.div

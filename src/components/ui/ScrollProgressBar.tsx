@@ -1,4 +1,5 @@
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 type Tone = "solar" | "midnight";
 type Rgb = { r: number; g: number; b: number };
@@ -32,36 +33,6 @@ function hslPctToRgb(hDeg: number, sp: number, lp: number): Rgb {
     g: Math.round(255 * channel(8)),
     b: Math.round(255 * channel(4)),
   };
-}
-
-/** Interpolation HSL : arc de teinte court (évite le détour rouge→bleu moche en sRGB linéaire). */
-function hslLerpShortest(
-  h1: number,
-  s1: number,
-  l1: number,
-  h2: number,
-  s2: number,
-  l2: number,
-  t: number
-): { h: number; s: number; l: number } {
-  const tt = Math.min(1, Math.max(0, t));
-  let dh = h2 - h1;
-  if (dh > 180) dh -= 360;
-  if (dh < -180) dh += 360;
-  const h = h1 + dh * tt;
-  const hh = ((h % 360) + 360) % 360;
-  return {
-    h: hh,
-    s: s1 + (s2 - s1) * tt,
-    l: l1 + (l2 - l1) * tt,
-  };
-}
-
-function mixRgbPerceptual(a: Rgb, b: Rgb, t: number): Rgb {
-  const ha = rgbToHsl(a);
-  const hb = rgbToHsl(b);
-  const m = hslLerpShortest(ha.h, ha.s, ha.l, hb.h, hb.s, hb.l, t);
-  return hslPctToRgb(m.h, m.s, m.l);
 }
 
 function rgbToHsl(rgb: Rgb): { h: number; s: number; l: number } {
@@ -111,13 +82,14 @@ function barStopsForPaletteEnd(uRaw: number, paletteEnd: 0 | 1, emphasisSource: 
   const s2Sol = sSol + 6;
   const l2Sol = lSol - 6;
 
-  const hMid = 198 + u * 22;
-  const sMid = 52 + u * 14;
-  const lMid = 54 + u * 10;
+  /** Bleu nuit profond (évite cyan ~195° → verts à l’œil en prod). */
+  const hMid = 228 + u * 8;
+  const sMid = 38 + u * 10;
+  const lMid = 46 + u * 8;
   const lMidA = lMid - 4;
   const lMidB = lMid + 4;
-  const h2Mid = hMid + 12;
-  const s2Mid = Math.min(72, sMid + 10);
+  const h2Mid = hMid + 6;
+  const s2Mid = Math.min(52, sMid + 8);
 
   const r1Solar = hslPctToRgb(hSol, sSol, lSol);
   const r1Mid = hslPctToRgb(hMid, sMid, lMidA);
@@ -132,8 +104,8 @@ function barStopsForPaletteEnd(uRaw: number, paletteEnd: 0 | 1, emphasisSource: 
   let hsl1Post = rgbToHsl(rgbStop1);
   rgbStop1 = hslPctToRgb(
     hsl1Post.h,
-    Math.min(76, Math.max(0, hsl1Post.s * (1 + e * 0.28))),
-    Math.min(92, Math.max(17, hsl1Post.l - e * 4.2))
+    Math.min(58, Math.max(0, hsl1Post.s * (1 + e * 0.1))),
+    Math.min(88, Math.max(17, hsl1Post.l - e * 4.2))
   );
 
   hsl1Post = rgbToHsl(rgbStop1);
@@ -143,7 +115,7 @@ function barStopsForPaletteEnd(uRaw: number, paletteEnd: 0 | 1, emphasisSource: 
   lStop2 = Math.min(94, Math.max(hsl1Post.l + 2, lStop2));
   rgbStop2 = hslPctToRgb(
     hsl2Post.h,
-    Math.min(78, Math.max(0, hsl2Post.s * (1 + e * 0.24))),
+    Math.min(56, Math.max(0, hsl2Post.s * (1 + e * 0.09))),
     lStop2
   );
 
@@ -160,17 +132,15 @@ function blendedBar(uRaw: number, nightBlendSmooth: number, emphasisScroll?: num
 
   const solar = barStopsForPaletteEnd(u, 0, emphasisSource);
   const midnight = barStopsForPaletteEnd(u, 1, emphasisSource);
-  const rgbStop1 = mixRgbPerceptual(solar.rgbStop1, midnight.rgbStop1, tTone);
-  const rgbStop2 = mixRgbPerceptual(solar.rgbStop2, midnight.rgbStop2, tTone);
+  /** Mélange sRGB uniquement : évite l’arc HSL ambre→cyan (vert / magenta parasite). */
+  const rgbStop1 = rgbLerp(solar.rgbStop1, midnight.rgbStop1, tTone);
+  const rgbStop2 = rgbLerp(solar.rgbStop2, midnight.rgbStop2, tTone);
 
   const e = scrollDepthEmphasis(emphasisSource);
 
   const bg = `linear-gradient(90deg, ${rgbFmt(rgbStop1)} 0%, ${rgbFmt(rgbStop2)} 100%)`;
 
-  const hslGlow = rgbToHsl(rgbLerp(rgbStop1, rgbStop2, 0.5));
-  const glowHue = hslGlow.h;
-  const gSat = Math.min(80, Math.max(62, 64 + e * 12));
-  const gLight = Math.min(60, Math.max(50, 55 + e * 5));
+  const glowRgb = rgbLerp(rgbStop1, rgbStop2, 0.5);
   const blurA = Math.round(6 + e * 16);
   const blurB = Math.round(16 + e * 28);
   const blurC = Math.round(28 + e * 36);
@@ -180,10 +150,10 @@ function blendedBar(uRaw: number, nightBlendSmooth: number, emphasisScroll?: num
   const aRim = Math.min(0.38, 0.14 + e * 0.26);
 
   const boxShadow =
-    `0 0 ${blurA}px hsla(${glowHue}, ${gSat}%, ${gLight}%, ${a1}), ` +
-    `0 0 ${blurB}px hsla(${glowHue}, ${Math.max(58, gSat - 6)}%, ${Math.max(48, gLight - 4)}%, ${a2}), ` +
-    `0 0 ${blurC}px hsla(${glowHue}, 58%, 52%, ${a3}), ` +
-    `0 1px 0 hsla(${glowHue}, 54%, ${50 + e * 4}%, ${aRim})`;
+    `0 0 ${blurA}px rgba(${glowRgb.r},${glowRgb.g},${glowRgb.b},${a1}), ` +
+    `0 0 ${blurB}px rgba(${glowRgb.r},${glowRgb.g},${glowRgb.b},${a2 * 0.85}), ` +
+    `0 0 ${blurC}px rgba(${glowRgb.r},${glowRgb.g},${glowRgb.b},${a3 * 0.75}), ` +
+    `0 1px 0 rgba(${glowRgb.r},${glowRgb.g},${glowRgb.b},${aRim})`;
 
   return { bg, boxShadow };
 }
@@ -196,25 +166,30 @@ type Props = {
   aboveChrome?: boolean;
 };
 
+/** Acte II : le ratio iframe arrive par postMessage (irrégulier). Lissage rAF + pas de transition CSS (évite les conflits). */
+const IFRAME_BAR_LERP = 0.04;
+
 export default function ScrollProgressBar({ tone, iframeFillRatio, aboveChrome }: Props) {
+  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
   const fillRef = useRef<HTMLDivElement>(null);
   const bSmooth = useRef(tone === "midnight" ? 1 : 0);
   const toneRef = useRef(tone);
   const iframeRatioRef = useRef(iframeFillRatio);
+  /** Valeur affichée lissée (iframe seulement). */
+  const iframeDisplayRef = useRef(0);
+  const iframeHadPrevFrameRef = useRef(false);
   toneRef.current = tone;
   iframeRatioRef.current = iframeFillRatio;
 
   useLayoutEffect(() => {
+    setPortalRoot(document.body);
+  }, []);
+
+  useLayoutEffect(() => {
     const el = fillRef.current;
     if (!el) return;
-    const reduced =
-      typeof window.matchMedia !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    el.style.transition =
-      reduced || iframeFillRatio === undefined
-        ? "none"
-        : "transform 0.16s cubic-bezier(0.25, 0.94, 0.32, 0.97)";
-  }, [iframeFillRatio]);
+    el.style.transition = "none";
+  }, []);
 
   useEffect(() => {
     const reduced =
@@ -229,18 +204,27 @@ export default function ScrollProgressBar({ tone, iframeFillRatio, aboveChrome }
       const hasIframe = iframeR !== undefined && Number.isFinite(iframeR);
       const kb = reduced ? 1 : 0.13;
 
-      let rawP: number;
+      let p: number;
       if (hasIframe && typeof iframeR === "number") {
-        rawP = Math.min(1, Math.max(0, iframeR));
+        const target = Math.min(1, Math.max(0, iframeR));
+        if (reduced || !iframeHadPrevFrameRef.current) {
+          iframeDisplayRef.current = target;
+        } else {
+          const k = IFRAME_BAR_LERP;
+          iframeDisplayRef.current += (target - iframeDisplayRef.current) * k;
+        }
+        iframeHadPrevFrameRef.current = true;
+        p = iframeDisplayRef.current;
       } else {
+        iframeHadPrevFrameRef.current = false;
         /** Suit Lenis / le scroll natif frame par frame — pas de 2ᵉ lissage (évite retard + crans sur `width`). */
-        rawP = scrollRatio();
+        p = scrollRatio();
       }
 
       const tgtTone = toneRef.current === "midnight" ? 1 : 0;
       bSmooth.current += (tgtTone - bSmooth.current) * kb;
 
-      const p = Math.min(1, Math.max(0, rawP));
+      p = Math.min(1, Math.max(0, p));
       const nb = bSmooth.current;
       const { bg, boxShadow } = blendedBar(p, nb, p);
 
@@ -259,7 +243,7 @@ export default function ScrollProgressBar({ tone, iframeFillRatio, aboveChrome }
     };
   }, []);
 
-  return (
+  const bar = (
     <div
       className={`pointer-events-none fixed left-0 right-0 h-[2px] ${aboveChrome ? "z-[220]" : "z-[480]"}`}
       style={{ top: "env(safe-area-inset-top, 0px)" }}
@@ -279,4 +263,7 @@ export default function ScrollProgressBar({ tone, iframeFillRatio, aboveChrome }
       </div>
     </div>
   );
+
+  if (!portalRoot) return null;
+  return createPortal(bar, portalRoot);
 }

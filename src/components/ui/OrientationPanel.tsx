@@ -26,6 +26,9 @@ type Props = {
   parcoursRailMidnight?: boolean;
   /** Générique de fin voyage (iframe) : le rail affiche « Crédits » comme étape en cours. */
   act2VoyageCreditsOpen?: boolean;
+  /** Après traversée complète : étapes du fil cliquables pour revivre chaque acte. */
+  journeyReplayUnlocked?: boolean;
+  onNavigatePhase?: (phase: PhaseLabel) => void;
 };
 
 const PHASE_NAV_INDEX: Record<PhaseLabel, number> = { intro: 0, act1: 1, act2: 2 };
@@ -166,6 +169,8 @@ export function ParcoursPanelInnerContent({
   revelationCount = 0,
   parcoursRailMidnight,
   act2VoyageCreditsOpen = false,
+  journeyReplayUnlocked = false,
+  onNavigatePhase,
   className = '',
 }: Omit<Props, 'expanded' | 'onExpandedChange'> & { className?: string }) {
   const prefersReducedMotion = useReducedMotion();
@@ -236,6 +241,16 @@ export function ParcoursPanelInnerContent({
 
   return (
     <div className={`flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden ${className}`}>
+      {journeyReplayUnlocked ? (
+        <p
+          className={
+            'mb-3 shrink-0 px-0.5 text-[9px] font-normal leading-relaxed sm:text-[10px] ' +
+            (nightRail ? 'text-[rgba(234,215,164,0.48)]' : 'text-solar-gold/40')
+          }
+        >
+          {copy.orientationReplayHint}
+        </p>
+      ) : null}
       <nav
         className="relative flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden pl-0.5"
         aria-label={copy.orientationBreadcrumbAria}
@@ -254,11 +269,14 @@ export function ParcoursPanelInnerContent({
           const creditsMode = phase === 'act2' && act2VoyageCreditsOpen;
           const active = !!forceReveal || (!creditsMode && rowPhase !== null && phase === rowPhase);
           const cryptic =
+            !journeyReplayUnlocked &&
             !forceReveal &&
             (rowPhase === null || (rowPhase !== null && PHASE_NAV_INDEX[rowPhase] > activeStep));
           const showCrypticCopy = cryptic && rowPhase !== null;
           const rowLabel = showCrypticCopy ? lockedTitle(rowPhase) : label;
           const rowSummary = showCrypticCopy ? '???' : summary;
+          const canNavigate =
+            journeyReplayUnlocked && typeof onNavigatePhase === 'function' && rowPhase !== null && !forceReveal;
           return (
             <div
               key={key}
@@ -271,26 +289,58 @@ export function ParcoursPanelInnerContent({
                 <TimelineDot cryptic={cryptic} variant={variant} night={nightRail} />
               </div>
               <div className="min-w-0 flex-1">
-                <p
-                  className={
-                    cryptic
-                      ? 'rounded-[2px] pl-0.5 pr-1 leading-snug ' + parcoursCrypticTitleClass(nightRail)
-                      : 'rounded-[2px] pl-0.5 pr-1 leading-snug text-[10px] tracking-wide sm:text-[11px] ' +
+                {canNavigate ? (
+                  <button
+                    type="button"
+                    className={
+                      'w-full rounded-[2px] text-left transition-[background-color,box-shadow] duration-200 focus-visible:outline-none focus-visible:ring-1 ' +
+                      (nightRail
+                        ? 'focus-visible:ring-[rgba(139,213,255,0.35)] hover:bg-[rgba(8,18,38,0.35)]'
+                        : 'focus-visible:ring-solar-gold/35 hover:bg-black/25')
+                    }
+                    onClick={() => onNavigatePhase(rowPhase)}
+                  >
+                    <p
+                      className={
+                        'rounded-[2px] pl-0.5 pr-1 leading-snug text-[10px] tracking-wide sm:text-[11px] ' +
                         navItemClass(active, nightRail)
-                  }
-                >
-                  {rowLabel}
-                </p>
-                <p
-                  className={
-                    cryptic
-                      ? 'mt-1.5 pl-0.5 pr-1 leading-relaxed ' + parcoursCrypticSummaryClass(nightRail)
-                      : 'mt-1.5 pl-0.5 pr-1 text-[9px] font-normal leading-relaxed sm:text-[10px] ' +
+                      }
+                    >
+                      {rowLabel}
+                    </p>
+                    <p
+                      className={
+                        'mt-1.5 pl-0.5 pr-1 text-[9px] font-normal leading-relaxed sm:text-[10px] ' +
                         navSummaryClass(active, nightRail)
-                  }
-                >
-                  {rowSummary}
-                </p>
+                      }
+                    >
+                      {rowSummary}
+                    </p>
+                  </button>
+                ) : (
+                  <>
+                    <p
+                      className={
+                        cryptic
+                          ? 'rounded-[2px] pl-0.5 pr-1 leading-snug ' + parcoursCrypticTitleClass(nightRail)
+                          : 'rounded-[2px] pl-0.5 pr-1 leading-snug text-[10px] tracking-wide sm:text-[11px] ' +
+                            navItemClass(active, nightRail)
+                      }
+                    >
+                      {rowLabel}
+                    </p>
+                    <p
+                      className={
+                        cryptic
+                          ? 'mt-1.5 pl-0.5 pr-1 leading-relaxed ' + parcoursCrypticSummaryClass(nightRail)
+                          : 'mt-1.5 pl-0.5 pr-1 text-[9px] font-normal leading-relaxed sm:text-[10px] ' +
+                            navSummaryClass(active, nightRail)
+                      }
+                    >
+                      {rowSummary}
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           );
@@ -406,6 +456,8 @@ export default function OrientationPanel({
   onExpandedChange,
   parcoursRailMidnight,
   act2VoyageCreditsOpen,
+  journeyReplayUnlocked,
+  onNavigatePhase,
 }: Props) {
   const copy = useAppCopy();
   const expandedW = useExpandedWidthPx();
@@ -619,6 +671,8 @@ export default function OrientationPanel({
             revelationCount={revelationCount}
             parcoursRailMidnight={parcoursRailMidnight}
             act2VoyageCreditsOpen={act2VoyageCreditsOpen}
+            journeyReplayUnlocked={journeyReplayUnlocked}
+            onNavigatePhase={onNavigatePhase}
           />
         </div>
       )}

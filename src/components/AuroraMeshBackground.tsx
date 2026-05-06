@@ -16,12 +16,15 @@ type AuroraProps = {
   fillContainer?: boolean;
   /** Désactive les étoiles filantes (ex. acte I carte) */
   hideShootingStars?: boolean;
+  /** Moins de grains DOM (DesertDust) — carte acte I ; intro inchangée si omis */
+  compactDust?: boolean;
 };
 
 export default function AuroraMeshBackground({
   className = '',
   fillContainer = false,
   hideShootingStars = false,
+  compactDust = false,
 }: AuroraProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const target = useRef({ x: 0.5, y: 0.5 });
@@ -158,7 +161,7 @@ export default function AuroraMeshBackground({
         }}
       />
 
-      <DesertDustParticles />
+      <DesertDustParticles compact={compactDust} />
       {!hideShootingStars && <ShootingStars />}
 
       <div

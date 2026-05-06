@@ -11,6 +11,7 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Playfair Display", ui-serif, Georgia, serif;
+  --font-arabic-ui: "Noto Naskh Arabic", ui-serif, serif;
   --font-bahlull: "Bahlull", serif;
   --color-solar-cream: #fdfaf6;
   --color-solar-sand: #f5f0e6;
@@ -44,6 +45,60 @@
     background-size: 200px;
     background-attachment: scroll;
     opacity: 0.98;
+  }
+
+  /**
+   * Acte I : carte en fixed + Lenis sur la racine — sans ça le scroll révèle le fond crème du body.
+   * Classe posée sur `<html>` depuis App.tsx (`phase === "act1"`).
+   */
+  html.phase-act1-root {
+    overflow: hidden !important;
+    height: 100dvh;
+    max-height: 100dvh;
+    overscroll-behavior: none;
+  }
+
+  html.phase-act1-root body {
+    overflow: hidden !important;
+    min-height: 100dvh;
+    max-height: 100dvh;
+    overscroll-behavior: none;
+    background-color: #080604;
+    background-image: none;
+  }
+
+  html.phase-act1-root #root {
+    height: 100dvh;
+    max-height: 100dvh;
+    min-height: 100dvh;
+    overflow: hidden;
+  }
+
+  /**
+   * Acte II : iframe parchemin en fixed — même problème que la carte : fond crème / grain du body visible en bas
+   * si le viewport ou Lenis laisse une fente (100vh vs dvh, overscroll).
+   */
+  html.phase-act2-root {
+    overflow: hidden !important;
+    height: 100dvh;
+    max-height: 100dvh;
+    overscroll-behavior: none;
+  }
+
+  html.phase-act2-root body {
+    overflow: hidden !important;
+    min-height: 100dvh;
+    max-height: 100dvh;
+    overscroll-behavior: none;
+    background-color: #05080f;
+    background-image: none;
+  }
+
+  html.phase-act2-root #root {
+    height: 100dvh;
+    max-height: 100dvh;
+    min-height: 100dvh;
+    overflow: hidden;
   }
 
   #root {

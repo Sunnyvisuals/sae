@@ -1,13 +1,10 @@
-import { Fragment, useId, useState, type ChangeEvent, type ReactNode, type SVGProps } from 'react';
+import { useId, useState, type ChangeEvent, type ReactNode, type SVGProps } from 'react';
 import { motion } from 'motion/react';
 import { useCursorStore } from '../../hooks/useCursorContext';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useLanguageStore } from '../../stores/languageStore';
 import { useAppCopy } from '../../hooks/useAppCopy';
 import { useMasterVolumeStore } from '../../stores/masterVolumeStore';
-import SplashCursor from '../SplashCursor';
-import { NOISE_DATA_URI } from '../../lib/noiseDataUri';
-
 type Props = {
   onClose: () => void;
   /** Ouvre uniquement la vidéo en surcouche - ne recharge pas la page ni l’acte */
@@ -218,12 +215,12 @@ function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
             <span className="shrink-0">{copy.menuSound}</span>
             <span
               className={
-                'shrink-0 font-serif text-[11px] normal-case not-italic tabular-nums tracking-[0.12em] sm:text-[12px] ' +
-                (midnight ? 'text-sky-300/78' : 'text-[rgba(253,248,238,0.62)]')
+                'shrink-0 tabular-nums text-[11px] font-light tracking-[0.22em] sm:text-[12px] ' +
+                (midnight ? 'text-sky-200/72' : 'text-[rgba(253,248,238,0.68)]')
               }
             >
-              {pct}
-              <span className="font-sans text-[9px] tracking-[0.06em] opacity-[0.72] sm:text-[10px]"> %</span>
+              {String(pct).padStart(2, '\u2007')}
+              <span className="text-[8px] font-normal tracking-[0.1em] opacity-50 ml-[2px]">%</span>
             </span>
           </p>
         </button>
@@ -380,8 +377,8 @@ function PauseLanguagePicker({ midnight }: { midnight: boolean }) {
             <span className="shrink-0">{copy.languageSectionHeading}</span>
             <span
               className={
-                'min-w-0 max-w-[min(100%,18ch)] truncate text-end font-serif text-[10px] normal-case tracking-[0.06em] sm:text-[11px] ' +
-                (midnight ? 'text-sky-300/78' : 'text-[rgba(253,248,238,0.62)]')
+                'min-w-0 max-w-[min(100%,18ch)] truncate text-end text-[9px] font-light uppercase tracking-[0.22em] sm:text-[10px] sm:tracking-[0.26em] ' +
+                (midnight ? 'text-sky-200/70' : 'text-[rgba(253,248,238,0.65)]')
               }
               title={currentLabel}
             >
@@ -471,33 +468,12 @@ export default function SystemMenu({
       transition={{ duration: 0.4 }}
       className={
         midnight
-          ? `fixed inset-0 z-[560] flex min-h-dvh w-full ${shellCursor} flex-col bg-[#030810] [padding-top:env(safe-area-inset-top)] [padding-bottom:env(safe-area-inset-bottom)]`
-          : `fixed inset-0 z-[560] flex min-h-dvh w-full ${shellCursor} flex-col bg-[#020100] [padding-top:env(safe-area-inset-top)] [padding-bottom:env(safe-area-inset-bottom)]`
+          ? `fixed inset-0 z-[560] flex min-h-dvh w-full ${shellCursor} flex-col bg-[#030810]/88 backdrop-blur-md supports-[backdrop-filter]:bg-[#030810]/76 [padding-top:env(safe-area-inset-top)] [padding-bottom:env(safe-area-inset-bottom)]`
+          : `fixed inset-0 z-[560] flex min-h-dvh w-full ${shellCursor} flex-col bg-[#020100]/88 backdrop-blur-md supports-[backdrop-filter]:bg-[#020100]/76 [padding-top:env(safe-area-inset-top)] [padding-bottom:env(safe-area-inset-bottom)]`
       }
     >
-      {/* Fluide intégré à la modale : désactivé sur tactile (pas de précision curseur). */}
-      {finePointer && (
+      {/* Fond — halos discrets (pas de grain SVG ni fluide WebGL : lisibilité pause). */}
       <div className="pointer-events-none absolute inset-0 z-[1]" aria-hidden>
-        <Fragment key={midnight ? 'menu-splash-midnight' : 'menu-splash-solar'}>
-          <SplashCursor
-            syncPaletteFromAmbient
-            DYE_RESOLUTION={640}
-            SIM_RESOLUTION={128}
-            DENSITY_DISSIPATION={10}
-            VELOCITY_DISSIPATION={5}
-            PRESSURE={0.1}
-            CURL={10}
-            SPLAT_RADIUS={0.05}
-            SPLAT_FORCE={10000}
-            COLOR_UPDATE_SPEED={10}
-            zIndex={1}
-          />
-        </Fragment>
-      </div>
-      )}
-
-      {/* Fond - halos solaire vs nuit saharienne */}
-      <div className="pointer-events-none absolute inset-0 z-[2]" aria-hidden>
         {midnight ? (
           <>
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_100%_65%_at_50%_12%,rgba(90,168,255,0.14),transparent_52%)]" />
@@ -508,16 +484,9 @@ export default function SystemMenu({
           <>
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_100%_65%_at_50%_12%,rgba(197,160,89,0.12),transparent_52%)]" />
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_100%,rgba(60,35,20,0.22),transparent_55%)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,transparent_0%,rgba(0,0,0,0.5)_100%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,transparent_0%,rgba(0,0,0,0.42)_100%)]" />
           </>
         )}
-        <div
-          className="absolute inset-0 opacity-[0.06]"
-          style={{
-            backgroundImage: `url("${NOISE_DATA_URI}")`,
-            backgroundRepeat: 'repeat',
-          }}
-        />
       </div>
 
       <motion.button

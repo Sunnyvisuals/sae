@@ -1,6 +1,9 @@
 /** Métadonnées textuelles + registre des 5 mots « révélation » (game design Acte I). */
 
-export const REVELATION_WORDS = ['naissance', 'soleil', 'mère', 'liberté', 'corps'] as const;
+import { ACT1_REVELATION_SEQUENCE } from "../../lib/act1IntroBridge";
+
+/** Aligné sur la vidéo d’intro : voir `src/lib/act1IntroBridge.ts`. */
+export const REVELATION_WORDS = ACT1_REVELATION_SEQUENCE;
 export type RevelationWord = (typeof REVELATION_WORDS)[number];
 
 export type WordFontRole = 'serifPoem' | 'sansNote';

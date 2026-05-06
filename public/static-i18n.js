@@ -41,7 +41,7 @@
       doc_title: "Jean Sénac - Nuit saharienne",
       js_cinema_callout_html:
         '<p class="senac-cinema-explore-callout__text">Pour continuer, appuie sur <strong>Exploration</strong> en bas à gauche.</p><div class="senac-cinema-explore-callout__arrows" aria-hidden="true"><span class="senac-ce-arrow"></span><span class="senac-ce-arrow"></span><span class="senac-ce-arrow"></span></div>',
-      js_scroll_nudge_label: "Faire défiler",
+      js_scroll_nudge_label: "Molette · défiler",
       smc_aria: "Choisissez votre mode de navigation",
       smc_kicker: "Comment traverser cette nuit ?",
       smc_caption_html:
@@ -56,9 +56,18 @@
       smt_cinema: "Cinéma",
       smt_explore: "Exploration",
       hero_kicker: "Acte II - nuits sahariennes",
+      hero_title: "Jean Sénac",
       hero_subtitle: "une vie en versants",
       hero_copy:
         "Une frise comme une traversée nocturne : les dates deviennent constellations, les fragments s'allument au passage, et la voix de Sénac avance dans le bleu.",
+      cross_nav_status_kicker: "Acte I terminé — tu poursuis en Acte II",
+      cross_nav_group_aria: "Raccourcis facultatifs : prologue et carte-mémoire (Acte I déjà parcouru)",
+      cross_nav_links_html:
+        'La frise commence ici. Facultatif : <button type="button" class="senac-cross-nav__link" data-senac-navigate="intro-video">reprendre la vidéo d’introduction</button> — ou <button type="button" class="senac-cross-nav__link" data-senac-navigate="act1-map">revenir à la carte-mémoire</button> (Acte I déjà parcouru).',
+      cross_nav_act1_birth_html:
+        'Carte-mémoire : <button type="button" class="senac-cross-nav__link" data-senac-navigate="act1-map">fragment « Naissance »</button>',
+      cross_nav_act1_poetry_html:
+        'Carte-mémoire : <button type="button" class="senac-cross-nav__link" data-senac-navigate="act1-map">vers du désert (Acte I)</button>',
       hero_img_alt: "Jean Sénac assis sur des rochers, face à la mer.",
       hero_figcaption: "Jean Sénac - portrait d'archive",
       scroll_cue_aria: "Faire défiler vers la frise narrative",
@@ -146,7 +155,7 @@
       doc_title: "جان سِنَاك — ليلٌ صحراوي",
       js_cinema_callout_html:
         '<p class="senac-cinema-explore-callout__text">لي تكمّل، ضغط على <strong>استكشاف</strong> لتحت على اليسار.</p><div class="senac-cinema-explore-callout__arrows" aria-hidden="true"><span class="senac-ce-arrow"></span><span class="senac-ce-arrow"></span><span class="senac-ce-arrow"></span></div>',
-      js_scroll_nudge_label: "زيد تنزّل",
+      js_scroll_nudge_label: "الحرّاف",
       smc_aria: "ختار طريقة التصفّح ديالك",
       smc_kicker: "كيفاش غادي تعبر هاد الليلة؟",
       smc_caption_html:
@@ -161,9 +170,18 @@
       smt_cinema: "سينما",
       smt_explore: "استكشاف",
       hero_kicker: "الجزء الثاني — ليالي صحراوية",
+      hero_title: "جان سنّاك",
       hero_subtitle: "حياة على أكثر من ميل",
       hero_copy:
         "خط زمني كرحلة ليلية: الأعوام تنولّ نجوم، القطعات تنور مع المرور، وصوت سنّاك يمشي في الزرقة.",
+      cross_nav_status_kicker: "الجزء الأول تمّ — أنت دابا في الجزء الثاني",
+      cross_nav_group_aria: "اختصارات اختيارية : المقدمة وخريطة الذاكرة (الجزء الأول تمّ مرّوه)",
+      cross_nav_links_html:
+        'الخط الزمني يبدأ من هنا. اختياري : <button type="button" class="senac-cross-nav__link" data-senac-navigate="intro-video">تعاود فيديو المقدمة</button> — ولا <button type="button" class="senac-cross-nav__link" data-senac-navigate="act1-map">ترجع لخريطة الذاكرة</button> (الجزء الأول مكمّل).',
+      cross_nav_act1_birth_html:
+        'خريطة الذاكرة : <button type="button" class="senac-cross-nav__link" data-senac-navigate="act1-map">قطعة « الميلاد »</button>',
+      cross_nav_act1_poetry_html:
+        'خريطة الذاكرة : <button type="button" class="senac-cross-nav__link" data-senac-navigate="act1-map">الشعر فالصحرا (الجزء الأول)</button>',
       hero_img_alt: "جان سنّاك قاعد على صخور، ورا البحر.",
       hero_figcaption: "جان سنّاك — صورة من الأرشيف",
       scroll_cue_aria: "مرّر باش توصل للخط الزمني",

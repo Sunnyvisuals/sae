@@ -3,13 +3,10 @@
  */
 (function () {
   const root = document.documentElement;
-  /** Barre rendue dans le parent React au-dessus du rail « Parcours » (l’iframe ne peut pas passer au-dessus du chrome). */
-  const scrollProgressDelegatedToParent = window.parent !== window;
-  if (scrollProgressDelegatedToParent) {
-    const peg = document.getElementById("senac-scroll-progress");
-    if (peg instanceof HTMLElement) {
-      peg.classList.add("senac-scroll-progress--delegated-parent");
-    }
+  /** Dans la SPA : pas de barre de progression (elle était relayée au parent et grossissait au scroll). */
+  const suppressScrollProgressChrome = window.parent !== window;
+  if (suppressScrollProgressChrome) {
+    document.getElementById("senac-scroll-progress")?.remove();
   }
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -20,6 +17,23 @@
   if (scrollCueEarly instanceof HTMLAnchorElement) {
     scrollCueEarly.style.opacity = "0";
   }
+
+  /** Pavé tactile / souris : Ctrl+molette (ou meta) ne doit pas zoomer tout le navigateur — garde le défilement Lenis. */
+  document.addEventListener(
+    "wheel",
+    function (/** @type {WheelEvent} */ e) {
+      if (e.ctrlKey || e.metaKey) e.preventDefault();
+    },
+    { passive: false, capture: true }
+  );
+  /** Safari (macOS) : pincement = zoom page ; on neutralise pour rester en scroll vertical. */
+  document.addEventListener(
+    "gesturestart",
+    function (e) {
+      e.preventDefault();
+    },
+    { passive: false }
+  );
 
   function setRevealStagger() {
     document.querySelectorAll("[data-reveal]").forEach((el, index) => {
@@ -231,21 +245,14 @@
   }
 
   function updateSenacScrollProgressFill() {
+    if (suppressScrollProgressChrome) return;
+
     const max = getScrollMax();
     let y = getScrollY();
     if (yearGaugeLenis && typeof yearGaugeLenis.scroll === "number") {
       y = yearGaugeLenis.scroll;
     }
     const ratio = Math.min(1, Math.max(0, y / max));
-
-    if (scrollProgressDelegatedToParent) {
-      try {
-        window.parent.postMessage({ type: "senac-scroll-progress", ratio }, window.location.origin);
-      } catch (_) {
-        /* ignore */
-      }
-      return;
-    }
 
     if (!senacScrollFillEl) {
       const n = document.querySelector(".senac-scroll-progress__fill");
@@ -1837,6 +1844,18 @@
         if (!yearGaugeLenis) window.addEventListener("scroll", onScrollCh3, { passive: true });
       }, 3000);
     }
+
+    const backSpa = document.getElementById("ch3-back-experience");
+    if (backSpa instanceof HTMLAnchorElement && window.parent !== window) {
+      backSpa.addEventListener("click", (e) => {
+        e.preventDefault();
+        try {
+          window.parent.postMessage({ type: "senac-navigate", target: "intro" }, window.location.origin);
+        } catch (_) {
+          /* ignore */
+        }
+      });
+    }
   }
 
   /** Générique de fin façon cinéma - scroll vertical, Lenis figé, Escape / passer pour fermer. */
@@ -1910,8 +1929,16 @@
       }
     }
 
-    /** Retour à l’app React (même cible que « Retour à l’expérience »). */
+    /** Retour à l’app React : depuis l’iframe → message parent (sans recharger tout le site). */
     function goToMainExperience() {
+      if (window.parent !== window) {
+        try {
+          window.parent.postMessage({ type: "senac-journey-complete" }, window.location.origin);
+          return;
+        } catch (_) {
+          /* ignore */
+        }
+      }
       const home = `${window.location.origin}/`;
       try {
         if (window.parent !== window) {
@@ -2149,6 +2176,36 @@
     });
   }
 
+  /** Acte II ↔ SPA parent : boutons `data-senac-navigate` (vidéo d'intro, carte Acte I). */
+  function initSenacParentNavigateBridge() {
+    document.addEventListener(
+      "click",
+      (e) => {
+        const el =
+          e.target instanceof Element ? e.target.closest("[data-senac-navigate]") : null;
+        if (!el) return;
+        const raw = el.getAttribute("data-senac-navigate");
+        if (raw !== "intro-video" && raw !== "act1-map") return;
+        e.preventDefault();
+        const origin = window.location.origin;
+        if (window.parent !== window) {
+          try {
+            window.parent.postMessage({ type: "senac-navigate", target: raw }, origin);
+          } catch (_) {
+            /* ignore */
+          }
+        } else {
+          try {
+            window.location.assign(origin + "/");
+          } catch (_) {
+            window.location.href = "/";
+          }
+        }
+      },
+      true,
+    );
+  }
+
   /** Progression acte II (parent React) : défilement jusqu'à la ligne de temps. */
   function initAct2QuestBridge() {
     if (window.parent === window) return;
@@ -2369,8 +2426,8 @@
 
   /**
    * Choix d'entrée Cinéma / Exploration + toggle permanent bas-gauche.
-   * Mode Cinéma : défilement auto uniquement (molette/clavier tactile bloqués) jusqu'en bas ;
-   * l'utilisateur doit activer Exploration pour continuer (pas de passage auto).
+   * Mode Cinéma : défilement auto uniquement (molette/clavier/tactile bloqués) jusqu'en bas ;
+   * l'utilisateur doit appuyer sur Exploration (toggle bas-gauche) pour continuer.
    */
   function initScrollModeChoice() {
     const choiceEl  = document.getElementById("scroll-mode-choice");
@@ -2503,35 +2560,32 @@
       document.querySelectorAll(".senac-cinema-explore-callout").forEach((n) => n.remove());
     }
 
-    /** Fin du film : aucun défilement manuel avant passage en Exploration */
+    /** Fin du cinéma : consigne + mise en avant du bouton Exploration (toggle bas-gauche). */
     function showCinemaExploreCallout() {
       if (mode !== "cinema") return;
       hideCinemaExploreCallout();
-      const wrap = document.createElement("div");
-      wrap.className = "senac-cinema-explore-callout";
-      wrap.setAttribute("role", "status");
-      wrap.setAttribute("aria-live", "polite");
-      wrap.innerHTML =
-        typeof window.SENAC_T === 'function'
-          ? window.SENAC_T('js_cinema_callout_html')
-          : `<p class="senac-cinema-explore-callout__text">
-          Pour continuer, appuie sur <strong>Exploration</strong> en bas à gauche.
-        </p>
-        <div class="senac-cinema-explore-callout__arrows" aria-hidden="true">
-          <span class="senac-ce-arrow"></span>
-          <span class="senac-ce-arrow"></span>
-          <span class="senac-ce-arrow"></span>
-        </div>`;
-      document.body.appendChild(wrap);
-      cinemaExploreCalloutEl = wrap;
+
+      const callout = document.createElement("aside");
+      callout.className = "senac-cinema-explore-callout";
+      callout.setAttribute("role", "status");
+      const html =
+        typeof window.SENAC_T === "function"
+          ? window.SENAC_T("js_cinema_callout_html")
+          : '<p class="senac-cinema-explore-callout__text">Pour continuer, appuie sur <strong>Exploration</strong> en bas à gauche.</p><div class="senac-cinema-explore-callout__arrows" aria-hidden="true"><span class="senac-ce-arrow"></span><span class="senac-ce-arrow"></span><span class="senac-ce-arrow"></span></div>';
+      callout.innerHTML = html || "";
+      document.body.appendChild(callout);
+      cinemaExploreCalloutEl = callout;
+
       toggleEl.classList.add("senac-highlight-explore");
+
       requestAnimationFrame(() => {
-        requestAnimationFrame(() => wrap.classList.add("is-visible"));
+        requestAnimationFrame(() => callout.classList.add("is-visible"));
       });
     }
 
     /* ── Applique un mode ── */
     function setMode(newMode, fromChoice) {
+      const wasCinema = mode === "cinema";
       mode = newMode;
 
       hideCinemaExploreCallout();
@@ -2539,16 +2593,17 @@
       document.documentElement.classList.toggle("senac-cinema-mode", mode === "cinema");
       document.body.classList.toggle("senac-cinema-mode", mode === "cinema");
 
-      /* Toggle UI */
-      toggleEl.removeAttribute("hidden");
-      toggleEl.classList.add("is-visible");
-      tmtCinema.classList.toggle("is-active",  mode === "cinema");
+      tmtCinema.classList.toggle("is-active", mode === "cinema");
       tmtExplore.classList.toggle("is-active", mode === "explore");
 
       if (mode === "cinema") {
         startAutoScroll();
       } else {
         stopAutoScroll();
+      }
+
+      if (mode === "explore" && wasCinema && !fromChoice) {
+        window.setTimeout(showScrollNudge, 160);
       }
     }
 
@@ -2573,21 +2628,22 @@
       const nudgeLabel =
         typeof window.SENAC_T === "function"
           ? window.SENAC_T("js_scroll_nudge_label")
-          : "Faire défiler";
+          : "Molette · défiler";
+      /* Couleurs figées comme ScrollNudge.tsx (Acte I) pour même rendu or désert. */
       nudge.innerHTML = `
-        <svg width="44" height="48" viewBox="0 0 44 48" fill="none" focusable="false">
+        <svg width="48" height="52" viewBox="0 0 44 48" fill="none" focusable="false">
           <path d="M22 4c-5.5 0-10 4-10 9.2V28c0 5.2 4.5 9.2 10 9.2s10-4 10-9.2V13.2C32 8 27.5 4 22 4Z"
-            stroke="hsla(var(--ui-hue),55%,62%,0.48)" stroke-width="1.25"/>
+            stroke="rgba(229,206,154,0.78)" stroke-width="1.45"/>
           <g class="scroll-cue-wheel-wrap">
             <rect x="19" y="14" width="6" height="7" rx="1.2"
-              fill="hsla(var(--ui-hue),66%,62%,0.92)"/>
+              fill="rgba(234,215,164,0.98)"/>
           </g>
           <path d="M22 1.2l-3.2 3.2 1.2 1.1 2-2 2 2 1.2-1.1L22 1.2Z"
-            fill="hsla(var(--ui-hue),58%,62%,0.55)"/>
+            fill="rgba(229,206,154,0.82)"/>
           <path d="M22 40l3.2-3.2-1.2-1.1-2 2-2-2-1.2 1.1L22 40Z"
-            fill="hsla(var(--ui-hue),58%,62%,0.55)"/>
+            fill="rgba(229,206,154,0.82)"/>
           <line x1="12" y1="22" x2="32" y2="22"
-            stroke="hsla(var(--ui-hue),55%,62%,0.12)" stroke-width="0.6"/>
+            stroke="rgba(197,160,89,0.22)" stroke-width="0.65"/>
         </svg>
         <span class="senac-scroll-nudge-label">${nudgeLabel}</span>`;
       document.body.appendChild(nudge);
@@ -2637,6 +2693,10 @@
         choiceEl.style.display = "none";
         document.documentElement.classList.remove("senac-choice-pending");
         document.body.classList.remove("senac-choice-pending");
+        toggleEl.removeAttribute("hidden");
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => toggleEl.classList.add("is-visible"));
+        });
       }, unlockMs);
 
       if (chosen === "explore") {
@@ -2675,6 +2735,7 @@
       initFog();
     }
   });
+  initSenacParentNavigateBridge();
   initAct2QuestBridge();
   initScrollModeChoice();
   initChapterTwoAmbience();

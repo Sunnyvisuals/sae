@@ -41,7 +41,7 @@ function repelOffset(
   return { x: (-dx / dist) * f, y: (-dy / dist) * f };
 }
 
-export default function DesertDustParticles() {
+export default function DesertDustParticles({ compact = false }: { compact?: boolean }) {
   const prefersReducedMotion = useReducedMotion();
   const mx = useMotionValue(0.5);
   const my = useMotionValue(0.5);
@@ -156,12 +156,14 @@ export default function DesertDustParticles() {
       }
     };
 
-    /* Densité poussière / motes (fond intro + carte acte I) */
-    pushBatch(115, 'far', 'f');
-    pushBatch(82, 'near', 'n');
+    /* Densité poussière — mode compact sur carte acte I (~ −23 % de nodes DOM, même rendu global). */
+    const far = compact ? 88 : 115;
+    const near = compact ? 62 : 82;
+    pushBatch(far, 'far', 'f');
+    pushBatch(near, 'near', 'n');
 
     return items;
-  }, []);
+  }, [compact]);
 
   const repelOffsets = useMemo(() => {
     const { w, h } = dims;

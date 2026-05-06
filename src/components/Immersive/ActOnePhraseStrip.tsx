@@ -58,7 +58,6 @@ export default function ActOnePhraseStrip({ revelationFound, chapterComplete, ha
 
   const has = (w: RevelationWord) => revelationFound.includes(w);
   const allDone = REVELATION_WORDS.every((w) => has(w));
-  const hasAnyRevelation = REVELATION_WORDS.some((w) => has(w));
 
   const firstMissing = REVELATION_WORDS.findIndex((w) => !has(w));
   const activeIdx = firstMissing === -1 ? 0 : firstMissing;
@@ -68,10 +67,10 @@ export default function ActOnePhraseStrip({ revelationFound, chapterComplete, ha
 
   return (
     <div
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-[38] flex justify-center overflow-x-hidden"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-[38] flex flex-col justify-end items-center overflow-x-hidden"
       aria-live="polite"
     >
-      <div className="w-full max-w-[min(42rem,calc(100vw-1.5rem))] px-5 pb-[max(6.5rem,calc(env(safe-area-inset-bottom)+5rem))] pt-8 sm:px-8 sm:pb-[max(6.75rem,calc(env(safe-area-inset-bottom)+5.25rem))] md:pb-[max(7rem,calc(env(safe-area-inset-bottom)+5.5rem))] md:pt-10">
+      <div className="w-full max-w-[min(42rem,calc(100vw-1.5rem))] px-5 pb-[max(0.65rem,calc(env(safe-area-inset-bottom)+0.35rem))] pt-2 sm:px-8 md:pb-[max(0.75rem,calc(env(safe-area-inset-bottom)+0.45rem))] md:pt-3">
         <div className="mx-auto w-full min-w-0 text-center">
           {chapterComplete || allDone ? (
             <motion.p
@@ -88,32 +87,7 @@ export default function ActOnePhraseStrip({ revelationFound, chapterComplete, ha
             </motion.p>
           ) : (
             <>
-              <div
-                id="act1-phrase-context"
-                className="mx-auto mb-4 max-w-[min(34rem,100%)] border-b border-white/[0.07] pb-4 sm:mb-5 sm:pb-5"
-              >
-                <p
-                  className="mb-2 font-sans text-[10px] font-medium uppercase tracking-[0.28em] text-[rgba(197,160,89,0.78)] sm:text-[11px] sm:tracking-[0.32em]"
-                  style={{ textShadow: '0 0 18px rgba(0,0,0,0.75)' }}
-                >
-                  {copy.act1PhraseContextKicker}
-                </p>
-                {!hasAnyRevelation && (
-                  <p
-                    className="mx-auto font-serif text-[13px] italic leading-relaxed text-white/[0.78] sm:text-[14px] sm:leading-relaxed md:text-[15px]"
-                    style={{
-                      textShadow:
-                        '0 0 20px rgba(0,0,0,0.9), 0 1px 10px rgba(0,0,0,0.85)',
-                    }}
-                  >
-                    {copy.act1PhraseContextIntro}
-                  </p>
-                )}
-              </div>
-              <div
-                className="relative min-h-[5rem] overflow-hidden sm:min-h-[5.5rem]"
-                aria-describedby={!hasAnyRevelation ? 'act1-phrase-context' : undefined}
-              >
+              <div className="relative min-h-[5rem] overflow-hidden sm:min-h-[5.5rem]">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={step.word}

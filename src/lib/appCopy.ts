@@ -1,5 +1,9 @@
 import type { AppLanguage } from "../stores/languageStore";
 import type { RevelationWord } from "../components/Immersive/mapWordData";
+import {
+  ACT1_PHRASE_STRIP_STEPS_AR,
+  ACT1_PHRASE_STRIP_STEPS_FR,
+} from "./act1IntroBridge";
 
 export type PhraseStripStep = {
   word: RevelationWord;
@@ -55,6 +59,7 @@ type Copy = {
   orientationFluxScroll: string;
   orientationMiniMap: string;
   orientationParcours: string;
+  orientationReplayHint: string;
   orientationOpenPanel: string;
   orientationCollapsePanel: string;
   menuClose: string;
@@ -111,7 +116,7 @@ type Copy = {
 const FR: Copy = {
   act1HudSubtitleDone: "Les cinq feux sont rallumés - la carte respire.",
   act1HudSubtitleFind:
-    "Retrouvez sur la carte les fragments qui achèvent le vers, l'un après l'autre.",
+    "En vous souvenant de la vidéo, retrouvez chaque fragment sur la carte, dans l’ordre des passages.",
   act1TutorialHeading: "Consignes",
   act1TutorialLine1: "Survolez - clic sur le fragment attendu -",
   act1TutorialLine2: "Molette zoom",
@@ -125,13 +130,7 @@ const FR: Copy = {
   act1AriaStripWord: "Mot à trouver :",
   phraseStripComplete:
     "Sous l’oasis du texte, la phrase entière se lit - le vers vous retient encore un instant.",
-  phraseStripSteps: [
-    { word: "naissance", before: "« ", after: " du poème, naissance du jour »" },
-    { word: "soleil", before: "« ", after: ", soleil, tu brûles ma bouche »" },
-    { word: "mère", before: "« Terre-", after: ", soleil au front des vagues »" },
-    { word: "liberté", before: "« ", after: ", j’écris ton nom dans le sable »" },
-    { word: "corps", before: "« ", after: " corail, corps de feu et de sel »" },
-  ],
+  phraseStripSteps: [...ACT1_PHRASE_STRIP_STEPS_FR],
   revelationWordAria: {
     naissance: "Mot à trouver : naissance",
     soleil: "Mot à trouver : soleil",
@@ -171,6 +170,8 @@ const FR: Copy = {
   orientationFluxScroll: "Défiler pour poursuivre",
   orientationMiniMap: "Mini-carte",
   orientationParcours: "Parcours",
+  orientationReplayHint:
+    "Après le générique de fin — choisis une étape ci-dessus pour la revivre.",
   orientationOpenPanel: "Ouvrir le panneau Parcours",
   orientationCollapsePanel: "Réduire le panneau Parcours",
   menuClose: "Fermer le menu (Échap)",
@@ -196,9 +197,9 @@ const FR: Copy = {
   menuEmbeddedParcours: "Parcours",
   menuNavAria: "Actions du menu pause",
   introDevPreviewCreditsTitle: "Prévisualiser le générique de fin (?previewCredits=1)",
-  introAlRihlaSubtitle: "La traversée",
+  introAlRihlaSubtitle: "Jean Sénac",
   introJeanSenacSubtitle: "Jean Sénac",
-  scrollNudge: "Molette",
+  scrollNudge: "Molette · défiler",
   chapterCompleteAria: "révélation carte-mémoire",
   hintTitles: { act1: "Premiers gestes", act2: "Comment naviguer" },
   hintCloseAria: "Fermer les consignes",
@@ -260,7 +261,7 @@ const AR: Copy = {
   act1HudSubtitleDone:
     "النجوم الخمس تشعل من جديد والخريطة تنبض.",
   act1HudSubtitleFind:
-    "دور على القطعة اللي كمال البيت وحدة ورا وحدة على الخريطة.",
+    "بالذاكرة ديال الفيديو، دور على كل مقطع على الخريطة، بنفس الترتيب اللي سمعتو فيه.",
   act1TutorialHeading: "التعليمات",
   act1TutorialLine1: "دوّاف - كليك على الشقّة المطلوبة -",
   act1TutorialLine2: "الحرّاف يقرّب",
@@ -273,33 +274,7 @@ const AR: Copy = {
   act1AriaStripWord: "كلمة لتُوجَد:",
   phraseStripComplete:
     "تحت واحة النص تقرأ الجملة كاملة - البيت ما زال يمسككم لحظة.",
-  phraseStripSteps: [
-    {
-      word: "naissance",
-      before: "« ",
-      after: " للقصيدة ولادة الصباح »",
-    },
-    {
-      word: "soleil",
-      before: "« ",
-      after: "، يا شمس تحرّق فمي »",
-    },
-    {
-      word: "mère",
-      before: "« أرض الأم، ",
-      after: " وفوق موج البحر »",
-    },
-    {
-      word: "liberté",
-      before: "« ",
-      after: "، نكتب اسمك على الرمال »",
-    },
-    {
-      word: "corps",
-      before: "« ",
-      after: " مرجان، بدن النار والملح »",
-    },
-  ],
+  phraseStripSteps: [...ACT1_PHRASE_STRIP_STEPS_AR],
   revelationWordAria: {
     naissance: "كلمة لتُوجَد: الولادة",
     soleil: "كلمة لتُوجَد: الشمس",
@@ -339,6 +314,8 @@ const AR: Copy = {
   orientationFluxScroll: "حم باش تكمّل الدرب",
   orientationMiniMap: "خريطة مصغّرة",
   orientationParcours: "مسار الرحلة",
+  orientationReplayHint:
+    "من بعد تذييل نهاية الرحلة — نقط مرحلة فوق باش تعيشها من جديد.",
   orientationOpenPanel: "يفتح لوحة مسار الرحلة",
   orientationCollapsePanel: "يقلّص لوحة مسار الرحلة",
   menuClose: "سكر القائمة (Esc)",
@@ -364,7 +341,7 @@ const AR: Copy = {
   menuEmbeddedParcours: "مسار الرحلة",
   menuNavAria: "أزرار قائمة الوقفة",
   introDevPreviewCreditsTitle: "تشوف التذييل النهاية (?previewCredits=1)",
-  introAlRihlaSubtitle: "الرّحلة",
+  introAlRihlaSubtitle: "جان ساناك",
   introJeanSenacSubtitle: "جان ساناك",
   scrollNudge: "الحرّاف",
   chapterCompleteAria: "كشوف خريطة الذاكرة",

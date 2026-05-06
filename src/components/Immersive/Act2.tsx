@@ -13,8 +13,9 @@ export default function Act2() {
   const prefix = base.endsWith("/") ? base : `${base}/`;
   const parcheminSrc = `${prefix}parchemin-senac.html`;
 
+  /** Même ton que le bas du `linear-gradient` du parchemin (`body.senac-night` → `#05080f`) pour éviter une couture si l’iframe ne couvre pas un sous-pixel. */
   return (
-    <div className="relative h-[100dvh] w-full overflow-hidden bg-[#120e0a]">
+    <div className="relative h-[100dvh] w-full overflow-hidden bg-[#05080f]">
       <iframe
         title={copy.act2IframeTitle}
         src={parcheminSrc}

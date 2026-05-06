@@ -1,5 +1,5 @@
-/* Jean SÃ©nac â€” Chapitre II Â· Nuit saharienne */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Lora:ital,wght@0,400;0,500;1,400&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,600&display=swap");
+/* Jean Sénac — Chapitre II · Nuit saharienne */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Lora:ital,wght@0,400;0,500;1,400&family=Noto+Naskh+Arabic:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,600&display=swap");
 
 @font-face {
   font-family: "Bahlull";
@@ -123,6 +123,8 @@ body.senac-night {
   margin: 0;
   min-height: 100vh;
   overflow-x: hidden;
+  /** Réduit zoom tactile involontaire ; le scroll vertical reste fluide. */
+  touch-action: pan-y;
   color: var(--text);
   /* Début chapitre II = même chaleur dorée/acte I ; --immersive-shift & --ui-hue suivent le scroll (JS). */
   background:
@@ -953,6 +955,106 @@ body.senac-smoke-fallback #fog-canvas {
   letter-spacing: 0.01em;
 }
 
+/* Liens contextuels : texte courant + mots soulignés cliquables (pas de grosses cartes). */
+.senac-cross-nav-wrap {
+  width: min(580px, 100%);
+  margin: clamp(1.1rem, 2.8vmin, 1.65rem) auto 0;
+  padding: 0;
+  text-align: center;
+}
+
+.senac-cross-nav__status {
+  margin: 0 0 0.5rem;
+  font-family: "Inter", sans-serif;
+  font-size: clamp(0.62rem, 1.55vw, 0.72rem);
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  line-height: 1.45;
+  text-transform: uppercase;
+  color: rgba(197, 160, 89, 0.82);
+  text-shadow:
+    0 1px 14px rgba(0, 0, 0, 0.88),
+    0 0 22px rgba(197, 160, 89, 0.18);
+}
+
+.senac-cross-nav__links {
+  margin: 0 auto;
+  max-width: min(34rem, 94vw);
+  padding: 0 0.5rem;
+  font-family: "Inter", sans-serif;
+  font-size: clamp(0.82rem, 1.65vw, 0.92rem);
+  font-weight: 400;
+  line-height: 1.75;
+  letter-spacing: 0.03em;
+  color: rgba(253, 250, 246, 0.72);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.85);
+}
+
+html[dir="rtl"] .senac-cross-nav__status {
+  font-family: "Noto Naskh Arabic", Georgia, serif;
+  letter-spacing: 0.06em;
+  text-transform: none;
+  font-weight: 500;
+}
+
+html[dir="rtl"] .senac-cross-nav__links {
+  font-family: "Noto Naskh Arabic", Georgia, serif;
+  line-height: 1.85;
+}
+
+/* Bouton sémantique, rendu comme lien souligné dans le flux du paragraphe */
+.senac-cross-nav__link {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  color: var(--gold);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+  transition: color 0.25s var(--ease), text-decoration-color 0.25s var(--ease);
+}
+
+.senac-cross-nav__link:hover {
+  color: var(--gold-bright);
+  text-decoration-color: rgba(234, 215, 164, 0.85);
+}
+
+.senac-cross-nav__link:focus-visible {
+  outline: 1px solid rgba(197, 160, 89, 0.65);
+  outline-offset: 3px;
+  border-radius: 1px;
+}
+
+.senac-cross-nav {
+  margin: 0;
+  padding: 0;
+}
+
+.senac-cross-nav--compact {
+  margin-top: clamp(0.85rem, 2vmin, 1.15rem);
+  width: 100%;
+  font-family: "Inter", sans-serif;
+  font-size: clamp(0.8rem, 1.5vw, 0.9rem);
+  line-height: 1.65;
+  letter-spacing: 0.02em;
+  color: rgba(253, 250, 246, 0.68);
+}
+
+.story-panel .senac-cross-nav--compact {
+  text-align: inherit;
+}
+
+html[dir="rtl"] .senac-cross-nav--compact {
+  font-family: "Noto Naskh Arabic", Georgia, serif;
+  line-height: 1.75;
+}
+
 .scroll-cue {
   display: inline-flex;
   flex-direction: column;
@@ -962,14 +1064,16 @@ body.senac-smoke-fallback #fog-canvas {
   padding-top: clamp(1.75rem, 5vmin, 3.25rem);
   margin-bottom: max(env(safe-area-inset-bottom, 0px), clamp(0.05rem, 0.8vmin, 0.45rem));
   transform-origin: center center;
-  color: hsla(var(--ui-hue), 58%, 72%, calc(0.62 + var(--immersive-shift, 0) * 0.1));
+  color: hsla(var(--ui-hue), 62%, 84%, calc(0.88 + var(--immersive-shift, 0) * 0.06));
   font-family: "Inter", sans-serif;
-  font-size: clamp(0.54rem, 1.65vw, 0.62rem);
-  font-weight: 500;
-  letter-spacing: 0.38em;
+  font-size: clamp(0.62rem, 1.85vw, 0.72rem);
+  font-weight: 600;
+  letter-spacing: 0.32em;
   text-decoration: none;
   text-transform: uppercase;
-  text-shadow: 0 0 18px hsla(var(--ui-hue), 58%, 55%, calc(0.09 + var(--immersive-shift, 0) * 0.05));
+  text-shadow:
+    0 0 22px hsla(var(--ui-hue), 58%, 52%, calc(0.28 + var(--immersive-shift, 0) * 0.06)),
+    0 1px 14px rgba(0, 0, 0, 0.92);
   will-change: transform, opacity, filter;
   transition:
     color 0.85s var(--ease),
@@ -979,11 +1083,11 @@ body.senac-smoke-fallback #fog-canvas {
 .scroll-cue-mouse {
   display: block;
   flex-shrink: 0;
-  width: clamp(34px, 9vw, 40px);
-  opacity: 0.74;
+  width: clamp(38px, 10vw, 46px);
+  opacity: 0.92;
   filter:
-    drop-shadow(0 0 12px hsla(var(--ui-hue), 62%, 55%, calc(0.17 + var(--immersive-shift, 0) * 0.04)))
-    drop-shadow(0 0 22px hsla(calc(215deg + var(--immersive-shift, 0) * -10deg), 72%, 70%, calc(0.06 + var(--immersive-shift, 0) * 0.04)));
+    drop-shadow(0 0 14px hsla(var(--ui-hue), 68%, 62%, calc(0.38 + var(--immersive-shift, 0) * 0.06)))
+    drop-shadow(0 0 26px hsla(calc(215deg + var(--immersive-shift, 0) * -10deg), 72%, 72%, calc(0.18 + var(--immersive-shift, 0) * 0.05)));
   transition: filter 0.85s var(--ease);
 }
 
@@ -998,7 +1102,7 @@ body.senac-smoke-fallback #fog-canvas {
 }
 
 .scroll-cue-mouse svg > path:first-of-type {
-  stroke: hsla(var(--ui-hue), 55%, 62%, 0.48) !important;
+  stroke: hsla(var(--ui-hue), 62%, 78%, 0.72) !important;
 }
 
 .scroll-cue-mouse svg .scroll-cue-wheel-wrap rect {
@@ -1007,7 +1111,7 @@ body.senac-smoke-fallback #fog-canvas {
 
 .scroll-cue-mouse svg > path:nth-of-type(2),
 .scroll-cue-mouse svg > path:nth-of-type(3) {
-  fill: hsla(var(--ui-hue), 58%, 62%, 0.58) !important;
+  fill: hsla(var(--ui-hue), 65%, 82%, 0.78) !important;
 }
 
 .scroll-cue-mouse svg > line {
@@ -2294,15 +2398,16 @@ body.voyage-credits-active #scroll-mode-toggle {
 .voyage-credits-roll {
   --credits-duration: 52s;
   position: relative;
-  width: min(34rem, 88vw);
+  box-sizing: border-box;
+  width: min(34rem, calc(100vw - clamp(1rem, 6vw, 2.75rem)));
   margin: 0 auto;
-  padding: 0 1rem 14vh;
+  padding: 0 clamp(0.65rem, 4vw, 1.25rem) clamp(10vh, 14vw, 14vh);
   font-family: "Inter", system-ui, sans-serif;
   text-align: center;
   /* Taille lisible sans scale() cinéma (évite flou / aliasing). */
-  font-size: clamp(0.88rem, 0.42rem + 1.35vw, 1.05rem);
+  font-size: clamp(0.8rem, 0.35rem + 1.55vw, 1.12rem);
   line-height: 1.65;
-  letter-spacing: 0.06em;
+  letter-spacing: clamp(0.045em, calc(0.04em + 0.12vw), 0.06em);
   text-shadow:
     0 0 20px rgba(0, 4, 16, 0.92),
     0 2px 24px rgba(0, 2, 10, 0.65);
@@ -2327,26 +2432,26 @@ body.voyage-credits-active #scroll-mode-toggle {
 .voyage-credits-main-title {
   margin: 0 0 0.35rem;
   font-family: "Bahlull", "Playfair Display", serif;
-  font-size: clamp(2rem, 1.15rem + 3.4vw, 3.35rem);
+  font-size: clamp(1.65rem, 0.95rem + 3.75vw, 3.35rem);
   font-weight: 400;
   font-style: italic;
-  letter-spacing: 0.02em;
+  letter-spacing: clamp(0.015em, calc(0.01em + 0.06vw), 0.02em);
   color: rgba(255, 252, 242, 0.98);
 }
 
 .voyage-credits-subtitle {
-  margin: 0 0 2rem;
-  font-size: clamp(0.62rem, 0.52rem + 0.35vw, 0.76rem);
+  margin: 0 0 clamp(1.35rem, 5vw, 2rem);
+  font-size: clamp(0.68rem, 0.56rem + 0.55vw, 0.8rem);
   text-transform: uppercase;
-  letter-spacing: 0.28em;
+  letter-spacing: clamp(0.18em, calc(0.12em + 0.85vw), 0.28em);
   color: rgba(197, 160, 89, 0.82);
 }
 
 .voyage-credits-heading {
-  margin: 2.25rem 0 0.85rem;
-  font-size: clamp(0.58rem, 0.5rem + 0.32vw, 0.68rem);
+  margin: clamp(1.5rem, 5vw, 2.25rem) 0 0.85rem;
+  font-size: clamp(0.62rem, 0.52rem + 0.42vw, 0.74rem);
   font-weight: 600;
-  letter-spacing: 0.42em;
+  letter-spacing: clamp(0.22em, calc(0.14em + 1.1vw), 0.42em);
   text-transform: uppercase;
   color: rgba(121, 183, 255, 0.55);
 }
@@ -2354,7 +2459,7 @@ body.voyage-credits-active #scroll-mode-toggle {
 .voyage-credits-list {
   margin: 0 auto;
   padding: 0;
-  max-width: 28rem;
+  max-width: min(28rem, 100%);
   list-style: none;
   color: rgba(232, 236, 248, 0.72);
 }
@@ -2369,24 +2474,26 @@ body.voyage-credits-active #scroll-mode-toggle {
 
 .voyage-credits-gap {
   margin: 0;
-  height: 1.25rem;
+  height: clamp(0.85rem, 2.8vw, 1.25rem);
 }
 
 .voyage-credits-fin {
-  margin: 2rem 0 0;
+  margin: clamp(1.35rem, 4vw, 2rem) 0 0;
   font-family: "Bahlull", "Playfair Display", serif;
   font-style: italic;
-  font-size: clamp(1.05rem, 2.8vw, 1.35rem);
+  font-size: clamp(0.95rem, 0.82rem + 1.15vw, 1.38rem);
   color: rgba(255, 252, 242, 0.88);
 }
 
 .voyage-credits-logos {
-  margin: 2.5rem auto 0;
+  margin: clamp(1.75rem, 5vw, 2.5rem) auto 0;
   width: 100%;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 3rem;
+  gap: clamp(1.25rem, 5vw, 3rem);
+  row-gap: clamp(1rem, 3.5vw, 1.75rem);
   opacity: 0.55;
   filter: brightness(1.1);
 }
@@ -2394,12 +2501,29 @@ body.voyage-credits-active #scroll-mode-toggle {
 .voyage-credits-logo-img {
   display: block;
   width: auto;
-  height: 52px;
+  height: clamp(36px, 9vw, 52px);
   object-fit: contain;
 }
 
 .voyage-credits-logo-img--crop {
-  height: 44px;
+  height: clamp(32px, 7.5vw, 44px);
+}
+
+.voyage-credits-mmi-wrap {
+  margin: 2rem auto 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/** Logo livré avec fond noir : lighten fait prendre au noir la couleur du fond (#030308) sans alterer le blanc. */
+.voyage-credits-logo-img--mmi {
+  display: block;
+  height: clamp(52px, 13vw, 72px);
+  width: auto;
+  object-fit: contain;
+  opacity: 1;
+  mix-blend-mode: lighten;
 }
 
 /** Proposition centrée - au-dessus du rouleau ; masquée jusqu’à la fin du défilement */
@@ -2479,8 +2603,8 @@ body.voyage-credits-active #scroll-mode-toggle {
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 3rem;
-  padding: 0.85rem 1.45rem;
+  min-height: clamp(2.65rem, 8vw, 3rem);
+  padding: clamp(0.65rem, 2.5vw, 0.85rem) clamp(0.85rem, 4vw, 1.45rem);
   border: none;
   border-radius: 1px;
   background: linear-gradient(
@@ -2491,9 +2615,9 @@ body.voyage-credits-active #scroll-mode-toggle {
   );
   color: var(--gold-bright);
   font-family: "Inter", sans-serif;
-  font-size: 0.68rem;
+  font-size: clamp(0.62rem, 0.54rem + 0.42vw, 0.72rem);
   font-weight: 600;
-  letter-spacing: 0.24em;
+  letter-spacing: clamp(0.14em, calc(0.1em + 0.55vw), 0.24em);
   text-transform: uppercase;
   text-align: center;
   cursor: pointer;
@@ -2547,9 +2671,9 @@ body.voyage-credits-active #scroll-mode-toggle {
 .voyage-credits.voyage-credits--static .voyage-credits-roll {
   animation: none !important;
   transform: none !important;
-  margin-top: 5rem;
-  margin-bottom: 4rem;
-  padding-bottom: 4rem;
+  margin-top: clamp(3.75rem, 14vw, 5rem);
+  margin-bottom: clamp(2.5rem, 10vw, 4rem);
+  padding-bottom: clamp(2.75rem, 10vw, 4rem);
   will-change: auto;
 }
 
@@ -2581,8 +2705,8 @@ body.voyage-credits-active #scroll-mode-toggle {
   }
 
   .voyage-credits.is-open:not(.voyage-credits--static) .voyage-credits-roll {
-    margin-top: 5rem;
-    padding-bottom: 4rem;
+    margin-top: clamp(3.75rem, 14vw, 5rem);
+    padding-bottom: clamp(2.75rem, 10vw, 4rem);
   }
 }
 
@@ -2805,8 +2929,10 @@ body.voyage-credits-active #scroll-mode-toggle {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-top: max(8vh, calc(env(safe-area-inset-top, 0px) + 1rem));
-  padding-bottom: max(8vh, 1rem);
+  padding-top: max(6vh, calc(env(safe-area-inset-top, 0px) + 1.25rem));
+  padding-bottom: max(6vh, calc(env(safe-area-inset-bottom, 0px) + 1rem));
+  padding-left: max(1rem, env(safe-area-inset-left, 0px));
+  padding-right: max(1rem, env(safe-area-inset-right, 0px));
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1);
@@ -2817,9 +2943,13 @@ body.voyage-credits-active #scroll-mode-toggle {
   position: fixed;
   inset: 0;
   z-index: 6999;
-  background: rgba(2, 1, 0, 0.72);
-  backdrop-filter: blur(10px) saturate(0.55);
-  -webkit-backdrop-filter: blur(10px) saturate(0.55);
+  /* DA Al-Rihla : noir chaud + halo doré central (comme l’intro SPA), sans bleacher le bleu nuit du corps */
+  background:
+    radial-gradient(ellipse 72% 52% at 50% 38%, rgba(197, 160, 89, 0.07) 0%, transparent 58%),
+    radial-gradient(ellipse 110% 85% at 50% 118%, rgba(0, 0, 0, 0.55) 0%, transparent 52%),
+    rgba(5, 4, 3, 0.91);
+  backdrop-filter: blur(18px) saturate(0.72);
+  -webkit-backdrop-filter: blur(18px) saturate(0.72);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1);
@@ -2845,48 +2975,120 @@ body.voyage-credits-active #scroll-mode-toggle {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0;
+  gap: clamp(1.35rem, 3.8vh, 2.35rem);
+  width: min(100%, 32rem);
+  padding: 0 0.5rem;
+}
+
+/**
+ * DA lisible dans l’overlay (le hero derrière le backdrop restait un fantôme illisible).
+ */
+.smc-da {
+  margin: 0;
+  padding: 0 1rem;
+  max-width: min(94vw, 28rem);
+  text-align: center;
+}
+
+.smc-da-kicker {
+  margin: 0 0 0.85rem;
+  font-family: "Inter", sans-serif;
+  font-size: clamp(0.68rem, 1.9vw, 0.78rem);
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  line-height: 1.45;
+  text-transform: uppercase;
+  color: rgba(197, 160, 89, 0.78);
+  text-shadow:
+    0 1px 14px rgba(0, 0, 0, 0.92),
+    0 0 26px rgba(197, 160, 89, 0.22);
+}
+
+.smc-da-title {
+  margin: 0;
+  font-family: "Bahlull", "Playfair Display", serif;
+  font-size: clamp(2.2rem, 6.2vw, 3.75rem);
+  font-weight: 400;
+  font-style: italic;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  color: #fdfaf6;
+  text-shadow:
+    0 0 22px rgba(197, 160, 89, 0.35),
+    0 2px 24px rgba(0, 0, 0, 0.94),
+    0 0 42px rgba(197, 160, 89, 0.18);
+}
+
+/** Pendant le choix de mode : pas de doublon flouté du hero sous le voile. */
+html.senac-choice-pending .hero > .kicker,
+html.senac-choice-pending .hero > h1,
+html.senac-choice-pending .hero > .hero-subtitle {
+  opacity: 0 !important;
+  visibility: hidden !important;
 }
 
 .smc-kicker {
-  margin: 0 0 1rem;
-  font-family: "Inter", sans-serif;
-  font-size: 0.62rem;
+  margin: 0;
+  max-width: min(34rem, 94vw);
+  padding: 0 1rem;
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: clamp(0.92rem, 2.35vw, 1.08rem);
   font-weight: 500;
-  letter-spacing: 0.38em;
-  text-transform: uppercase;
-  color: rgba(234, 215, 164, 0.48);
+  font-style: italic;
+  letter-spacing: 0.06em;
+  line-height: 1.45;
+  text-transform: none;
+  color: rgba(197, 160, 89, 0.92);
   text-align: center;
+  text-shadow:
+    0 1px 16px rgba(0, 0, 0, 0.9),
+    0 0 28px rgba(197, 160, 89, 0.18);
+}
+
+html[dir="rtl"] .smc-kicker,
+html[lang="ar-DZ"] .smc-kicker {
+  font-family: "Noto Naskh Arabic", Georgia, serif;
+  font-style: normal;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1.55;
 }
 
 /** Rappel d’action : texte statique (pas d’anim typo — le mouvement est sur les cartes uniquement). */
 .smc-choose-caption {
-  margin: 0 0 4rem;
-  max-width: min(94vw, 22rem);
+  margin: 0;
+  max-width: min(94vw, 26rem);
+  padding: 0 1rem;
   font-family: "Inter", sans-serif;
-  font-size: 0.58rem;
+  font-size: clamp(0.7rem, 2vw, 0.78rem);
   font-weight: 400;
-  line-height: 1.65;
-  letter-spacing: 0.18em;
+  line-height: 1.72;
+  letter-spacing: 0.04em;
   text-transform: none;
   text-align: center;
-  color: rgba(197, 160, 89, 0.42);
+  color: rgba(253, 250, 246, 0.76);
+  text-shadow:
+    0 1px 14px rgba(0, 0, 0, 0.88),
+    0 0 20px rgba(197, 160, 89, 0.08);
 }
 
 .smc-caption-em {
-  color: rgba(234, 215, 164, 0.78);
-  font-weight: 500;
+  color: var(--gold-bright);
+  font-weight: 600;
 }
 
 .smc-buttons {
   display: flex;
-  gap: 2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(1.85rem, 6vw, 3rem);
   align-items: stretch;
 }
 
 @media (min-width: 520px) {
   .smc-buttons {
-    gap: 3rem;
+    gap: clamp(2.75rem, 7vw, 4.25rem);
+    flex-wrap: nowrap;
   }
 }
 
@@ -2989,8 +3191,8 @@ body.voyage-credits-active #scroll-mode-toggle {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.55rem;
-  padding: 1.15rem 1.65rem;
+  gap: 0.62rem;
+  padding: 1.28rem 1.95rem;
   border-radius: 2px;
   border: 1px solid rgba(197, 160, 89, 0.26);
   background: linear-gradient(165deg, rgba(14, 12, 8, 0.82) 0%, rgba(6, 5, 4, 0.78) 100%);
@@ -3001,7 +3203,7 @@ body.voyage-credits-active #scroll-mode-toggle {
     background 0.45s var(--ease),
     transform 0.45s var(--ease),
     box-shadow 0.45s var(--ease);
-  min-width: 122px;
+  min-width: 142px;
   outline: none;
 }
 
@@ -3056,19 +3258,20 @@ body.voyage-credits-active #scroll-mode-toggle {
 
 .smc-btn-label {
   font-family: "Inter", sans-serif;
-  font-size: 0.7rem;
+  font-size: 0.74rem;
   font-weight: 600;
-  letter-spacing: 0.32em;
+  letter-spacing: 0.26em;
   text-transform: uppercase;
   color: rgba(253, 248, 238, 0.94);
 }
 
 .smc-btn-sub {
   font-family: "Inter", sans-serif;
-  font-size: 0.6rem;
+  font-size: 0.65rem;
   font-weight: 400;
-  letter-spacing: 0.12em;
-  color: rgba(197, 160, 89, 0.44);
+  letter-spacing: 0.11em;
+  color: rgba(218, 188, 132, 0.58);
+  line-height: 1.35;
 }
 
 .smc-btn:focus-visible {
@@ -3077,22 +3280,43 @@ body.voyage-credits-active #scroll-mode-toggle {
 }
 
 /* ═══════════════════════════════════════════════
-   SCROLL MODE TOGGLE - bas gauche permanent
+   SCROLL MODE TOGGLE — bas-gauche Cinéma / Exploration
    ═══════════════════════════════════════════════ */
-.scroll-mode-toggle {
+.scroll-mode-toggle,
+.scroll-mode-toggle--legacy-layout {
   position: fixed;
-  bottom: max(1.5rem, env(safe-area-inset-bottom, 1rem));
-  left: max(1.25rem, env(safe-area-inset-left, 1rem));
+  bottom: max(2.2rem, calc(env(safe-area-inset-bottom, 0px) + 1.4rem));
+  left: max(1.1rem, calc(env(safe-area-inset-left, 0px) + 0.85rem));
   z-index: 6500;
   display: flex;
-  gap: 0.35rem;
+  align-items: stretch;
+  gap: 0.42rem;
+  padding: 0.45rem 0.55rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid rgba(197, 160, 89, 0.18);
+  background: rgba(6, 5, 3, 0.52);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    0 12px 38px rgba(0, 0, 0, 0.44),
+    inset 0 1px 0 rgba(255, 250, 238, 0.05);
   opacity: 0;
   transform: translateY(8px);
   transition: opacity 0.6s var(--ease), transform 0.6s var(--ease);
   pointer-events: none;
 }
 
-.scroll-mode-toggle.is-visible {
+body.senac-night .scroll-mode-toggle,
+body.senac-night .scroll-mode-toggle--legacy-layout {
+  border-color: rgba(139, 213, 255, 0.22);
+  background: rgba(3, 12, 28, 0.58);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.52),
+    inset 0 1px 0 rgba(180, 218, 255, 0.06);
+}
+
+.scroll-mode-toggle.is-visible,
+.scroll-mode-toggle--legacy-layout.is-visible {
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
@@ -3186,16 +3410,17 @@ body.senac-night .smt-btn:not(.is-active):hover {
 /* ═══════════════════════════════════════════════
    NUDGE SCROLL POST-EXPLORATION
    ═══════════════════════════════════════════════ */
+/* Repère scroll — même grille verticale & typo que ScrollNudge (Acte I) pour uniformité. */
 .senac-scroll-nudge {
   position: fixed;
-  bottom: clamp(2.5rem, 7vh, 5rem);
+  bottom: max(3rem, calc(env(safe-area-inset-bottom, 0px) + 2.25rem));
   left: 50%;
   transform: translateX(-50%) translateY(0);
   z-index: 6800;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.65rem;
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
@@ -3215,23 +3440,34 @@ body.senac-night .smt-btn:not(.is-active):hover {
 
 .senac-scroll-nudge svg {
   display: block;
-  width: 38px;
+  width: 48px;
   height: auto;
   animation: scroll-cue-mouse-drift 2.8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
   transform-origin: 50% 55%;
-  filter:
-    drop-shadow(0 0 14px hsla(var(--ui-hue), 62%, 60%, 0.22))
-    drop-shadow(0 0 28px hsla(var(--ui-hue), 58%, 55%, 0.1));
+  filter: drop-shadow(0 0 16px rgba(197, 160, 89, 0.55));
 }
 
 .senac-scroll-nudge-label {
   font-family: "Inter", sans-serif;
-  font-size: 0.6rem;
-  font-weight: 500;
-  letter-spacing: 0.38em;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.32em;
   text-transform: uppercase;
-  color: hsla(var(--ui-hue), 55%, 70%, 0.6);
+  color: rgba(241, 223, 168, 0.92);
+  text-shadow:
+    0 0 20px rgba(197, 160, 89, 0.35),
+    0 1px 14px rgba(0, 0, 0, 0.92);
   animation: scroll-cue-label-opacity-pulse 2.75s ease-in-out infinite;
+}
+
+@media (min-width: 640px) {
+  .senac-scroll-nudge-label {
+    font-size: 10px;
+  }
+}
+
+html[dir="rtl"] .senac-scroll-nudge-label {
+  letter-spacing: 0.08em;
 }
 
 /* Choix de mode non encore fait : scroll totalement gelé */
@@ -3277,7 +3513,7 @@ body.senac-night .scroll-mode-toggle.senac-highlight-explore .smt-btn--explore {
 .senac-cinema-explore-callout {
   position: fixed;
   left: max(1rem, env(safe-area-inset-left));
-  bottom: calc(9.75rem + env(safe-area-inset-bottom));
+  bottom: calc(10.5rem + env(safe-area-inset-bottom));
   width: min(16.75rem, calc(100vw - 6.5rem));
   z-index: 6600;
   margin: 0;
@@ -3367,7 +3603,7 @@ body.senac-night .scroll-mode-toggle.senac-highlight-explore .smt-btn--explore {
   .senac-cinema-explore-callout {
     left: 50%;
     transform: translateX(-50%) translateY(14px);
-    bottom: calc(11.5rem + env(safe-area-inset-bottom));
+    bottom: calc(12.25rem + env(safe-area-inset-bottom));
     width: min(17.75rem, calc(100vw - 2.5rem));
   }
 

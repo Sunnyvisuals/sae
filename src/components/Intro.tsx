@@ -17,12 +17,13 @@ import {
   shouldIgnoreVolumeKeyboardTarget,
 } from "../lib/volumeKeyboard";
 import { playSuspenseLoadCompleteChime, primeSuspenseAudio } from "../lib/suspenseLoadChime";
+import { INTRO_VIDEO_SRC } from "../lib/act1IntroBridge";
 import { useLanguageStore } from "../stores/languageStore";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { useAppCopy } from "../hooks/useAppCopy";
 
-// --- CONFIGURATION VIDÉO ---
-const VIDEO_SOURCE = "/al-rihla.mp4";
+// --- CONFIGURATION VIDÉO : même source que `act1IntroBridge` (Acte I aligné sur cette piste) ---
+const VIDEO_SOURCE = INTRO_VIDEO_SRC;
 
 const INTRO_CTA_WORDS_FR = ["Cliquer", "ou", "Entrée"] as const;
 const INTRO_CTA_WORDS_AR = ["إضغط", "أو", "إنتر"] as const;
@@ -32,34 +33,6 @@ type AnimatedTitleProps = {
   className?: string;
   heroMotion?: boolean;
 };
-
-function Volume2Icon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path d="M4 10v4h4l5 4V6l-5 4H4z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
-      <path d="M16 9a4 4 0 010 6" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
-      <path d="M18.5 6.5a7.5 7.5 0 010 11" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
-    </svg>
-  );
-}
-
-function Volume1Icon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path d="M4 10v4h4l5 4V6l-5 4H4z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
-      <path d="M16 9a4 4 0 010 6" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
-    </svg>
-  );
-}
-
-function VolumeXIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path d="M4 10v4h4l5 4V6l-5 4H4z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
-      <path d="M16 10l5 5M21 10l-5 5" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
-    </svg>
-  );
-}
 
 const AnimatedTitle = ({ text, className, heroMotion = false }: AnimatedTitleProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -143,6 +116,34 @@ const AnimatedTitle = ({ text, className, heroMotion = false }: AnimatedTitlePro
     </motion.div>
   );
 };
+
+function Volume2Icon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
+      <path d="M4 10v4h4l5 4V6l-5 4H4z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+      <path d="M16 9a4 4 0 010 6" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+      <path d="M18.5 6.5a7.5 7.5 0 010 11" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+function Volume1Icon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
+      <path d="M4 10v4h4l5 4V6l-5 4H4z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+      <path d="M16 9a4 4 0 010 6" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+function VolumeXIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
+      <path d="M4 10v4h4l5 4V6l-5 4H4z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+      <path d="M16 10l5 5M21 10l-5 5" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+    </svg>
+  );
+}
 
 function SuspenseOverlay({ prefersReducedMotion }: { prefersReducedMotion: boolean | null }) {
   const [phase, setPhase] = useState<"idle" | "building" | "climax">("idle");
@@ -704,30 +705,190 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
             transition={{ duration: 2, ease: [0.22, 1, 0.36, 1] }}
             className="absolute inset-0 z-20 flex flex-col items-center justify-center overflow-hidden"
           >
+          <AnimatePresence>
           {!hasConfirmedChoice && (
-            <div className="pointer-events-auto absolute inset-0 z-[35] flex items-center justify-center bg-black/68 px-5">
-              <div className="w-full max-w-md border border-solar-gold/35 bg-[#050302]/92 p-6 text-center backdrop-blur-md">
-                <p className="text-[10px] uppercase tracking-[0.45em] text-solar-gold/65">{ui.languageTitle}</p>
-                <p className="mt-3 text-sm text-solar-gold/85">{ui.languageSubtitle}</p>
-                <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <button
-                    type="button"
-                    onClick={() => confirmLanguage("fr")}
-                    className="border border-solar-gold/35 bg-black/35 px-3 py-2 text-xs uppercase tracking-[0.25em] text-solar-gold transition-colors hover:border-solar-gold/65"
-                  >
-                    {ui.french}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => confirmLanguage("ar-dz")}
-                    className="border border-solar-gold/35 bg-black/35 px-3 py-2 text-xs text-solar-gold transition-colors hover:border-solar-gold/65"
-                  >
-                    {ui.arabicDz}
-                  </button>
-                </div>
+            <motion.div
+              key="lang-splash"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, scale: 1.04 }}
+              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+              className="pointer-events-auto fixed inset-0 z-[100] overflow-hidden"
+              style={{ background: "#03020100" }}
+            >
+              {/* Fond noir total */}
+              <div className="absolute inset-0 bg-[#020100]" />
+
+              {/* Radial glow central */}
+              <div
+                className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                aria-hidden
+              >
+                <div
+                  className="h-[70vmax] w-[70vmax] rounded-full opacity-60"
+                  style={{ background: "radial-gradient(circle, rgba(197,160,89,0.08) 0%, transparent 70%)" }}
+                />
               </div>
-            </div>
+
+              {/* Top decorative line */}
+              <motion.div
+                initial={{ scaleX: 0, opacity: 0 }}
+                animate={{ scaleX: 1, opacity: 1 }}
+                transition={{ delay: 0.3, duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+                className="absolute top-0 inset-x-0 h-px origin-center"
+                style={{ background: "linear-gradient(90deg, transparent, rgba(197,160,89,0.3), transparent)" }}
+              />
+              {/* Bottom decorative line */}
+              <motion.div
+                initial={{ scaleX: 0, opacity: 0 }}
+                animate={{ scaleX: 1, opacity: 1 }}
+                transition={{ delay: 0.3, duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+                className="absolute bottom-0 inset-x-0 h-px origin-center"
+                style={{ background: "linear-gradient(90deg, transparent, rgba(197,160,89,0.3), transparent)" }}
+              />
+
+              {/* Split layout */}
+              <div className="relative flex h-full w-full flex-col sm:flex-row">
+
+                {/* ── FRANÇAIS ── */}
+                <button
+                  type="button"
+                  onClick={() => confirmLanguage("fr")}
+                  className="group relative flex flex-1 flex-col items-center justify-center overflow-hidden"
+                >
+                  {/* Hover wash */}
+                  <div className="absolute inset-0 bg-[#c5a059] opacity-0 transition-opacity duration-700 group-hover:opacity-[0.06]" />
+                  {/* Hover bottom glow */}
+                  <div
+                    className="absolute bottom-0 inset-x-0 h-2/3 translate-y-full transition-transform duration-700 ease-out group-hover:translate-y-0 pointer-events-none"
+                    style={{ background: "linear-gradient(to top, rgba(197,160,89,0.12), transparent)" }}
+                  />
+                  {/* Right border separator (hidden on mobile – center divider takes care of it) */}
+                  <div className="absolute right-0 top-[15%] bottom-[15%] w-px hidden sm:block"
+                    style={{ background: "linear-gradient(to bottom, transparent, rgba(197,160,89,0.2), transparent)" }}
+                  />
+
+                  <div className="relative z-10 flex flex-col items-center gap-5 px-8">
+                    <motion.span
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.55, duration: 0.9 }}
+                      className="text-[9px] uppercase tracking-[0.6em] text-[#c5a059]/35"
+                    >
+                      Langue
+                    </motion.span>
+
+                    <motion.span
+                      initial={{ opacity: 0, y: 14 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.65, duration: 1, ease: [0.22, 1, 0.36, 1] }}
+                      className="text-[clamp(1.6rem,4vw,2.8rem)] font-light uppercase tracking-[0.3em] text-[#c5a059]/70 transition-colors duration-300 group-hover:text-[#c5a059]"
+                    >
+                      Français
+                    </motion.span>
+
+                    <motion.div
+                      initial={{ scaleX: 0 }}
+                      animate={{ scaleX: 1 }}
+                      transition={{ delay: 0.8, duration: 0.7 }}
+                      className="h-px w-10 origin-center bg-[#c5a059]/20 transition-all duration-500 group-hover:w-20 group-hover:bg-[#c5a059]/50"
+                    />
+                  </div>
+                </button>
+
+                {/* ── CENTRE ── */}
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center sm:static sm:relative sm:inset-auto sm:w-0 sm:flex sm:items-center sm:justify-center">
+                  <div className="relative flex flex-col items-center gap-2 sm:absolute sm:left-1/2 sm:-translate-x-1/2 z-10">
+                    <motion.div
+                      initial={{ scaleY: 0, opacity: 0 }}
+                      animate={{ scaleY: 1, opacity: 1 }}
+                      transition={{ delay: 0.2, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+                      className="hidden sm:block h-28 w-px origin-top"
+                      style={{ background: "linear-gradient(to bottom, transparent, rgba(197,160,89,0.25))" }}
+                    />
+                    <motion.span
+                      initial={{ opacity: 0, scale: 0.7 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.5, duration: 1, ease: [0.22, 1, 0.36, 1] }}
+                      className="text-[#c5a059]/40 text-lg select-none"
+                    >
+                      ✦
+                    </motion.span>
+                    <motion.div
+                      initial={{ scaleY: 0, opacity: 0 }}
+                      animate={{ scaleY: 1, opacity: 1 }}
+                      transition={{ delay: 0.2, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+                      className="hidden sm:block h-28 w-px origin-bottom"
+                      style={{ background: "linear-gradient(to top, transparent, rgba(197,160,89,0.25))" }}
+                    />
+                    {/* Horizontal separator on mobile */}
+                    <div
+                      className="sm:hidden h-px w-24 my-1"
+                      style={{ background: "linear-gradient(90deg, transparent, rgba(197,160,89,0.3), transparent)" }}
+                    />
+                  </div>
+                </div>
+
+                {/* ── ARABIC ── */}
+                <button
+                  type="button"
+                  onClick={() => confirmLanguage("ar-dz")}
+                  className="group relative flex flex-1 flex-col items-center justify-center overflow-hidden"
+                  dir="rtl"
+                >
+                  {/* Hover wash */}
+                  <div className="absolute inset-0 bg-[#c5a059] opacity-0 transition-opacity duration-700 group-hover:opacity-[0.06]" />
+                  {/* Hover bottom glow */}
+                  <div
+                    className="absolute bottom-0 inset-x-0 h-2/3 translate-y-full transition-transform duration-700 ease-out group-hover:translate-y-0 pointer-events-none"
+                    style={{ background: "linear-gradient(to top, rgba(197,160,89,0.12), transparent)" }}
+                  />
+                  {/* Left border separator */}
+                  <div className="absolute left-0 top-[15%] bottom-[15%] w-px hidden sm:block"
+                    style={{ background: "linear-gradient(to bottom, transparent, rgba(197,160,89,0.2), transparent)" }}
+                  />
+
+                  <div className="relative z-10 flex flex-col items-center gap-5 px-8">
+                    <motion.span
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.55, duration: 0.9 }}
+                      className="text-[9px] tracking-[0.3em] text-[#c5a059]/35"
+                    >
+                      لغة
+                    </motion.span>
+
+                    <motion.span
+                      initial={{ opacity: 0, y: 14 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.65, duration: 1, ease: [0.22, 1, 0.36, 1] }}
+                      className="text-[clamp(1.6rem,4vw,2.8rem)] font-light text-[#c5a059]/70 transition-colors duration-300 group-hover:text-[#c5a059]"
+                    >
+                      العربية الجزائرية
+                    </motion.span>
+
+                    <motion.div
+                      initial={{ scaleX: 0 }}
+                      animate={{ scaleX: 1 }}
+                      transition={{ delay: 0.8, duration: 0.7 }}
+                      className="h-px w-10 origin-center bg-[#c5a059]/20 transition-all duration-500 group-hover:w-20 group-hover:bg-[#c5a059]/50"
+                    />
+                  </div>
+                </button>
+              </div>
+
+              {/* Bottom hint */}
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1.1, duration: 1 }}
+                className="absolute bottom-6 inset-x-0 text-center text-[9px] uppercase tracking-[0.5em] text-[#c5a059]/20 pointer-events-none"
+              >
+                Choisissez votre langue · اختر لغتك
+              </motion.p>
+            </motion.div>
           )}
+          </AnimatePresence>
           <motion.div
               className="absolute inset-0 flex flex-col items-center justify-center origin-center will-change-transform"
               animate={{ scale: prefersReducedMotion ? 1 : isStarting ? 1.14 : 1 }}
@@ -773,33 +934,44 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
               transition={{ duration: 0.5 }}
               className="flex flex-col items-center text-center"
             >
-              {/* Glose dans la même DA que la ligne auteur : or, capitales élégantes, interlettrage — pas un second corps serif. */}
-              <motion.p
+              <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: isStarting ? 0 : 1, y: isStarting ? -4 : 0 }}
                 transition={{ duration: 0.95, delay: 0.72, ease: [0.22, 1, 0.36, 1] }}
                 className={
-                  "mx-auto px-6 " +
-                  (compactDesktop ? "mt-5 mb-2" : "mt-7 mb-4") +
-                  (language === "ar-dz"
-                    ? " max-w-[18rem] font-bahlull text-[11px] font-normal leading-relaxed tracking-[0.12em] text-solar-gold/88 [font-feature-settings:'kern'_1] "
-                    : " max-w-[24rem] text-[10px] font-light tracking-[0.58em] text-solar-gold/78")
+                  "mx-auto max-w-[min(min(26rem,92vw),42rem)] px-6 text-center leading-none [font-feature-settings:'kern'_1] " +
+                  (compactDesktop ? "mt-5 mb-2" : "mt-7 mb-4")
                 }
-                style={{
-                  textShadow:
-                    language === "ar-dz"
-                      ? "0 0 18px rgba(0,0,0,0.65)"
-                      : "0 1px 12px rgba(0,0,0,0.75), 0 0 20px rgba(197,160,89,0.08)",
-                }}
               >
-                <span className={language === "ar-dz" ? "text-solar-gold/42" : "text-solar-gold/44"} aria-hidden>
-                  {language === "ar-dz" ? "\u00ab\u00a0" : "\u00ab\u202f"}
-                </span>
-                {copy.introAlRihlaSubtitle}
-                <span className={language === "ar-dz" ? "text-solar-gold/42" : "text-solar-gold/44"} aria-hidden>
-                  {language === "ar-dz" ? "\u00a0\u00bb" : "\u202f\u00bb"}
-                </span>
-              </motion.p>
+                {language === "ar-dz" ? (
+                  <p
+                    dir="rtl"
+                    className={
+                      "font-arabic-ui font-medium leading-snug text-white tracking-[0.06em] drop-shadow-[0_0_22px_rgba(197,160,89,0.35)] " +
+                      (compactDesktop
+                        ? "text-[clamp(1.85rem,5vw,2.85rem)] sm:tracking-[0.08em]"
+                        : "text-[clamp(2rem,5.5vw,3.25rem)] sm:tracking-[0.08em]")
+                    }
+                  >
+                    <span className="text-white/75" aria-hidden>
+                      «&nbsp;
+                    </span>
+                    {copy.introAlRihlaSubtitle}
+                    <span className="text-white/75" aria-hidden>
+                      &nbsp;»
+                    </span>
+                  </p>
+                ) : (
+                  <AnimatedTitle
+                    heroMotion
+                    text={`\u00AB\u202f${copy.introAlRihlaSubtitle}\u202f\u00BB`}
+                    className={
+                      "font-serif italic font-normal text-white tracking-tight drop-shadow-[0_0_22px_rgba(197,160,89,0.35)] " +
+                      (compactDesktop ? "text-5xl md:text-7xl" : "text-6xl md:text-8xl")
+                    }
+                  />
+                )}
+              </motion.div>
 
             <motion.div
               initial={{ opacity: 0, y: 24 }}
@@ -878,37 +1050,6 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
             </motion.div>
             </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: isStarting ? 0 : 1, y: 0 }}
-              transition={{ duration: 1.05, delay: 1.05, ease: [0.22, 1, 0.36, 1] }}
-              className="pointer-events-none absolute bottom-[max(1.25rem,calc(env(safe-area-inset-bottom)+0.85rem))] left-0 right-0 z-[5] flex flex-col items-center gap-1.5 px-6 text-center"
-            >
-              <span
-                aria-hidden
-                className="select-none text-[5px] leading-none text-solar-gold/45 [text-shadow:0_0_12px_rgba(197,160,89,0.25)] rotate-45"
-              >
-                ◆
-              </span>
-              <motion.p
-                className={
-                  "max-w-[min(22rem,92vw)] font-bahlull italic leading-tight text-transparent " +
-                  (language === "ar-dz"
-                    ? "text-[12px] tracking-[0.1em] sm:text-[13px]"
-                    : "text-[11px] tracking-[0.08em] sm:text-[12px] md:tracking-[0.1em]")
-                }
-                style={{
-                  backgroundImage:
-                    "linear-gradient(168deg, #f6eed8 0%, #e2c78a 32%, #c5a059 56%, #9a7240 100%)",
-                  WebkitBackgroundClip: "text",
-                  backgroundClip: "text",
-                  filter:
-                    "drop-shadow(0 0 16px rgba(197,160,89,0.28)) drop-shadow(0 2px 14px rgba(0,0,0,0.82))",
-                }}
-              >
-                {copy.introJeanSenacSubtitle}
-              </motion.p>
-            </motion.div>
             </motion.div>
 
             <AnimatePresence>

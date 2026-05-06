@@ -7,8 +7,7 @@ import {
   shouldIgnoreVolumeKeyboardTarget,
 } from '../../lib/volumeKeyboard';
 import { useAppCopy } from '../../hooks/useAppCopy';
-
-const INTRO_VIDEO_SRC = '/al-rihla.mp4';
+import { INTRO_VIDEO_SRC } from '../../lib/act1IntroBridge';
 
 type Props = {
   /** Retour à l’expérience (carte / acte) - ne recharge rien */

@@ -102,7 +102,9 @@ const HINT_GLOW_SCALE_AMP = 0.12;
 const WORD_HIT_EXTRA_X = 2.8;
 const WORD_HIT_EXTRA_Y = 2.4;
 
-const N_PARTICLES = 3200;
+const N_PARTICLES = 2700;
+/** Calibre la densité de « slots » poème comme avant (3200 × 0.022 ≈ N_PARTICLES × ce taux). */
+const INSIDE_POEM_RATE = (3200 * 0.022) / N_PARTICLES;
 /** > 1 : compense la rotation 3D (perspective) pour ne pas révéler le fond derrière aux bords de l’écran. */
 /** Légère marge sur scale pour éviter franges aux bords en ultrawide + tilt 3D. */
 const MAP_PARALLAX_COVER_SCALE = 1.098;
@@ -168,8 +170,16 @@ export default function AlgeriaMap({
 }: AlgeriaMapProps) {
   const canvasRef  = useRef<HTMLCanvasElement>(null);
   const particles  = useRef<Particle[]>([]);
-  /** Sous-ensemble des index contenant des mots (évite de balayer 3200 entrées au hit-test). */
+  /** Sous-ensemble des index contenant des mots (évite de balayer les entrées au hit-test). */
   const poemParticleIndicesRef = useRef<number[]>([]);
+  /** Gradient radial du halo central — recréé seulement si la taille du canvas change. */
+  const pulseGradCacheRef = useRef<{ W: number; H: number; grad: CanvasGradient | null }>({
+    W: -1,
+    H: -1,
+    grad: null,
+  });
+  /** Arrêt rendu canvas si l’onglet est en arrière-plan (CPU/GPU). */
+  const pageVisibleRef = useRef(typeof document !== 'undefined' ? document.visibilityState === 'visible' : true);
   /** Index canvas du mot-révélation planté (un par mot du parcours). */
   const revelationParticleIdxRef = useRef<Partial<Record<RevelationWord, number>>>({});
   const mouse      = useRef({ x: -9999, y: -9999 });
@@ -370,7 +380,7 @@ export default function AlgeriaMap({
       const ox = rnd(i, 1);
       const oy = rnd(i, 2);
       const inside = checker(ox, oy);
-      const isPoem = inside && rnd(i, 3) < 0.022;
+      const isPoem = inside && rnd(i, 3) < INSIDE_POEM_RATE;
       const baseAlpha = inside
         ? (isPoem ? 0.84 + rnd(i, 6) * 0.16 : 0.38 + rnd(i, 7) * 0.38)
         : 0.08 + rnd(i, 8) * 0.1;
@@ -410,14 +420,30 @@ export default function AlgeriaMap({
     revelationParticleIdxRef.current = byWord;
     particles.current = list;
     ready.current = true;
+    pulseGradCacheRef.current = { W: -1, H: -1, grad: null };
+  }, []);
+
+  useEffect(() => {
+    const onVis = () => {
+      pageVisibleRef.current = document.visibilityState === 'visible';
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
   }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ro = new ResizeObserver(() => initParticles());
+    let debounceTimer = 0;
+    const ro = new ResizeObserver(() => {
+      window.clearTimeout(debounceTimer);
+      debounceTimer = window.setTimeout(() => initParticles(), 120);
+    });
     ro.observe(canvas);
-    return () => ro.disconnect();
+    return () => {
+      window.clearTimeout(debounceTimer);
+      ro.disconnect();
+    };
   }, [initParticles]);
 
   useEffect(() => {
@@ -448,6 +474,7 @@ export default function AlgeriaMap({
     const tick = () => {
       raf.current = requestAnimationFrame(tick);
       if (!ready.current) return;
+      if (!pageVisibleRef.current) return;
 
       const W = canvas.width, H = canvas.height;
       if (!W || !H) return;
@@ -465,15 +492,29 @@ export default function AlgeriaMap({
 
       ctx.clearRect(0, 0, W, H);
 
-      // Pulse central (intensité liée à la progression des révélations)
+      // Pulse central — gradient réutilisé (évite createRadialGradient à chaque frame).
       const t = performance.now() / 1000;
       const pulse = 0.5 + 0.5 * Math.sin(t * 1.3);
-      const pulseA = 0.1 * pulse * prog * veil * (mapAwake ? 1.25 : 1);
-      const grd = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.min(W,H) * 0.35);
-      grd.addColorStop(0, `rgba(197,160,89,${pulseA})`);
-      grd.addColorStop(1, 'rgba(197,160,89,0)');
-      ctx.fillStyle = grd;
+      const pulseAlpha = 0.1 * pulse * prog * veil * (mapAwake ? 1.25 : 1);
+      let cg = pulseGradCacheRef.current;
+      if (cg.W !== W || cg.H !== H || !cg.grad) {
+        const grd = ctx.createRadialGradient(
+          W / 2,
+          H / 2,
+          0,
+          W / 2,
+          H / 2,
+          Math.min(W, H) * 0.35
+        );
+        grd.addColorStop(0, 'rgba(197,160,89,1)');
+        grd.addColorStop(1, 'rgba(197,160,89,0)');
+        cg = { W, H, grad: grd };
+        pulseGradCacheRef.current = cg;
+      }
+      ctx.globalAlpha = pulseAlpha;
+      ctx.fillStyle = cg.grad!;
       ctx.fillRect(0, 0, W, H);
+      ctx.globalAlpha = 1;
 
       // Zoom / pan (valeurs spring = rendu fluide)
       ctx.save();
@@ -850,9 +891,25 @@ export default function AlgeriaMap({
             />
           ))}
         </div>
-        <p className="mt-3 max-w-lg text-center text-[12px] font-medium leading-snug text-solar-gold/72 [text-shadow:0_1px_14px_rgba(0,0,0,0.82)] sm:text-[13px] md:text-[14px]">
-          {memoryAwake ? copy.act1HudSubtitleDone : copy.act1HudSubtitleFind}
-        </p>
+        {memoryAwake ? (
+          <p className="mt-3 max-w-lg text-center text-[12px] font-medium leading-snug text-solar-gold/72 [text-shadow:0_1px_14px_rgba(0,0,0,0.82)] sm:text-[13px] md:text-[14px]">
+            {copy.act1HudSubtitleDone}
+          </p>
+        ) : (
+          <motion.p
+            className="mt-3 max-w-lg text-center text-[12px] font-medium leading-snug text-solar-gold/72 [text-shadow:0_1px_14px_rgba(0,0,0,0.82)] sm:text-[13px] md:text-[14px]"
+            animate={{
+              opacity: prefersReducedMotion ? 1 : [1, 0.88, 1],
+            }}
+            transition={{
+              duration: 6.5,
+              repeat: prefersReducedMotion ? 0 : Infinity,
+              ease: [0.45, 0, 0.55, 1],
+            }}
+          >
+            {copy.act1HudSubtitleFind}
+          </motion.p>
+        )}
       </header>
 
       <ActOnePhraseStrip revelationFound={revelationFound} chapterComplete={memoryAwake} hasZoomed={hasZoomed} />
