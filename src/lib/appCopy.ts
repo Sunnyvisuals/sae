@@ -195,7 +195,7 @@ const FR: Copy = {
   menuEmbeddedParcours: "Parcours",
   menuNavAria: "Actions du menu pause",
   introDevPreviewCreditsTitle: "Prévisualiser le générique de fin (?previewCredits=1)",
-  introJeanSenacSubtitle: "Jean Senac",
+  introJeanSenacSubtitle: "Jean Sénac",
   scrollNudge: "Molette",
   chapterCompleteAria: "révélation carte-mémoire",
   hintTitles: { act1: "Premiers gestes", act2: "Comment naviguer" },
