@@ -1281,10 +1281,10 @@ function ChapterDaTransition() {
   const pathRefs = useRef<(SVGPathElement | null)[]>([]);
 
   useLayoutEffect(() => {
-    const pathCount = 2;
+    const pathCount = 3;
     const pointCount = 9;
     const delayPointsMax = 0.24;
-    const delayPerPath = 0.16;
+    const delayPerPath = 0.14;
     const coverDuration = 1.12;
     const revealDuration = 0.94;
     const revealStartAt = coverDuration + delayPointsMax + delayPerPath * (pathCount - 1) + 0.08;
@@ -1308,6 +1308,12 @@ function ChapterDaTransition() {
       gsap
         .timeline({ defaults: { ease: "power2.inOut" }, onUpdate: render })
         .fromTo(
+          rootRef.current?.querySelector("[data-sand-base]"),
+          { opacity: 0.82, scale: 1.04, filter: "brightness(0.76) blur(12px)" },
+          { opacity: 1, scale: 1, filter: "brightness(1) blur(0px)", duration: 1.25, ease: "power2.out" },
+          0
+        )
+        .fromTo(
           rootRef.current?.querySelector("[data-sand-glow]"),
           { opacity: 0, scale: 0.92 },
           { opacity: 1, scale: 1.08, duration: 1.05, ease: "sine.out" },
@@ -1318,6 +1324,36 @@ function ChapterDaTransition() {
           { opacity: 0 },
           { opacity: 0.92, duration: 1.2, ease: "sine.out" },
           0.08
+        )
+        .fromTo(
+          rootRef.current?.querySelector("[data-sand-sun]"),
+          { opacity: 0, scale: 0.74, yPercent: 16, filter: "blur(24px)" },
+          { opacity: 0.78, scale: 1, yPercent: 0, filter: "blur(0px)", duration: 1.28, ease: "sine.out" },
+          0.02
+        )
+        .fromTo(
+          rootRef.current?.querySelector("[data-sand-filament]"),
+          { opacity: 0, xPercent: -8 },
+          { opacity: 0.55, xPercent: 0, duration: 1.05, ease: "sine.out" },
+          0.16
+        )
+        .fromTo(
+          rootRef.current?.querySelector("[data-sand-dune-back]"),
+          { opacity: 0, yPercent: 22, scaleX: 1.06 },
+          { opacity: 0.9, yPercent: 0, scaleX: 1, duration: 1.16, ease: "power3.out" },
+          0.12
+        )
+        .fromTo(
+          rootRef.current?.querySelector("[data-sand-dune-front]"),
+          { opacity: 0, yPercent: 34, scaleX: 1.12 },
+          { opacity: 0.98, yPercent: 0, scaleX: 1, duration: 1.2, ease: "power4.out" },
+          0.22
+        )
+        .fromTo(
+          rootRef.current?.querySelector("[data-sand-veil]"),
+          { opacity: 0, xPercent: -4, scale: 1.03 },
+          { opacity: 0.38, xPercent: 0, scale: 1, duration: 1.35, ease: "power2.out" },
+          0
         );
 
       for (let i = 0; i < pathCount; i += 1) {
@@ -1366,6 +1402,34 @@ function ChapterDaTransition() {
           duration: 0.95,
           ease: "sine.out",
         });
+        gsap.to(rootRef.current?.querySelector("[data-sand-sun]"), {
+          opacity: 0.14,
+          scale: 1.12,
+          yPercent: -8,
+          duration: 1.02,
+          ease: "sine.out",
+        });
+        gsap.to(rootRef.current?.querySelector("[data-sand-filament]"), {
+          opacity: 0.08,
+          xPercent: 6,
+          duration: 0.95,
+          ease: "sine.out",
+        });
+        gsap.to(rootRef.current?.querySelector("[data-sand-dune-back]"), {
+          opacity: 0.42,
+          duration: 0.9,
+          ease: "sine.out",
+        });
+        gsap.to(rootRef.current?.querySelector("[data-sand-dune-front]"), {
+          opacity: 0.66,
+          duration: 0.92,
+          ease: "sine.out",
+        });
+        gsap.to(rootRef.current?.querySelector("[data-sand-veil]"), {
+          opacity: 0.06,
+          duration: 0.95,
+          ease: "sine.out",
+        });
       });
     }, rootRef);
 
@@ -1383,6 +1447,15 @@ function ChapterDaTransition() {
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
     >
       <div
+        data-sand-base
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 62% 42% at 50% 42%, rgba(104, 79, 54, 0.18) 0%, transparent 62%), linear-gradient(180deg, #120d09 0%, #1a120d 34%, #120d09 68%, #090706 100%)",
+        }}
+      />
+
+      <div
         data-sand-glow
         className="pointer-events-none absolute inset-[-10%] opacity-0"
         style={{
@@ -1393,11 +1466,59 @@ function ChapterDaTransition() {
       />
 
       <div
+        data-sand-sun
+        className="pointer-events-none absolute left-1/2 top-[41%] h-[min(34rem,54vw)] w-[min(34rem,54vw)] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-0"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(210, 188, 150, 0.26) 0%, rgba(162, 126, 83, 0.15) 32%, rgba(78, 53, 31, 0.06) 52%, transparent 72%)",
+          mixBlendMode: "screen",
+        }}
+      />
+
+      <div
+        data-sand-filament
+        className="pointer-events-none absolute left-1/2 top-[48%] h-px w-[min(74vw,52rem)] -translate-x-1/2 opacity-0"
+        style={{
+          background:
+            "linear-gradient(90deg, transparent 0%, rgba(196, 164, 117, 0.08) 18%, rgba(232, 216, 186, 0.34) 50%, rgba(196, 164, 117, 0.08) 82%, transparent 100%)",
+          boxShadow: "0 0 18px rgba(201, 173, 129, 0.12)",
+        }}
+      />
+
+      <div
+        data-sand-dune-back
+        className="pointer-events-none absolute inset-x-[-10%] bottom-[6%] h-[25vh] opacity-0"
+        style={{
+          background:
+            "radial-gradient(ellipse at 50% 100%, rgba(58, 40, 27, 0.72) 0%, rgba(58, 40, 27, 0.36) 44%, transparent 76%)",
+        }}
+      />
+
+      <div
+        data-sand-dune-front
+        className="pointer-events-none absolute inset-x-[-16%] bottom-[-10%] h-[33vh] opacity-0"
+        style={{
+          background:
+            "radial-gradient(ellipse at 50% 100%, rgba(20, 13, 9, 0.96) 0%, rgba(26, 17, 11, 0.7) 42%, transparent 76%)",
+        }}
+      />
+
+      <div
         data-sand-haze
         className="pointer-events-none absolute inset-0 opacity-0"
         style={{
           background:
             "linear-gradient(180deg, rgba(9, 7, 5, 0.02) 0%, rgba(20, 16, 11, 0.12) 38%, rgba(9, 7, 5, 0.03) 100%)",
+        }}
+      />
+
+      <div
+        data-sand-veil
+        className="pointer-events-none absolute inset-0 opacity-0"
+        style={{
+          background:
+            "linear-gradient(122deg, rgba(255,255,255,0.02) 0%, rgba(214,192,155,0.04) 24%, transparent 48%), repeating-linear-gradient(112deg, transparent 0 24px, rgba(198,171,128,0.018) 24px 25px, transparent 25px 54px)",
+          mixBlendMode: "soft-light",
         }}
       />
 
@@ -1419,6 +1540,11 @@ function ChapterDaTransition() {
         preserveAspectRatio="none"
       >
         <defs>
+          <linearGradient id="chapter-sand-gradient-edge" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#efe4d0" />
+            <stop offset="44%" stopColor="#ceb48d" />
+            <stop offset="100%" stopColor="#8d6847" />
+          </linearGradient>
           <linearGradient id="chapter-sand-gradient-back" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#d8c4a0" />
             <stop offset="52%" stopColor="#a98861" />
@@ -1434,12 +1560,19 @@ function ChapterDaTransition() {
           ref={(node) => {
             pathRefs.current[0] = node;
           }}
+          fill="url(#chapter-sand-gradient-edge)"
+          opacity="0.52"
+        />
+        <path
+          ref={(node) => {
+            pathRefs.current[1] = node;
+          }}
           fill="url(#chapter-sand-gradient-back)"
           opacity="0.88"
         />
         <path
           ref={(node) => {
-            pathRefs.current[1] = node;
+            pathRefs.current[2] = node;
           }}
           fill="url(#chapter-sand-gradient-front)"
         />

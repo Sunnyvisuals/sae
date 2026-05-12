@@ -1356,10 +1356,10 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                 <div
                   ref={duneFrontRevealRef}
                   aria-hidden
-                  className="pointer-events-none absolute inset-x-[-16%] bottom-[-6%] z-[1] h-[29vh]"
+                  className="pointer-events-none absolute inset-x-[-20%] bottom-[-12%] z-[1] h-[36vh] blur-[18px]"
                   style={{
                     background:
-                      "radial-gradient(ellipse at 50% 100%, rgba(28, 17, 10, 0.98) 0%, rgba(28, 17, 10, 0.76) 42%, transparent 76%)",
+                      "radial-gradient(ellipse at 50% 100%, rgba(28, 17, 10, 0.98) 0%, rgba(28, 17, 10, 0.82) 34%, rgba(28, 17, 10, 0.34) 56%, transparent 84%)",
                   }}
                 />
               </motion.div>
