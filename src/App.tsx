@@ -3,6 +3,7 @@ import {
   useEffect,
   useRef,
   useCallback,
+  useLayoutEffect,
   lazy,
   Suspense,
   useMemo,
@@ -10,6 +11,7 @@ import {
 } from "react";
 import { ReactLenis } from "lenis/react";
 import { AnimatePresence, motion } from "motion/react";
+import gsap from "gsap";
 
 import Intro from "./components/Intro";
 const AlgeriaMap = lazy(() => import("./components/Immersive/AlgeriaMap"));
@@ -83,6 +85,7 @@ function isEditableTarget(target: EventTarget | null): boolean {
 
 /** Persistance : traversée complète → navigation libre entre les actes. */
 const JOURNEY_REPLAY_STORAGE_KEY = "al-rihla-journey-complete";
+const MENU_HINT_SEEN_STORAGE_KEY = "al-rihla-menu-hint-seen";
 const EMPTY_ACT1_QUEST: Act1QuestProgress = { hover: false, clickWord: false, zoom: false };
 const COMPLETE_ACT1_QUEST: Act1QuestProgress = { hover: true, clickWord: true, zoom: true };
 const EMPTY_ACT2_QUEST: Act2QuestProgress = { scroll: false };
@@ -96,12 +99,22 @@ function readJourneyReplayUnlocked(): boolean {
   }
 }
 
+function readMenuHintSeen(): boolean {
+  try {
+    return typeof window !== "undefined" && window.localStorage.getItem(MENU_HINT_SEEN_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
 export default function App() {
   const phaseRef = useRef<"intro" | "act1" | "act2">("intro");
   const [phase, setPhase] = useState<"intro" | "act1" | "act2">("intro");
   const [videoStarted, setVideoStarted] = useState(false);
   const [introKey, setIntroKey] = useState(0);
   const [systemMenuOpen, setSystemMenuOpen] = useState(false);
+  const [menuHintSeen, setMenuHintSeen] = useState(readMenuHintSeen);
+  const [menuHintVisible, setMenuHintVisible] = useState(false);
   const [introVideoOpen, setIntroVideoOpen] = useState(false);
   const [introVideoNonce, setIntroVideoNonce] = useState(0);
   const [chapterToast, setChapterToast] = useState(false);
@@ -149,12 +162,47 @@ export default function App() {
 
   phaseRef.current = phase;
 
+  const dismissMenuHint = useCallback(
+    (persist = false) => {
+      setMenuHintVisible(false);
+      if (!persist || menuHintSeen) return;
+      setMenuHintSeen(true);
+      try {
+        window.localStorage.setItem(MENU_HINT_SEEN_STORAGE_KEY, "1");
+      } catch {
+        /* ignore */
+      }
+    },
+    [menuHintSeen]
+  );
+
   useEffect(() => {
     if (phase !== "act2") {
       setAct2ParcheminTone(null);
       setAct2ScrollFillRatio(undefined);
     }
   }, [phase]);
+
+  useEffect(() => {
+    if (
+      menuHintSeen ||
+      systemMenuOpen ||
+      introVideoOpen ||
+      chapterDaTransition ||
+      phase === "intro"
+    ) {
+      setMenuHintVisible(false);
+      return;
+    }
+    const t = window.setTimeout(() => setMenuHintVisible(true), 1350);
+    return () => window.clearTimeout(t);
+  }, [chapterDaTransition, introVideoOpen, menuHintSeen, phase, systemMenuOpen]);
+
+  useEffect(() => {
+    if (!menuHintVisible) return;
+    const t = window.setTimeout(() => setMenuHintVisible(false), 6800);
+    return () => window.clearTimeout(t);
+  }, [menuHintVisible]);
 
   useEffect(() => {
     if (phase !== "intro" && videoStarted) setVideoStarted(false);
@@ -701,9 +749,62 @@ export default function App() {
 
       {(phase !== "intro" || journeyReplayUnlocked) && (
         <>
+          <AnimatePresence>
+            {menuHintVisible && !systemMenuOpen && (
+              <motion.div
+                key="menu-discover-hint"
+                initial={{ opacity: 0, x: -14, y: 6 }}
+                animate={{ opacity: 1, x: 0, y: [0, -2, 0] }}
+                exit={{ opacity: 0, x: -10, y: 3 }}
+                transition={{
+                  opacity: { duration: 0.35 },
+                  x: { duration: 0.45, ease: [0.22, 1, 0.36, 1] },
+                  y: { duration: 3.1, repeat: Infinity, ease: [0.45, 0, 0.55, 1] },
+                }}
+                dir={language === "ar-dz" ? "rtl" : "ltr"}
+                className="pointer-events-none fixed z-[39] flex items-center gap-2.5 left-[calc(max(1.25rem,calc(env(safe-area-inset-left)+0.5rem))+3.6rem)] top-[calc(max(1.25rem,calc(env(safe-area-inset-top)+0.5rem))+0.8rem)] md:left-[calc(max(2rem,calc(env(safe-area-inset-left)+1rem))+4rem)] md:top-[calc(max(1.75rem,calc(env(safe-area-inset-top)+0.75rem))+0.85rem)]"
+              >
+                <span
+                  aria-hidden
+                  className={
+                    "h-2.5 w-2.5 shrink-0 rotate-45 border " +
+                    (phase === "act2" && act2AmbientMidnight
+                      ? "border-[rgba(155,226,255,0.48)] bg-[rgba(90,168,255,0.08)] shadow-[0_0_14px_rgba(90,168,255,0.22)]"
+                      : "border-[rgba(197,160,89,0.52)] bg-[rgba(197,160,89,0.08)] shadow-[0_0_14px_rgba(197,160,89,0.24)]")
+                  }
+                />
+                <span
+                  aria-hidden
+                  className={
+                    "h-px w-10 shrink-0 " +
+                    (phase === "act2" && act2AmbientMidnight
+                      ? "bg-gradient-to-r from-[rgba(155,226,255,0.52)] to-transparent"
+                      : "bg-gradient-to-r from-[rgba(197,160,89,0.56)] to-transparent")
+                  }
+                />
+                <span
+                  className={
+                    "max-w-[min(32vw,12rem)] text-[9px] uppercase leading-none tracking-[0.26em] " +
+                    (language === "ar-dz" ? "font-arabic-ui tracking-[0.08em]" : "") +
+                    " " +
+                    (phase === "act2" && act2AmbientMidnight
+                      ? "text-[rgba(218,238,255,0.78)]"
+                      : "text-[rgba(232,212,164,0.8)]")
+                  }
+                >
+                  {copy.menuHintDiscover}
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
           <motion.button
             type="button"
-            onClick={() => setSystemMenuOpen(true)}
+            onClick={() => {
+              dismissMenuHint(true);
+              setSystemMenuOpen(true);
+            }}
+            onPointerEnter={() => dismissMenuHint(true)}
+            onFocus={() => dismissMenuHint(true)}
             whileHover="hovered"
             initial="idle"
             className={
@@ -716,6 +817,19 @@ export default function App() {
             aria-expanded={systemMenuOpen}
             aria-label={copy.menuAria}
           >
+            {menuHintVisible && (
+              <motion.span
+                aria-hidden
+                className={
+                  "pointer-events-none absolute -inset-2 rounded-[4px] border " +
+                  (phase === "act2" && act2AmbientMidnight
+                    ? "border-[rgba(155,226,255,0.28)]"
+                    : "border-[rgba(197,160,89,0.28)]")
+                }
+                animate={{ opacity: [0.2, 0.62, 0.2], scale: [1, 1.08, 1] }}
+                transition={{ duration: 2.2, repeat: Infinity, ease: [0.45, 0, 0.55, 1] }}
+              />
+            )}
             <motion.span
               aria-hidden
               className="pointer-events-none absolute inset-0 rounded-[2px]"
@@ -1163,105 +1277,191 @@ function LanguageMorphHud({
 }
 
 function ChapterDaTransition() {
-  const copy = useAppCopy();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const pathRefs = useRef<(SVGPathElement | null)[]>([]);
+
+  useLayoutEffect(() => {
+    const pathCount = 2;
+    const pointCount = 9;
+    const delayPointsMax = 0.24;
+    const delayPerPath = 0.16;
+    const coverDuration = 1.12;
+    const revealDuration = 0.94;
+    const revealStartAt = coverDuration + delayPointsMax + delayPerPath * (pathCount - 1) + 0.08;
+    const pathStates = Array.from({ length: pathCount }, () => Array(pointCount).fill(-18));
+    let mode: "cover" | "reveal" = "cover";
+
+    const render = () => {
+      for (let i = 0; i < pathCount; i += 1) {
+        const path = pathRefs.current[i];
+        if (!path) continue;
+        path.setAttribute("d", buildChapterWavePath(pathStates[i], mode));
+      }
+    };
+
+    const createPointDelays = () =>
+      Array.from({ length: pointCount }, () => Math.random() * delayPointsMax);
+
+    const ctx = gsap.context(() => {
+      render();
+
+      gsap
+        .timeline({ defaults: { ease: "power2.inOut" }, onUpdate: render })
+        .fromTo(
+          rootRef.current?.querySelector("[data-sand-glow]"),
+          { opacity: 0, scale: 0.92 },
+          { opacity: 1, scale: 1.08, duration: 1.05, ease: "sine.out" },
+          0
+        )
+        .fromTo(
+          rootRef.current?.querySelector("[data-sand-haze]"),
+          { opacity: 0 },
+          { opacity: 0.92, duration: 1.2, ease: "sine.out" },
+          0.08
+        );
+
+      for (let i = 0; i < pathCount; i += 1) {
+        const pointDelays = createPointDelays();
+        const pathDelay = delayPerPath * i;
+        for (let j = 0; j < pointCount; j += 1) {
+          gsap.to(pathStates[i], {
+            [j]: 112,
+            duration: coverDuration,
+            ease: "power2.inOut",
+            delay: pointDelays[j] + pathDelay,
+            onUpdate: render,
+          });
+        }
+      }
+
+      gsap.delayedCall(revealStartAt, () => {
+        mode = "reveal";
+        for (let i = 0; i < pathCount; i += 1) {
+          pathStates[i].fill(0);
+        }
+        render();
+
+        for (let i = 0; i < pathCount; i += 1) {
+          const pointDelays = createPointDelays();
+          const pathDelay = delayPerPath * (pathCount - i - 1);
+          for (let j = 0; j < pointCount; j += 1) {
+            gsap.to(pathStates[i], {
+              [j]: 118,
+              duration: revealDuration,
+              ease: "power2.inOut",
+              delay: pointDelays[j] + pathDelay,
+              onUpdate: render,
+            });
+          }
+        }
+
+        gsap.to(rootRef.current?.querySelector("[data-sand-glow]"), {
+          opacity: 0,
+          scale: 1.28,
+          duration: 1.05,
+          ease: "sine.out",
+        });
+        gsap.to(rootRef.current?.querySelector("[data-sand-haze]"), {
+          opacity: 0.18,
+          duration: 0.95,
+          ease: "sine.out",
+        });
+      });
+    }, rootRef);
+
+    return () => ctx.revert();
+  }, []);
+
   return (
     <motion.div
-      role="status"
-      aria-live="polite"
-      className="pointer-events-auto fixed inset-0 z-[205] flex items-center justify-center overflow-hidden bg-[#02040c]"
+      aria-hidden="true"
+      ref={rootRef}
+      className="pointer-events-auto fixed inset-0 z-[205] overflow-hidden"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
     >
-      <motion.div
-        aria-hidden
-        className="absolute inset-0"
-        initial={{
+      <div
+        data-sand-glow
+        className="pointer-events-none absolute inset-[-10%] opacity-0"
+        style={{
           background:
-            "radial-gradient(ellipse 70% 55% at 50% 52%, rgba(197,160,89,0.28), transparent 58%), linear-gradient(180deg, #130d07 0%, #070503 100%)",
+            "radial-gradient(ellipse 40% 24% at 50% 54%, rgba(178, 151, 107, 0.18) 0%, rgba(116, 83, 49, 0.1) 44%, transparent 76%)",
+          filter: "blur(28px)",
         }}
-        animate={{
+      />
+
+      <div
+        data-sand-haze
+        className="pointer-events-none absolute inset-0 opacity-0"
+        style={{
           background:
-            "radial-gradient(ellipse 75% 55% at 50% 32%, rgba(90,168,255,0.32), transparent 62%), radial-gradient(ellipse 45% 35% at 70% 58%, rgba(197,160,89,0.12), transparent 64%), linear-gradient(180deg, #041331 0%, #01030a 100%)",
+            "linear-gradient(180deg, rgba(9, 7, 5, 0.02) 0%, rgba(20, 16, 11, 0.12) 38%, rgba(9, 7, 5, 0.03) 100%)",
         }}
-        transition={{ duration: 2.15, ease: [0.22, 1, 0.36, 1] }}
       />
 
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"
         style={{
-          backgroundImage:
-            "radial-gradient(circle at 50% 40%, rgba(255,255,255,0.085), transparent 46%)",
-        }}
-      />
-
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          opacity: 0.07,
+          opacity: 0.045,
           backgroundImage: `url("${NOISE_DATA_URI}")`,
           backgroundRepeat: "repeat",
           backgroundSize: "128px 128px",
-          mixBlendMode: "overlay",
+          mixBlendMode: "soft-light",
         }}
       />
 
-      <motion.div
-        aria-hidden
-        className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#ead7a4] shadow-[0_0_36px_rgba(234,215,164,0.55),0_0_70px_rgba(90,168,255,0.26)]"
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: [0, 1.4, 0.7], opacity: [0, 1, 0.55] }}
-        transition={{ duration: 1.15, ease: [0.22, 1, 0.36, 1] }}
-      />
-
-      <motion.div
-        aria-hidden
-        className="absolute inset-y-0 left-0 w-[120vw] origin-left"
-        style={{
-          background:
-            "linear-gradient(100deg, transparent 0%, rgba(234,215,164,0.0) 20%, rgba(234,215,164,0.28) 38%, rgba(90,168,255,0.46) 52%, rgba(4,19,49,0.96) 66%, #01030a 100%)",
-        }}
-        initial={{ x: "-115%", skewX: -9 }}
-        animate={{ x: "18%", skewX: 0 }}
-        transition={{ duration: 1.85, ease: [0.7, 0, 0.2, 1] }}
-      />
-
-      <motion.div
-        aria-hidden
-        className="absolute h-[42rem] w-[42rem] rounded-full border border-[#79b7ff]/18"
-        initial={{ scale: 0.35, opacity: 0, rotate: 0 }}
-        animate={{ scale: [0.35, 1.15, 1.38], opacity: [0, 0.55, 0], rotate: 80 }}
-        transition={{ duration: 2.3, ease: [0.22, 1, 0.36, 1] }}
-      />
-
-      <motion.div
-        aria-hidden
-        className="absolute h-[27rem] w-[27rem] rounded-full border border-[#ead7a4]/18"
-        initial={{ scale: 0.6, opacity: 0, rotate: 0 }}
-        animate={{ scale: [0.6, 1.3, 1.65], opacity: [0, 0.45, 0], rotate: -110 }}
-        transition={{ duration: 2.45, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-      />
-
-      <motion.div
-        className="relative z-10 max-w-xl px-6 text-center"
-        initial={{ opacity: 0, y: 28 }}
-        animate={{ opacity: [0, 1, 1, 0], y: [28, 0, 0, -16] }}
-        transition={{ duration: 2.35, times: [0, 0.28, 0.72, 1], ease: [0.22, 1, 0.36, 1] }}
+      <svg
+        className="absolute inset-0 h-full w-full"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
       >
-        <p className="text-[10px] uppercase tracking-[0.6em] text-[#ead7a4]/55">{copy.daKicker}</p>
-        <h2
-          className="font-bahlull mt-4 text-4xl italic text-white md:text-6xl"
-          style={{ textShadow: "0 0 70px rgba(90,168,255,0.34), 0 0 44px rgba(197,160,89,0.18)" }}
-        >
-          {copy.daTitle}
-        </h2>
-        <p className="mx-auto mt-5 max-w-md font-serif text-lg italic leading-relaxed text-[#ead7a4]/65">
-          {copy.daSubtitle}
-        </p>
-      </motion.div>
+        <defs>
+          <linearGradient id="chapter-sand-gradient-back" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#d8c4a0" />
+            <stop offset="52%" stopColor="#a98861" />
+            <stop offset="100%" stopColor="#6b4b31" />
+          </linearGradient>
+          <linearGradient id="chapter-sand-gradient-front" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#e6d7bb" />
+            <stop offset="46%" stopColor="#bc9a70" />
+            <stop offset="100%" stopColor="#81593a" />
+          </linearGradient>
+        </defs>
+        <path
+          ref={(node) => {
+            pathRefs.current[0] = node;
+          }}
+          fill="url(#chapter-sand-gradient-back)"
+          opacity="0.88"
+        />
+        <path
+          ref={(node) => {
+            pathRefs.current[1] = node;
+          }}
+          fill="url(#chapter-sand-gradient-front)"
+        />
+      </svg>
     </motion.div>
   );
+}
+
+function buildChapterWavePath(points: number[], mode: "cover" | "reveal") {
+  const total = points.length;
+  const clampPoint = (value: number) => Math.max(-20, Math.min(120, value));
+  const firstPoint = clampPoint(points[0] ?? 0);
+  let d = mode === "cover" ? `M 0 0 V ${firstPoint} C` : `M 0 100 V ${firstPoint} C`;
+
+  for (let i = 0; i < total - 1; i += 1) {
+    const p = ((i + 1) / (total - 1)) * 100;
+    const cp = p - 50 / (total - 1);
+    const current = clampPoint(points[i] ?? 0);
+    const next = clampPoint(points[i + 1] ?? 0);
+    d += ` ${cp} ${current} ${cp} ${next} ${p} ${next}`;
+  }
+
+  d += mode === "cover" ? " L 100 0 Z" : " L 100 100 Z";
+  return d;
 }

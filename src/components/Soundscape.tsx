@@ -28,33 +28,26 @@ export default function Soundscape({ enabled = true }: SoundscapeProps) {
   } | null>(null);
   const volume = useMasterVolumeStore((s) => s.volume);
   const playbackUnlocked = useMasterVolumeStore((s) => s.playbackUnlocked);
-  const unlockPlayback = useMasterVolumeStore((s) => s.unlockPlayback);
 
   useEffect(() => {
-    const onInteract = () => unlockPlayback();
-    window.addEventListener('click', onInteract, { passive: true });
-    window.addEventListener('keydown', onInteract);
+    if (!SOUNDS.ambient) return;
 
     let disposed = false;
-    if (SOUNDS.ambient) {
-      import('howler').then(({ Howl }) => {
-        if (disposed || !SOUNDS.ambient) return;
-        ambientRef.current = new Howl({
-          src: [SOUNDS.ambient],
-          loop: true,
-          volume: 0,
-        });
+    import('howler').then(({ Howl }) => {
+      if (disposed || !SOUNDS.ambient) return;
+      ambientRef.current = new Howl({
+        src: [SOUNDS.ambient],
+        loop: true,
+        volume: 0,
       });
-    }
+    });
 
     return () => {
       disposed = true;
-      window.removeEventListener('click', onInteract);
-      window.removeEventListener('keydown', onInteract);
       ambientRef.current?.stop();
       ambientRef.current = null;
     };
-  }, [unlockPlayback]);
+  }, []);
 
   useEffect(() => {
     const howl = ambientRef.current;

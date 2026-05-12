@@ -8,7 +8,8 @@
   useTransform,
   useReducedMotion,
 } from "motion/react";
-import React, { useState, useEffect, useRef, useId, lazy, Suspense } from "react";
+import React, { useState, useEffect, useRef, useId, lazy, Suspense, useLayoutEffect, useCallback } from "react";
+import gsap from "gsap";
 const PoetryGame = lazy(() => import("./PoetryGame"));
 import AuroraMeshBackground from "./AuroraMeshBackground";
 import {
@@ -28,6 +29,7 @@ import { useAppCopy } from "../hooks/useAppCopy";
 // --- CONFIGURATION VIDÉO : même source que `act1IntroBridge` (Acte I aligné sur cette piste) ---
 const VIDEO_SOURCE = INTRO_VIDEO_SRC;
 const ARABIC_TITLE_IMAGE_SRC = `${import.meta.env.BASE_URL}images/al-rihla-arabic-title.svg`;
+const ARRIVAL_LANGUAGE_PRELUDE_MS = 1400;
 
 const INTRO_CTA_WORDS_FR = ["Cliquer", "ou", "Entrée"] as const;
 const INTRO_CTA_WORDS_AR = ["إضغط", "أو", "إنتر"] as const;
@@ -489,7 +491,21 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
   const [easterEggPromptHidden, setEasterEggPromptHidden] = useState(false);
   const [easterEggPos, setEasterEggPos] = useState({ top: "20%", left: "80%" });
   const [arrivalLanguageConfirmed, setArrivalLanguageConfirmed] = useState(Boolean(isExploring));
+  const [arrivalLanguageGateVisible, setArrivalLanguageGateVisible] = useState(Boolean(isExploring));
+  const [launchCtaVisible, setLaunchCtaVisible] = useState(Boolean(isExploring));
+  const [launchCtaRevealToken, setLaunchCtaRevealToken] = useState(0);
   const [fullscreenIntroOpen, setFullscreenIntroOpen] = useState(false);
+  const initialStageRef = useRef<HTMLDivElement>(null);
+  const backgroundRevealRef = useRef<HTMLDivElement>(null);
+  const sunRevealRef = useRef<HTMLDivElement>(null);
+  const hazeRevealRef = useRef<HTMLDivElement>(null);
+  const duneFrontRevealRef = useRef<HTMLDivElement>(null);
+  const titleRevealRef = useRef<HTMLDivElement>(null);
+  const subtitleRevealRef = useRef<HTMLDivElement>(null);
+  const launchCtaWrapRef = useRef<HTMLDivElement>(null);
+  const launchOrbRef = useRef<HTMLDivElement>(null);
+  const launchPromptRef = useRef<HTMLParagraphElement>(null);
+  const launchAuraRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const volumeRef = useRef(volume);
   const isMutedRef = useRef(isMuted);
@@ -500,18 +516,241 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
     offerFullscreenOnArrival &&
     typeof window !== "undefined" &&
     isFullscreenApiSupported();
+  const showArrivalLanguageOverlay = !arrivalLanguageConfirmed && arrivalLanguageGateVisible;
+
+  const triggerLaunchCtaReveal = useCallback(() => {
+    setLaunchCtaVisible(true);
+    setLaunchCtaRevealToken((token) => token + 1);
+  }, []);
 
   const handleArrivalLanguageChoice = (nextLanguage: "fr" | "ar-dz") => {
     confirmLanguage(nextLanguage);
     setArrivalLanguageConfirmed(true);
-    setFullscreenIntroOpen(shouldOfferFullscreenNow);
+    if (shouldOfferFullscreenNow) {
+      setLaunchCtaVisible(false);
+      setFullscreenIntroOpen(true);
+      return;
+    }
+    triggerLaunchCtaReveal();
   };
+
+  const handleIntroFullscreenClose = useCallback(() => {
+    setFullscreenIntroOpen(false);
+    triggerLaunchCtaReveal();
+  }, [triggerLaunchCtaReveal]);
 
   useEffect(() => {
     if (isExploring) {
       setArrivalLanguageConfirmed(true);
+      setArrivalLanguageGateVisible(true);
+      setLaunchCtaVisible(true);
     }
   }, [isExploring]);
+
+  useLayoutEffect(() => {
+    if (
+      arrivalLanguageConfirmed ||
+      arrivalLanguageGateVisible ||
+      isExploring ||
+      videoStarted ||
+      isStarting ||
+      !showInitialTitle
+    ) {
+      return;
+    }
+    if (prefersReducedMotion) {
+      const timer = window.setTimeout(() => {
+        setArrivalLanguageGateVisible(true);
+      }, ARRIVAL_LANGUAGE_PRELUDE_MS);
+      return () => window.clearTimeout(timer);
+    }
+    const ctx = gsap.context(() => {
+      gsap.set(backgroundRevealRef.current, {
+        opacity: 0.38,
+        scale: 1.16,
+        filter: "brightness(0.62) saturate(0.78) blur(22px)",
+      });
+      gsap.set([sunRevealRef.current, duneFrontRevealRef.current], {
+        opacity: 0,
+      });
+      gsap.set(titleRevealRef.current, {
+        opacity: 0,
+        y: 56,
+        filter: "blur(18px)",
+      });
+      gsap.set(subtitleRevealRef.current, {
+        opacity: 0,
+        y: 28,
+        filter: "blur(12px)",
+      });
+      gsap.set(hazeRevealRef.current, { opacity: 0 });
+
+      gsap
+        .timeline({
+          defaults: { overwrite: true },
+          onComplete: () => setArrivalLanguageGateVisible(true),
+        })
+        .to(
+          backgroundRevealRef.current,
+          {
+            opacity: 1,
+            scale: 1,
+            filter: "brightness(1) saturate(1) blur(0px)",
+            duration: 3.9,
+            ease: "power2.out",
+          },
+          0
+        )
+        .fromTo(
+          sunRevealRef.current,
+          { opacity: 0, yPercent: 18, scale: 0.78 },
+          { opacity: 0.95, yPercent: 0, scale: 1, duration: 3.6, ease: "sine.out" },
+          0.08
+        )
+        .fromTo(
+          duneFrontRevealRef.current,
+          { opacity: 0, yPercent: 38, scaleX: 1.14 },
+          { opacity: 0.98, yPercent: 0, scaleX: 1, duration: 3.35, ease: "power3.out" },
+          0.82
+        )
+        .to(
+          hazeRevealRef.current,
+          {
+            opacity: 1,
+            duration: 2.2,
+            ease: "sine.out",
+          },
+          0.65
+        )
+        .to(
+          titleRevealRef.current,
+          {
+            opacity: 1,
+            y: 0,
+            filter: "blur(0px)",
+            duration: 2.35,
+            ease: "power4.out",
+          },
+          1.34
+        )
+        .to(
+          subtitleRevealRef.current,
+          {
+            opacity: 1,
+            y: 0,
+            filter: "blur(0px)",
+            duration: 1.75,
+            ease: "power3.out",
+          },
+          2.45
+        )
+        .to({}, { duration: 0.95 });
+    }, initialStageRef);
+
+    return () => ctx.revert();
+  }, [
+    arrivalLanguageConfirmed,
+    arrivalLanguageGateVisible,
+    isExploring,
+    prefersReducedMotion,
+    videoStarted,
+    isStarting,
+    showInitialTitle,
+  ]);
+
+  useLayoutEffect(() => {
+    if (
+      launchCtaRevealToken === 0 ||
+      !launchCtaVisible ||
+      !showInitialTitle ||
+      videoStarted ||
+      isStarting
+    ) {
+      return;
+    }
+    if (prefersReducedMotion) {
+      gsap.set([launchCtaWrapRef.current, launchOrbRef.current, launchPromptRef.current, launchAuraRef.current], {
+        clearProps: "all",
+      });
+      return;
+    }
+    const ctx = gsap.context(() => {
+      gsap.set(launchCtaWrapRef.current, {
+        opacity: 1,
+        y: 0,
+      });
+      gsap.set(launchOrbRef.current, {
+        opacity: 0,
+        scale: 0.68,
+        rotate: -34,
+        filter: "blur(10px)",
+      });
+      gsap.set(launchPromptRef.current, {
+        opacity: 0,
+        y: 22,
+        filter: "blur(8px)",
+      });
+      gsap.set(launchAuraRef.current, {
+        opacity: 0,
+        scale: 0.45,
+      });
+
+      gsap
+        .timeline({ defaults: { overwrite: true } })
+        .to(
+          launchAuraRef.current,
+          {
+            opacity: 0.92,
+            scale: 1.55,
+            duration: 1.4,
+            ease: "sine.out",
+          },
+          0
+        )
+        .to(
+          launchOrbRef.current,
+          {
+            opacity: 1,
+            scale: 1,
+            rotate: 0,
+            filter: "blur(0px)",
+            duration: 1.28,
+            ease: "power4.out",
+          },
+          0.1
+        )
+        .to(
+          launchPromptRef.current,
+          {
+            opacity: 1,
+            y: 0,
+            filter: "blur(0px)",
+            duration: 1.05,
+            ease: "power3.out",
+          },
+          0.58
+        )
+        .to(
+          launchAuraRef.current,
+          {
+            opacity: 0,
+            scale: 1.95,
+            duration: 1.15,
+            ease: "sine.out",
+          },
+          0.72
+        );
+    }, launchCtaWrapRef);
+
+    return () => ctx.revert();
+  }, [
+    isStarting,
+    launchCtaRevealToken,
+    launchCtaVisible,
+    prefersReducedMotion,
+    showInitialTitle,
+    videoStarted,
+  ]);
 
   /** Plein écran : reste fermé dès que l’intro démarre ou si l’option est indisponible. */
   useEffect(() => {
@@ -585,7 +824,10 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
   }, [videoStarted]);
 
   const startExperience = () => {
-    if (!arrivalLanguageConfirmed) return;
+    if (!arrivalLanguageConfirmed) {
+      setArrivalLanguageGateVisible(true);
+      return;
+    }
     if (isStarting || videoStarted) return;
     primeSuspenseAudio();
     setIsStarting(true);
@@ -728,7 +970,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
         </div>
       )}
 
-      {!videoStarted && (
+      {!videoStarted && arrivalLanguageConfirmed && (
       <motion.div 
         className="fixed z-[60] flex items-center gap-4 group"
         style={{ 
@@ -793,6 +1035,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
       <AnimatePresence>
         {showInitialTitle && (
           <motion.div
+            ref={initialStageRef}
             key="initial-title"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -801,18 +1044,46 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
             className="absolute inset-0 z-20 flex flex-col items-center justify-center overflow-hidden"
           >
           <AnimatePresence>
-          {!arrivalLanguageConfirmed && (
+          {showArrivalLanguageOverlay && (
             <motion.div
               key="lang-splash"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0, scale: 1.04 }}
-              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 1.35, ease: [0.22, 1, 0.36, 1] }}
               className="pointer-events-auto fixed inset-0 z-[100] overflow-hidden"
               style={{ background: "#03020100" }}
             >
-              {/* Fond noir total */}
-              <div className="absolute inset-0 bg-[#020100]" />
+              <motion.div
+                className="absolute inset-0"
+                initial={{ opacity: 0, scale: 1.04 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
+                style={{
+                  background:
+                    "linear-gradient(180deg, rgba(7, 5, 3, 0.985) 0%, rgba(5, 3, 2, 0.996) 42%, rgba(2, 1, 0, 1) 100%)",
+                }}
+              />
+              <motion.div
+                aria-hidden
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1] }}
+                className="pointer-events-none absolute inset-x-[-18%] bottom-[-16%] h-[42vh]"
+                style={{
+                  background:
+                    "radial-gradient(ellipse at 50% 100%, rgba(58, 34, 19, 0.08) 0%, rgba(20, 12, 7, 0.08) 34%, transparent 74%)",
+                  filter: "blur(18px)",
+                }}
+              />
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-[-14%] bottom-[-8%] h-[30vh]"
+                style={{
+                  background:
+                    "radial-gradient(ellipse at 50% 100%, rgba(10, 6, 4, 1) 0%, rgba(10, 6, 4, 0.94) 42%, transparent 76%)",
+                }}
+              />
 
               {/* Radial glow central */}
               <div
@@ -820,49 +1091,86 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                 aria-hidden
               >
                 <div
-                  className="h-[70vmax] w-[70vmax] rounded-full opacity-60"
-                  style={{ background: "radial-gradient(circle, rgba(197,160,89,0.08) 0%, transparent 70%)" }}
+                  className="h-[70vmax] w-[70vmax] rounded-full opacity-12"
+                  style={{ background: "radial-gradient(circle, rgba(197,160,89,0.015) 0%, transparent 70%)" }}
                 />
               </div>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96, y: 18 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ delay: 0.16, duration: 1.35, ease: [0.22, 1, 0.36, 1] }}
+                className="pointer-events-none absolute inset-0 z-[12] flex items-center justify-center"
+              >
+                <div className="relative -mt-[4vh] flex flex-col items-center">
+                  <span className="font-bahlull text-[clamp(3.8rem,10vw,8rem)] italic tracking-tight text-transparent">
+                    Al-Rihla
+                  </span>
+                  <span className="mt-1 text-[9px] uppercase tracking-[0.42em] text-transparent">
+                    Jean Senac
+                  </span>
+                </div>
+              </motion.div>
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-y-0 left-1/2 z-[3] hidden w-24 -translate-x-1/2 sm:block"
+                style={{
+                  background:
+                    "linear-gradient(90deg, transparent 0%, rgba(5,3,2,0.03) 46%, rgba(5,3,2,0.08) 50%, rgba(5,3,2,0.03) 54%, transparent 100%)",
+                  filter: "blur(8px)",
+                }}
+              />
 
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.22, duration: 0.95, ease: [0.22, 1, 0.36, 1] }}
-                className="absolute inset-x-0 top-[max(2.25rem,calc(env(safe-area-inset-top)+1.25rem))] z-20 px-6 text-center"
+                transition={{ delay: 0.34, duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+                className="absolute left-1/2 top-[max(1.4rem,calc(env(safe-area-inset-top)+0.8rem))] z-20 flex w-full -translate-x-1/2 flex-col items-center px-6 text-center pointer-events-none"
               >
-                <p className="mx-auto max-w-[min(52rem,94vw)] text-[clamp(0.92rem,1.35vw,1.2rem)] uppercase tracking-[0.42em] text-[#e8d5a4]/88 drop-shadow-[0_0_14px_rgba(0,0,0,0.78)] sm:text-[clamp(1rem,1.2vw,1.28rem)]">
-                  Choisissez votre langue · اختر لغتك
-                </p>
+                <div className="mx-auto flex max-w-[min(92vw,46rem)] items-center justify-center gap-2.5 sm:gap-4">
+                  <span className="hidden h-px w-[min(6.5rem,16vw)] bg-gradient-to-r from-transparent to-[#c5a059]/22 sm:block" />
+                  <span
+                    dir="rtl"
+                    className="font-arabic-ui text-[clamp(0.82rem,1.02vw,0.96rem)] font-medium tracking-[0.03em] text-[#e8d5a4]/82 drop-shadow-[0_0_10px_rgba(0,0,0,0.72)]"
+                  >
+                    اختر لغتك
+                  </span>
+                  <span
+                    aria-hidden
+                    className="h-[3px] w-[3px] rounded-full bg-[#c5a059]/42 shadow-[0_0_8px_rgba(197,160,89,0.16)]"
+                  />
+                  <span className="text-[clamp(0.68rem,0.84vw,0.88rem)] uppercase tracking-[0.34em] text-[#e8d5a4]/72 drop-shadow-[0_0_10px_rgba(0,0,0,0.72)] sm:tracking-[0.4em]">
+                    Choisissez votre langue
+                  </span>
+                  <span className="hidden h-px w-[min(9rem,22vw)] bg-gradient-to-l from-transparent to-[#c5a059]/18 sm:block" />
+                </div>
               </motion.div>
 
-              {/* Top decorative line */}
-              <motion.div
-                initial={{ scaleX: 0, opacity: 0 }}
-                animate={{ scaleX: 1, opacity: 1 }}
-                transition={{ delay: 0.3, duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-                className="absolute top-0 inset-x-0 h-px origin-center"
-                style={{ background: "linear-gradient(90deg, transparent, rgba(197,160,89,0.3), transparent)" }}
-              />
-              {/* Bottom decorative line */}
-              <motion.div
-                initial={{ scaleX: 0, opacity: 0 }}
-                animate={{ scaleX: 1, opacity: 1 }}
-                transition={{ delay: 0.3, duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-                className="absolute bottom-0 inset-x-0 h-px origin-center"
-                style={{ background: "linear-gradient(90deg, transparent, rgba(197,160,89,0.3), transparent)" }}
-              />
-
               {/* Split layout */}
-              <div className="relative flex h-full w-full flex-col sm:flex-row">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.985 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.18, duration: 1.25, ease: [0.22, 1, 0.36, 1] }}
+                className="relative flex h-full w-full flex-col sm:flex-row"
+              >
 
                 {/* ── FRANÇAIS ── */}
-                <button
+                <motion.button
                   type="button"
                   onClick={() => handleArrivalLanguageChoice("fr")}
                   className="group relative flex flex-1 flex-col items-center justify-center overflow-hidden"
+                  initial={{ opacity: 0, x: -44 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.34, duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
                 >
                   <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(197,160,89,0.04),rgba(197,160,89,0.015))]" />
+                  <div
+                    aria-hidden
+                    className="absolute inset-0 opacity-60"
+                    style={{
+                      background:
+                        "radial-gradient(ellipse 76% 82% at 24% 50%, rgba(197,160,89,0.08) 0%, transparent 68%)",
+                    }}
+                  />
                   {/* Hover wash */}
                   <div className="absolute inset-0 bg-[#c5a059] opacity-0 transition-opacity duration-700 group-hover:opacity-[0.1]" />
                   {/* Hover bottom glow */}
@@ -901,7 +1209,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                       className="h-px w-12 origin-center bg-[#c5a059]/38 transition-all duration-500 group-hover:w-20 group-hover:bg-[#c5a059]/72"
                     />
                   </div>
-                </button>
+                </motion.button>
 
                 {/* ── CENTRE ── */}
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center sm:static sm:relative sm:inset-auto sm:w-0 sm:flex sm:items-center sm:justify-center">
@@ -937,13 +1245,24 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                 </div>
 
                 {/* ── ARABIC ── */}
-                <button
+                <motion.button
                   type="button"
                   onClick={() => handleArrivalLanguageChoice("ar-dz")}
                   className="group relative flex flex-1 flex-col items-center justify-center overflow-hidden"
                   dir="rtl"
+                  initial={{ opacity: 0, x: 44 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.42, duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
                 >
                   <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(197,160,89,0.04),rgba(197,160,89,0.015))]" />
+                  <div
+                    aria-hidden
+                    className="absolute inset-0 opacity-60"
+                    style={{
+                      background:
+                        "radial-gradient(ellipse 76% 82% at 76% 50%, rgba(197,160,89,0.08) 0%, transparent 68%)",
+                    }}
+                  />
                   {/* Hover wash */}
                   <div className="absolute inset-0 bg-[#c5a059] opacity-0 transition-opacity duration-700 group-hover:opacity-[0.1]" />
                   {/* Hover bottom glow */}
@@ -982,16 +1301,22 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                       className="h-px w-12 origin-center bg-[#c5a059]/38 transition-all duration-500 group-hover:w-20 group-hover:bg-[#c5a059]/72"
                     />
                   </div>
-                </button>
-              </div>
+                </motion.button>
+              </motion.div>
 
             </motion.div>
           )}
           </AnimatePresence>
           <motion.div
               className="absolute inset-0 flex flex-col items-center justify-center origin-center will-change-transform"
-              animate={{ scale: prefersReducedMotion ? 1 : isStarting ? 1.14 : 1 }}
-              transition={{ duration: prefersReducedMotion ? 0 : isStarting ? 2.35 : 0.55, ease: [0.22, 1, 0.36, 1] }}
+              animate={
+                prefersReducedMotion
+                  ? { scale: 1, opacity: 1 }
+                  : showArrivalLanguageOverlay
+                    ? { scale: 1.01, opacity: 0, filter: "blur(24px) saturate(0.4) brightness(0.2)" }
+                    : { scale: isStarting ? 1.14 : 1, opacity: 1, filter: "blur(0px) saturate(1)" }
+              }
+              transition={{ duration: prefersReducedMotion ? 0 : showArrivalLanguageOverlay ? 1.25 : isStarting ? 2.35 : 0.55, ease: [0.22, 1, 0.36, 1] }}
             >
               <motion.div
                 aria-hidden
@@ -1007,7 +1332,36 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                 transition={{ duration: 1.5 }}
                 className="absolute inset-0 z-[-1]"
                 >
-                <AuroraMeshBackground />
+                <div ref={backgroundRevealRef} className="absolute inset-0 will-change-transform">
+                  <AuroraMeshBackground />
+                </div>
+                <div
+                  ref={sunRevealRef}
+                  aria-hidden
+                  className="pointer-events-none absolute left-1/2 top-[18%] z-[1] h-[min(70vmax,54rem)] w-[min(70vmax,54rem)] -translate-x-1/2 rounded-full blur-[90px] sm:blur-[120px]"
+                  style={{
+                    background:
+                      "radial-gradient(circle, rgba(207, 154, 72, 0.26) 0%, rgba(176, 102, 43, 0.16) 38%, transparent 74%)",
+                  }}
+                />
+                <div
+                  ref={hazeRevealRef}
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 z-[1]"
+                  style={{
+                    background:
+                      "linear-gradient(180deg, rgba(252, 228, 174, 0.02) 0%, rgba(197, 160, 89, 0.05) 26%, transparent 52%, rgba(23, 14, 9, 0.16) 100%)",
+                  }}
+                />
+                <div
+                  ref={duneFrontRevealRef}
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-[-16%] bottom-[-6%] z-[1] h-[29vh]"
+                  style={{
+                    background:
+                      "radial-gradient(ellipse at 50% 100%, rgba(28, 17, 10, 0.98) 0%, rgba(28, 17, 10, 0.76) 42%, transparent 76%)",
+                  }}
+                />
               </motion.div>
 
             <motion.h1
@@ -1018,36 +1372,38 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
               transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
               className="relative z-[2]"
             >
-              {language === "ar-dz" ? (
-                <AnimatedTitle
-                  heroMotion
-                  viewportTracking
-                  className={
-                    "mx-auto flex min-h-[clamp(13rem,30vw,22rem)] w-screen max-w-[1500px] items-center justify-center px-6 md:px-10 select-none"
-                  }
-                >
-                  <span className="sr-only">الرحلة</span>
-                  <img
-                    src={ARABIC_TITLE_IMAGE_SRC}
-                    alt=""
-                    aria-hidden="true"
-                    draggable={false}
+              <div ref={titleRevealRef}>
+                {language === "ar-dz" ? (
+                  <AnimatedTitle
+                    heroMotion
+                    viewportTracking
                     className={
-                      "mx-auto h-auto drop-shadow-[0_0_22px_rgba(197,160,89,0.28)] " +
-                      (compactDesktop ? "w-[min(54rem,78vw)]" : "w-[min(60rem,86vw)]")
+                      "mx-auto flex min-h-[clamp(13rem,30vw,22rem)] w-screen max-w-[1500px] items-center justify-center px-6 md:px-10 select-none"
+                    }
+                  >
+                    <span className="sr-only">الرحلة</span>
+                    <img
+                      src={ARABIC_TITLE_IMAGE_SRC}
+                      alt=""
+                      aria-hidden="true"
+                      draggable={false}
+                      className={
+                        "mx-auto h-auto drop-shadow-[0_0_22px_rgba(197,160,89,0.28)] " +
+                        (compactDesktop ? "w-[min(54rem,78vw)]" : "w-[min(60rem,86vw)]")
+                      }
+                    />
+                  </AnimatedTitle>
+                ) : (
+                  <AnimatedTitle
+                    heroMotion
+                    text="Al-Rihla"
+                    className={
+                      "font-bahlull text-white tracking-tighter italic drop-shadow-[0_0_22px_rgba(197,160,89,0.35)] " +
+                      (compactDesktop ? "text-6xl md:text-8xl" : "text-7xl md:text-9xl")
                     }
                   />
-                </AnimatedTitle>
-              ) : (
-                <AnimatedTitle
-                  heroMotion
-                  text="Al-Rihla"
-                  className={
-                    "font-bahlull text-white tracking-tighter italic drop-shadow-[0_0_22px_rgba(197,160,89,0.35)] " +
-                    (compactDesktop ? "text-6xl md:text-8xl" : "text-7xl md:text-9xl")
-                  }
-                />
-              )}
+                )}
+              </div>
             </motion.h1>
 
             <motion.div
@@ -1064,105 +1420,114 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                   (compactDesktop ? "mt-3 mb-2" : "mt-4 mb-3")
                 }
               >
-                {language === "ar-dz" ? (
-                  <p
-                    dir="rtl"
-                    className={
-                      "font-arabic-ui font-medium leading-relaxed text-[#f4ead2]/78 drop-shadow-[0_0_18px_rgba(197,160,89,0.22)] " +
-                      (compactDesktop
-                        ? "text-[clamp(1rem,2.1vw,1.25rem)] tracking-[0.08em]"
-                        : "text-[clamp(1.05rem,2.5vw,1.4rem)] tracking-[0.08em]")
-                    }
-                  >
-                    {copy.introJeanSenacSubtitle}
-                  </p>
-                ) : (
-                  <p
-                    className={
-                      "font-serif italic font-normal leading-none text-[#f4ead2]/78 tracking-[0.24em] drop-shadow-[0_0_18px_rgba(197,160,89,0.2)] " +
-                      (compactDesktop ? "text-[clamp(1rem,1.9vw,1.18rem)]" : "text-[clamp(1.05rem,2.3vw,1.35rem)]")
-                    }
-                  >
-                    {copy.introJeanSenacSubtitle}
-                  </p>
-                )}
+                <div ref={subtitleRevealRef}>
+                  {language === "ar-dz" ? (
+                    <p
+                      dir="rtl"
+                      className={
+                        "font-arabic-ui font-medium leading-relaxed text-[#f4ead2]/78 drop-shadow-[0_0_18px_rgba(197,160,89,0.22)] " +
+                        (compactDesktop
+                          ? "text-[clamp(1rem,2.1vw,1.25rem)] tracking-[0.08em]"
+                          : "text-[clamp(1.05rem,2.5vw,1.4rem)] tracking-[0.08em]")
+                      }
+                    >
+                      {copy.introJeanSenacSubtitle}
+                    </p>
+                  ) : (
+                    <p
+                      className={
+                        "font-serif italic font-normal leading-none text-[#f4ead2]/78 tracking-[0.24em] drop-shadow-[0_0_18px_rgba(197,160,89,0.2)] " +
+                        (compactDesktop ? "text-[clamp(1rem,1.9vw,1.18rem)]" : "text-[clamp(1.05rem,2.3vw,1.35rem)]")
+                      }
+                    >
+                      {copy.introJeanSenacSubtitle}
+                    </p>
+                  )}
+                </div>
               </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              animate={{
-                opacity: isStarting ? 0 : 1,
-                y: isStarting ? 48 : 0,
-              }}
-              transition={{ duration: 0.9, delay: 1.05, ease: [0.22, 1, 0.36, 1] }}
-              className={compactDesktop ? "mt-12" : "mt-20"}
-            >
-            <motion.button
-              onClick={startExperience}
-              whileTap={{ scale: 0.98 }}
-              whileHover={prefersReducedMotion ? undefined : { scale: 1.015 }}
-              transition={{ type: "spring", stiffness: 420, damping: 28 }}
-              className="group relative flex flex-col items-center gap-6 pointer-events-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-solar-gold/30 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent rounded-sm"
-            >
-              <div className="absolute -inset-14 opacity-0 group-hover:opacity-100 transition-opacity duration-700 ease-[0.22,1,0.36,1] pointer-events-none bg-[radial-gradient(circle_at_center,rgba(197,160,89,0.14)_0%,transparent_68%)] blur-2xl" />
+            {arrivalLanguageConfirmed && launchCtaVisible && (
+              <motion.div
+                ref={launchCtaWrapRef}
+                animate={{
+                  opacity: isStarting ? 0 : 1,
+                  y: isStarting ? 48 : 0,
+                }}
+                transition={{ duration: 0.9, delay: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                className={compactDesktop ? "mt-12" : "mt-20"}
+              >
+              <motion.button
+                onClick={startExperience}
+                whileTap={{ scale: 0.98 }}
+                whileHover={prefersReducedMotion ? undefined : { scale: 1.015 }}
+                transition={{ type: "spring", stiffness: 420, damping: 28 }}
+                className="group relative flex flex-col items-center gap-6 pointer-events-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-solar-gold/30 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent rounded-sm"
+              >
+                <div
+                  ref={launchAuraRef}
+                  className="absolute -inset-14 opacity-0 pointer-events-none bg-[radial-gradient(circle_at_center,rgba(197,160,89,0.18)_0%,transparent_68%)] blur-2xl"
+                />
+                <div className="absolute -inset-14 opacity-0 group-hover:opacity-100 transition-opacity duration-700 ease-[0.22,1,0.36,1] pointer-events-none bg-[radial-gradient(circle_at_center,rgba(197,160,89,0.14)_0%,transparent_68%)] blur-2xl" />
 
-              <div className="relative h-20 w-20 flex items-center justify-center">
-                <motion.div
-                  aria-hidden
-                  className="absolute inset-0"
-                  animate={prefersReducedMotion ? undefined : { rotate: [0, 360] }}
-                  transition={{ rotate: { duration: 18, repeat: Infinity, ease: "linear" } }}
-                >
+                <div ref={launchOrbRef} className="relative h-20 w-20 flex items-center justify-center">
                   <motion.div
-                    className="absolute inset-0 rotate-45 border border-solar-gold/20 transition-[border-color,box-shadow] duration-700 ease-[0.22,1,0.36,1] group-hover:border-solar-gold/45"
-                    animate={prefersReducedMotion ? undefined : { opacity: [0.52, 0.78, 0.52] }}
-                    transition={{ duration: 5, repeat: Infinity, ease: [0.45, 0, 0.55, 1] }}
-                  />
-                  <motion.div className="absolute inset-[6px] flex rotate-45 items-center justify-center border border-solar-gold/45 bg-black/40 backdrop-blur-md transition-[border-color,background-color,box-shadow] duration-700 ease-[0.22,1,0.36,1] group-hover:border-solar-gold group-hover:bg-black/55 group-hover:shadow-[0_0_20px_rgba(197,160,89,0.45)]">
+                    aria-hidden
+                    className="absolute inset-0"
+                    animate={prefersReducedMotion ? undefined : { rotate: [0, 360] }}
+                    transition={{ rotate: { duration: 18, repeat: Infinity, ease: "linear" } }}
+                  >
                     <motion.div
-                      className="pointer-events-none absolute inset-[7px] -rotate-45 rounded-full border border-dashed border-solar-gold/30 transition-[border-color,opacity] duration-700 group-hover:border-solar-gold/50 group-hover:opacity-100"
-                      animate={prefersReducedMotion ? undefined : { opacity: [0.42, 0.72, 0.42] }}
-                      transition={{ duration: 3.8, repeat: Infinity, ease: [0.45, 0, 0.55, 1], delay: 0.5 }}
+                      className="absolute inset-0 rotate-45 border border-solar-gold/20 transition-[border-color,box-shadow] duration-700 ease-[0.22,1,0.36,1] group-hover:border-solar-gold/45"
+                      animate={prefersReducedMotion ? undefined : { opacity: [0.52, 0.78, 0.52] }}
+                      transition={{ duration: 5, repeat: Infinity, ease: [0.45, 0, 0.55, 1] }}
                     />
-                    <motion.div
-                      className="-rotate-45 relative flex h-[26px] w-[26px] items-center justify-center"
-                      animate={prefersReducedMotion ? undefined : { y: [0, -2, 0], rotate: [0, -360] }}
-                      transition={{
-                        y: { duration: 4.8, repeat: Infinity, ease: [0.45, 0, 0.55, 1] },
-                        rotate: { duration: 18, repeat: Infinity, ease: "linear" },
-                      }}
-                    >
-                      <GoldPlayIcon className="h-[26px] w-[26px]" />
+                    <motion.div className="absolute inset-[6px] flex rotate-45 items-center justify-center border border-solar-gold/45 bg-black/40 backdrop-blur-md transition-[border-color,background-color,box-shadow] duration-700 ease-[0.22,1,0.36,1] group-hover:border-solar-gold group-hover:bg-black/55 group-hover:shadow-[0_0_20px_rgba(197,160,89,0.45)]">
+                      <motion.div
+                        className="pointer-events-none absolute inset-[7px] -rotate-45 rounded-full border border-dashed border-solar-gold/30 transition-[border-color,opacity] duration-700 group-hover:border-solar-gold/50 group-hover:opacity-100"
+                        animate={prefersReducedMotion ? undefined : { opacity: [0.42, 0.72, 0.42] }}
+                        transition={{ duration: 3.8, repeat: Infinity, ease: [0.45, 0, 0.55, 1], delay: 0.5 }}
+                      />
+                      <motion.div
+                        className="-rotate-45 relative flex h-[26px] w-[26px] items-center justify-center"
+                        animate={prefersReducedMotion ? undefined : { y: [0, -2, 0], rotate: [0, -360] }}
+                        transition={{
+                          y: { duration: 4.8, repeat: Infinity, ease: [0.45, 0, 0.55, 1] },
+                          rotate: { duration: 18, repeat: Infinity, ease: "linear" },
+                        }}
+                      >
+                        <GoldPlayIcon className="h-[26px] w-[26px]" />
+                      </motion.div>
                     </motion.div>
                   </motion.div>
-                </motion.div>
-              </div>
+                </div>
 
-              <motion.p
-                className="max-w-[min(92vw,24rem)] text-center text-[9px] font-light uppercase leading-relaxed tracking-[0.38em] text-solar-gold/75 transition-colors duration-500 group-hover:text-solar-gold md:text-[10px] md:tracking-[0.42em]"
-                animate={
-                  prefersReducedMotion || isStarting
-                    ? { opacity: 0.9, filter: "brightness(1)" }
-                    : {
-                        opacity: [0.52, 1, 0.52],
-                        filter: ["brightness(0.88)", "brightness(1.14)", "brightness(0.88)"],
-                        textShadow: [
-                          "0 0 12px rgba(197,160,89,0.1), 0 0 2px rgba(253,248,238,0.06)",
-                          "0 0 36px rgba(197,160,89,0.55), 0 0 14px rgba(253,248,238,0.2)",
-                          "0 0 12px rgba(197,160,89,0.1), 0 0 2px rgba(253,248,238,0.06)",
-                        ],
-                      }
-                }
-                transition={{
-                  duration: 2.65,
-                  repeat: prefersReducedMotion || isStarting ? 0 : Infinity,
-                  ease: [0.4, 0, 0.6, 1],
-                }}
-              >
-                {introCtaWords.join(" ")}
-              </motion.p>
-            </motion.button>
-            </motion.div>
+                <motion.p
+                  ref={launchPromptRef}
+                  className="max-w-[min(92vw,24rem)] text-center text-[9px] font-light uppercase leading-relaxed tracking-[0.38em] text-solar-gold/75 transition-colors duration-500 group-hover:text-solar-gold md:text-[10px] md:tracking-[0.42em]"
+                  animate={
+                    prefersReducedMotion || isStarting
+                      ? { opacity: 0.9, filter: "brightness(1)" }
+                      : {
+                          opacity: [0.52, 1, 0.52],
+                          filter: ["brightness(0.88)", "brightness(1.14)", "brightness(0.88)"],
+                          textShadow: [
+                            "0 0 12px rgba(197,160,89,0.1), 0 0 2px rgba(253,248,238,0.06)",
+                            "0 0 36px rgba(197,160,89,0.55), 0 0 14px rgba(253,248,238,0.2)",
+                            "0 0 12px rgba(197,160,89,0.1), 0 0 2px rgba(253,248,238,0.06)",
+                          ],
+                        }
+                  }
+                  transition={{
+                    duration: 2.65,
+                    repeat: prefersReducedMotion || isStarting ? 0 : Infinity,
+                    ease: [0.4, 0, 0.6, 1],
+                  }}
+                >
+                  {introCtaWords.join(" ")}
+                </motion.p>
+              </motion.button>
+              </motion.div>
+            )}
             </motion.div>
 
             </motion.div>
@@ -1303,7 +1668,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
 
       <IntroFullscreenOverlay
         open={fullscreenIntroOpen}
-        onRequestClose={() => setFullscreenIntroOpen(false)}
+        onRequestClose={handleIntroFullscreenClose}
       />
     </>
   );

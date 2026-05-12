@@ -38,6 +38,7 @@ type Copy = {
   chapterToastTitle: string;
   chapterToastSubtitle: string;
   menuAria: string;
+  menuHintDiscover: string;
   daKicker: string;
   daTitle: string;
   daSubtitle: string;
@@ -163,6 +164,7 @@ const FR: Copy = {
   chapterToastSubtitle:
     "Les cinq feux sont rallumés - la carte respire. Le voyage continue.",
   menuAria: "Menu - options et pause",
+  menuHintDiscover: "Découvrir le passage",
   daKicker: "Changement de ciel",
   daTitle: "La nuit s'ouvre",
   daSubtitle: "Le désert quitte l'or chaud. Le fil devient constellation.",
@@ -325,6 +327,7 @@ const AR: Copy = {
   chapterToastSubtitle:
     "النجوم الخمس تشعل من جديد والخريطة تنبض. الرحلة تكمل.",
   menuAria: "القائمة - الخيارات والوقفة",
+  menuHintDiscover: "اكتشف الممر",
   daKicker: "تبدّل السماء",
   daTitle: "الليل تنفتح",
   daSubtitle: "الصحراء تخلّي الذهب الحار الخيط يولّي كواكب.",

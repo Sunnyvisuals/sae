@@ -1854,8 +1854,7 @@
     const trigger = document.getElementById("voyage-credits-trigger");
     if (
       !(overlay instanceof HTMLElement) ||
-      !skipBtn ||
-      !trigger
+      !skipBtn
     ) {
       return null;
     }
@@ -1999,10 +1998,12 @@
       });
     }
 
-    trigger.addEventListener("click", (e) => {
-      e.preventDefault();
-      scrollCreditsIntoView({ updateHash: true });
-    });
+    if (trigger) {
+      trigger.addEventListener("click", (e) => {
+        e.preventDefault();
+        scrollCreditsIntoView({ updateHash: true });
+      });
+    }
     skipBtn.addEventListener("click", () => {
       syncCreditsVisibility(false);
       goToMainExperience();

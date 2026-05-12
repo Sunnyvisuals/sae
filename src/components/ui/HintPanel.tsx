@@ -131,13 +131,17 @@ export default function HintPanel({ phase, suppress = false, act1Quest, act2Ques
 
     const lingerMs = 1100;
     const exitMotionMs = 580;
+    let exitTimer: number | undefined;
     const timer = window.setTimeout(() => {
       setVisible(false);
-      window.setTimeout(() => {
+      exitTimer = window.setTimeout(() => {
         setDismissed(true);
       }, exitMotionMs);
     }, lingerMs);
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(timer);
+      if (exitTimer !== undefined) window.clearTimeout(exitTimer);
+    };
   }, [phase, dismissed, visible, act1Quest, act2Quest]);
 
   const hints = HINTS[currentPhase] ?? [];

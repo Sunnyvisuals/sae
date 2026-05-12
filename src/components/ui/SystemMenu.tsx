@@ -5,6 +5,7 @@ import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useLanguageStore } from '../../stores/languageStore';
 import { useAppCopy } from '../../hooks/useAppCopy';
 import { useMasterVolumeStore } from '../../stores/masterVolumeStore';
+import { IconVolume2, IconVolumeX, IconX } from './icons';
 import {
   exitDocumentFullscreen,
   isFullscreenApiSupported,
@@ -28,33 +29,6 @@ function IconChevronDown(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
       <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
-    </svg>
-  );
-}
-
-function IconVolume2(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path d="M4 10v4h4l5 4V6l-5 4H4z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
-      <path d="M16 9a4 4 0 010 6" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
-      <path d="M18.5 6.5a7.5 7.5 0 010 11" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
-    </svg>
-  );
-}
-
-function IconVolumeX(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path d="M4 10v4h4l5 4V6l-5 4H4z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
-      <path d="M16 10l5 5M21 10l-5 5" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
-    </svg>
-  );
-}
-
-function IconX(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
     </svg>
   );
 }
@@ -146,6 +120,8 @@ function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
   const [soundOpen, setSoundOpen] = useState(false);
   const volume = useMasterVolumeStore((s) => s.volume);
   const setVolume = useMasterVolumeStore((s) => s.setVolume);
+  const language = useLanguageStore((s) => s.language);
+  const isArabic = language === 'ar-dz';
 
   const onRange = (e: ChangeEvent<HTMLInputElement>) => {
     setVolume(parseFloat(e.target.value));
@@ -222,14 +198,16 @@ function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
           <p
             id={`${panelId}-label`}
             className={
-              'flex min-w-0 flex-1 items-baseline justify-between gap-x-2 text-[9px] uppercase tracking-[0.34em] sm:text-[10px] sm:tracking-[0.38em] ' +
+              'flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[9px] uppercase tracking-[0.24em] sm:text-[10px] sm:tracking-[0.3em] ' +
               (midnight ? 'text-sky-400/62' : 'text-solar-gold/55')
             }
           >
-            <span className="shrink-0">{copy.menuSound}</span>
+            <span className={`min-w-0 ${isArabic ? 'text-right tracking-[0.08em] sm:tracking-[0.12em]' : 'shrink-0'}`}>
+              {copy.menuSound}
+            </span>
             <span
               className={
-                'shrink-0 tabular-nums text-[11px] font-light tracking-[0.22em] sm:text-[12px] ' +
+                'shrink-0 tabular-nums text-[11px] font-light tracking-[0.14em] sm:text-[12px] sm:tracking-[0.18em] ' +
                 (midnight ? 'text-sky-200/72' : 'text-[rgba(253,248,238,0.68)]')
               }
             >
@@ -338,6 +316,7 @@ function PauseLanguagePicker({ midnight }: { midnight: boolean }) {
   const [languageOpen, setLanguageOpen] = useState(false);
   const language = useLanguageStore((s) => s.language);
   const setLanguageWithTransition = useLanguageStore((s) => s.setLanguageWithTransition);
+  const isArabic = language === 'ar-dz';
 
   const toggleLanguagePanel = () => setLanguageOpen((o) => !o);
 
@@ -384,14 +363,16 @@ function PauseLanguagePicker({ midnight }: { midnight: boolean }) {
           <p
             id={`${panelId}-label`}
             className={
-              'flex min-w-0 flex-1 items-baseline justify-between gap-x-2 text-[9px] uppercase tracking-[0.34em] sm:text-[10px] sm:tracking-[0.38em] ' +
+              'flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[9px] uppercase tracking-[0.24em] sm:text-[10px] sm:tracking-[0.3em] ' +
               (midnight ? 'text-sky-400/62' : 'text-solar-gold/55')
             }
           >
-            <span className="shrink-0">{copy.languageSectionHeading}</span>
+            <span className={`min-w-0 ${isArabic ? 'text-right tracking-[0.08em] sm:tracking-[0.12em]' : 'shrink-0'}`}>
+              {copy.languageSectionHeading}
+            </span>
             <span
               className={
-                'min-w-0 max-w-[min(100%,18ch)] truncate text-end text-[9px] font-light uppercase tracking-[0.22em] sm:text-[10px] sm:tracking-[0.26em] ' +
+                'min-w-0 max-w-full text-end text-[9px] font-light tracking-[0.12em] sm:max-w-[min(100%,18ch)] sm:truncate sm:text-[10px] sm:tracking-[0.18em] ' +
                 (midnight ? 'text-sky-200/70' : 'text-[rgba(253,248,238,0.65)]')
               }
               title={currentLabel}
@@ -416,7 +397,7 @@ function PauseLanguagePicker({ midnight }: { midnight: boolean }) {
                   onClick={() => setLanguageWithTransition('fr')}
                   tabIndex={languageOpen ? 0 : -1}
                   className={
-                    'rounded-[2px] border px-3 py-2 text-[10px] uppercase tracking-[0.2em] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ' +
+                    'rounded-[2px] border px-3 py-2 text-[10px] uppercase tracking-[0.14em] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ' +
                     (!languageOpen ? 'pointer-events-none opacity-40 ' : 'pointer-events-auto ') +
                     (language === 'fr'
                       ? midnight
@@ -434,7 +415,7 @@ function PauseLanguagePicker({ midnight }: { midnight: boolean }) {
                   onClick={() => setLanguageWithTransition('ar-dz')}
                   tabIndex={languageOpen ? 0 : -1}
                   className={
-                    'rounded-[2px] border px-3 py-2 text-[10px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ' +
+                    'rounded-[2px] border px-3 py-2 text-[10px] tracking-[0.08em] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ' +
                     (!languageOpen ? 'pointer-events-none opacity-40 ' : 'pointer-events-auto ') +
                     (language === 'ar-dz'
                       ? midnight
@@ -539,6 +520,8 @@ export default function SystemMenu({
   const midnight = useCursorStore((s) => s.ambient === 'midnight');
   const finePointer = useMediaQuery('(any-pointer: fine)');
   const copy = useAppCopy();
+  const language = useLanguageStore((s) => s.language);
+  const isArabic = language === 'ar-dz';
 
   const shellCursor = finePointer ? 'cursor-none' : 'cursor-auto';
 
@@ -591,8 +574,8 @@ export default function SystemMenu({
       </motion.button>
 
       {/* Plein viewport + centrage réel (flex) ; zone scroll limitée si trop haut */}
-      <div className="relative z-10 flex w-full flex-1 flex-col items-center justify-center px-4 py-6 sm:px-8 sm:py-10">
-        <div className="flex max-h-[min(92dvh,960px)] w-full max-w-2xl flex-col items-center justify-center overflow-x-hidden overflow-y-auto overscroll-contain px-0 pt-1 pb-2 sm:max-w-[42rem]">
+      <div className="relative z-10 flex w-full flex-1 flex-col items-center justify-start px-4 py-6 sm:justify-center sm:px-8 sm:py-10">
+        <div className="flex max-h-[calc(100dvh-4.5rem)] w-full max-w-2xl flex-col items-center justify-start overflow-x-hidden overflow-y-auto overscroll-contain px-0 pt-2 pb-3 sm:max-h-[min(92dvh,960px)] sm:max-w-[42rem] sm:justify-center">
         <motion.div
           className="flex w-full min-w-0 flex-col items-center"
           variants={container}
@@ -601,10 +584,11 @@ export default function SystemMenu({
         >
           {/* Bloc encadré */}
           <div
+            dir={isArabic ? 'rtl' : 'ltr'}
             className={
               midnight
-                ? 'relative w-full max-w-[min(100%,40rem)] border border-[rgba(90,168,255,0.26)] bg-[#040a14]/85 p-7 text-center shadow-[0_0_0_1px_rgba(90,168,255,0.1),inset_0_0_60px_rgba(45,110,190,0.05)] backdrop-blur-md sm:p-11 md:p-14'
-                : 'relative w-full max-w-[min(100%,40rem)] border border-solar-gold/25 bg-[#050302]/85 p-7 text-center shadow-[0_0_0_1px_rgba(197,160,89,0.08),inset_0_0_60px_rgba(197,160,89,0.03)] backdrop-blur-md sm:p-11 md:p-14'
+                ? 'relative w-full max-w-[min(100%,40rem)] border border-[rgba(90,168,255,0.26)] bg-[#040a14]/85 p-5 text-center shadow-[0_0_0_1px_rgba(90,168,255,0.1),inset_0_0_60px_rgba(45,110,190,0.05)] backdrop-blur-md sm:p-11 md:p-14'
+                : 'relative w-full max-w-[min(100%,40rem)] border border-solar-gold/25 bg-[#050302]/85 p-5 text-center shadow-[0_0_0_1px_rgba(197,160,89,0.08),inset_0_0_60px_rgba(197,160,89,0.03)] backdrop-blur-md sm:p-11 md:p-14'
             }
           >
             <div

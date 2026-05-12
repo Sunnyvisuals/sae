@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 
-const SESSION_DISMISS_KEY = "al-rihla-fullscreen-prompt-session";
-
 type DocWithFs = Document & {
   webkitFullscreenElement?: Element | null;
   webkitExitFullscreen?: () => Promise<void>;
@@ -48,22 +46,6 @@ export async function exitDocumentFullscreen(): Promise<void> {
   try {
     if (document.exitFullscreen) await document.exitFullscreen();
     else if (d.webkitExitFullscreen) await d.webkitExitFullscreen();
-  } catch {
-    /* ignore */
-  }
-}
-
-export function isFullscreenPromptDismissedThisSession(): boolean {
-  try {
-    return sessionStorage.getItem(SESSION_DISMISS_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-export function dismissFullscreenPromptForSession(): void {
-  try {
-    sessionStorage.setItem(SESSION_DISMISS_KEY, "1");
   } catch {
     /* ignore */
   }
