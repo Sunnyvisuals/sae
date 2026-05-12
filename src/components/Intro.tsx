@@ -1235,7 +1235,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 6, scale: 1.02 }}
               transition={{ duration: 1.85, ease: [0.22, 1, 0.36, 1] }}
-              className="pointer-events-auto fixed inset-0 z-[100] overflow-hidden"
+              className="pointer-events-auto fixed inset-0 z-[100] min-h-[100dvh] w-full overflow-hidden"
               style={{ background: "#03020100" }}
             >
               <div
@@ -1527,7 +1527,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
               {arrivalLanguageBridgeVideoActive && (
                 <div
                   className={
-                    "absolute inset-0 z-[250] flex cursor-pointer items-center justify-center bg-transparent [isolation:isolate] " +
+                    "absolute inset-0 z-[250] min-h-[100dvh] min-w-full cursor-pointer bg-transparent [isolation:isolate] " +
                     (languageBridgeReveal01 > 0.45 ? "pointer-events-none" : "pointer-events-auto")
                   }
                   style={{
@@ -1567,7 +1567,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                   <video
                     ref={arrivalLangBridgeVideoRef}
                     key={languageGateBridgeForceMp4 ? "lang-bridge-mp4" : "lang-bridge-webm"}
-                    className="relative z-[1] max-h-full max-w-full bg-transparent object-contain"
+                    className="pointer-events-none absolute inset-0 z-[1] h-full w-full bg-transparent object-cover object-center"
                     style={{ backgroundColor: "transparent" }}
                     playsInline
                     muted
