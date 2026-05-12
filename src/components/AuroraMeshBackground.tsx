@@ -4,8 +4,6 @@ import { useEffect, useRef, type CSSProperties } from 'react';
 import SplashCursor from './SplashCursor';
 import DesertDustParticles from './DesertDustParticles';
 import ShootingStars from './ShootingStars';
-import { NOISE_DATA_URI } from '../lib/noiseDataUri';
-
 /**
  * Fond mesh interactif - désert / Maghreb / oriental (sable, ocre, or chaud).
  * CSS variables + RAF à la demande (pas de boucle tant que la cible n'évolue pas).
@@ -163,14 +161,6 @@ export default function AuroraMeshBackground({
 
       <DesertDustParticles compact={compactDust} />
       {!hideShootingStars && <ShootingStars />}
-
-      <div
-        className="absolute inset-0 opacity-[0.035] mix-blend-soft-light"
-        style={{
-          backgroundImage: `url("${NOISE_DATA_URI}")`,
-          backgroundSize: '200px',
-        }}
-      />
     </div>
   );
 }

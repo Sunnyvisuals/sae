@@ -1360,13 +1360,14 @@
     dot.setAttribute("r", "1.65");
 
     const tail = document.createElementNS(ns, "line");
-    tail.setAttribute("x1", "11"); tail.setAttribute("y1", "21");
-    tail.setAttribute("x2", "11"); tail.setAttribute("y2", "27");
+    tail.setAttribute("x1", "11"); tail.setAttribute("y1", "22");
+    tail.setAttribute("x2", "11"); tail.setAttribute("y2", "28");
     tail.setAttribute("stroke-width", "1");
+    tail.setAttribute("stroke-linecap", "round");
     tail.setAttribute("stroke-opacity", "0.85");
 
     const arrow = document.createElementNS(ns, "polyline");
-    arrow.setAttribute("points", "8,24 11,28 14,24");
+    arrow.setAttribute("points", "8,25 11,29 14,25");
     arrow.setAttribute("stroke-width", "1");
     arrow.setAttribute("stroke-opacity", "0.85");
     arrow.setAttribute("stroke-linejoin", "round");

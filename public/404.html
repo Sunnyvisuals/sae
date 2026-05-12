@@ -19,7 +19,7 @@
       }
 
       @media (hover: hover) and (pointer: fine) {
-        html { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='30' viewBox='0 0 22 30'%3E%3Cpolygon points='11,1 21,11 11,21 1,11' fill='rgba(197,160,89,0.13)' stroke='%23c5a059' stroke-width='1.2'/%3E%3Ccircle cx='11' cy='11' r='1.5' fill='%23e8d5a4'/%3E%3Cline x1='11' y1='21' x2='11' y2='27' stroke='%23c5a059' stroke-width='1' stroke-opacity='0.7'/%3E%3Cpolyline points='8,24 11,28 14,24' fill='none' stroke='%23c5a059' stroke-width='1' stroke-opacity='0.7' stroke-linejoin='round'/%3E%3C/svg%3E") 11 11, auto; }
+        html { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='30' viewBox='0 0 22 30'%3E%3Cpolygon points='11,1 21,11 11,21 1,11' fill='rgba(197,160,89,0.13)' stroke='%23c5a059' stroke-width='1.2'/%3E%3Ccircle cx='11' cy='11' r='1.5' fill='%23e8d5a4'/%3E%3Cline x1='11' y1='22' x2='11' y2='28' stroke='%23c5a059' stroke-width='1' stroke-opacity='0.7'/%3E%3Cpolyline points='8,25 11,29 14,25' fill='none' stroke='%23c5a059' stroke-width='1' stroke-opacity='0.7' stroke-linejoin='round'/%3E%3C/svg%3E") 11 11, auto; }
       }
 
       /* Canvas plein fond */
@@ -29,14 +29,6 @@
       .vig {
         position: fixed; inset: 0; z-index: 1; pointer-events: none;
         background: radial-gradient(ellipse 85% 85% at 50% 50%, transparent 35%, rgba(0,1,6,0.85) 100%);
-      }
-
-      /* Grain */
-      .grain {
-        position: fixed; inset: 0; z-index: 2; pointer-events: none;
-        opacity: 0.038;
-        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-        background-size: 200px;
       }
 
       /* Scene */
@@ -195,7 +187,6 @@
   <body>
     <canvas id="bg" aria-hidden="true"></canvas>
     <div class="vig"   aria-hidden="true"></div>
-    <div class="grain" aria-hidden="true"></div>
 
     <main class="scene" role="main">
 
@@ -205,9 +196,9 @@
           <polygon id="d-poly" points="11,1 21,11 11,21 1,11"
             fill="rgba(197,160,89,0.08)" stroke="rgba(197,160,89,0.5)" stroke-width="1.15"/>
           <circle id="d-dot" cx="11" cy="11" r="1.55" fill="rgba(234,215,164,0.85)"/>
-          <line x1="11" y1="21" x2="11" y2="27"
-            stroke="rgba(197,160,89,0.48)" stroke-width="1"/>
-          <polyline points="8,24 11,28 14,24"
+          <line x1="11" y1="22" x2="11" y2="28"
+            stroke="rgba(197,160,89,0.48)" stroke-width="1" stroke-linecap="round"/>
+          <polyline points="8,25 11,29 14,25"
             fill="none" stroke="rgba(197,160,89,0.48)" stroke-width="1" stroke-linejoin="round"/>
         </svg>
       </div>

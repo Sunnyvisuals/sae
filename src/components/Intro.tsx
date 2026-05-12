@@ -29,11 +29,42 @@ import { useAppCopy } from "../hooks/useAppCopy";
 // --- CONFIGURATION VIDÉO : même source que `act1IntroBridge` (Acte I aligné sur cette piste) ---
 const VIDEO_SOURCE = INTRO_VIDEO_SRC;
 const ARABIC_TITLE_IMAGE_SRC = `${import.meta.env.BASE_URL}images/al-rihla-arabic-title.svg`;
-const ARRIVAL_LANGUAGE_PRELUDE_MS = 1400;
+/** Transition WebM avant le panneau de choix de langue (piste transparente possible). */
+const LANGUAGE_GATE_TRANSITION_WEBM = `${import.meta.env.BASE_URL}transitions/trans2-alpha.webm`;
+/** `prefers-reduced-motion` : pas de fresque GSAP — délai avant le choix de langue. */
+const ARRIVAL_LANGUAGE_PRELUDE_MS = 8000;
+/**
+ * Après la fin du timeline GSAP (titre + sous-titre visibles) : temps pour lire l’écran
+ * (losange, fond) avant le volet langue. ~5–10 s demandé côté DA.
+ */
+const ARRIVAL_LANGUAGE_HOLD_AFTER_TIMELINE_S = 8;
+/** Début du volet langue / WebM avant la fin du hold GSAP — évite coupure titre ↔ transi. */
+const LANGUAGE_GATE_TIMELINE_OVERLAP_S = 1.45;
+/** Fondu sortie WebM (skip utilisateur) — lecture naturelle : démontage direct en fin de clip. */
+const LANGUAGE_GATE_VIDEO_UI_CROSSFADE_MS = 720;
+/** Sur la durée normalisée de la clip (0–1) : début / fin de la révélation du panneau langue. */
+const LANGUAGE_BRIDGE_REVEAL_T0 = 0.06;
+const LANGUAGE_BRIDGE_REVEAL_T1 = 0.93;
+/** Sync avec le timeline GSAP du premier écran (`subtitleRevealRef` : start 2.45s, durée 1.75s). */
+const INTRO_GSAP_SUBTITLE_END_S = 2.45 + 1.75;
+/** Pause après le sous-titre avant le losange (dernier élément de la pile). */
+const LANDING_DIAMOND_PAUSE_AFTER_SUBTITLE_S = 0.1;
+const LANDING_DIAMOND_ENTRANCE_DELAY_S =
+  INTRO_GSAP_SUBTITLE_END_S + LANDING_DIAMOND_PAUSE_AFTER_SUBTITLE_S;
+/** Entrée lente « finale » (somme délai + durée ≈ fin du timeline GSAP avant le volet langue). */
+const LANDING_DIAMOND_ENTRANCE_DURATION_S = 0.85;
+/** Respiration après l’entrée (plus lente que l’ancien 3.2s). */
+const LANDING_DIAMOND_BREATHE_DURATION_S = 5.75;
 
 const INTRO_CTA_WORDS_FR = ["Cliquer", "ou", "Entrée"] as const;
 const INTRO_CTA_WORDS_AR = ["إضغط", "أو", "إنتر"] as const;
 
+function languageBridgeRevealFromTimeRatio(tRaw: number): number {
+  const u =
+    (tRaw - LANGUAGE_BRIDGE_REVEAL_T0) / (LANGUAGE_BRIDGE_REVEAL_T1 - LANGUAGE_BRIDGE_REVEAL_T0);
+  const c = Math.min(1, Math.max(0, u));
+  return 1 - (1 - c) * (1 - c);
+}
 type AnimatedTitleProps = {
   text?: string;
   className?: string;
@@ -492,6 +523,12 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
   const [easterEggPos, setEasterEggPos] = useState({ top: "20%", left: "80%" });
   const [arrivalLanguageConfirmed, setArrivalLanguageConfirmed] = useState(Boolean(isExploring));
   const [arrivalLanguageGateVisible, setArrivalLanguageGateVisible] = useState(Boolean(isExploring));
+  /** Lecture de `trans2-alpha.webm` avant de montrer les boutons FR / AR */
+  const [arrivalLanguageBridgeVideoActive, setArrivalLanguageBridgeVideoActive] = useState(false);
+  /** Fondu sortie vidéo bridge pendant que le choix langue apparaît */
+  const [arrivalLanguageBridgeCrossfading, setArrivalLanguageBridgeCrossfading] = useState(false);
+  /** 0 → 1 : opacité panneau langue pendant la WebM (timeupdate). */
+  const [languageBridgeReveal01, setLanguageBridgeReveal01] = useState(0);
   const [launchCtaVisible, setLaunchCtaVisible] = useState(Boolean(isExploring));
   const [launchCtaRevealToken, setLaunchCtaRevealToken] = useState(0);
   const [fullscreenIntroOpen, setFullscreenIntroOpen] = useState(false);
@@ -507,6 +544,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
   const launchPromptRef = useRef<HTMLParagraphElement>(null);
   const launchAuraRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const arrivalLangBridgeVideoRef = useRef<HTMLVideoElement>(null);
   const volumeRef = useRef(volume);
   const isMutedRef = useRef(isMuted);
   volumeRef.current = volume;
@@ -517,6 +555,126 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
     typeof window !== "undefined" &&
     isFullscreenApiSupported();
   const showArrivalLanguageOverlay = !arrivalLanguageConfirmed && arrivalLanguageGateVisible;
+
+  const openArrivalLanguageGate = useCallback(() => {
+    setArrivalLanguageGateVisible(true);
+    setArrivalLanguageBridgeCrossfading(false);
+    if (prefersReducedMotion) {
+      setLanguageBridgeReveal01(1);
+      setArrivalLanguageBridgeVideoActive(false);
+      return;
+    }
+    setLanguageBridgeReveal01(0);
+    setArrivalLanguageBridgeVideoActive(true);
+  }, [prefersReducedMotion]);
+
+  const finishBridgeVideoPlayback = useCallback(() => {
+    setLanguageBridgeReveal01(1);
+    setArrivalLanguageBridgeCrossfading(false);
+    if (bridgeCrossfadeTimeoutRef.current != null) {
+      window.clearTimeout(bridgeCrossfadeTimeoutRef.current);
+      bridgeCrossfadeTimeoutRef.current = null;
+    }
+    setArrivalLanguageBridgeVideoActive(false);
+  }, []);
+
+  const endArrivalLanguageBridgeVideo = useCallback(() => {
+    arrivalLangBridgeVideoRef.current?.pause();
+    setLanguageBridgeReveal01(1);
+    if (prefersReducedMotion) {
+      setArrivalLanguageBridgeVideoActive(false);
+      setArrivalLanguageBridgeCrossfading(false);
+      return;
+    }
+    if (arrivalLanguageBridgeCrossfading) {
+      if (bridgeCrossfadeTimeoutRef.current != null) {
+        window.clearTimeout(bridgeCrossfadeTimeoutRef.current);
+        bridgeCrossfadeTimeoutRef.current = null;
+      }
+      setArrivalLanguageBridgeVideoActive(false);
+      setArrivalLanguageBridgeCrossfading(false);
+      return;
+    }
+    if (arrivalLanguageBridgeVideoActive) {
+      setArrivalLanguageBridgeCrossfading(true);
+    }
+  }, [
+    prefersReducedMotion,
+    arrivalLanguageBridgeCrossfading,
+    arrivalLanguageBridgeVideoActive,
+  ]);
+
+  useEffect(() => {
+    if (!arrivalLanguageBridgeCrossfading) return;
+    if (bridgeCrossfadeTimeoutRef.current != null) {
+      window.clearTimeout(bridgeCrossfadeTimeoutRef.current);
+    }
+    bridgeCrossfadeTimeoutRef.current = window.setTimeout(() => {
+      setArrivalLanguageBridgeVideoActive(false);
+      setArrivalLanguageBridgeCrossfading(false);
+      bridgeCrossfadeTimeoutRef.current = null;
+    }, LANGUAGE_GATE_VIDEO_UI_CROSSFADE_MS);
+    return () => {
+      if (bridgeCrossfadeTimeoutRef.current != null) {
+        window.clearTimeout(bridgeCrossfadeTimeoutRef.current);
+        bridgeCrossfadeTimeoutRef.current = null;
+      }
+    };
+  }, [arrivalLanguageBridgeCrossfading]);
+
+  useEffect(() => {
+    if (!showArrivalLanguageOverlay) {
+      setArrivalLanguageBridgeVideoActive(false);
+      setArrivalLanguageBridgeCrossfading(false);
+      setLanguageBridgeReveal01(0);
+    }
+  }, [showArrivalLanguageOverlay]);
+
+  useEffect(() => {
+    if (!arrivalLanguageBridgeVideoActive) return;
+    const v = arrivalLangBridgeVideoRef.current;
+    if (!v) return;
+    setLanguageBridgeReveal01(0);
+    const tick = () => {
+      const d = v.duration;
+      if (!Number.isFinite(d) || d <= 0) return;
+      const ratio = Math.min(1, Math.max(0, v.currentTime / d));
+      setLanguageBridgeReveal01(languageBridgeRevealFromTimeRatio(ratio));
+    };
+    v.addEventListener("timeupdate", tick);
+    v.addEventListener("loadedmetadata", tick);
+    v.volume = isMuted ? 0 : volume;
+    v.currentTime = 0;
+    void v.play().catch(() => {
+      setArrivalLanguageBridgeVideoActive(false);
+    });
+    return () => {
+      v.removeEventListener("timeupdate", tick);
+      v.removeEventListener("loadedmetadata", tick);
+    };
+  }, [arrivalLanguageBridgeVideoActive, isMuted, volume]);
+
+  useEffect(() => {
+    if (!arrivalLanguageBridgeVideoActive) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" && e.key !== "Enter") return;
+      const t = e.target;
+      if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement) return;
+      e.preventDefault();
+      endArrivalLanguageBridgeVideo();
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [arrivalLanguageBridgeVideoActive, endArrivalLanguageBridgeVideo]);
+  /** Losange sous le sous-titre : premier écran seulement, avant langue / plein écran. */
+  const showLandingDiamond =
+    showInitialTitle &&
+    !videoStarted &&
+    !isStarting &&
+    !isExploring &&
+    !arrivalLanguageConfirmed &&
+    !showArrivalLanguageOverlay &&
+    !fullscreenIntroOpen;
 
   const triggerLaunchCtaReveal = useCallback(() => {
     setLaunchCtaVisible(true);
@@ -560,7 +718,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
     }
     if (prefersReducedMotion) {
       const timer = window.setTimeout(() => {
-        setArrivalLanguageGateVisible(true);
+        openArrivalLanguageGate();
       }, ARRIVAL_LANGUAGE_PRELUDE_MS);
       return () => window.clearTimeout(timer);
     }
@@ -585,10 +743,13 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
       });
       gsap.set(hazeRevealRef.current, { opacity: 0 });
 
+      const holdTotal = ARRIVAL_LANGUAGE_HOLD_AFTER_TIMELINE_S;
+      const gateOverlap = Math.min(LANGUAGE_GATE_TIMELINE_OVERLAP_S, holdTotal * 0.5);
+      const holdBeforeGate = Math.max(0, holdTotal - gateOverlap);
+
       gsap
         .timeline({
           defaults: { overwrite: true },
-          onComplete: () => setArrivalLanguageGateVisible(true),
         })
         .to(
           backgroundRevealRef.current,
@@ -644,7 +805,12 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
           },
           2.45
         )
-        .to({}, { duration: 0.95 });
+        .to({}, { duration: 0.95 })
+        .to({}, { duration: holdBeforeGate })
+        .call(() => {
+          openArrivalLanguageGate();
+        })
+        .to({}, { duration: gateOverlap });
     }, initialStageRef);
 
     return () => ctx.revert();
@@ -652,6 +818,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
     arrivalLanguageConfirmed,
     arrivalLanguageGateVisible,
     isExploring,
+    openArrivalLanguageGate,
     prefersReducedMotion,
     videoStarted,
     isStarting,
@@ -825,7 +992,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
 
   const startExperience = () => {
     if (!arrivalLanguageConfirmed) {
-      setArrivalLanguageGateVisible(true);
+      openArrivalLanguageGate();
       return;
     }
     if (isStarting || videoStarted) return;
@@ -1047,13 +1214,28 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
           {showArrivalLanguageOverlay && (
             <motion.div
               key="lang-splash"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0, scale: 1.04 }}
-              transition={{ duration: 1.35, ease: [0.22, 1, 0.36, 1] }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 6, scale: 1.02 }}
+              transition={{ duration: 1.85, ease: [0.22, 1, 0.36, 1] }}
               className="pointer-events-auto fixed inset-0 z-[100] overflow-hidden"
               style={{ background: "#03020100" }}
             >
+              <div
+                className="absolute inset-0 z-[5]"
+                style={{
+                  opacity:
+                    !arrivalLanguageBridgeVideoActive || arrivalLanguageBridgeCrossfading
+                      ? 1
+                      : languageBridgeReveal01,
+                  pointerEvents:
+                    !arrivalLanguageBridgeVideoActive ||
+                    arrivalLanguageBridgeCrossfading ||
+                    languageBridgeReveal01 > 0.2
+                      ? "auto"
+                      : "none",
+                }}
+              >
               <motion.div
                 className="absolute inset-0"
                 initial={{ opacity: 0, scale: 1.04 }}
@@ -1101,11 +1283,11 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                 transition={{ delay: 0.16, duration: 1.35, ease: [0.22, 1, 0.36, 1] }}
                 className="pointer-events-none absolute inset-0 z-[12] flex items-center justify-center"
               >
-                <div className="relative -mt-[4vh] flex flex-col items-center">
-                  <span className="font-bahlull text-[clamp(3.8rem,10vw,8rem)] italic tracking-tight text-transparent">
+                <div className="relative -mt-[3vh] flex flex-row flex-wrap items-baseline justify-center gap-x-5 gap-y-0 px-4">
+                  <span className="font-bahlull text-[clamp(3.8rem,10vw,8rem)] italic leading-none tracking-tight text-transparent">
                     Al-Rihla
                   </span>
-                  <span className="mt-1 text-[9px] uppercase tracking-[0.42em] text-transparent">
+                  <span className="text-[9px] uppercase leading-none tracking-[0.42em] text-transparent">
                     Jean Senac
                   </span>
                 </div>
@@ -1124,9 +1306,29 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.34, duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-                className="absolute left-1/2 top-[max(1.4rem,calc(env(safe-area-inset-top)+0.8rem))] z-20 flex w-full -translate-x-1/2 flex-col items-center px-6 text-center pointer-events-none"
+                className="absolute left-1/2 top-[max(1.5rem,calc(env(safe-area-inset-top)+0.85rem))] z-20 flex w-full -translate-x-1/2 flex-row justify-center px-4 text-center pointer-events-none"
               >
-                <div className="mx-auto flex max-w-[min(92vw,46rem)] items-center justify-center gap-2.5 sm:gap-4">
+                <motion.div
+                  className="mx-auto flex max-w-[min(96vw,52rem)] flex-row flex-wrap items-center justify-center gap-x-2 gap-y-1 sm:gap-x-4"
+                  animate={
+                    prefersReducedMotion
+                      ? { opacity: 1 }
+                      : { opacity: [1, 0, 1] }
+                  }
+                  transition={
+                    prefersReducedMotion
+                      ? { duration: 0 }
+                      : {
+                          opacity: {
+                            duration: 3.4,
+                            repeat: Infinity,
+                            ease: [0.45, 0, 0.55, 1],
+                            delay: 1.35,
+                            times: [0, 0.52, 1],
+                          },
+                        }
+                  }
+                >
                   <span className="hidden h-px w-[min(6.5rem,16vw)] bg-gradient-to-r from-transparent to-[#c5a059]/22 sm:block" />
                   <span
                     dir="rtl"
@@ -1142,7 +1344,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                     Choisissez votre langue
                   </span>
                   <span className="hidden h-px w-[min(9rem,22vw)] bg-gradient-to-l from-transparent to-[#c5a059]/18 sm:block" />
-                </div>
+                </motion.div>
               </motion.div>
 
               {/* Split layout */}
@@ -1183,7 +1385,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                     style={{ background: "linear-gradient(to bottom, transparent, rgba(197,160,89,0.32), transparent)" }}
                   />
 
-                  <div className="relative z-10 flex flex-col items-center gap-5 px-8">
+                  <div className="relative z-10 flex flex-col items-center gap-6 px-8">
                     <motion.span
                       initial={{ opacity: 0, y: -8 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -1275,7 +1477,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                     style={{ background: "linear-gradient(to bottom, transparent, rgba(197,160,89,0.32), transparent)" }}
                   />
 
-                  <div className="relative z-10 flex flex-col items-center gap-5 px-8">
+                  <div className="relative z-10 flex flex-col items-center gap-6 px-8">
                     <motion.span
                       initial={{ opacity: 0, y: -8 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -1304,6 +1506,57 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                 </motion.button>
               </motion.div>
 
+              </div>
+              {arrivalLanguageBridgeVideoActive && (
+                <div
+                  className={
+                    "absolute inset-0 z-[250] flex cursor-pointer items-center justify-center bg-transparent [isolation:isolate] " +
+                    (languageBridgeReveal01 > 0.45 ? "pointer-events-none" : "pointer-events-auto")
+                  }
+                  style={{
+                    opacity: arrivalLanguageBridgeCrossfading
+                      ? 0
+                      : Math.max(0, Math.min(1, 1 - 0.97 * languageBridgeReveal01)),
+                    transition: arrivalLanguageBridgeCrossfading
+                      ? `opacity ${LANGUAGE_GATE_VIDEO_UI_CROSSFADE_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`
+                      : undefined,
+                  }}
+                  onClick={endArrivalLanguageBridgeVideo}
+                  onKeyDown={(e) => {
+                    if (e.key !== "Enter" && e.key !== " ") return;
+                    e.preventDefault();
+                    endArrivalLanguageBridgeVideo();
+                  }}
+                  role="button"
+                  tabIndex={languageBridgeReveal01 > 0.45 ? -1 : 0}
+                  aria-label={ui.skipIntro}
+                >
+                  {/*
+                    Fond derrière la vidéo : sans calque ici, les zones « vides » (lettres object-contain,
+                    vraie alpha WebM) révèlent le body / main (#0a0806) → impression de noir plat.
+                  */}
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 z-0"
+                    style={{
+                      background:
+                        "radial-gradient(ellipse 95% 80% at 50% 32%, rgba(118, 82, 52, 0.42) 0%, rgba(36, 22, 14, 0.88) 42%, rgba(8, 5, 3, 0.97) 100%), linear-gradient(180deg, #100a07 0%, #060403 100%)",
+                    }}
+                  />
+                  {/*
+                    WebM : transparence seulement si encodage alpha (ex. VP9 + yuva420p).
+                  */}
+                  <video
+                    ref={arrivalLangBridgeVideoRef}
+                    className="relative z-[1] max-h-full max-w-full bg-transparent object-contain"
+                    style={{ backgroundColor: "transparent" }}
+                    playsInline
+                    src={LANGUAGE_GATE_TRANSITION_WEBM}
+                    onEnded={finishBridgeVideoPlayback}
+                    onError={finishBridgeVideoPlayback}
+                  />
+                </div>
+              )}
             </motion.div>
           )}
           </AnimatePresence>
@@ -1312,11 +1565,32 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
               animate={
                 prefersReducedMotion
                   ? { scale: 1, opacity: 1 }
-                  : showArrivalLanguageOverlay
-                    ? { scale: 1.01, opacity: 0, filter: "blur(24px) saturate(0.4) brightness(0.2)" }
-                    : { scale: isStarting ? 1.14 : 1, opacity: 1, filter: "blur(0px) saturate(1)" }
+                  : showArrivalLanguageOverlay &&
+                      arrivalLanguageBridgeVideoActive &&
+                      !arrivalLanguageBridgeCrossfading
+                    ? {
+                        scale: 1.02 - 0.016 * languageBridgeReveal01,
+                        opacity: 0.58 * (1 - languageBridgeReveal01 * 0.91),
+                        filter: "blur(14px) saturate(0.72) brightness(0.48)",
+                      }
+                    : showArrivalLanguageOverlay
+                      ? { scale: 1.01, opacity: 0, filter: "blur(24px) saturate(0.4) brightness(0.2)" }
+                      : { scale: isStarting ? 1.14 : 1, opacity: 1, filter: "blur(0px) saturate(1)" }
               }
-              transition={{ duration: prefersReducedMotion ? 0 : showArrivalLanguageOverlay ? 1.25 : isStarting ? 2.35 : 0.55, ease: [0.22, 1, 0.36, 1] }}
+              transition={{
+                duration: prefersReducedMotion
+                  ? 0
+                  : showArrivalLanguageOverlay &&
+                      arrivalLanguageBridgeVideoActive &&
+                      !arrivalLanguageBridgeCrossfading
+                    ? 0
+                    : showArrivalLanguageOverlay
+                      ? 1.68
+                      : isStarting
+                        ? 2.35
+                        : 0.55,
+                ease: [0.22, 1, 0.36, 1],
+              }}
             >
               <motion.div
                 aria-hidden
@@ -1445,6 +1719,72 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                   )}
                 </div>
               </motion.div>
+
+              <AnimatePresence>
+                {showLandingDiamond && (
+                  <motion.div
+                    key="landing-diamond"
+                    aria-hidden
+                    className="pointer-events-none mt-10 flex justify-center sm:mt-12"
+                    initial={{ opacity: 0, y: 18, scale: 0.92 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                    transition={
+                      prefersReducedMotion
+                        ? {
+                            duration: 0.55,
+                            delay: 0.72 + 0.95 + 0.28,
+                            ease: [0.22, 1, 0.36, 1],
+                          }
+                        : {
+                            duration: LANDING_DIAMOND_ENTRANCE_DURATION_S,
+                            delay: LANDING_DIAMOND_ENTRANCE_DELAY_S,
+                            ease: [0.16, 1, 0.32, 1],
+                          }
+                    }
+                  >
+                    <motion.div
+                      className="relative flex h-14 w-14 items-center justify-center sm:h-16 sm:w-16"
+                      animate={
+                        prefersReducedMotion
+                          ? { opacity: 1 }
+                          : { opacity: [1, 0.28, 1] }
+                      }
+                      transition={
+                        prefersReducedMotion
+                          ? { duration: 0 }
+                          : {
+                              opacity: {
+                                duration: LANDING_DIAMOND_BREATHE_DURATION_S,
+                                repeat: Infinity,
+                                ease: [0.42, 0, 0.58, 1],
+                                times: [0, 0.5, 1],
+                              },
+                            }
+                      }
+                    >
+                      <div className="absolute inset-0 rotate-45 border border-white/22 bg-black/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-[2px]" />
+                      <div className="relative z-[1] flex -rotate-45 items-center justify-center">
+                        <motion.div
+                          className="relative h-6 w-6"
+                          animate={prefersReducedMotion ? undefined : { rotate: [0, 360] }}
+                          transition={{ rotate: { duration: 4.2, repeat: Infinity, ease: "linear" } }}
+                          aria-hidden
+                        >
+                          <span
+                            className="pointer-events-none absolute left-1/2 top-1/2 block h-2 w-2 rounded-full bg-[#e8d4a4]/90 shadow-[0_0_10px_rgba(197,160,89,0.45)] blur-[0.35px]"
+                            style={{ transform: "translate(-50%, -50%) translate(-5.5px, -5.5px)" }}
+                          />
+                          <span
+                            className="pointer-events-none absolute left-1/2 top-1/2 block h-2 w-2 rounded-full bg-[#c5a059]/80 shadow-[0_0_8px_rgba(197,160,89,0.4)] blur-[0.35px]"
+                            style={{ transform: "translate(-50%, -50%) translate(5.5px, 5.5px)" }}
+                          />
+                        </motion.div>
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
             {arrivalLanguageConfirmed && launchCtaVisible && (
               <motion.div

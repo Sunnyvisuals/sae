@@ -30,7 +30,6 @@ const IntroVideoOverlay = lazy(() => import("./components/ui/IntroVideoOverlay")
 import type { SVGProps } from "react";
 import type { ParcoursPhaseLabel } from "./components/ui/OrientationPanel";
 import CustomCursor from "./components/ui/CustomCursor";
-import GrainOverlay from "./components/ui/GrainOverlay";
 import CinematicOverlay from "./components/CinematicOverlay";
 import Soundscape from "./components/Soundscape";
 import SplashCursor from "./components/SplashCursor";
@@ -49,7 +48,6 @@ import {
 } from "./stores/languageStore";
 import { useAppCopy } from "./hooks/useAppCopy";
 import { useMasterVolumeStore } from "./stores/masterVolumeStore";
-import { NOISE_DATA_URI } from "./lib/noiseDataUri";
 import {
   exitDocumentFullscreen,
   getDocumentFullscreenElement,
@@ -671,9 +669,8 @@ export default function App() {
             : "isolate min-h-0 w-full will-change-[opacity,filter,transform]"
         }
       >
-      <GrainOverlay opacity={phase === "act2" || introVideoPlaying ? 0 : 0.04} />
       {/* Acte II : pas d’overlay ciné (z-[52]) au-dessus de l’iframe - vignette = bande sombre « pied de page ». */}
-      {phase !== "act2" && <CinematicOverlay disableGrain={introVideoPlaying} />}
+      {phase !== "act2" && <CinematicOverlay />}
       <Soundscape enabled={phase !== "act2"} />
 
       <AnimatePresence mode="sync">
@@ -1087,19 +1084,6 @@ function LanguageMorphHud({
             aria-hidden
           />
 
-          {/* Grain discret - même donnée que GrainOverlay ; pas de translation (évite moiré / grain « qui glisse »). */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0"
-            style={{
-              opacity: 0.065,
-              backgroundImage: `url("${NOISE_DATA_URI}")`,
-              backgroundRepeat: "repeat",
-              backgroundSize: "128px 128px",
-              mixBlendMode: "overlay",
-            }}
-          />
-
           {/* Fil de lumière type transition chapitre */}
           <motion.div
             aria-hidden
@@ -1211,9 +1195,9 @@ function LanguageMorphHud({
                   strokeWidth="1.15"
                 />
                 <circle cx="11" cy="11" r="1.55" fill="#ead7a4" fillOpacity="0.88" />
-                <line x1="11" y1="21" x2="11" y2="27" stroke={losangeStroke} strokeWidth="1" strokeOpacity="0.72" />
+                <line x1="11" y1="22" x2="11" y2="28" stroke={losangeStroke} strokeWidth="1" strokeOpacity="0.72" strokeLinecap="round" />
                 <polyline
-                  points="8,24 11,28 14,24"
+                  points="8,25 11,29 14,25"
                   fill="none"
                   stroke={losangeStroke}
                   strokeWidth="1"
@@ -1518,18 +1502,6 @@ function ChapterDaTransition() {
         style={{
           background:
             "linear-gradient(122deg, rgba(255,255,255,0.02) 0%, rgba(214,192,155,0.04) 24%, transparent 48%), repeating-linear-gradient(112deg, transparent 0 24px, rgba(198,171,128,0.018) 24px 25px, transparent 25px 54px)",
-          mixBlendMode: "soft-light",
-        }}
-      />
-
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          opacity: 0.045,
-          backgroundImage: `url("${NOISE_DATA_URI}")`,
-          backgroundRepeat: "repeat",
-          backgroundSize: "128px 128px",
           mixBlendMode: "soft-light",
         }}
       />

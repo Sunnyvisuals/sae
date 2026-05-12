@@ -161,15 +161,16 @@ export default function CustomCursor({
             <circle cx="11" cy="11" r="1.65" fill={night ? '#cce8ff' : '#e8d5a4'} />
             <line
               x1="11"
-              y1="21"
+              y1="22"
               x2="11"
-              y2="27"
+              y2="28"
               stroke={night ? '#8bd5ff' : '#c5a059'}
               strokeWidth={1}
               strokeOpacity={0.85}
+              strokeLinecap="round"
             />
             <polyline
-              points="8,24 11,28 14,24"
+              points="8,25 11,29 14,25"
               stroke={night ? '#8bd5ff' : '#c5a059'}
               strokeWidth={1}
               strokeOpacity={0.85}

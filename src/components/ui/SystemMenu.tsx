@@ -94,7 +94,7 @@ function MajesticButton({
       onClick={onClick}
       aria-pressed={ariaPressed}
       aria-keyshortcuts={ariaKeyshortcuts}
-      className={`group relative w-full overflow-hidden rounded-[2px] border bg-black/30 px-5 py-4 text-center text-[10px] uppercase leading-snug tracking-[0.26em] backdrop-blur-[2px] transition-colors duration-500 sm:px-7 sm:py-[1.15rem] sm:text-[11px] sm:tracking-[0.34em] md:py-6 md:text-[12px] md:tracking-[0.38em] ${styles}`}
+      className={`group relative w-full overflow-hidden rounded-[2px] border bg-black/30 px-4 py-3 text-center text-[11px] uppercase leading-snug tracking-[0.26em] backdrop-blur-[2px] transition-colors duration-500 sm:px-6 sm:py-[0.95rem] sm:text-[12px] sm:tracking-[0.32em] md:py-[1.15rem] md:text-[13px] md:tracking-[0.36em] ${styles}`}
     >
       <span
         className={`pointer-events-none absolute inset-y-0 left-0 w-[3px] ${stripeGrad} opacity-0 transition-opacity duration-500 group-hover:opacity-100`}
@@ -166,7 +166,7 @@ function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
     (midnight ? 'text-sky-300/70 hover:text-sky-100' : 'text-solar-gold/68 hover:text-solar-gold');
 
   return (
-    <motion.div variants={item} className="mt-8 w-full max-w-[min(100%,526px)] px-0 sm:mt-9">
+    <motion.div variants={item} className="mt-4 w-full max-w-[min(100%,526px)] px-0 sm:mt-5">
       <div
         className={
           'rounded-[2px] px-3 py-2.5 sm:px-4 sm:py-3 ' +
@@ -331,7 +331,7 @@ function PauseLanguagePicker({ midnight }: { midnight: boolean }) {
     : 'from-solar-gold/[0.04] via-solar-gold/45 to-solar-gold/[0.04]';
 
   return (
-    <motion.div variants={item} className="mt-8 w-full max-w-[min(100%,526px)] px-0 sm:mt-9">
+    <motion.div variants={item} className="mt-4 w-full max-w-[min(100%,526px)] px-0 sm:mt-5">
       <div
         className={
           'rounded-[2px] px-3 py-2.5 sm:px-4 sm:py-3 ' +
@@ -451,24 +451,22 @@ function PauseFullscreenPanel({ midnight }: { midnight: boolean }) {
   };
 
   return (
-    <motion.div variants={item} className="mt-8 w-full max-w-[min(100%,526px)] px-0 sm:mt-9">
+    <motion.div variants={item} className="mt-4 w-full max-w-[min(100%,526px)] px-0 sm:mt-5">
       <div
         className={
-          'rounded-[2px] border px-3 py-2.5 sm:px-4 sm:py-3 ' +
-          (midnight
-            ? 'border-[rgba(90,168,255,0.2)] bg-[rgba(4,10,22,0.22)]'
-            : 'border-solar-gold/18 bg-black/12')
+          'rounded-[2px] px-3 py-2.5 sm:px-4 sm:py-3 ' +
+          (midnight ? 'bg-[rgba(4,10,22,0.22)]' : 'bg-black/12')
         }
       >
         <p
           className={
-            'mb-2.5 text-[9px] uppercase tracking-[0.34em] sm:mb-3 sm:text-[10px] sm:tracking-[0.38em] ' +
+            'mb-1.5 text-start text-[9px] uppercase tracking-[0.34em] sm:mb-2 sm:text-[10px] sm:tracking-[0.38em] ' +
             (midnight ? 'text-sky-400/62' : 'text-solar-gold/55')
           }
         >
           {copy.menuFullscreenSection}
         </p>
-        <div className={`pointer-events-none mb-2.5 h-px w-full bg-gradient-to-r sm:mb-3 ${haloLine}`} aria-hidden />
+        <div className={`pointer-events-none mb-2 h-px w-full bg-gradient-to-r sm:mb-2.5 ${haloLine}`} aria-hidden />
         {supported ? (
           <>
             <MajesticButton
@@ -482,7 +480,7 @@ function PauseFullscreenPanel({ midnight }: { midnight: boolean }) {
             </MajesticButton>
             <p
               className={
-                'mt-2.5 text-center text-[9px] uppercase tracking-[0.24em] sm:text-[10px] ' +
+                'mt-1.5 text-center text-[9px] uppercase tracking-[0.24em] sm:mt-2 sm:text-[10px] ' +
                 (midnight ? 'text-sky-200/46' : 'text-[rgba(253,248,238,0.42)]')
               }
             >
@@ -574,8 +572,8 @@ export default function SystemMenu({
       </motion.button>
 
       {/* Plein viewport + centrage réel (flex) ; zone scroll limitée si trop haut */}
-      <div className="relative z-10 flex w-full flex-1 flex-col items-center justify-start px-4 py-6 sm:justify-center sm:px-8 sm:py-10">
-        <div className="flex max-h-[calc(100dvh-4.5rem)] w-full max-w-2xl flex-col items-center justify-start overflow-x-hidden overflow-y-auto overscroll-contain px-0 pt-2 pb-3 sm:max-h-[min(92dvh,960px)] sm:max-w-[42rem] sm:justify-center">
+      <div className="relative z-10 flex min-h-0 w-full flex-1 flex-col items-center justify-start px-4 py-4 sm:justify-center sm:px-6 sm:py-6">
+      <div className="flex min-h-0 max-h-[calc(100dvh-4.25rem)] w-full max-w-2xl flex-col items-center justify-start overflow-y-auto overflow-x-visible overscroll-contain px-1 py-4 sm:max-h-[min(90dvh,920px)] sm:max-w-[42rem] sm:justify-center sm:px-2 sm:py-5">
         <motion.div
           className="flex w-full min-w-0 flex-col items-center"
           variants={container}
@@ -587,8 +585,8 @@ export default function SystemMenu({
             dir={isArabic ? 'rtl' : 'ltr'}
             className={
               midnight
-                ? 'relative w-full max-w-[min(100%,40rem)] border border-[rgba(90,168,255,0.26)] bg-[#040a14]/85 p-5 text-center shadow-[0_0_0_1px_rgba(90,168,255,0.1),inset_0_0_60px_rgba(45,110,190,0.05)] backdrop-blur-md sm:p-11 md:p-14'
-                : 'relative w-full max-w-[min(100%,40rem)] border border-solar-gold/25 bg-[#050302]/85 p-5 text-center shadow-[0_0_0_1px_rgba(197,160,89,0.08),inset_0_0_60px_rgba(197,160,89,0.03)] backdrop-blur-md sm:p-11 md:p-14'
+                ? 'relative w-full max-w-[min(100%,40rem)] overflow-visible border border-[rgba(90,168,255,0.26)] bg-[#040a14]/85 p-4 text-center shadow-[0_0_0_1px_rgba(90,168,255,0.1),inset_0_0_60px_rgba(45,110,190,0.05)] backdrop-blur-md sm:p-7 md:p-9'
+                : 'relative w-full max-w-[min(100%,40rem)] overflow-visible border border-solar-gold/25 bg-[#050302]/85 p-4 text-center shadow-[0_0_0_1px_rgba(197,160,89,0.08),inset_0_0_60px_rgba(197,160,89,0.03)] backdrop-blur-md sm:p-7 md:p-9'
             }
           >
             <div
@@ -620,7 +618,7 @@ export default function SystemMenu({
                 {copy.menuPause}
               </p>
               <h2
-                className="font-bahlull mx-auto mt-5 mb-5 box-border flex w-full max-w-[min(100%,28ch)] flex-col items-center justify-center overflow-visible px-0.5 pb-1.5 pt-0.5 text-[clamp(2.35rem,8vw,4rem)] italic leading-[1.18] text-transparent sm:mt-5 sm:mb-5"
+                className="font-bahlull mx-auto mt-3 mb-3 box-border flex w-full max-w-[min(100%,28ch)] flex-col items-center justify-center overflow-visible px-0.5 pb-1 pt-0.5 text-[clamp(2.35rem,8vw,4rem)] italic leading-[1.18] text-transparent sm:mt-3.5 sm:mb-3.5"
                 style={
                   midnight
                     ? {
@@ -647,7 +645,7 @@ export default function SystemMenu({
 
             <motion.div
               variants={item}
-              className="relative mx-auto mt-7 flex w-full max-w-sm items-center justify-center gap-2.5 sm:mt-9 sm:max-w-md sm:gap-3"
+              className="relative z-[1] mx-auto mt-4 flex w-full max-w-sm items-center justify-center gap-2 sm:mt-5 sm:max-w-md sm:gap-2.5"
             >
               <div
                 className={
@@ -659,8 +657,8 @@ export default function SystemMenu({
               <div
                 className={
                   midnight
-                    ? 'h-3 w-3 shrink-0 rotate-45 border border-[rgba(139,213,255,0.45)] bg-[rgba(90,168,255,0.08)] shadow-[0_0_16px_rgba(90,168,255,0.22)] sm:h-3.5 sm:w-3.5'
-                    : 'h-3 w-3 shrink-0 rotate-45 border border-solar-gold/50 bg-solar-gold/[0.12] shadow-[0_0_16px_rgba(197,160,89,0.15)] sm:h-3.5 sm:w-3.5'
+                    ? 'relative z-[2] h-3 w-3 shrink-0 rotate-45 border border-[rgba(139,213,255,0.5)] bg-[#040a14] shadow-[0_0_16px_rgba(90,168,255,0.22)] sm:h-3.5 sm:w-3.5'
+                    : 'relative z-[2] h-3 w-3 shrink-0 rotate-45 border border-solar-gold/55 bg-[#050302] shadow-[0_0_16px_rgba(197,160,89,0.15)] sm:h-3.5 sm:w-3.5'
                 }
                 aria-hidden
               />
@@ -677,8 +675,8 @@ export default function SystemMenu({
               variants={item}
               className={
                 midnight
-                  ? 'font-serif mx-auto mt-6 max-w-[30ch] text-center text-[13px] italic leading-relaxed text-sky-200/52 sm:mt-7 sm:max-w-lg sm:text-[15px] md:text-[16px]'
-                  : 'font-serif mx-auto mt-6 max-w-[30ch] text-center text-[13px] italic leading-relaxed text-solar-gold/50 sm:mt-7 sm:max-w-lg sm:text-[15px] md:text-[16px]'
+                  ? 'font-serif mx-auto mt-3.5 max-w-[30ch] text-center text-[13px] italic leading-relaxed text-sky-200/52 sm:mt-4 sm:max-w-lg sm:text-[15px] md:text-[16px]'
+                  : 'font-serif mx-auto mt-3.5 max-w-[30ch] text-center text-[13px] italic leading-relaxed text-solar-gold/50 sm:mt-4 sm:max-w-lg sm:text-[15px] md:text-[16px]'
               }
             >
               <span className={midnight ? 'text-sky-300/42' : 'text-solar-gold/35'}>«</span>
@@ -693,13 +691,11 @@ export default function SystemMenu({
             <PauseFullscreenPanel midnight={midnight} />
 
             {embeddedParcours && (
-              <motion.div variants={item} className="mt-8 w-full max-w-[min(100%,526px)] sm:mt-9">
+              <motion.div variants={item} className="mt-4 w-full max-w-[min(100%,526px)] sm:mt-5">
                 <details
                   className={
-                    'group rounded-[2px] border px-3 py-2.5 sm:px-4 sm:py-3 ' +
-                    (midnight
-                      ? 'border-[rgba(90,168,255,0.2)] bg-[rgba(4,10,22,0.22)]'
-                      : 'border-solar-gold/18 bg-black/12')
+                    'group rounded-[2px] px-3 py-2.5 sm:px-4 sm:py-3 ' +
+                    (midnight ? 'bg-[rgba(4,10,22,0.22)]' : 'bg-black/12')
                   }
                 >
                   <summary
@@ -728,7 +724,7 @@ export default function SystemMenu({
 
             <motion.nav
               variants={item}
-              className="mt-9 flex w-full flex-col gap-3.5 sm:mt-11 sm:gap-[1.15rem]"
+              className="mt-5 flex w-full flex-col gap-2.5 sm:mt-6 sm:gap-3"
               aria-label={copy.menuNavAria}
             >
               <MajesticButton variant="gold" midnight={midnight} onClick={onClose}>
