@@ -156,7 +156,7 @@ export default function DesertDustParticles({ compact = false }: { compact?: boo
       }
     };
 
-    /* Densité poussière — mode compact sur carte acte I (~ −23 % de nodes DOM, même rendu global). */
+    /* Densité poussière - mode compact sur carte acte I (~ -23 % de nodes DOM, même rendu global). */
     const far = compact ? 88 : 115;
     const near = compact ? 62 : 82;
     pushBatch(far, 'far', 'f');

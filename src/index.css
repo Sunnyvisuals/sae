@@ -23,7 +23,7 @@
   html {
     scroll-behavior: smooth;
     scrollbar-width: none;
-    /* Pas d’overflow-x ici : Lenis (root) translate le documentElement — clip + transform = artefacts au scroll. */
+    /* Pas d’overflow-x ici : Lenis (root) translate le documentElement - clip + transform = artefacts au scroll. */
     width: 100%;
     overscroll-behavior-x: none;
   }
@@ -39,7 +39,7 @@
     overflow-x: hidden;
     width: 100%;
     max-width: 100%;
-    /* Cinematic Grain Overlay — `scroll` évite bugs de composite WebKit / très large écran avec calques fixed. */
+    /* Cinematic Grain Overlay - `scroll` évite bugs de composite WebKit / très large écran avec calques fixed. */
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
     background-repeat: repeat;
     background-size: 200px;
@@ -48,7 +48,7 @@
   }
 
   /**
-   * Acte I : carte en fixed + Lenis sur la racine — sans ça le scroll révèle le fond crème du body.
+   * Acte I : carte en fixed + Lenis sur la racine - sans ça le scroll révèle le fond crème du body.
    * Classe posée sur `<html>` depuis App.tsx (`phase === "act1"`).
    */
   html.phase-act1-root {
@@ -75,7 +75,7 @@
   }
 
   /**
-   * Acte II : iframe parchemin en fixed — même problème que la carte : fond crème / grain du body visible en bas
+   * Acte II : iframe parchemin en fixed - même problème que la carte : fond crème / grain du body visible en bas
    * si le viewport ou Lenis laisse une fente (100vh vs dvh, overscroll).
    */
   html.phase-act2-root {
@@ -348,7 +348,7 @@
 }
 
 /*
- * Curseur losange « global » (hors @layer) — seulement pointeur précis.
+ * Curseur losange « global » (hors @layer) - seulement pointeur précis.
  * Solar : doré   |   Midnight (act2) : bleu-cyan
  */
 @media (hover: hover) and (pointer: fine) {

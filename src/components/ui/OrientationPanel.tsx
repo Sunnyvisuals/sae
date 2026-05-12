@@ -61,7 +61,7 @@ function parcoursCrypticTitleClass(night: boolean) {
     : 'font-medium text-[10px] sm:text-[11px] tracking-[0.04em] text-[rgba(148,138,118,0.82)] [text-shadow:0_1px_8px_rgba(0,0,0,0.75)]';
 }
 
-/** Sous-texte ??? : monospace un peu étiré, mais lisible sur fond sombre. */
+/** Sous-texte --- : monospace un peu étiré, mais lisible sur fond sombre. */
 function parcoursCrypticSummaryClass(night: boolean) {
   return night
     ? 'font-mono text-[9px] sm:text-[10px] tracking-[0.36em] text-[rgba(160,192,226,0.58)]'
@@ -163,7 +163,7 @@ function navItemClass(active: boolean, night: boolean) {
     : 'font-normal text-solar-gold/[0.38] [text-shadow:0_1px_10px_rgba(0,0,0,0.82)]';
 }
 
-/** Corps du rail Parcours (fil, flux acte II, mini-carte) — réemployé dans le menu pause sous `md`. */
+/** Corps du rail Parcours (fil, flux acte II, mini-carte) - réemployé dans le menu pause sous `md`. */
 export function ParcoursPanelInnerContent({
   phase,
   revelationCount = 0,
@@ -210,14 +210,14 @@ export function ParcoursPanelInnerContent({
         key: 'act3-suivante',
         phase: null,
         label: copy.orientationFutureAct3,
-        summary: '???',
+        summary: '---',
         variant: 'future' as const,
       },
       {
         key: 'act4-suivante',
         phase: null,
         label: copy.orientationFutureAct4,
-        summary: '???',
+        summary: '---',
         variant: 'future' as const,
       },
     ];
@@ -274,7 +274,7 @@ export function ParcoursPanelInnerContent({
             (rowPhase === null || (rowPhase !== null && PHASE_NAV_INDEX[rowPhase] > activeStep));
           const showCrypticCopy = cryptic && rowPhase !== null;
           const rowLabel = showCrypticCopy ? lockedTitle(rowPhase) : label;
-          const rowSummary = showCrypticCopy ? '???' : summary;
+          const rowSummary = showCrypticCopy ? '---' : summary;
           const canNavigate =
             journeyReplayUnlocked && typeof onNavigatePhase === 'function' && rowPhase !== null && !forceReveal;
           return (
@@ -446,7 +446,7 @@ function useExpandedWidthPx() {
   return px;
 }
 
-/** Après ce délai (rail replié), le fond / bordure s’estompent — restent le libellé + l’encoche. */
+/** Après ce délai (rail replié), le fond / bordure s’estompent - restent le libellé + l’encoche. */
 const COLLAPSED_MINIMAL_AFTER_MS = 10_000;
 
 export default function OrientationPanel({

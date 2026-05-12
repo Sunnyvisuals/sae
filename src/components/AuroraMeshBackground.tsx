@@ -16,7 +16,7 @@ type AuroraProps = {
   fillContainer?: boolean;
   /** Désactive les étoiles filantes (ex. acte I carte) */
   hideShootingStars?: boolean;
-  /** Moins de grains DOM (DesertDust) — carte acte I ; intro inchangée si omis */
+  /** Moins de grains DOM (DesertDust) - carte acte I ; intro inchangée si omis */
   compactDust?: boolean;
 };
 

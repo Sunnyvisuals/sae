@@ -70,7 +70,7 @@ function scrollDepthEmphasis(scroll01: number): number {
   return x * x * (3 - 2 * x);
 }
 
-/** Une extrémité de palette : 0 = solaire, 1 = minuit — puis emphase scroll (identique pour les deux). */
+/** Une extrémité de palette : 0 = solaire, 1 = minuit - puis emphase scroll (identique pour les deux). */
 function barStopsForPaletteEnd(uRaw: number, paletteEnd: 0 | 1, emphasisSource: number): { rgbStop1: Rgb; rgbStop2: Rgb } {
   const u = Math.min(1, Math.max(0, uRaw));
   const nb = paletteEnd;
@@ -160,7 +160,7 @@ function blendedBar(uRaw: number, nightBlendSmooth: number, emphasisScroll?: num
 
 type Props = {
   tone: Tone;
-  /** Acte II (iframe parchemin) : ratio synchro depuis `postMessage` — barre alors au-dessus du chrome `aboveChrome`. */
+  /** Acte II (iframe parchemin) : ratio synchro depuis `postMessage` - barre alors au-dessus du chrome `aboveChrome`. */
   iframeFillRatio?: number;
   /** z-index au-dessus du rail « Parcours » / aides (toujours sous menus plein écran). */
   aboveChrome?: boolean;
@@ -217,7 +217,7 @@ export default function ScrollProgressBar({ tone, iframeFillRatio, aboveChrome }
         p = iframeDisplayRef.current;
       } else {
         iframeHadPrevFrameRef.current = false;
-        /** Suit Lenis / le scroll natif frame par frame — pas de 2ᵉ lissage (évite retard + crans sur `width`). */
+        /** Suit Lenis / le scroll natif frame par frame - pas de 2ᵉ lissage (évite retard + crans sur `width`). */
         p = scrollRatio();
       }
 

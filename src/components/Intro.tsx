@@ -19,6 +19,9 @@ import {
 import { playSuspenseLoadCompleteChime, primeSuspenseAudio } from "../lib/suspenseLoadChime";
 import { INTRO_VIDEO_SRC } from "../lib/act1IntroBridge";
 import { useLanguageStore } from "../stores/languageStore";
+import { useFullscreenPrefsStore } from "../stores/fullscreenPrefsStore";
+import { isFullscreenApiSupported } from "../lib/fullscreenDocument";
+import IntroFullscreenOverlay from "./IntroFullscreenOverlay";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { useAppCopy } from "../hooks/useAppCopy";
 
@@ -369,7 +372,7 @@ export type DevChapterJumps = {
   goChapter1: () => void;
   goChapter2: () => void;
   goChapter3: () => void;
-  /** Ouvre le parchemin sur Ch. III avec générique façon cinéma (`?previewCredits=1`). */
+  /** Ouvre le parchemin sur Ch. III avec générique façon cinéma (`-previewCredits=1`). */
   previewCredits: () => void;
 };
 
@@ -383,8 +386,8 @@ interface IntroProps {
 
 export default function Intro({ onComplete, isExploring, onVideoStart, devChapterJumps }: IntroProps) {
   const language = useLanguageStore((s) => s.language);
-  const hasConfirmedChoice = useLanguageStore((s) => s.hasConfirmedChoice);
   const confirmLanguage = useLanguageStore((s) => s.confirmLanguage);
+  const offerFullscreenOnArrival = useFullscreenPrefsStore((s) => s.offerFullscreenOnArrival);
   const isArabic = language === "ar-dz";
   const copy = useAppCopy();
   const introCtaWords = isArabic ? INTRO_CTA_WORDS_AR : INTRO_CTA_WORDS_FR;
@@ -425,11 +428,43 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
   const [isEasterEggFound, setIsEasterEggFound] = useState(false);
   const [easterEggPromptHidden, setEasterEggPromptHidden] = useState(false);
   const [easterEggPos, setEasterEggPos] = useState({ top: "20%", left: "80%" });
+  const [arrivalLanguageConfirmed, setArrivalLanguageConfirmed] = useState(Boolean(isExploring));
+  const [fullscreenIntroOpen, setFullscreenIntroOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const volumeRef = useRef(volume);
   const isMutedRef = useRef(isMuted);
   volumeRef.current = volume;
   isMutedRef.current = isMuted;
+
+  const shouldOfferFullscreenNow =
+    offerFullscreenOnArrival &&
+    typeof window !== "undefined" &&
+    isFullscreenApiSupported();
+
+  const handleArrivalLanguageChoice = (nextLanguage: "fr" | "ar-dz") => {
+    confirmLanguage(nextLanguage);
+    setArrivalLanguageConfirmed(true);
+    setFullscreenIntroOpen(shouldOfferFullscreenNow);
+  };
+
+  useEffect(() => {
+    if (isExploring) {
+      setArrivalLanguageConfirmed(true);
+    }
+  }, [isExploring]);
+
+  /** Plein écran : reste fermé dès que l’intro démarre ou si l’option est indisponible. */
+  useEffect(() => {
+    if (videoStarted || isStarting) {
+      setFullscreenIntroOpen(false);
+      return undefined;
+    }
+    if (!arrivalLanguageConfirmed || !shouldOfferFullscreenNow) {
+      setFullscreenIntroOpen(false);
+      return undefined;
+    }
+    return undefined;
+  }, [arrivalLanguageConfirmed, videoStarted, isStarting, shouldOfferFullscreenNow]);
 
   useEffect(() => {
     if (!videoStarted) return;
@@ -490,7 +525,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
   }, [videoStarted]);
 
   const startExperience = () => {
-    if (!hasConfirmedChoice) return;
+    if (!arrivalLanguageConfirmed) return;
     if (isStarting || videoStarted) return;
     primeSuspenseAudio();
     setIsStarting(true);
@@ -524,7 +559,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- déclenchement aligné sur l’écran titre initial uniquement
+    // eslint-disable-next-line react-hooks/exhaustive-deps ?? déclenchement aligné sur l’écran titre initial uniquement
   }, [videoStarted, isStarting, showInitialTitle, isPoetryGameOpen]);
   // Entr\u00e9e pendant le trailer = passer
   useEffect(() => {
@@ -706,7 +741,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
             className="absolute inset-0 z-20 flex flex-col items-center justify-center overflow-hidden"
           >
           <AnimatePresence>
-          {!hasConfirmedChoice && (
+          {!arrivalLanguageConfirmed && (
             <motion.div
               key="lang-splash"
               initial={{ opacity: 0 }}
@@ -729,6 +764,17 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                   style={{ background: "radial-gradient(circle, rgba(197,160,89,0.08) 0%, transparent 70%)" }}
                 />
               </div>
+
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.22, duration: 0.95, ease: [0.22, 1, 0.36, 1] }}
+                className="absolute inset-x-0 top-[max(2.25rem,calc(env(safe-area-inset-top)+1.25rem))] z-20 px-6 text-center"
+              >
+                <p className="mx-auto max-w-[min(52rem,94vw)] text-[clamp(0.92rem,1.35vw,1.2rem)] uppercase tracking-[0.42em] text-[#e8d5a4]/88 drop-shadow-[0_0_14px_rgba(0,0,0,0.78)] sm:text-[clamp(1rem,1.2vw,1.28rem)]">
+                  Choisissez votre langue · اختر لغتك
+                </p>
+              </motion.div>
 
               {/* Top decorative line */}
               <motion.div
@@ -753,19 +799,20 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                 {/* ── FRANÇAIS ── */}
                 <button
                   type="button"
-                  onClick={() => confirmLanguage("fr")}
+                  onClick={() => handleArrivalLanguageChoice("fr")}
                   className="group relative flex flex-1 flex-col items-center justify-center overflow-hidden"
                 >
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(197,160,89,0.04),rgba(197,160,89,0.015))]" />
                   {/* Hover wash */}
-                  <div className="absolute inset-0 bg-[#c5a059] opacity-0 transition-opacity duration-700 group-hover:opacity-[0.06]" />
+                  <div className="absolute inset-0 bg-[#c5a059] opacity-0 transition-opacity duration-700 group-hover:opacity-[0.1]" />
                   {/* Hover bottom glow */}
                   <div
                     className="absolute bottom-0 inset-x-0 h-2/3 translate-y-full transition-transform duration-700 ease-out group-hover:translate-y-0 pointer-events-none"
-                    style={{ background: "linear-gradient(to top, rgba(197,160,89,0.12), transparent)" }}
+                    style={{ background: "linear-gradient(to top, rgba(197,160,89,0.18), transparent)" }}
                   />
-                  {/* Right border separator (hidden on mobile – center divider takes care of it) */}
+                  {/* Right border separator (hidden on mobile - center divider takes care of it) */}
                   <div className="absolute right-0 top-[15%] bottom-[15%] w-px hidden sm:block"
-                    style={{ background: "linear-gradient(to bottom, transparent, rgba(197,160,89,0.2), transparent)" }}
+                    style={{ background: "linear-gradient(to bottom, transparent, rgba(197,160,89,0.32), transparent)" }}
                   />
 
                   <div className="relative z-10 flex flex-col items-center gap-5 px-8">
@@ -773,7 +820,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                       initial={{ opacity: 0, y: -8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.55, duration: 0.9 }}
-                      className="text-[9px] uppercase tracking-[0.6em] text-[#c5a059]/35"
+                      className="text-[10px] uppercase tracking-[0.54em] text-[#c5a059]/68 drop-shadow-[0_0_12px_rgba(0,0,0,0.82)]"
                     >
                       Langue
                     </motion.span>
@@ -782,7 +829,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                       initial={{ opacity: 0, y: 14 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.65, duration: 1, ease: [0.22, 1, 0.36, 1] }}
-                      className="text-[clamp(1.6rem,4vw,2.8rem)] font-light uppercase tracking-[0.3em] text-[#c5a059]/70 transition-colors duration-300 group-hover:text-[#c5a059]"
+                      className="text-[clamp(1.8rem,4.6vw,3rem)] font-light uppercase tracking-[0.26em] text-[#f4ead2]/88 drop-shadow-[0_0_18px_rgba(0,0,0,0.8)] transition-colors duration-300 group-hover:text-[#fff4dc]"
                     >
                       Français
                     </motion.span>
@@ -791,7 +838,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                       initial={{ scaleX: 0 }}
                       animate={{ scaleX: 1 }}
                       transition={{ delay: 0.8, duration: 0.7 }}
-                      className="h-px w-10 origin-center bg-[#c5a059]/20 transition-all duration-500 group-hover:w-20 group-hover:bg-[#c5a059]/50"
+                      className="h-px w-12 origin-center bg-[#c5a059]/38 transition-all duration-500 group-hover:w-20 group-hover:bg-[#c5a059]/72"
                     />
                   </div>
                 </button>
@@ -804,13 +851,13 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                       animate={{ scaleY: 1, opacity: 1 }}
                       transition={{ delay: 0.2, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
                       className="hidden sm:block h-28 w-px origin-top"
-                      style={{ background: "linear-gradient(to bottom, transparent, rgba(197,160,89,0.25))" }}
+                      style={{ background: "linear-gradient(to bottom, transparent, rgba(197,160,89,0.4))" }}
                     />
                     <motion.span
                       initial={{ opacity: 0, scale: 0.7 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: 0.5, duration: 1, ease: [0.22, 1, 0.36, 1] }}
-                      className="text-[#c5a059]/40 text-lg select-none"
+                      className="text-[#c5a059]/72 text-xl drop-shadow-[0_0_14px_rgba(0,0,0,0.8)] select-none"
                     >
                       ✦
                     </motion.span>
@@ -819,12 +866,12 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                       animate={{ scaleY: 1, opacity: 1 }}
                       transition={{ delay: 0.2, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
                       className="hidden sm:block h-28 w-px origin-bottom"
-                      style={{ background: "linear-gradient(to top, transparent, rgba(197,160,89,0.25))" }}
+                      style={{ background: "linear-gradient(to top, transparent, rgba(197,160,89,0.4))" }}
                     />
                     {/* Horizontal separator on mobile */}
                     <div
                       className="sm:hidden h-px w-24 my-1"
-                      style={{ background: "linear-gradient(90deg, transparent, rgba(197,160,89,0.3), transparent)" }}
+                      style={{ background: "linear-gradient(90deg, transparent, rgba(197,160,89,0.48), transparent)" }}
                     />
                   </div>
                 </div>
@@ -832,20 +879,21 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                 {/* ── ARABIC ── */}
                 <button
                   type="button"
-                  onClick={() => confirmLanguage("ar-dz")}
+                  onClick={() => handleArrivalLanguageChoice("ar-dz")}
                   className="group relative flex flex-1 flex-col items-center justify-center overflow-hidden"
                   dir="rtl"
                 >
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(197,160,89,0.04),rgba(197,160,89,0.015))]" />
                   {/* Hover wash */}
-                  <div className="absolute inset-0 bg-[#c5a059] opacity-0 transition-opacity duration-700 group-hover:opacity-[0.06]" />
+                  <div className="absolute inset-0 bg-[#c5a059] opacity-0 transition-opacity duration-700 group-hover:opacity-[0.1]" />
                   {/* Hover bottom glow */}
                   <div
                     className="absolute bottom-0 inset-x-0 h-2/3 translate-y-full transition-transform duration-700 ease-out group-hover:translate-y-0 pointer-events-none"
-                    style={{ background: "linear-gradient(to top, rgba(197,160,89,0.12), transparent)" }}
+                    style={{ background: "linear-gradient(to top, rgba(197,160,89,0.18), transparent)" }}
                   />
                   {/* Left border separator */}
                   <div className="absolute left-0 top-[15%] bottom-[15%] w-px hidden sm:block"
-                    style={{ background: "linear-gradient(to bottom, transparent, rgba(197,160,89,0.2), transparent)" }}
+                    style={{ background: "linear-gradient(to bottom, transparent, rgba(197,160,89,0.32), transparent)" }}
                   />
 
                   <div className="relative z-10 flex flex-col items-center gap-5 px-8">
@@ -853,7 +901,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                       initial={{ opacity: 0, y: -8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.55, duration: 0.9 }}
-                      className="text-[9px] tracking-[0.3em] text-[#c5a059]/35"
+                      className="text-[10px] tracking-[0.24em] text-[#c5a059]/68 drop-shadow-[0_0_12px_rgba(0,0,0,0.82)]"
                     >
                       لغة
                     </motion.span>
@@ -862,7 +910,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                       initial={{ opacity: 0, y: 14 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.65, duration: 1, ease: [0.22, 1, 0.36, 1] }}
-                      className="text-[clamp(1.6rem,4vw,2.8rem)] font-light text-[#c5a059]/70 transition-colors duration-300 group-hover:text-[#c5a059]"
+                      className="text-[clamp(1.8rem,4.6vw,3rem)] font-light text-[#f4ead2]/88 drop-shadow-[0_0_18px_rgba(0,0,0,0.8)] transition-colors duration-300 group-hover:text-[#fff4dc]"
                     >
                       العربية الجزائرية
                     </motion.span>
@@ -871,21 +919,12 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                       initial={{ scaleX: 0 }}
                       animate={{ scaleX: 1 }}
                       transition={{ delay: 0.8, duration: 0.7 }}
-                      className="h-px w-10 origin-center bg-[#c5a059]/20 transition-all duration-500 group-hover:w-20 group-hover:bg-[#c5a059]/50"
+                      className="h-px w-12 origin-center bg-[#c5a059]/38 transition-all duration-500 group-hover:w-20 group-hover:bg-[#c5a059]/72"
                     />
                   </div>
                 </button>
               </div>
 
-              {/* Bottom hint */}
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1.1, duration: 1 }}
-                className="absolute bottom-6 inset-x-0 text-center text-[9px] uppercase tracking-[0.5em] text-[#c5a059]/20 pointer-events-none"
-              >
-                Choisissez votre langue · اختر لغتك
-              </motion.p>
             </motion.div>
           )}
           </AnimatePresence>
@@ -939,37 +978,31 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                 animate={{ opacity: isStarting ? 0 : 1, y: isStarting ? -4 : 0 }}
                 transition={{ duration: 0.95, delay: 0.72, ease: [0.22, 1, 0.36, 1] }}
                 className={
-                  "mx-auto max-w-[min(min(26rem,92vw),42rem)] px-6 text-center leading-none [font-feature-settings:'kern'_1] " +
-                  (compactDesktop ? "mt-5 mb-2" : "mt-7 mb-4")
+                  "mx-auto max-w-[min(min(22rem,90vw),28rem)] px-6 text-center [font-feature-settings:'kern'_1] " +
+                  (compactDesktop ? "mt-3 mb-2" : "mt-4 mb-3")
                 }
               >
                 {language === "ar-dz" ? (
                   <p
                     dir="rtl"
                     className={
-                      "font-arabic-ui font-medium leading-snug text-white tracking-[0.06em] drop-shadow-[0_0_22px_rgba(197,160,89,0.35)] " +
+                      "font-arabic-ui font-medium leading-relaxed text-[#f4ead2]/78 drop-shadow-[0_0_18px_rgba(197,160,89,0.22)] " +
                       (compactDesktop
-                        ? "text-[clamp(1.85rem,5vw,2.85rem)] sm:tracking-[0.08em]"
-                        : "text-[clamp(2rem,5.5vw,3.25rem)] sm:tracking-[0.08em]")
+                        ? "text-[clamp(1rem,2.1vw,1.25rem)] tracking-[0.08em]"
+                        : "text-[clamp(1.05rem,2.5vw,1.4rem)] tracking-[0.08em]")
                     }
                   >
-                    <span className="text-white/75" aria-hidden>
-                      «&nbsp;
-                    </span>
-                    {copy.introAlRihlaSubtitle}
-                    <span className="text-white/75" aria-hidden>
-                      &nbsp;»
-                    </span>
+                    {copy.introJeanSenacSubtitle}
                   </p>
                 ) : (
-                  <AnimatedTitle
-                    heroMotion
-                    text={`\u00AB\u202f${copy.introAlRihlaSubtitle}\u202f\u00BB`}
+                  <p
                     className={
-                      "font-serif italic font-normal text-white tracking-tight drop-shadow-[0_0_22px_rgba(197,160,89,0.35)] " +
-                      (compactDesktop ? "text-5xl md:text-7xl" : "text-6xl md:text-8xl")
+                      "font-serif italic font-normal leading-none text-[#f4ead2]/78 tracking-[0.24em] drop-shadow-[0_0_18px_rgba(197,160,89,0.2)] " +
+                      (compactDesktop ? "text-[clamp(1rem,1.9vw,1.18rem)]" : "text-[clamp(1.05rem,2.3vw,1.35rem)]")
                     }
-                  />
+                  >
+                    {copy.introJeanSenacSubtitle}
+                  </p>
                 )}
               </motion.div>
 
@@ -1185,6 +1218,11 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
       )}
     </AnimatePresence>
       </div>
+
+      <IntroFullscreenOverlay
+        open={fullscreenIntroOpen}
+        onRequestClose={() => setFullscreenIntroOpen(false)}
+      />
     </>
   );
 }

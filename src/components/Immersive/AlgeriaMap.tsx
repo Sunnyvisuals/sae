@@ -158,6 +158,8 @@ type AlgeriaMapProps = {
   onRevelationProgress?: (count: number) => void;
   /** Premiers gestes (panneau gauche) : survol mot, clic sur le bon fragment, zoom */
   onQuestStepComplete?: (step: Act1QuestStep) => void;
+  /** Mode revisite après traversée complète : carte déjà éveillée, sans auto-transition vers l'acte II. */
+  completedReplay?: boolean;
   /** Rail développé vs replié - largeur alignée avec `OrientationPanel`. */
   parcoursRailExpanded?: boolean;
 };
@@ -166,13 +168,14 @@ export default function AlgeriaMap({
   onMemoryMapComplete,
   onRevelationProgress,
   onQuestStepComplete,
+  completedReplay = false,
   parcoursRailExpanded = true,
 }: AlgeriaMapProps) {
   const canvasRef  = useRef<HTMLCanvasElement>(null);
   const particles  = useRef<Particle[]>([]);
   /** Sous-ensemble des index contenant des mots (évite de balayer les entrées au hit-test). */
   const poemParticleIndicesRef = useRef<number[]>([]);
-  /** Gradient radial du halo central — recréé seulement si la taille du canvas change. */
+  /** Gradient radial du halo central - recréé seulement si la taille du canvas change. */
   const pulseGradCacheRef = useRef<{ W: number; H: number; grad: CanvasGradient | null }>({
     W: -1,
     H: -1,
@@ -202,8 +205,10 @@ export default function AlgeriaMap({
       setTooltip(pendingTooltipRef.current);
     });
   }, []);
-  const [revelationFound, setRevelationFound] = useState<string[]>([]);
-  const [hasZoomed, setHasZoomed] = useState(false);
+  const [revelationFound, setRevelationFound] = useState<string[]>(() =>
+    completedReplay ? [...REVELATION_WORDS] : []
+  );
+  const [hasZoomed, setHasZoomed] = useState(completedReplay);
   const prefersReducedMotion = useReducedMotion();
   const copy = useAppCopy();
   const arabicUi = useLanguageStore((s) => s.language === 'ar-dz');
@@ -218,9 +223,9 @@ export default function AlgeriaMap({
 
   const revelRef = useRef(0);
   const mapAwakenedRef = useRef(false);
-  const awakenNotify = useRef(false);
+  const awakenNotify = useRef(completedReplay);
   const hoveredIdx = useRef(-1);
-  const questDone = useRef({ hover: false, clickWord: false, zoom: false });
+  const questDone = useRef({ hover: completedReplay, clickWord: completedReplay, zoom: completedReplay });
   const downPt = useRef<{ x: number; y: number } | null>(null);
   const panPending = useRef(false);
   const mapParallaxLayerRef = useRef<HTMLDivElement>(null);
@@ -492,7 +497,7 @@ export default function AlgeriaMap({
 
       ctx.clearRect(0, 0, W, H);
 
-      // Pulse central — gradient réutilisé (évite createRadialGradient à chaque frame).
+      // Pulse central - gradient réutilisé (évite createRadialGradient à chaque frame).
       const t = performance.now() / 1000;
       const pulse = 0.5 + 0.5 * Math.sin(t * 1.3);
       const pulseAlpha = 0.1 * pulse * prog * veil * (mapAwake ? 1.25 : 1);

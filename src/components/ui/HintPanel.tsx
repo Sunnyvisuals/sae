@@ -67,7 +67,7 @@ const ACT2_ICONS: ReactNode[] = [
 
 interface Props {
   phase: Phase;
-  /** Masque les consignes sans démonter (menu pause / vidéo) — évite de réinitialiser « fermé par l'utilisateur » au remontage. */
+  /** Masque les consignes sans démonter (menu pause / vidéo) - évite de réinitialiser « fermé par l'utilisateur » au remontage. */
   suppress?: boolean;
   act1Quest?: Act1QuestProgress;
   act2Quest?: Act2QuestProgress;
@@ -169,7 +169,7 @@ export default function HintPanel({ phase, suppress = false, act1Quest, act2Ques
           className={
             'pointer-events-auto fixed select-none ' +
             (currentPhase === 'act2'
-              ? /* Au-dessus de la scène (z-20), sous tout le chrome / halo — traitement « arrière-plan » */
+              ? /* Au-dessus de la scène (z-20), sous tout le chrome / halo - traitement « arrière-plan » */
                 'z-[21] '
               : 'z-[50] ') +
             'left-[max(1rem,calc(env(safe-area-inset-left)+0.5rem))] md:left-[max(1.5rem,calc(env(safe-area-inset-left)+0.75rem))] ' +

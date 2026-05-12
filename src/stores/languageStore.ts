@@ -2,7 +2,7 @@ import { create } from "zustand";
 
 export type AppLanguage = "fr" | "ar-dz";
 
-/** Durée avant bascule localeStorage + state (texte) — le flou atteint alors presque son maximum. */
+/** Durée avant bascule localeStorage + state (texte) - le flou atteint alors presque son maximum. */
 export const LANGUAGE_MORPH_OUT_MS = 220;
 /** Durée du retour visuel après application de la nouvelle langue */
 export const LANGUAGE_MORPH_IN_MS = 440;
@@ -13,7 +13,7 @@ type LanguageState = {
   /** True pendant le fondu / pastille (changement depuis le menu pause). */
   isLanguageMorphing: boolean;
   setLanguage: (language: AppLanguage) => void;
-  /** Même effet que setLanguage, sans animation — retour arrière accessibilité ou init. */
+  /** Même effet que setLanguage, sans animation - retour arrière accessibilité ou init. */
   setLanguageInstant: (language: AppLanguage) => void;
   setLanguageWithTransition: (language: AppLanguage) => void;
   confirmLanguage: (language: AppLanguage) => void;

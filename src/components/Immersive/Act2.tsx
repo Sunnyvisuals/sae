@@ -8,7 +8,7 @@ import { useAppCopy } from "../../hooks/useAppCopy";
  */
 export default function Act2() {
   const copy = useAppCopy();
-  /** Jamais préfixer par "" — sinon `// fichier` devient une URL scheme-relative cassée (iframe blanche). */
+  /** Jamais préfixer par "" - sinon `// fichier` devient une URL scheme-relative cassée (iframe blanche). */
   const base = import.meta.env.BASE_URL || "/";
   const prefix = base.endsWith("/") ? base : `${base}/`;
   const parcheminSrc = `${prefix}parchemin-senac.html`;

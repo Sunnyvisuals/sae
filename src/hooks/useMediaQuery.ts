@@ -7,7 +7,7 @@ function subscribeMq(query: string, onStoreChange: () => void): () => void {
 }
 
 /**
- * SSR-safe (`false` tant que pas d’hydratation) ; lecture synchrone au premier paint client —
+ * SSR-safe (`false` tant que pas d’hydratation) ; lecture synchrone au premier paint client -
  * évite un tour `useEffect` où `SplashCursor` ne montait pas / restait désactivé.
  */
 export function useMediaQuery(query: string): boolean {

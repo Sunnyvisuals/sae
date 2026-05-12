@@ -43,7 +43,7 @@
         '<p class="senac-cinema-explore-callout__text">Pour continuer, appuie sur <strong>Exploration</strong> en bas à gauche.</p><div class="senac-cinema-explore-callout__arrows" aria-hidden="true"><span class="senac-ce-arrow"></span><span class="senac-ce-arrow"></span><span class="senac-ce-arrow"></span></div>',
       js_scroll_nudge_label: "Molette · défiler",
       smc_aria: "Choisissez votre mode de navigation",
-      smc_kicker: "Comment traverser cette nuit ?",
+      smc_kicker: "Comment traverser cette nuit -",
       smc_caption_html:
         'Choisis ci-dessous <span class="smc-caption-em">un mode</span> pour entrer dans la nuit.',
       smc_cinema_label: "Cinéma",
@@ -60,10 +60,10 @@
       hero_subtitle: "une vie en versants",
       hero_copy:
         "Une frise comme une traversée nocturne : les dates deviennent constellations, les fragments s'allument au passage, et la voix de Sénac avance dans le bleu.",
-      cross_nav_status_kicker: "Acte I terminé — tu poursuis en Acte II",
+      cross_nav_status_kicker: "Acte I terminé - tu poursuis en Acte II",
       cross_nav_group_aria: "Raccourcis facultatifs : prologue et carte-mémoire (Acte I déjà parcouru)",
       cross_nav_links_html:
-        'La frise commence ici. Facultatif : <button type="button" class="senac-cross-nav__link" data-senac-navigate="intro-video">reprendre la vidéo d’introduction</button> — ou <button type="button" class="senac-cross-nav__link" data-senac-navigate="act1-map">revenir à la carte-mémoire</button> (Acte I déjà parcouru).',
+        'La frise commence ici. Facultatif : <button type="button" class="senac-cross-nav__link" data-senac-navigate="intro-video">reprendre la vidéo d’introduction</button> - ou <button type="button" class="senac-cross-nav__link" data-senac-navigate="act1-map">revenir à la carte-mémoire</button> (Acte I déjà parcouru).',
       cross_nav_act1_birth_html:
         'Carte-mémoire : <button type="button" class="senac-cross-nav__link" data-senac-navigate="act1-map">fragment « Naissance »</button>',
       cross_nav_act1_poetry_html:
@@ -144,7 +144,7 @@
       vc_l_audio:
         "Ambiances et pistes utilisées : crédits et licences (ex. Creative Commons, bibliothèque).",
       vc_h_outils: "Outils",
-      vc_l_outils_1: "React, Vite, Motion - Parchemin : Lenis, canvas & WebGL (selon activation).",
+      vc_l_outils_1: "React, Vite, Motion ? Parchemin : Lenis, canvas & WebGL (selon activation).",
       vc_l_outils_2:
         "Création & post-production : Adobe Photoshop, Premiere Pro, After Effects, Blackmagic DaVinci Resolve.",
       vc_fin: "Merci d'avoir traversé cette nuit.",
@@ -152,7 +152,7 @@
       vc_skip_btn: "Revenir à l'expérience",
     },
     ar: {
-      doc_title: "جان سِنَاك — ليلٌ صحراوي",
+      doc_title: "جان سِنَاك - ليلٌ صحراوي",
       js_cinema_callout_html:
         '<p class="senac-cinema-explore-callout__text">لي تكمّل، ضغط على <strong>استكشاف</strong> لتحت على اليسار.</p><div class="senac-cinema-explore-callout__arrows" aria-hidden="true"><span class="senac-ce-arrow"></span><span class="senac-ce-arrow"></span><span class="senac-ce-arrow"></span></div>',
       js_scroll_nudge_label: "الحرّاف",
@@ -169,46 +169,46 @@
       smt_explore_title: "نمط استكشاف (يدوي)",
       smt_cinema: "سينما",
       smt_explore: "استكشاف",
-      hero_kicker: "الجزء الثاني — ليالي صحراوية",
+      hero_kicker: "الجزء الثاني - ليالي صحراوية",
       hero_title: "جان سنّاك",
       hero_subtitle: "حياة على أكثر من ميل",
       hero_copy:
         "خط زمني كرحلة ليلية: الأعوام تنولّ نجوم، القطعات تنور مع المرور، وصوت سنّاك يمشي في الزرقة.",
-      cross_nav_status_kicker: "الجزء الأول تمّ — أنت دابا في الجزء الثاني",
+      cross_nav_status_kicker: "الجزء الأول تمّ - أنت دابا في الجزء الثاني",
       cross_nav_group_aria: "اختصارات اختيارية : المقدمة وخريطة الذاكرة (الجزء الأول تمّ مرّوه)",
       cross_nav_links_html:
-        'الخط الزمني يبدأ من هنا. اختياري : <button type="button" class="senac-cross-nav__link" data-senac-navigate="intro-video">تعاود فيديو المقدمة</button> — ولا <button type="button" class="senac-cross-nav__link" data-senac-navigate="act1-map">ترجع لخريطة الذاكرة</button> (الجزء الأول مكمّل).',
+        'الخط الزمني يبدأ من هنا. اختياري : <button type="button" class="senac-cross-nav__link" data-senac-navigate="intro-video">تعاود فيديو المقدمة</button> - ولا <button type="button" class="senac-cross-nav__link" data-senac-navigate="act1-map">ترجع لخريطة الذاكرة</button> (الجزء الأول مكمّل).',
       cross_nav_act1_birth_html:
         'خريطة الذاكرة : <button type="button" class="senac-cross-nav__link" data-senac-navigate="act1-map">قطعة « الميلاد »</button>',
       cross_nav_act1_poetry_html:
         'خريطة الذاكرة : <button type="button" class="senac-cross-nav__link" data-senac-navigate="act1-map">الشعر فالصحرا (الجزء الأول)</button>',
       hero_img_alt: "جان سنّاك قاعد على صخور، ورا البحر.",
-      hero_figcaption: "جان سنّاك — صورة من الأرشيف",
+      hero_figcaption: "جان سنّاك - صورة من الأرشيف",
       scroll_cue_aria: "مرّر باش توصل للخط الزمني",
       scroll_cue_label: "زيد تنزّل",
-      timeline_aria: "الخط الزمني — جان سنّاك",
-      s1926_date: "٢٩ نوفمبر — الجزائر، بلكور",
+      timeline_aria: "الخط الزمني - جان سنّاك",
+      s1926_date: "٢٩ نوفمبر - الجزائر، بلكور",
       s1926_h2: "الميلاد",
       s1926_p:
-        "تولّد بالجزائر، بلكور، في عائلة متواضعة. الطفولة كانت تقرب المدينة والبحر والألسنة المتداخلة — قاعدة حسّية لكلّ اللي جي من بعد.",
+        "تولّد بالجزائر، بلكور، في عائلة متواضعة. الطفولة كانت تقرب المدينة والبحر والألسنة المتداخلة - قاعدة حسّية لكلّ اللي جي من بعد.",
       fig1_alt: "جان سنّاك على شاطئ البحر.",
-      fig1_cap: "شباب بالجزائر — بحر، صخور، أولى الأفق",
+      fig1_cap: "شباب بالجزائر - بحر، صخور، أولى الأفق",
       s1940_date: "سنوات مظلمة",
       s1940_h2: "المراهقة والحرب",
       s1940_p:
         "حرب، محرومات، مراهقة متعجّلة: الدنيا تزلزل، والشعر يولّي ملجأ وثورة معًا. أولى النصوص تدور على صوت صافٍ، حاد، ما يتحبسش في قالب.",
       quote1_html: "أنا نهضر بلكنت<br />وحدتي.",
       quote1_cite: "جان سنّاك",
-      s1950_date: "١٩٥٠ — ١٩٦٠",
+      s1950_date: "١٩٥٠ - ١٩٦٠",
       s1950_h2: "الانخراط الأدبي",
       s1950_p1:
         "إصدارات، مجلات، صداقات أدبية: سنّاك يرسم مسار كاتب متورّط، بين الجزائر وباريس، يعلي فكرة أدب جزائري بالفرنسية حرّ وصارم.",
       s1950_p2:
-        "بالإذاعة وبالمقلم، يدافع على الكلمة الشعرية كمحلّ للحقيقة — موش زينة، ولا سحب عين.",
+        "بالإذاعة وبالمقلم، يدافع على الكلمة الشعرية كمحلّ للحقيقة - موش زينة، ولا سحب عين.",
       fig2_alt: "منظر للجزائر ومينائها، صورة أرشيفية.",
-      fig2_cap: "الجزائر، الستينات — مشهد أدبي وانخراط",
+      fig2_cap: "الجزائر، الستينات - مشهد أدبي وانخراط",
       ghost_soleils: "شموس",
-      s_soleils_date: "١٩٤٩ — كتاب",
+      s_soleils_date: "١٩٤٩ - كتاب",
       s_soleils_h2: "شموس متفرّقة",
       s_soleils_p_html:
         "من بين الكتبان اللي تعلّم أدبو، <em>شموس متفرّقة</em> تكثّف توتر دائم: مصير مشترك بين حضارات، بين حبّات، بين جبهات سياسية وخاصّة.",
@@ -220,13 +220,13 @@
       s_corps_p:
         "مثليّ معترف بيه في سياق رقابة ورفض، يجسّد وضوح نادر وشجاع. الشعر السياسي والعاطفي عندو نفس النفس، نفس المخاطرة.",
       fig3_alt: "جان سنّاك في مكتبو، يقرا مخطوطة.",
-      fig3_cap: "سنّاك في مكتبو — الشاعر والشغل",
-      s1973_date: "٣٠ أوت — الجزائر",
+      fig3_cap: "سنّاك في مكتبو - الشاعر والشغل",
+      s1973_date: "٣٠ أوت - الجزائر",
       s1973_h2: "الوفاة بالجزائر",
       s1973_p:
-        "مات بالجزائر، في عنف لفظ غامض. الخبر يقطع الأدب الفرنكوفوني كضربة على اللغة نفسها — لكن النصوص تبقى، صامدة في نارها.",
+        "مات بالجزائر، في عنف لفظ غامض. الخبر يقطع الأدب الفرنكوفوني كضربة على اللغة نفسها - لكن النصوص تبقى، صامدة في نارها.",
       fig4_alt: "جان سنّاك، صورة تذكارية.",
-      fig4_cap: "ذاكرة سنّاك — بقايا صوت حرّ",
+      fig4_cap: "ذاكرة سنّاك - بقايا صوت حرّ",
       ghost_legs: "أثر",
       s_legs_date: "اليوم",
       s_legs_h2: "الأثر الحيّ",
@@ -239,25 +239,25 @@
       ch3_back: "رجوع للتجربة",
       ch3_replay: "عاود الخط الزمني",
       vc_title: "الرحلة",
-      vc_subtitle: "وساطة ثقافية — جان سنّاك",
+      vc_subtitle: "وساطة ثقافية - جان سنّاك",
       vc_h_conception: "الإعداد والإنجاز",
       vc_l_conception_1: "الإخراج الفنّي وتطوير التجربة التفاعلية",
-      vc_l_conception_2: "المسار: خريطة الذاكرة — خط زمني — ختام",
+      vc_l_conception_2: "المسار: خريطة الذاكرة - خط زمني - ختام",
       vc_h_textes: "النصوص والاقتباسات",
       vc_l_textes_1:
-        "قطع شعرية وعناوين أعمال: جان سنّاك — يُكمَل بالمراجع الدقيقة (إصدارات، سنوات).",
+        "قطع شعرية وعناوين أعمال: جان سنّاك - يُكمَل بالمراجع الدقيقة (إصدارات، سنوات).",
       vc_l_textes_2: "الاقتباسات المعروضة على الخط: تثبّت الحقوق والمصادر في ملفّك.",
       vc_h_images: "الصور والأرشيف",
       vc_l_images:
         "الصور الفوتوغرافية والبورتريهات في الرقّ: تُذكر المصادر (مؤسسة، مصوّر، تاريخ).",
       vc_h_video: "الفيديو",
       vc_l_video:
-        "<cite>الرحلة</cite> — ملفّ وسائط المشروع؛ يُذكر مؤلّفو الصورة / الصوت / الموسيقى هنا.",
+        "<cite>الرحلة</cite> - ملفّ وسائط المشروع؛ يُذكر مؤلّفو الصورة / الصوت / الموسيقى هنا.",
       vc_h_audio: "الموسيقى والأصوات",
       vc_l_audio:
         "الأجواء والمقاطع المستعملة: شهادات وتراخيص (مثلاً Creative Commons، مكتبة).",
       vc_h_outils: "الأدوات",
-      vc_l_outils_1: "React، Vite، Motion — الرقّ: Lenis، canvas و WebGL (حسب التفعيل).",
+      vc_l_outils_1: "React، Vite، Motion ? الرقّ: Lenis، canvas و WebGL (حسب التفعيل).",
       vc_l_outils_2:
         "الإنشاء والما بعد: Adobe Photoshop، Premiere Pro، After Effects، DaVinci Resolve.",
       vc_fin: "شكرًا على اجتياز هاد الليل.",

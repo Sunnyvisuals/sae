@@ -18,7 +18,7 @@
     scrollCueEarly.style.opacity = "0";
   }
 
-  /** Pavé tactile / souris : Ctrl+molette (ou meta) ne doit pas zoomer tout le navigateur — garde le défilement Lenis. */
+  /** Pavé tactile / souris : Ctrl+molette (ou meta) ne doit pas zoomer tout le navigateur - garde le défilement Lenis. */
   document.addEventListener(
     "wheel",
     function (/** @type {WheelEvent} */ e) {
@@ -253,6 +253,14 @@
       y = yearGaugeLenis.scroll;
     }
     const ratio = Math.min(1, Math.max(0, y / max));
+
+    if (window.parent !== window) {
+      try {
+        window.parent.postMessage({ type: "senac-scroll-progress", ratio }, window.location.origin);
+      } catch {
+        /* ignore */
+      }
+    }
 
     if (!senacScrollFillEl) {
       const n = document.querySelector(".senac-scroll-progress__fill");
@@ -2252,6 +2260,10 @@
     let parentUnlocked = false;
     let wantedVolume = 0;
 
+    function hasChosenEntryMode() {
+      return document.documentElement.getAttribute("data-senac-mode-chosen") === "1";
+    }
+
     function clearFadeTimer() {
       if (fadeTimer) {
         window.clearInterval(fadeTimer);
@@ -2299,6 +2311,7 @@
     }
 
     function computeWantedVolume() {
+      if (!hasChosenEntryMode()) return 0;
       if (!parentUnlocked || hidden) return 0;
       const base = targetVolumeFromParent();
       if (base < 0.002) return 0;
@@ -2326,7 +2339,7 @@
          * on retente play() (throttle) - évite de dépendre uniquement du 1er postMessage,
          * souvent envoyé avant que cet écouteur soit prêt.
          */
-        if (parentUnlocked && wantedVolume > 0.003 && audio.paused) {
+        if (hasChosenEntryMode() && parentUnlocked && wantedVolume > 0.003 && audio.paused) {
           const now = performance.now();
           if (now - lastPlayAttempt > 560) {
             lastPlayAttempt = now;
@@ -2353,6 +2366,7 @@
     }
 
     async function tryStart() {
+      if (!hasChosenEntryMode()) return;
       if (started && !audio.paused) {
         startUpdateLoop();
         return;
@@ -2378,7 +2392,7 @@
 
     function onVisibility() {
       hidden = document.hidden;
-      if (!hidden && parentUnlocked) {
+      if (!hidden && parentUnlocked && hasChosenEntryMode()) {
         void audio.play().catch(() => {});
       }
     }
@@ -2391,7 +2405,7 @@
         parentVolume = Math.min(1, Math.max(0, data.volume));
       }
       parentUnlocked = Boolean(data.unlocked);
-      if (parentUnlocked) {
+      if (parentUnlocked && hasChosenEntryMode()) {
         void tryStart();
       }
     }
@@ -2544,7 +2558,7 @@
     window.addEventListener("keydown", onKeydownCinemaLock);
 
     /**
-     * Appel après init Lenis ou à chaque besoin - Lenis ignore overflow:hidden tant qu'il roule au RAF :
+     * Appel après init Lenis ou à chaque besoin ? Lenis ignore overflow:hidden tant qu'il roule au RAF :
      * on stop() tant que l'overlay bloque encore la navigation.
      */
     function freezeLenisIfOverlayBlocks() {
@@ -2669,6 +2683,7 @@
     }
 
     function dismissChoice(chosen) {
+      document.documentElement.setAttribute("data-senac-mode-chosen", "1");
       if (backdropEl) {
         backdropEl.classList.remove("is-visible");
       }
@@ -2862,7 +2877,7 @@
     });
   });
 
-  /** Relais souris → parent (React) — max ~1 msg / frame pour réduire rafales (curseur + SplashCursor parent). */
+  /** Relais souris → parent (React) - max ~1 msg / frame pour réduire rafales (curseur + SplashCursor parent). */
   if (window.parent !== window) {
     let relayRaf = 0;
     let relayX = 0;

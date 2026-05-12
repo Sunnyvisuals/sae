@@ -5,6 +5,14 @@ import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useLanguageStore } from '../../stores/languageStore';
 import { useAppCopy } from '../../hooks/useAppCopy';
 import { useMasterVolumeStore } from '../../stores/masterVolumeStore';
+import {
+  exitDocumentFullscreen,
+  isFullscreenApiSupported,
+  requestDocumentFullscreen,
+  useDocumentFullscreenActive,
+} from '../../lib/fullscreenDocument';
+
+const DEFAULT_MASTER_VOLUME = 0.2;
 type Props = {
   onClose: () => void;
   /** Ouvre uniquement la vidéo en surcouche - ne recharge pas la page ni l’acte */
@@ -73,12 +81,16 @@ function MajesticButton({
   variant = 'gold',
   midnight,
   onClick,
+  'aria-pressed': ariaPressed,
+  'aria-keyshortcuts': ariaKeyshortcuts,
 }: {
   children: ReactNode;
   variant?: 'gold' | 'mist' | 'ember';
   /** Acte II - bleu constellation au lieu du doré désert */
   midnight: boolean;
   onClick: () => void;
+  'aria-pressed'?: boolean | 'true' | 'false' | 'mixed';
+  'aria-keyshortcuts'?: string;
 }) {
   const palette = midnight
     ? ({
@@ -106,6 +118,8 @@ function MajesticButton({
       whileHover={{ scale: 1.008 }}
       whileTap={{ scale: 0.995 }}
       onClick={onClick}
+      aria-pressed={ariaPressed}
+      aria-keyshortcuts={ariaKeyshortcuts}
       className={`group relative w-full overflow-hidden rounded-[2px] border bg-black/30 px-5 py-4 text-center text-[10px] uppercase leading-snug tracking-[0.26em] backdrop-blur-[2px] transition-colors duration-500 sm:px-7 sm:py-[1.15rem] sm:text-[11px] sm:tracking-[0.34em] md:py-6 md:text-[12px] md:tracking-[0.38em] ${styles}`}
     >
       <span
@@ -125,7 +139,7 @@ function MajesticButton({
   );
 }
 
-/** Barre de volume — filet léger + remplissage (comme l’ornement au-dessus), icône fantôme sans cadre. */
+/** Barre de volume - filet léger + remplissage (comme l’ornement au-dessus), icône fantôme sans cadre. */
 function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
   const copy = useAppCopy();
   const panelId = useId();
@@ -138,7 +152,7 @@ function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
   };
 
   const toggleSilent = () => {
-    setVolume(volume > 0 ? 0 : 0.72);
+    setVolume(volume > 0 ? 0 : DEFAULT_MASTER_VOLUME);
   };
 
   const toggleSoundPanel = () => setSoundOpen((o) => !o);
@@ -317,7 +331,7 @@ function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
   );
 }
 
-/** Langue — même schéma que la section son (ligne cliquable + panneau repliable). */
+/** Langue - même schéma que la section son (ligne cliquable + panneau repliable). */
 function PauseLanguagePicker({ midnight }: { midnight: boolean }) {
   const copy = useAppCopy();
   const panelId = useId();
@@ -442,6 +456,77 @@ function PauseLanguagePicker({ midnight }: { midnight: boolean }) {
   );
 }
 
+function PauseFullscreenPanel({ midnight }: { midnight: boolean }) {
+  const copy = useAppCopy();
+  const fsActive = useDocumentFullscreenActive();
+  const supported = typeof window !== 'undefined' && isFullscreenApiSupported();
+
+  const haloLine = midnight
+    ? 'from-[rgba(90,168,255,0.06)] via-[rgba(139,213,255,0.52)] to-[rgba(139,213,255,0.06)]'
+    : 'from-solar-gold/[0.04] via-solar-gold/45 to-solar-gold/[0.04]';
+
+  const onToggleFs = () => {
+    void (fsActive ? exitDocumentFullscreen() : requestDocumentFullscreen());
+  };
+
+  return (
+    <motion.div variants={item} className="mt-8 w-full max-w-[min(100%,526px)] px-0 sm:mt-9">
+      <div
+        className={
+          'rounded-[2px] border px-3 py-2.5 sm:px-4 sm:py-3 ' +
+          (midnight
+            ? 'border-[rgba(90,168,255,0.2)] bg-[rgba(4,10,22,0.22)]'
+            : 'border-solar-gold/18 bg-black/12')
+        }
+      >
+        <p
+          className={
+            'mb-2.5 text-[9px] uppercase tracking-[0.34em] sm:mb-3 sm:text-[10px] sm:tracking-[0.38em] ' +
+            (midnight ? 'text-sky-400/62' : 'text-solar-gold/55')
+          }
+        >
+          {copy.menuFullscreenSection}
+        </p>
+        <div className={`pointer-events-none mb-2.5 h-px w-full bg-gradient-to-r sm:mb-3 ${haloLine}`} aria-hidden />
+        {supported ? (
+          <>
+            <MajesticButton
+              variant="gold"
+              midnight={midnight}
+              onClick={onToggleFs}
+              aria-pressed={fsActive}
+              aria-keyshortcuts={fsActive ? 'Escape F11' : 'F11'}
+            >
+              {fsActive ? copy.menuFullscreenExit : copy.menuFullscreenEnter}
+            </MajesticButton>
+            <p
+              className={
+                'mt-2.5 text-center text-[9px] uppercase tracking-[0.24em] sm:text-[10px] ' +
+                (midnight ? 'text-sky-200/46' : 'text-[rgba(253,248,238,0.42)]')
+              }
+            >
+              {fsActive ? copy.menuFullscreenStateOn : copy.menuFullscreenStateOff}
+              <span className="px-2 opacity-45" aria-hidden>
+                /
+              </span>
+              {fsActive ? copy.menuFullscreenShortcutExit : copy.menuFullscreenShortcutEnter}
+            </p>
+          </>
+        ) : (
+          <p
+            className={
+              'text-center text-[10px] leading-relaxed ' +
+              (midnight ? 'text-sky-300/45' : 'text-solar-gold/40')
+            }
+          >
+            {copy.menuFullscreenUnsupported}
+          </p>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
 /**
  * Menu pause - plein viewport, scroll si besoin, safe areas. Pas d’anneau animé (meilleure lisibilité mobile).
  */
@@ -472,7 +557,7 @@ export default function SystemMenu({
           : `fixed inset-0 z-[560] flex min-h-dvh w-full ${shellCursor} flex-col bg-[#020100]/88 backdrop-blur-md supports-[backdrop-filter]:bg-[#020100]/76 [padding-top:env(safe-area-inset-top)] [padding-bottom:env(safe-area-inset-bottom)]`
       }
     >
-      {/* Fond — halos discrets (pas de grain SVG ni fluide WebGL : lisibilité pause). */}
+      {/* Fond ? halos discrets (pas de grain SVG ni fluide WebGL : lisibilité pause). */}
       <div className="pointer-events-none absolute inset-0 z-[1]" aria-hidden>
         {midnight ? (
           <>
@@ -620,6 +705,8 @@ export default function SystemMenu({
             <PauseVolumeSlider midnight={midnight} />
 
             <PauseLanguagePicker midnight={midnight} />
+
+            <PauseFullscreenPanel midnight={midnight} />
 
             {embeddedParcours && (
               <motion.div variants={item} className="mt-8 w-full max-w-[min(100%,526px)] sm:mt-9">

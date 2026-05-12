@@ -1,5 +1,5 @@
-/* Jean Sénac — Chapitre II · Nuit saharienne */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Lora:ital,wght@0,400;0,500;1,400&family=Noto+Naskh+Arabic:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,600&display=swap");
+/* Jean Sénac - Chapitre II · Nuit saharienne */
+@import url("https://fonts.googleapis.com/css2-family=Inter:wght@400;500;600&family=Lora:ital,wght@0,400;0,500;1,400&family=Noto+Naskh+Arabic:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,600&display=swap");
 
 @font-face {
   font-family: "Bahlull";
@@ -2516,14 +2516,13 @@ body.voyage-credits-active #scroll-mode-toggle {
   align-items: center;
 }
 
-/** Logo livré avec fond noir : lighten fait prendre au noir la couleur du fond (#030308) sans alterer le blanc. */
+/** Logo MMI avec fond transparent. */
 .voyage-credits-logo-img--mmi {
   display: block;
   height: clamp(52px, 13vw, 72px);
   width: auto;
   object-fit: contain;
   opacity: 1;
-  mix-blend-mode: lighten;
 }
 
 /** Proposition centrée - au-dessus du rouleau ; masquée jusqu’à la fin du défilement */
@@ -2975,28 +2974,28 @@ body.voyage-credits-active #scroll-mode-toggle {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: clamp(1.35rem, 3.8vh, 2.35rem);
+  gap: 0;
   width: min(100%, 32rem);
-  padding: 0 0.5rem;
+  padding: clamp(0.35rem, 1.5vh, 0.85rem) 0.5rem;
 }
 
 /**
  * DA lisible dans l’overlay (le hero derrière le backdrop restait un fantôme illisible).
  */
 .smc-da {
-  margin: 0;
+  margin: 0 0 clamp(1.35rem, 3.6vh, 2.15rem);
   padding: 0 1rem;
   max-width: min(94vw, 28rem);
   text-align: center;
 }
 
 .smc-da-kicker {
-  margin: 0 0 0.85rem;
+  margin: 0 0 clamp(0.95rem, 2.2vh, 1.2rem);
   font-family: "Inter", sans-serif;
   font-size: clamp(0.68rem, 1.9vw, 0.78rem);
   font-weight: 500;
   letter-spacing: 0.32em;
-  line-height: 1.45;
+  line-height: 1.55;
   text-transform: uppercase;
   color: rgba(197, 160, 89, 0.78);
   text-shadow:
@@ -3010,7 +3009,7 @@ body.voyage-credits-active #scroll-mode-toggle {
   font-size: clamp(2.2rem, 6.2vw, 3.75rem);
   font-weight: 400;
   font-style: italic;
-  line-height: 1.12;
+  line-height: 1.18;
   letter-spacing: -0.02em;
   color: #fdfaf6;
   text-shadow:
@@ -3028,7 +3027,7 @@ html.senac-choice-pending .hero > .hero-subtitle {
 }
 
 .smc-kicker {
-  margin: 0;
+  margin: 0 0 clamp(0.85rem, 2.1vh, 1.25rem);
   max-width: min(34rem, 94vw);
   padding: 0 1rem;
   font-family: "Playfair Display", Georgia, serif;
@@ -3036,7 +3035,7 @@ html.senac-choice-pending .hero > .hero-subtitle {
   font-weight: 500;
   font-style: italic;
   letter-spacing: 0.06em;
-  line-height: 1.45;
+  line-height: 1.58;
   text-transform: none;
   color: rgba(197, 160, 89, 0.92);
   text-align: center;
@@ -3051,18 +3050,18 @@ html[lang="ar-DZ"] .smc-kicker {
   font-style: normal;
   font-weight: 500;
   letter-spacing: 0.02em;
-  line-height: 1.55;
+  line-height: 1.62;
 }
 
-/** Rappel d’action : texte statique (pas d’anim typo — le mouvement est sur les cartes uniquement). */
+/** Rappel d’action : texte statique (pas d’anim typo - le mouvement est sur les cartes uniquement). */
 .smc-choose-caption {
-  margin: 0;
+  margin: 0 0 clamp(1.5rem, 4vh, 2.35rem);
   max-width: min(94vw, 26rem);
   padding: 0 1rem;
   font-family: "Inter", sans-serif;
   font-size: clamp(0.7rem, 2vw, 0.78rem);
   font-weight: 400;
-  line-height: 1.72;
+  line-height: 1.78;
   letter-spacing: 0.04em;
   text-transform: none;
   text-align: center;
@@ -3139,7 +3138,7 @@ html[lang="ar-DZ"] .smc-kicker {
 }
 
 /**
- * Cartes Cinéma / Exploration : zoom lent uniquement sur un cadre (::before) —
+ * Cartes Cinéma / Exploration : zoom lent uniquement sur un cadre (::before) -
  * le texte et les icônes ne sont pas transformés (DA sobre, alternance organisée).
  */
 @keyframes smc-chamber-ring {
@@ -3191,8 +3190,8 @@ html[lang="ar-DZ"] .smc-kicker {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.62rem;
-  padding: 1.28rem 1.95rem;
+  gap: 0.72rem;
+  padding: 1.42rem 1.95rem 1.48rem;
   border-radius: 2px;
   border: 1px solid rgba(197, 160, 89, 0.26);
   background: linear-gradient(165deg, rgba(14, 12, 8, 0.82) 0%, rgba(6, 5, 4, 0.78) 100%);
@@ -3271,7 +3270,7 @@ html[lang="ar-DZ"] .smc-kicker {
   font-weight: 400;
   letter-spacing: 0.11em;
   color: rgba(218, 188, 132, 0.58);
-  line-height: 1.35;
+  line-height: 1.45;
 }
 
 .smc-btn:focus-visible {
@@ -3280,7 +3279,7 @@ html[lang="ar-DZ"] .smc-kicker {
 }
 
 /* ═══════════════════════════════════════════════
-   SCROLL MODE TOGGLE — bas-gauche Cinéma / Exploration
+   SCROLL MODE TOGGLE - bas-gauche Cinéma / Exploration
    ═══════════════════════════════════════════════ */
 .scroll-mode-toggle,
 .scroll-mode-toggle--legacy-layout {
@@ -3410,7 +3409,7 @@ body.senac-night .smt-btn:not(.is-active):hover {
 /* ═══════════════════════════════════════════════
    NUDGE SCROLL POST-EXPLORATION
    ═══════════════════════════════════════════════ */
-/* Repère scroll — même grille verticale & typo que ScrollNudge (Acte I) pour uniformité. */
+/* Repère scroll - même grille verticale & typo que ScrollNudge (Acte I) pour uniformité. */
 .senac-scroll-nudge {
   position: fixed;
   bottom: max(3rem, calc(env(safe-area-inset-bottom, 0px) + 2.25rem));

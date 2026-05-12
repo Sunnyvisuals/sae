@@ -4,9 +4,13 @@ import { NOISE_DATA_URI } from "../lib/noiseDataUri";
 type CinematicOverlayProps = {
   /** Acte II : halo / vignette au-dessus du HintPanel (~z-50), sous le fluide (~z-120). */
   elevateOverHints?: boolean;
+  disableGrain?: boolean;
 };
 
-export default function CinematicOverlay({ elevateOverHints = false }: CinematicOverlayProps) {
+export default function CinematicOverlay({
+  elevateOverHints = false,
+  disableGrain = false,
+}: CinematicOverlayProps) {
   const { scrollYProgress } = useScroll();
 
   // Dynamic light leak based on scroll
@@ -24,7 +28,7 @@ export default function CinematicOverlay({ elevateOverHints = false }: Cinematic
     <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.2)_100%)]" />
   );
 
-  /** Acte II : au-dessus du HintPanel seulement halo + vignette — pas de grain / scanlines (conflit avec le parchemin, aspect « film » trop lourd). */
+  /** Acte II : au-dessus du HintPanel seulement halo + vignette - pas de grain / scanlines (conflit avec le parchemin, aspect « film » trop lourd). */
   if (elevateOverHints) {
     return (
       <div className="fixed inset-0 pointer-events-none z-[52]">
@@ -36,10 +40,11 @@ export default function CinematicOverlay({ elevateOverHints = false }: Cinematic
 
   return (
     <div className="fixed inset-0 pointer-events-none z-[11]">
-      {/* 1. Grain/Noise Layer */}
-      <div className="absolute inset-0 opacity-[0.08] mix-blend-overlay pointer-events-none">
-        <div className="absolute inset-0 w-full h-full" style={{ backgroundImage: `url("${NOISE_DATA_URI}")` }} />
-      </div>
+      {!disableGrain && (
+        <div className="absolute inset-0 opacity-[0.08] mix-blend-overlay pointer-events-none">
+          <div className="absolute inset-0 w-full h-full" style={{ backgroundImage: `url("${NOISE_DATA_URI}")` }} />
+        </div>
+      )}
 
       {lightLeak}
 

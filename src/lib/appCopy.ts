@@ -17,7 +17,7 @@ export type PoetryLevel = {
   options: string[];
 };
 
-/** Textes persistants hors React — une seule source pour FR / العربية الجزائرية */
+/** Textes persistants hors React - une seule source pour FR / العربية الجزائرية */
 type Copy = {
   act1HudSubtitleDone: string;
   act1HudSubtitleFind: string;
@@ -72,7 +72,7 @@ type Copy = {
   languageSectionHeading: string;
   languageFrenchBtn: string;
   languageArabicBtn: string;
-  /** Annonce vocal (pause) lors du fondu langue — accessibilité */
+  /** Annonce vocal (pause) lors du fondu langue - accessibilité */
   languageMorphLive: string;
   /** Court libellé visible sous la pastille (optionnel dans l’overlay) */
   languageMorphVisible: string;
@@ -86,6 +86,26 @@ type Copy = {
   menuMusicLine: string;
   menuEmbeddedParcours: string;
   menuNavAria: string;
+  /** Bandeau arrivée + menu pause */
+  fullscreenPromptTitle: string;
+  /** Court sous-titre optionnel (vide = rien d’affiché). */
+  fullscreenPromptBody: string;
+  /** Description complète pour lecteurs d’écran (aria-label du bandeau). */
+  fullscreenPromptAria: string;
+  fullscreenPromptAccept: string;
+  fullscreenPromptLater: string;
+  fullscreenPromptNever: string;
+  menuFullscreenSection: string;
+  menuFullscreenEnter: string;
+  menuFullscreenExit: string;
+  menuFullscreenUnsupported: string;
+  menuFullscreenStateLabel: string;
+  menuFullscreenStateOn: string;
+  menuFullscreenStateOff: string;
+  menuFullscreenHintEnter: string;
+  menuFullscreenHintExit: string;
+  menuFullscreenShortcutEnter: string;
+  menuFullscreenShortcutExit: string;
   introDevPreviewCreditsTitle: string;
   introAlRihlaSubtitle: string;
   introJeanSenacSubtitle: string;
@@ -150,11 +170,11 @@ const FR: Copy = {
   orientationBreadcrumbAria: "Fil d'Ariane",
   orientationCreditsLabel: "Crédits",
   orientationCreditsSummary: "Générique de fin, remerciements et fermeture de ce voyage.",
-  orientationFutureAct3: "Acte III - ?",
-  orientationFutureAct4: "Acte IV - ?",
-  orientationLockedIntro: "Intro - ?",
-  orientationLockedAct1: "Acte I - ?",
-  orientationLockedAct2: "Acte II - ?",
+  orientationFutureAct3: "Acte III - -",
+  orientationFutureAct4: "Acte IV - -",
+  orientationLockedIntro: "Intro - -",
+  orientationLockedAct1: "Acte I - -",
+  orientationLockedAct2: "Acte II - -",
   orientationPhaseIntroLabel: "Intro - Prologue",
   orientationPhaseAct1Label: "Acte I - L'algérie",
   orientationPhaseAct2Label: "Acte II - (suite)",
@@ -171,7 +191,7 @@ const FR: Copy = {
   orientationMiniMap: "Mini-carte",
   orientationParcours: "Parcours",
   orientationReplayHint:
-    "Après le générique de fin — choisis une étape ci-dessus pour la revivre.",
+    "Après le générique de fin - choisis une étape ci-dessus pour la revivre.",
   orientationOpenPanel: "Ouvrir le panneau Parcours",
   orientationCollapsePanel: "Réduire le panneau Parcours",
   menuClose: "Fermer le menu (Échap)",
@@ -196,7 +216,25 @@ const FR: Copy = {
   menuMusicLine: "Musique · © Rafael Krux",
   menuEmbeddedParcours: "Parcours",
   menuNavAria: "Actions du menu pause",
-  introDevPreviewCreditsTitle: "Prévisualiser le générique de fin (?previewCredits=1)",
+  fullscreenPromptTitle: "Plein écran",
+  fullscreenPromptBody: "",
+  fullscreenPromptAria:
+    "Proposition d’affichage en plein écran pour masquer les barres du navigateur. Vous pourrez quitter ce mode avec la touche Échap ou depuis le menu pause.",
+  fullscreenPromptAccept: "Activer",
+  fullscreenPromptLater: "Plus tard",
+  fullscreenPromptNever: "Ne plus proposer",
+  menuFullscreenSection: "Plein écran",
+  menuFullscreenEnter: "Passer en plein écran",
+  menuFullscreenExit: "Quitter le plein écran",
+  menuFullscreenUnsupported: "Indisponible dans ce navigateur.",
+  menuFullscreenStateLabel: "État actuel",
+  menuFullscreenStateOn: "Activé",
+  menuFullscreenStateOff: "Désactivé",
+  menuFullscreenHintEnter: "Masque l’interface du navigateur pour une lecture plus immersive.",
+  menuFullscreenHintExit: "Revient à l’affichage standard avec l’interface du navigateur.",
+  menuFullscreenShortcutEnter: "F11",
+  menuFullscreenShortcutExit: "Échap",
+  introDevPreviewCreditsTitle: "Prévisualiser le générique de fin (-previewCredits=1)",
   introAlRihlaSubtitle: "Jean Sénac",
   introJeanSenacSubtitle: "Jean Sénac",
   scrollNudge: "Molette · défiler",
@@ -315,7 +353,7 @@ const AR: Copy = {
   orientationMiniMap: "خريطة مصغّرة",
   orientationParcours: "مسار الرحلة",
   orientationReplayHint:
-    "من بعد تذييل نهاية الرحلة — نقط مرحلة فوق باش تعيشها من جديد.",
+    "من بعد تذييل نهاية الرحلة - نقط مرحلة فوق باش تعيشها من جديد.",
   orientationOpenPanel: "يفتح لوحة مسار الرحلة",
   orientationCollapsePanel: "يقلّص لوحة مسار الرحلة",
   menuClose: "سكر القائمة (Esc)",
@@ -340,7 +378,25 @@ const AR: Copy = {
   menuMusicLine: "موسيقى · © Rafael Krux",
   menuEmbeddedParcours: "مسار الرحلة",
   menuNavAria: "أزرار قائمة الوقفة",
-  introDevPreviewCreditsTitle: "تشوف التذييل النهاية (?previewCredits=1)",
+  fullscreenPromptTitle: "ملء الشاشة",
+  fullscreenPromptBody: "",
+  fullscreenPromptAria:
+    "اقتراح باش تخدم ملء الشاشة وتخبي أشرطة المتصفح. تقدر تخرج بـ Esc ولا من القائمة.",
+  fullscreenPromptAccept: "فعّل",
+  fullscreenPromptLater: "بعد",
+  fullscreenPromptNever: "ما تعاودش",
+  menuFullscreenSection: "ملء الشاشة",
+  menuFullscreenEnter: "دير ملء الشاشة دابا",
+  menuFullscreenExit: "خرج من ملء الشاشة",
+  menuFullscreenUnsupported: "ما كاينش في هاد المتصفح.",
+  menuFullscreenStateLabel: "الحالة دابا",
+  menuFullscreenStateOn: "مفعّل",
+  menuFullscreenStateOff: "مطفّي",
+  menuFullscreenHintEnter: "يخبي واجهة المتصفح باش تولّي التجربة أوسع.",
+  menuFullscreenHintExit: "يرجّع العرض العادي مع واجهة المتصفح.",
+  menuFullscreenShortcutEnter: "F11",
+  menuFullscreenShortcutExit: "Esc",
+  introDevPreviewCreditsTitle: "تشوف التذييل النهاية (-previewCredits=1)",
   introAlRihlaSubtitle: "جان ساناك",
   introJeanSenacSubtitle: "جان ساناك",
   scrollNudge: "الحرّاف",

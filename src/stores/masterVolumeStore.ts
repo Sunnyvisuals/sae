@@ -1,8 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+const DEFAULT_MASTER_VOLUME = 0.2;
+
 type MasterVolumeState = {
-  /** 0–1 · volume principal du son (ambiant, etc.). */
+  /** 0-1 · volume principal du son (ambiant, etc.). */
   volume: number;
   /** Débloque la lecture audio après geste utilisateur ou curseur > 0. */
   playbackUnlocked: boolean;
@@ -13,7 +15,7 @@ type MasterVolumeState = {
 export const useMasterVolumeStore = create<MasterVolumeState>()(
   persist(
     (set, get) => ({
-      volume: 0,
+      volume: DEFAULT_MASTER_VOLUME,
       playbackUnlocked: false,
       setVolume: (v: number) => {
         const volume = Math.min(1, Math.max(0, v));
@@ -26,7 +28,7 @@ export const useMasterVolumeStore = create<MasterVolumeState>()(
       },
     }),
     {
-      name: 'al-rihla-master-volume',
+      name: 'al-rihla-master-volume-v2',
       partialize: (state) => ({ volume: state.volume }),
     }
   )

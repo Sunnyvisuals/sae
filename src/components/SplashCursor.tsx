@@ -24,14 +24,14 @@ interface SplashCursorProps {
   /** Permet d'insérer le fluide dans une pile locale (ex: sous contenu de la modale). */
   zIndex?: number;
   /**
-   * `cursor` (défaut) — suit souris comme aujourd’hui.
-   * `background` — même simulation WebGL en calque très lointain (shader atmosphérique), sans suivis curseur,
+   * `cursor` (défaut) - suit souris comme aujourd’hui.
+   * `background` - même simulation WebGL en calque très lointain (shader atmosphérique), sans suivis curseur,
    * forces principalement tirées du scroll Lenis (+ option ratio iframe acte II).
    */
   layer?: 'cursor' | 'background';
   /** Multiplicateur forces scroll (fenêtre + iframe si fourni). */
   scrollImpulse?: number;
-  /** Acte II : ratio scroll parchemin 0–1 — réaction fluide même si `window.scrollY` ne bouge pas. */
+  /** Acte II : ratio scroll parchemin 0-1 - réaction fluide même si `window.scrollY` ne bouge pas. */
   iframeScrollRatio?: number;
   /** Remplissage dans un bloc `absolute`/`relative` au lieu du viewport (`fixed`). */
   fillContainer?: boolean;
@@ -1169,7 +1169,7 @@ function SplashCursor({
       window.addEventListener('touchend', handleTouchEnd);
     }
 
-    // Ambient splats for "living" effect — plus discret en calque background (le scroll porte le mouvement).
+    // Ambient splats for "living" effect - plus discret en calque background (le scroll porte le mouvement).
     const ambientMs = isBackgroundLayer ? 7400 : 2500;
     const ambientInterval = setInterval(() => {
       if (!isActive || config.PAUSED) return;
@@ -1214,7 +1214,7 @@ function SplashCursor({
       sizeObserver.disconnect();
       document.removeEventListener('visibilitychange', resumeFluidWhenVisible);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reconstruction WebGL voulue quand palette / résolution changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps ?? reconstruction WebGL voulue quand palette / résolution changes
   }, [
     BACK_COLOR?.r,
     BACK_COLOR?.g,

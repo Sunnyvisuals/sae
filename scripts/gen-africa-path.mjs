@@ -82,8 +82,8 @@ for (let i = 0; i < outer.length; i++) {
 d += ' Z';
 
 const out = `/**
- * Contour du continent africain — union des 52 pays (Natural Earth 110m, REGION_UN Africa),
- * simplifié (Turf), projeté dans le repère 0–400 (aligné sur la carte Algérie).
+ * Contour du continent africain - union des 52 pays (Natural Earth 110m, REGION_UN Africa),
+ * simplifié (Turf), projeté dans le repère 0-400 (aligné sur la carte Algérie).
  * Généré par scripts/gen-africa-path.mjs (sortie scripts/africa-continent-path.generated.ts).
  */
 export const AFRICA_CONTINENT_PATH =

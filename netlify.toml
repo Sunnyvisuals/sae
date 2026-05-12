@@ -1,4 +1,4 @@
-# Netlify — Vite + React (assets dans /dist, fichiers public/ copiés tel quel)
+# Netlify - Vite + React (assets dans /dist, fichiers public/ copiés tel quel)
 [build]
   command = "npm install --legacy-peer-deps && npm run build"
   publish = "dist"

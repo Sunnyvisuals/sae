@@ -48,13 +48,19 @@ import {
 import { useAppCopy } from "./hooks/useAppCopy";
 import { useMasterVolumeStore } from "./stores/masterVolumeStore";
 import { NOISE_DATA_URI } from "./lib/noiseDataUri";
+import {
+  exitDocumentFullscreen,
+  getDocumentFullscreenElement,
+  isFullscreenApiSupported,
+  requestDocumentFullscreen,
+} from "./lib/fullscreenDocument";
 
 /** Page statique parchemin (ch. II / III) - respecte `import.meta.env.BASE_URL` (déploiement sous sous-chemin). */
 function parcheminSenacHref(hash: string, options?: { previewCredits?: boolean }) {
   const base = import.meta.env.BASE_URL;
   const prefix = base.endsWith("/") ? base : `${base}/`;
   const h = hash.startsWith("#") ? hash : `#${hash}`;
-  const q = options?.previewCredits ? "?previewCredits=1" : "";
+  const q = options?.previewCredits ? "-previewCredits=1" : "";
   return `${prefix}parchemin-senac.html${q}${h}`;
 }
 
@@ -68,8 +74,27 @@ function SettingsIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+function isEditableTarget(target: EventTarget | null): boolean {
+  return (
+    target instanceof HTMLElement &&
+    (target.isContentEditable || target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT")
+  );
+}
+
 /** Persistance : traversée complète → navigation libre entre les actes. */
 const JOURNEY_REPLAY_STORAGE_KEY = "al-rihla-journey-complete";
+const EMPTY_ACT1_QUEST: Act1QuestProgress = { hover: false, clickWord: false, zoom: false };
+const COMPLETE_ACT1_QUEST: Act1QuestProgress = { hover: true, clickWord: true, zoom: true };
+const EMPTY_ACT2_QUEST: Act2QuestProgress = { scroll: false };
+const COMPLETE_ACT2_QUEST: Act2QuestProgress = { scroll: true };
+
+function readJourneyReplayUnlocked(): boolean {
+  try {
+    return typeof window !== "undefined" && window.localStorage.getItem(JOURNEY_REPLAY_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
 
 export default function App() {
   const phaseRef = useRef<"intro" | "act1" | "act2">("intro");
@@ -81,25 +106,17 @@ export default function App() {
   const [introVideoNonce, setIntroVideoNonce] = useState(0);
   const [chapterToast, setChapterToast] = useState(false);
   const [chapterDaTransition, setChapterDaTransition] = useState(false);
-  const [revelationCount, setRevelationCount] = useState(0);
+  const [revelationCount, setRevelationCount] = useState(() => (readJourneyReplayUnlocked() ? 5 : 0));
   /** Rail Parcours : ouvert / replié (animation GSAP dans OrientationPanel). */
   const [parcoursOpen, setParcoursOpen] = useState(false);
   /** Après Ch. III / générique : retour intro + navigation libre entre actes (Parcours cliquable). */
-  const [journeyReplayUnlocked, setJourneyReplayUnlocked] = useState(() => {
-    try {
-      return typeof window !== "undefined" && window.localStorage.getItem(JOURNEY_REPLAY_STORAGE_KEY) === "1";
-    } catch {
-      return false;
-    }
-  });
-  const [act1Quest, setAct1Quest] = useState<Act1QuestProgress>({
-    hover: false,
-    clickWord: false,
-    zoom: false,
-  });
-  const [act2Quest, setAct2Quest] = useState<Act2QuestProgress>({
-    scroll: false,
-  });
+  const [journeyReplayUnlocked, setJourneyReplayUnlocked] = useState(readJourneyReplayUnlocked);
+  const [act1Quest, setAct1Quest] = useState<Act1QuestProgress>(() =>
+    readJourneyReplayUnlocked() ? COMPLETE_ACT1_QUEST : EMPTY_ACT1_QUEST
+  );
+  const [act2Quest, setAct2Quest] = useState<Act2QuestProgress>(() =>
+    readJourneyReplayUnlocked() ? COMPLETE_ACT2_QUEST : EMPTY_ACT2_QUEST
+  );
   const showDevChapterJumps = (import.meta as ImportMeta & { env?: { DEV?: boolean } }).env?.DEV === true;
 
   const pendingAct2 = useRef(false);
@@ -113,6 +130,8 @@ export default function App() {
   playbackUnlockedRef.current = playbackUnlocked;
   /** Ton UI acte II (iframe parchemin) : solaire en haut, minuit après défile - via `senac-chrome`. */
   const [act2ParcheminTone, setAct2ParcheminTone] = useState<"solar" | "midnight" | null>(null);
+  /** Progression de scroll remontée par l'iframe parchemin pour la barre parent en haut. */
+  const [act2ScrollFillRatio, setAct2ScrollFillRatio] = useState<number | undefined>(undefined);
 
   const act2AmbientMidnight =
     phase === "act2" && (act2ParcheminTone ?? "solar") === "midnight";
@@ -123,15 +142,23 @@ export default function App() {
   const language = useLanguageStore((s) => s.language);
   const isLanguageMorphing = useLanguageStore((s) => s.isLanguageMorphing);
   const copy = useAppCopy();
+  const introVideoPlaying = phase === "intro" && videoStarted;
 
-  /** Palettes du voile langue — alignées acte II minuit sinon doré désert */
+  /** Palettes du voile langue - alignées acte II minuit sinon doré désert */
   const languageMorphMidnight = phase === "act2" && act2AmbientMidnight;
 
   phaseRef.current = phase;
 
   useEffect(() => {
-    if (phase !== "act2") setAct2ParcheminTone(null);
+    if (phase !== "act2") {
+      setAct2ParcheminTone(null);
+      setAct2ScrollFillRatio(undefined);
+    }
   }, [phase]);
+
+  useEffect(() => {
+    if (phase !== "intro" && videoStarted) setVideoStarted(false);
+  }, [phase, videoStarted]);
 
   useEffect(() => {
     const theme = act2AmbientMidnight ? "midnight" : "solar";
@@ -139,7 +166,7 @@ export default function App() {
     document.documentElement.setAttribute("data-theme", theme);
   }, [phase, act2AmbientMidnight, setCursorAmbient]);
 
-  /** Acte I / II : pas de scroll documentaire — évite Lenis + fond body crème qui « fuient » sous la scène fixed. */
+  /** Acte I / II : pas de scroll documentaire - évite Lenis + fond body crème qui « fuient » sous la scène fixed. */
   useEffect(() => {
     const rootEl = document.documentElement;
     rootEl.classList.remove("phase-act1-root", "phase-act2-root");
@@ -201,6 +228,19 @@ export default function App() {
       window.removeEventListener("keydown", onFirstGesture);
     };
   }, [playbackUnlocked, unlockPlayback]);
+
+  useEffect(() => {
+    if (!isFullscreenApiSupported()) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "F11" || e.repeat) return;
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+      if (isEditableTarget(e.target)) return;
+      e.preventDefault();
+      void (getDocumentFullscreenElement() ? exitDocumentFullscreen() : requestDocumentFullscreen());
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, []);
 
   /** Relais volume menu pause -> iframe acte II (musique locale parchemin). */
   useEffect(() => {
@@ -332,6 +372,9 @@ export default function App() {
         /* ignore */
       }
       setJourneyReplayUnlocked(true);
+      setAct1Quest(COMPLETE_ACT1_QUEST);
+      setAct2Quest(COMPLETE_ACT2_QUEST);
+      setRevelationCount(5);
       setIntroKey((k) => k + 1);
       pendingAct2.current = false;
       setParcoursOpen(false);
@@ -474,6 +517,13 @@ export default function App() {
         }
         return;
       }
+      if (e.data?.type === "senac-scroll-progress") {
+        const ratio = e.data.ratio as number;
+        if (typeof ratio === "number" && Number.isFinite(ratio)) {
+          setAct2ScrollFillRatio(Math.min(1, Math.max(0, ratio)));
+        }
+        return;
+      }
       if (e.data?.type === "senac-credits-chrome") {
         if (phaseRef.current !== "act2") return;
         const iframe = document.querySelector('iframe[src*="parchemin-senac"]');
@@ -570,9 +620,9 @@ export default function App() {
             : "isolate min-h-0 w-full will-change-[opacity,filter,transform]"
         }
       >
-      <GrainOverlay opacity={phase === "act2" ? 0 : 0.04} />
-      {/* Acte II : pas d’overlay ciné (z-[52]) au-dessus de l’iframe — vignette = bande sombre « pied de page ». */}
-      {phase !== "act2" && <CinematicOverlay />}
+      <GrainOverlay opacity={phase === "act2" || introVideoPlaying ? 0 : 0.04} />
+      {/* Acte II : pas d’overlay ciné (z-[52]) au-dessus de l’iframe - vignette = bande sombre « pied de page ». */}
+      {phase !== "act2" && <CinematicOverlay disableGrain={introVideoPlaying} />}
       <Soundscape enabled={phase !== "act2"} />
 
       <AnimatePresence mode="sync">
@@ -715,7 +765,7 @@ export default function App() {
         </>
       )}
 
-      {/* HintPanel : acte I uniquement — le parchemin (acte II) gère sa propre navigation (mode Cinéma / Exploration). */}
+      {/* HintPanel : acte I uniquement - le parchemin (acte II) gère sa propre navigation (mode Cinéma / Exploration). */}
       {phase !== "act2" && (
         <HintPanel
           phase={phase}
@@ -747,6 +797,7 @@ export default function App() {
             >
               <Intro
                 onComplete={() => setPhase("act1")}
+                isExploring={journeyReplayUnlocked}
                 onVideoStart={() => setVideoStarted(true)}
                 devChapterJumps={
                   showDevChapterJumps
@@ -790,6 +841,7 @@ export default function App() {
                 onRevelationProgress={setRevelationCount}
                 onMemoryMapComplete={handleMemoryMapComplete}
                 onQuestStepComplete={onAct1QuestStep}
+                completedReplay={journeyReplayUnlocked}
                 parcoursRailExpanded={mdUp && parcoursOpen}
               />
             </Suspense>
@@ -812,7 +864,7 @@ export default function App() {
       </main>
 
       {/* Fluide curseur plein viewport : au-dessus scène (~z-20) et HUD carte (~110) ; sous ScrollProgressBar / modales.
-          Acte II : désactivé — le canvas fixed en 100vh se superposait mal à l’iframe parchemin (100dvh), bande sombre en bas. */}
+          Acte II : désactivé - le canvas fixed en 100vh se superposait mal à l’iframe parchemin (100dvh), bande sombre en bas. */}
       {finePointer && phase !== "act2" && (
         <div
           style={{
@@ -842,17 +894,15 @@ export default function App() {
         </div>
       )}
 
-      {/* Intro / Acte I uniquement — Acte II : barre retirée (elle « poussait » au scroll via iframe → parent). */}
-      {phase !== "act2" && (
-        <ScrollProgressBar
-          tone={act2AmbientMidnight ? "midnight" : "solar"}
-          aboveChrome={false}
-        />
-      )}
+      <ScrollProgressBar
+        tone={act2AmbientMidnight ? "midnight" : "solar"}
+        iframeFillRatio={phase === "act2" ? act2ScrollFillRatio : undefined}
+        aboveChrome={false}
+      />
       </motion.div>
       <LanguageMorphHud visible={isLanguageMorphing} midnight={languageMorphMidnight} />
     </ReactLenis>
-      {/* Curseur custom (portail body) — au-dessus du fluide. */}
+      {/* Curseur custom (portail body) - au-dessus du fluide. */}
       {finePointer && (
       <CustomCursor
         overlayOpen={
@@ -920,7 +970,7 @@ function LanguageMorphHud({
             aria-hidden
           />
 
-          {/* Grain discret — même donnée que GrainOverlay ; pas de translation (évite moiré / grain « qui glisse »). */}
+          {/* Grain discret - même donnée que GrainOverlay ; pas de translation (évite moiré / grain « qui glisse »). */}
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0"

@@ -133,7 +133,7 @@ export default function CustomCursor({
         transition={{ duration: 0.52, ease: [0.22, 1, 0.36, 1] }}
       />
 
-      {/* Losange + « queue » — alignés sur index.css ; indispensables dès que `cursor-none` (iframe Acte II, Intro…). */}
+      {/* Losange + « queue » - alignés sur index.css ; indispensables dès que `cursor-none` (iframe Acte II, Intro…). */}
       {!isFeather && !isDrag && (
         <motion.div
           className="pointer-events-none fixed will-change-transform"
