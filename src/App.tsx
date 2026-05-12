@@ -60,7 +60,7 @@ function parcheminSenacHref(hash: string, options?: { previewCredits?: boolean }
   const base = import.meta.env.BASE_URL;
   const prefix = base.endsWith("/") ? base : `${base}/`;
   const h = hash.startsWith("#") ? hash : `#${hash}`;
-  const q = options?.previewCredits ? "-previewCredits=1" : "";
+  const q = options?.previewCredits ? "?previewCredits=1" : "";
   return `${prefix}parchemin-senac.html${q}${h}`;
 }
 
@@ -182,6 +182,7 @@ export default function App() {
     const isArabic = language === "ar-dz";
     html.lang = isArabic ? "ar-DZ" : "fr";
     html.dir = isArabic ? "rtl" : "ltr";
+    document.title = isArabic ? "الرحلة" : "Al-Rihla";
   }, [language]);
 
   /** Chunks menu pause + rail Parcours (GSAP) : chargés en idle pour réduire le JS initial sans bloquer le premier rendu. */

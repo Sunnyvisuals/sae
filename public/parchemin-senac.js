@@ -771,30 +771,13 @@
   /** @type {{ stop: () => void } | null} */
   let voyageCreditsParticlesHandle = null;
 
-  /** Parallax ciel / brume des crédits : dérivé du défilement du rouleau (pas la souris). */
-  let voyageCreditsRollParallaxActive = false;
-  let voyageCreditsRollParallaxStartMs = 0;
-  let voyageCreditsRollParallaxDurationMs = 0;
-
-  function beginVoyageCreditsRollParallaxClock(durationSec) {
-    voyageCreditsRollParallaxActive = true;
-    voyageCreditsRollParallaxStartMs = performance.now();
-    voyageCreditsRollParallaxDurationMs = Math.max(1, durationSec * 1000);
-  }
-
-  function resetVoyageCreditsRollParallaxClock() {
-    voyageCreditsRollParallaxActive = false;
-    voyageCreditsRollParallaxStartMs = 0;
-    voyageCreditsRollParallaxDurationMs = 0;
-  }
-
   function stopVoyageCreditsParticles() {
     voyageCreditsParticlesHandle?.stop();
   }
 
   /**
    * Même rendu 2D que #sky-canvas + #fog-canvas (frise), sur le générique de fin.
-   * Parallax : même équations que la frise, mais `sp` suit la progression du rouleau (générique).
+   * Parallax : même équations que la frise, mais `sp` suit la traversée du bloc crédits dans le viewport.
    */
   function startVoyageCreditsParticles(overlay) {
     if (reducedMotion || voyageCreditsParticlesHandle) return;
@@ -807,13 +790,13 @@
     if (!sctx || !fctx) return;
 
     function readCreditsScrollTarget() {
-      if (voyageCreditsRollParallaxActive && voyageCreditsRollParallaxDurationMs > 0) {
-        const elapsed = performance.now() - voyageCreditsRollParallaxStartMs;
-        const t = Math.min(1, Math.max(0, elapsed / voyageCreditsRollParallaxDurationMs));
-        /* Amplitude proche d’un scroll de frise (px) pour réutiliser skyParallaxFor / brouillard. */
-        return t * 1180;
-      }
-      return 0;
+      const rect = overlay.getBoundingClientRect();
+      const viewportH = Math.max(window.innerHeight, 1);
+      const total = Math.max(rect.height + viewportH, 1);
+      const traversed = viewportH - rect.top;
+      const t = Math.min(1, Math.max(0, traversed / total));
+      /* Amplitude proche d’un scroll de frise (px) pour réutiliser skyParallaxFor / brouillard. */
+      return t * 1180;
     }
 
     let skyStopped = false;
@@ -1119,13 +1102,11 @@
       stop() {
         skyStopped = true;
         fogStopped = true;
-        resetVoyageCreditsRollParallaxClock();
         window.removeEventListener("resize", onResizeCreditsParticles);
         voyageCreditsParticlesHandle = null;
       },
     };
 
-    resetVoyageCreditsRollParallaxClock();
     skyResize();
     fogResize();
     window.addEventListener("resize", onResizeCreditsParticles, { passive: true });
@@ -1866,21 +1847,17 @@
     }
   }
 
-  /** Générique de fin façon cinéma - scroll vertical, Lenis figé, Escape / passer pour fermer. */
+  /** Générique de fin intégré au parchemin : ancre naturelle + CTA retour vers l’app React. */
   function initVoyageCredits() {
     const overlay = document.getElementById("voyage-credits");
-    const roll = document.getElementById("voyage-credits-roll");
     const skipBtn = document.getElementById("voyage-credits-skip");
     const trigger = document.getElementById("voyage-credits-trigger");
-    const ctaWrap = document.getElementById("voyage-credits-cta");
     if (
       !(overlay instanceof HTMLElement) ||
-      !(roll instanceof HTMLElement) ||
       !skipBtn ||
-      !trigger ||
-      !(ctaWrap instanceof HTMLElement)
+      !trigger
     ) {
-      return;
+      return null;
     }
 
     const bgVideo = overlay.querySelector(".voyage-credits-bg-video");
@@ -1897,45 +1874,8 @@
       }
     }
 
-    let open = false;
     const motionReduced =
       reducedMotion || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    function stopPageScroll() {
-      document.documentElement.classList.add("voyage-credits-active");
-      document.body.classList.add("voyage-credits-active");
-      if (yearGaugeLenis && typeof yearGaugeLenis.stop === "function") {
-        try {
-          yearGaugeLenis.stop();
-        } catch {
-          /* ignore */
-        }
-      }
-    }
-
-    function resumePageScroll() {
-      document.documentElement.classList.remove("voyage-credits-active");
-      document.body.classList.remove("voyage-credits-active");
-      if (yearGaugeLenis && typeof yearGaugeLenis.start === "function") {
-        try {
-          yearGaugeLenis.start();
-        } catch {
-          /* ignore */
-        }
-      }
-    }
-
-    function stripPreviewCreditsParam() {
-      try {
-        const url = new URL(window.location.href);
-        if (!url.searchParams.has("previewCredits")) return;
-        url.searchParams.delete("previewCredits");
-        const next = `${url.pathname}${url.search}${url.hash}`;
-        window.history.replaceState({}, "", next);
-      } catch {
-        /* ignore */
-      }
-    }
 
     /** Retour à l’app React : depuis l’iframe → message parent (sans recharger tout le site). */
     function goToMainExperience() {
@@ -1963,46 +1903,9 @@
       }
     }
 
-    let creditsExitUnlocked = false;
-    /** @type {(() => void) | null} */
-    let staticScrollCleanup = null;
-    /** Très court battement après la fin du rouleau avant le CTA (ms). */
-    const CREDITS_REVEAL_DELAY_MS = 48;
-    let revealTimer = 0;
-
-    function clearRevealTimer() {
-      if (revealTimer) {
-        window.clearTimeout(revealTimer);
-        revealTimer = 0;
-      }
-    }
-
-    function clearStaticScrollListener() {
-      if (typeof staticScrollCleanup === "function") {
-        staticScrollCleanup();
-        staticScrollCleanup = null;
-      }
-    }
-
-    function detachCreditsPointer() {
-      window.removeEventListener("pointermove", onCreditsPointerMove);
-      overlay.style.removeProperty("--credits-mx");
-      overlay.style.removeProperty("--credits-my");
-    }
-
-    /** @param {PointerEvent} e */
-    function onCreditsPointerMove(e) {
-      if (!open || creditsExitUnlocked || motionReduced) return;
-      const mx = e.clientX / Math.max(window.innerWidth, 1);
-      const my = e.clientY / Math.max(window.innerHeight, 1);
-      overlay.style.setProperty("--credits-mx", mx.toFixed(4));
-      overlay.style.setProperty("--credits-my", my.toFixed(4));
-    }
-
     function playCreditsVideo() {
       if (!(bgVideo instanceof HTMLVideoElement)) return;
       try {
-        bgVideo.currentTime = 0;
         const p = bgVideo.play();
         if (p !== undefined) void p.catch(() => {});
       } catch {
@@ -2014,144 +1917,98 @@
       if (!(bgVideo instanceof HTMLVideoElement)) return;
       try {
         bgVideo.pause();
-        bgVideo.currentTime = 0;
       } catch {
         /* ignore */
       }
     }
 
-    function lockExitControls() {
-      creditsExitUnlocked = false;
-      ctaWrap.classList.add("is-locked-out");
-      skipBtn.setAttribute("tabindex", "-1");
-      skipBtn.setAttribute("aria-hidden", "true");
-    }
+    let creditsVisible = false;
 
-    function revealExitControls() {
-      creditsExitUnlocked = true;
-      ctaWrap.classList.remove("is-locked-out");
-      skipBtn.removeAttribute("tabindex");
-      skipBtn.setAttribute("aria-hidden", "false");
-      try {
-        skipBtn.focus({ preventScroll: true });
-      } catch {
-        /* ignore */
+    function syncCreditsVisibility(nextVisible) {
+      if (creditsVisible === nextVisible) return;
+      creditsVisible = nextVisible;
+      notifyParentCreditsChrome(nextVisible);
+      if (nextVisible) {
+        startVoyageCreditsParticles(overlay);
+        if (!motionReduced) {
+          overlay.style.setProperty("--credits-mx", "0.5");
+          overlay.style.setProperty("--credits-my", "0.5");
+        }
+        playCreditsVideo();
+        return;
       }
+      stopVoyageCreditsParticles();
+      pauseCreditsVideo();
     }
 
-    /** @param {KeyboardEvent} e */
-    function onKeyEscape(e) {
-      if (e.key !== "Escape") return;
-      if (!creditsExitUnlocked) return;
-      exitCreditsToHome();
+    /** `IntersectionObserver` suffit ici : on veut seulement refléter si la section crédits est à l’écran. */
+    if ("IntersectionObserver" in window) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          const entry = entries[0];
+          syncCreditsVisibility(Boolean(entry?.isIntersecting));
+        },
+        {
+          root: null,
+          rootMargin: "-15% 0px -15% 0px",
+          threshold: 0,
+        }
+      );
+      observer.observe(overlay);
+    } else {
+      const checkVisibility = () => {
+        const rect = overlay.getBoundingClientRect();
+        syncCreditsVisibility(rect.bottom > 0 && rect.top < window.innerHeight);
+      };
+      window.addEventListener("scroll", checkVisibility, { passive: true });
+      window.addEventListener("resize", checkVisibility, { passive: true });
+      checkVisibility();
     }
 
-    function scheduleRevealAfterCreditsDone() {
-      clearRevealTimer();
-      revealTimer = window.setTimeout(() => {
-        revealTimer = 0;
-        revealExitControls();
-      }, CREDITS_REVEAL_DELAY_MS);
-    }
+    /**
+     * @param {{ immediate?: boolean, updateHash?: boolean }} [options]
+     */
+    function scrollCreditsIntoView(options = {}) {
+      const immediate = options.immediate ?? motionReduced;
+      const updateHash = options.updateHash !== false;
+      const inset = Math.min(window.innerHeight * 0.08, 96);
+      const top = Math.max(0, overlay.getBoundingClientRect().top + getScrollY() - inset);
 
-    /** @param {AnimationEvent} e */
-    function onCreditsRollAnimationEnd(e) {
-      if (e.animationName !== "voyage-credits-marquee") return;
-      roll.removeEventListener("animationend", onCreditsRollAnimationEnd);
-      scheduleRevealAfterCreditsDone();
-    }
+      if (yearGaugeLenis && typeof yearGaugeLenis.scrollTo === "function") {
+        try {
+          yearGaugeLenis.scrollTo(top, { immediate });
+        } catch {
+          window.scrollTo({ top, behavior: immediate ? "auto" : "smooth" });
+        }
+      } else {
+        window.scrollTo({ top, behavior: immediate ? "instant" : "smooth" });
+      }
 
-    /** Liste statique : débloquer le retour quand le bas des crédits a été atteint dans le clip. */
-    function attachStaticScrollFinish() {
-      clearStaticScrollListener();
-      const clip = overlay.querySelector(".voyage-credits-roll-clip");
-      if (!(clip instanceof HTMLElement)) return;
-
-      function checkScrollEnd() {
-        if (creditsExitUnlocked || !open) return;
-        if (clip.scrollTop + clip.clientHeight >= clip.scrollHeight - 36) {
-          clearStaticScrollListener();
-          scheduleRevealAfterCreditsDone();
+      if (updateHash) {
+        try {
+          const url = new URL(window.location.href);
+          url.hash = "voyage-credits";
+          window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+        } catch {
+          /* ignore */
         }
       }
 
-      clip.addEventListener("scroll", checkScrollEnd, { passive: true });
-      staticScrollCleanup = () => {
-        clip.removeEventListener("scroll", checkScrollEnd);
-      };
       window.requestAnimationFrame(() => {
-        window.requestAnimationFrame(checkScrollEnd);
+        applyScrollDerivedState(yearGaugeLenis ? yearGaugeLenis.scroll : getScrollY());
       });
     }
 
-    function exitCreditsToHome() {
-      if (!open || !creditsExitUnlocked) return;
-      notifyParentCreditsChrome(false);
-      stopVoyageCreditsParticles();
-      open = false;
-      creditsExitUnlocked = false;
-      roll.removeEventListener("animationend", onCreditsRollAnimationEnd);
-      clearStaticScrollListener();
-      detachCreditsPointer();
-      pauseCreditsVideo();
-      overlay.classList.remove("is-open");
-      overlay.classList.remove("voyage-credits--static");
-      overlay.setAttribute("aria-hidden", "true");
-      roll.classList.remove("is-rolling");
-      stripPreviewCreditsParam();
-      resumePageScroll();
-      window.removeEventListener("keydown", onKeyEscape);
-      clearRevealTimer();
-      lockExitControls();
-      goToMainExperience();
-    }
-
-    function openCredits() {
-      if (open) return;
-      open = true;
-      clearRevealTimer();
-      lockExitControls();
-      clearStaticScrollListener();
-      detachCreditsPointer();
-      overlay.classList.add("is-open");
-      overlay.setAttribute("aria-hidden", "false");
-
-      stopPageScroll();
-      notifyParentCreditsChrome(true);
-      startVoyageCreditsParticles(overlay);
-      window.addEventListener("keydown", onKeyEscape);
-
-      playCreditsVideo();
-
-      if (motionReduced) {
-        overlay.classList.add("voyage-credits--static");
-        roll.classList.remove("is-rolling");
-        attachStaticScrollFinish();
-        return;
-      }
-
-      overlay.style.setProperty("--credits-mx", "0.5");
-      overlay.style.setProperty("--credits-my", "0.5");
-      window.addEventListener("pointermove", onCreditsPointerMove, { passive: true });
-
-      overlay.classList.remove("voyage-credits--static");
-      roll.classList.remove("is-rolling");
-      void roll.offsetHeight;
-      const h = roll.scrollHeight;
-      /** Défilement vertical : plus lent qu’avant (~38-92 s selon la hauteur du texte). */
-      const duration = Math.min(92, Math.max(38, h / 28));
-      roll.style.setProperty("--credits-duration", `${duration}s`);
-      void roll.offsetHeight;
-      roll.classList.add("is-rolling");
-      beginVoyageCreditsRollParallaxClock(duration);
-      roll.addEventListener("animationend", onCreditsRollAnimationEnd);
-    }
-
-    trigger.addEventListener("click", () => openCredits());
-    skipBtn.addEventListener("click", () => {
-      if (!creditsExitUnlocked) return;
-      exitCreditsToHome();
+    trigger.addEventListener("click", (e) => {
+      e.preventDefault();
+      scrollCreditsIntoView({ updateHash: true });
     });
+    skipBtn.addEventListener("click", () => {
+      syncCreditsVisibility(false);
+      goToMainExperience();
+    });
+
+    return scrollCreditsIntoView;
   }
 
   /**
@@ -2161,12 +2018,14 @@
    */
   function scrollToHashChapterIfNeeded() {
     const raw = decodeURIComponent(window.location.hash.slice(1));
-    if (raw !== "chapitre-3") return;
+    if (raw !== "chapitre-3" && raw !== "voyage-credits") return;
 
-    const el = document.getElementById("chapitre-3");
+    const el = document.getElementById(raw);
     if (!(el instanceof HTMLElement)) return;
 
-    const inset = Math.min(window.innerHeight * 0.12, 140);
+    const inset = raw === "voyage-credits"
+      ? Math.min(window.innerHeight * 0.08, 96)
+      : Math.min(window.innerHeight * 0.12, 140);
     const top = Math.max(0, el.getBoundingClientRect().top + window.scrollY - inset);
 
     if (yearGaugeLenis && typeof yearGaugeLenis.scrollTo === "function") {
@@ -2856,7 +2715,7 @@
     initWordSplits();
     initReveal();
     initChapterThree();
-    initVoyageCredits();
+    const scrollToCredits = initVoyageCredits();
 
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
@@ -2865,9 +2724,7 @@
           const params = new URLSearchParams(window.location.search);
           if (params.has("previewCredits")) {
             window.requestAnimationFrame(() => {
-              document.getElementById("voyage-credits-trigger")?.dispatchEvent(
-                new MouseEvent("click", { bubbles: true })
-              );
+              scrollToCredits?.({ immediate: reducedMotion, updateHash: true });
             });
           }
         } catch {

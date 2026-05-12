@@ -27,17 +27,26 @@ import { useAppCopy } from "../hooks/useAppCopy";
 
 // --- CONFIGURATION VIDÉO : même source que `act1IntroBridge` (Acte I aligné sur cette piste) ---
 const VIDEO_SOURCE = INTRO_VIDEO_SRC;
+const ARABIC_TITLE_IMAGE_SRC = `${import.meta.env.BASE_URL}images/al-rihla-arabic-title.svg`;
 
 const INTRO_CTA_WORDS_FR = ["Cliquer", "ou", "Entrée"] as const;
 const INTRO_CTA_WORDS_AR = ["إضغط", "أو", "إنتر"] as const;
 
 type AnimatedTitleProps = {
-  text: string;
+  text?: string;
   className?: string;
   heroMotion?: boolean;
+  children?: React.ReactNode;
+  viewportTracking?: boolean;
 };
 
-const AnimatedTitle = ({ text, className, heroMotion = false }: AnimatedTitleProps) => {
+const AnimatedTitle = ({
+  text,
+  className,
+  heroMotion = false,
+  children,
+  viewportTracking = false,
+}: AnimatedTitleProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -46,8 +55,47 @@ const AnimatedTitle = ({ text, className, heroMotion = false }: AnimatedTitlePro
   const parallaxX = useSpring(useTransform(mouseX, [-0.5, 0.5], heroMotion ? [-10, 10] : [0, 0]), springSoft);
   const parallaxY = useSpring(useTransform(mouseY, [-0.5, 0.5], heroMotion ? [-8, 8] : [0, 0]), springSoft);
 
+  useEffect(() => {
+    if (!heroMotion || !viewportTracking) return;
+
+    const syncFromViewport = (clientX: number, clientY: number) => {
+      const vw = window.innerWidth || 1;
+      const vh = window.innerHeight || 1;
+      mouseX.set(clientX / vw - 0.5);
+      mouseY.set(clientY / vh - 0.5);
+
+      const el = containerRef.current;
+      if (el) {
+        el.style.setProperty("--shine-x", `${(clientX / vw) * 100}%`);
+        el.style.setProperty("--shine-y", `${(clientY / vh) * 100}%`);
+      }
+    };
+
+    const resetViewportTracking = () => {
+      mouseX.set(0);
+      mouseY.set(0);
+      const el = containerRef.current;
+      if (el) {
+        el.style.setProperty("--shine-x", "50%");
+        el.style.setProperty("--shine-y", "50%");
+      }
+    };
+
+    const handlePointerMove = (event: PointerEvent) => {
+      syncFromViewport(event.clientX, event.clientY);
+    };
+
+    window.addEventListener("pointermove", handlePointerMove, { passive: true });
+    window.addEventListener("blur", resetViewportTracking);
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("blur", resetViewportTracking);
+    };
+  }, [heroMotion, mouseX, mouseY, viewportTracking]);
+
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!heroMotion) return;
+    if (!heroMotion || viewportTracking) return;
     const rect = e.currentTarget.getBoundingClientRect();
     mouseX.set((e.clientX - rect.left) / rect.width - 0.5);
     mouseY.set((e.clientY - rect.top) / rect.height - 0.5);
@@ -61,6 +109,7 @@ const AnimatedTitle = ({ text, className, heroMotion = false }: AnimatedTitlePro
   };
 
   const handleMouseLeave = () => {
+    if (viewportTracking) return;
     mouseX.set(0);
     mouseY.set(0);
     const el = containerRef.current;
@@ -70,13 +119,14 @@ const AnimatedTitle = ({ text, className, heroMotion = false }: AnimatedTitlePro
     }
   };
 
-  const characters = text.split("");
+  const characters = text?.split("") ?? [];
+  const hasCustomContent = children != null;
 
   return (
     <motion.div
       ref={containerRef}
-      onMouseMove={heroMotion ? handleMouseMove : undefined}
-      onMouseLeave={heroMotion ? handleMouseLeave : undefined}
+      onMouseMove={heroMotion && !viewportTracking ? handleMouseMove : undefined}
+      onMouseLeave={heroMotion && !viewportTracking ? handleMouseLeave : undefined}
       style={
         heroMotion
           ? ({
@@ -100,21 +150,31 @@ const AnimatedTitle = ({ text, className, heroMotion = false }: AnimatedTitlePro
         />
       )}
       <div className="relative inline-block">
-        {characters.map((char, i) => (
-          <motion.span
-            key={i}
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{
-              duration: 0.85,
-              delay: i * 0.06,
-              ease: [0.22, 1, 0.36, 1],
-            }}
-            className="inline-block"
+        {hasCustomContent ? (
+          <motion.div
+            initial={{ opacity: 0, y: 12, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 1.05, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
           >
-            {char === " " ? "\u00A0" : char}
-          </motion.span>
-        ))}
+            {children}
+          </motion.div>
+        ) : (
+          characters.map((char, i) => (
+            <motion.span
+              key={i}
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.85,
+                delay: i * 0.06,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+              className="inline-block"
+            >
+              {char === " " ? "\u00A0" : char}
+            </motion.span>
+          ))
+        )}
       </div>
     </motion.div>
   );
@@ -958,14 +1018,34 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
               transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
               className="relative z-[2]"
             >
-              <AnimatedTitle
-                heroMotion
-                text="Al-Rihla"
-                className={
-                  "font-bahlull text-white tracking-tighter italic drop-shadow-[0_0_22px_rgba(197,160,89,0.35)] " +
-                  (compactDesktop ? "text-6xl md:text-8xl" : "text-7xl md:text-9xl")
-                }
-              />
+              {language === "ar-dz" ? (
+                <AnimatedTitle
+                  heroMotion
+                  viewportTracking
+                  className={
+                    "mx-auto flex min-h-[clamp(13rem,30vw,22rem)] w-screen max-w-[1500px] items-center justify-center px-6 md:px-10 select-none"
+                  }
+                >
+                  <img
+                    src={ARABIC_TITLE_IMAGE_SRC}
+                    alt="الرحلة"
+                    draggable={false}
+                    className={
+                      "mx-auto h-auto drop-shadow-[0_0_22px_rgba(197,160,89,0.28)] " +
+                      (compactDesktop ? "w-[min(54rem,78vw)]" : "w-[min(60rem,86vw)]")
+                    }
+                  />
+                </AnimatedTitle>
+              ) : (
+                <AnimatedTitle
+                  heroMotion
+                  text="Al-Rihla"
+                  className={
+                    "font-bahlull text-white tracking-tighter italic drop-shadow-[0_0_22px_rgba(197,160,89,0.35)] " +
+                    (compactDesktop ? "text-6xl md:text-8xl" : "text-7xl md:text-9xl")
+                  }
+                />
+              )}
             </motion.div>
 
             <motion.div

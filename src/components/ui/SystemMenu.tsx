@@ -193,10 +193,10 @@ function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
     <motion.div variants={item} className="mt-8 w-full max-w-[min(100%,526px)] px-0 sm:mt-9">
       <div
         className={
-          'rounded-[2px] border px-3 py-2.5 sm:px-4 sm:py-3 ' +
+          'rounded-[2px] px-3 py-2.5 sm:px-4 sm:py-3 ' +
           (midnight
-            ? 'border-[rgba(90,168,255,0.2)] bg-[rgba(4,10,22,0.22)]'
-            : 'border-solar-gold/18 bg-black/12')
+            ? 'bg-[rgba(4,10,22,0.22)]'
+            : 'bg-black/12')
         }
       >
         <button
@@ -355,10 +355,10 @@ function PauseLanguagePicker({ midnight }: { midnight: boolean }) {
     <motion.div variants={item} className="mt-8 w-full max-w-[min(100%,526px)] px-0 sm:mt-9">
       <div
         className={
-          'rounded-[2px] border px-3 py-2.5 sm:px-4 sm:py-3 ' +
+          'rounded-[2px] px-3 py-2.5 sm:px-4 sm:py-3 ' +
           (midnight
-            ? 'border-[rgba(90,168,255,0.2)] bg-[rgba(4,10,22,0.22)]'
-            : 'border-solar-gold/18 bg-black/12')
+            ? 'bg-[rgba(4,10,22,0.22)]'
+            : 'bg-black/12')
         }
       >
         <button

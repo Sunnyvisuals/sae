@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 520" role="img" aria-labelledby="title desc">
+  <title id="title">&#x0627;&#x0644;&#x0631;&#x062D;&#x0644;&#x0629;</title>
+  <desc id="desc">Titre arabe d'Al-Rihla.</desc>
+  <style>
+    text {
+      fill: #fdfaf6;
+      font-family: "Noto Naskh Arabic", "Amiri", "Scheherazade New", serif;
+      font-size: 330px;
+      font-weight: 700;
+    }
+  </style>
+  <text
+    x="50%"
+    y="54%"
+    text-anchor="middle"
+    dominant-baseline="middle"
+    direction="rtl"
+    unicode-bidi="plaintext"
+  >&#x0627;&#x0644;&#x0631;&#x062D;&#x0644;&#x0629;</text>
+</svg>

@@ -10,7 +10,7 @@
 }
 
 :root {
-  /* Une nuance plus Â« minuit Â» : presque noir, bleu Ã  peine perceptible */
+  /* Une nuance plus « minuit » : presque noir, bleu à peine perceptible */
   --night-0: #000208;
   --night-1: #010513;
   --night-2: #020a1a;
@@ -36,8 +36,8 @@
   --da-ghost-year: rgba(129, 140, 248, 0.13);
   --mx: 50%;
   --my: 18%;
-  /* Barre naturelle rÃ©servÃ©e si lâ€™orbite JS nâ€™est pas chargÃ©e ou absente du DOM */
-  /** Parallax immersion (mis Ã  jour en JS avec Lenis / scroll natif) */
+  /* Barre naturelle reservee si l'orbite JS n'est pas chargee ou absente du DOM */
+  /** Parallax immersion (mis à jour en JS avec Lenis / scroll natif) */
   --hero-t: 0;
   --frise-t: 0;
   /** Suit le voile chapitre II (ambre → nuit bleue) pour l’interface */
@@ -275,11 +275,6 @@ body.senac-night::after {
   pointer-events: none;
   z-index: 9000;
   will-change: transform;
-}
-
-/* Générique : rouleau 3D + calques - garder le losange au-dessus (aperçu hors iframe). */
-body.voyage-credits-active #senac-diamond-cursor {
-  z-index: 2147483646;
 }
 
 #senac-diamond-cursor .dc-halo {
@@ -650,7 +645,7 @@ body.senac-smoke-fallback #fog-canvas {
   animation: celestial-rotate 80s linear infinite;
 }
 
-/* Grille trÃ¨s lÃ©gÃ¨re â€” sans trait central ni bandes horizontales (illisibles sur le texte) */
+/* Grille tres legere - sans trait central ni bandes horizontales (illisibles sur le texte) */
 .depth-lines {
   z-index: 2;
   opacity: calc(0.09 + var(--frise-t, 0) * 0.04);
@@ -1354,7 +1349,7 @@ html[dir="rtl"] .senac-cross-nav--compact {
   margin-block: 0;
 }
 
-/** Fil axial Â« constellation Â» dans la frise â€” intensitÃ© liÃ©e au scroll */
+/** Fil axial "constellation" dans la frise - intensite liee au scroll */
 #timeline-start.timeline::before {
   content: "";
   position: absolute;
@@ -1779,7 +1774,7 @@ html[dir="rtl"] .senac-cross-nav--compact {
   line-height: 1.55;
 }
 
-/* Clic Â« fragment Â» â€” quÃªte acte II (validÃ©e dans le parent React) */
+/* Clic "fragment" - quete acte II (validee dans le parent React) */
 .senac-fragment {
   cursor: pointer;
   transform: scale(1);
@@ -1848,7 +1843,7 @@ html[dir="rtl"] .senac-cross-nav--compact {
   isolation: isolate;
 }
 
-/* Filets dÃ©coratifs courts, en haut et en bas â€” jamais full-bleed sur le texte */
+/* Filets decoratifs courts, en haut et en bas - jamais full-bleed sur le texte */
 /* Halo radial centre qui pulse */
 .quote-break::before {
   content: "";
@@ -2224,7 +2219,7 @@ figure.archive-window[data-reveal]:not(.is-visible) {
   transform: translateY(-2px);
 }
 
-.chapter-three-actions button.chapter-three-actions-secondary {
+.chapter-three-actions .chapter-three-actions-secondary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2238,86 +2233,67 @@ figure.archive-window[data-reveal]:not(.is-visible) {
   font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: 0.22em;
+  text-decoration: none;
   text-transform: uppercase;
   cursor: pointer;
   transition: border-color 0.3s var(--ease), box-shadow 0.3s var(--ease), transform 0.3s var(--ease);
 }
 
-.chapter-three-actions button.chapter-three-actions-secondary:hover {
+.chapter-three-actions .chapter-three-actions-secondary:hover {
   border-color: rgba(183, 210, 255, 0.55);
   box-shadow: 0 0 28px rgba(121, 183, 255, 0.16);
   transform: translateY(-2px);
 }
 
-/** ─── Générique fin de voyage (plein écran, style cinéma) ─── */
-html.voyage-credits-active,
-body.voyage-credits-active {
-  overflow: hidden !important;
-}
-
-/* Au-dessus du choix Cinéma/Exploration (z-index 7000) et du rail scroll - pas de re-proposition pendant le générique */
-body.voyage-credits-active #scroll-mode-choice,
-body.voyage-credits-active #smc-backdrop,
-body.voyage-credits-active #scroll-mode-toggle {
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
+/** ─── Générique fin de voyage (section inline, intégrée au parchemin) ─── */
 .voyage-credits {
   --credits-mx: 0.5;
   --credits-my: 0.5;
-  position: fixed;
-  inset: 0;
-  z-index: 7100;
+  position: relative;
+  z-index: 9;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  background: #030308;
+  gap: clamp(2rem, 5vh, 3.5rem);
+  padding:
+    clamp(4rem, 12vh, 7rem)
+    clamp(1.25rem, 4vw, 3rem)
+    max(env(safe-area-inset-bottom, 0px), clamp(3.5rem, 10vh, 6rem));
+  overflow: clip;
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse 72% 58% at 50% 18%, rgba(121, 183, 255, 0.12), transparent 58%),
+    linear-gradient(180deg, rgba(1, 2, 8, 0.94) 0%, #030308 22%, #010208 100%);
   color: rgba(240, 244, 252, 0.92);
-  opacity: 0;
-  visibility: hidden;
+  scroll-margin-top: max(72px, env(safe-area-inset-top, 0px));
+}
+
+.voyage-credits::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-top: 1px solid rgba(197, 160, 89, 0.14);
+  background:
+    radial-gradient(ellipse 94% 72% at 50% 0%, rgba(255, 252, 245, 0.04), transparent 52%),
+    radial-gradient(ellipse 58% 36% at 50% 82%, rgba(197, 160, 89, 0.06), transparent 70%);
   pointer-events: none;
-  transition:
-    opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1),
-    visibility 0s linear 0.55s;
 }
 
-.voyage-credits.is-open {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-  transition:
-    opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1),
-    visibility 0s linear 0s;
-}
-
-/** Rappel vidéo (Al-Rihla) - flou, sous le rouleau */
+/** Rappel vidéo (Al-Rihla) - flou, sous le corps de crédits */
 .voyage-credits-bg-video-wrap {
   position: absolute;
-  inset: -4%;
+  inset: -4% -4% 0;
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
-  transform: translate3d(
-    calc((var(--credits-mx) - 0.5) * -28px),
-    calc((var(--credits-my) - 0.5) * -18px),
-    0
-  );
-  will-change: transform;
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .voyage-credits-bg-video {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  /* Boîte plus large que le viewport pour éviter les bandes (object-fit: cover sur la source). */
-  width: 125vmax;
-  height: 125vmax;
-  min-width: 100%;
-  min-height: 100%;
-  transform: translate3d(-50%, -50%, 0) scale(1.08);
+  inset: 0;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   object-position: 50% 42%;
   filter: blur(22px) brightness(0.26) saturate(0.82);
@@ -2389,44 +2365,40 @@ body.voyage-credits-active #scroll-mode-toggle {
   position: relative;
   z-index: 3;
   flex: 1;
-  width: 100%;
-  overflow: hidden;
-  mask-image: linear-gradient(to bottom, transparent 0%, #000 14%, #000 86%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 14%, #000 86%, transparent 100%);
+  width: min(100%, 52rem);
+  margin: 0 auto;
+  overflow: visible;
+  mask-image: none;
+  -webkit-mask-image: none;
 }
 
 .voyage-credits-roll {
-  --credits-duration: 52s;
   position: relative;
   box-sizing: border-box;
-  width: min(34rem, calc(100vw - clamp(1rem, 6vw, 2.75rem)));
+  width: min(34rem, 100%);
   margin: 0 auto;
-  padding: 0 clamp(0.65rem, 4vw, 1.25rem) clamp(10vh, 14vw, 14vh);
+  padding:
+    clamp(4rem, 8vh, 6rem)
+    clamp(0.65rem, 4vw, 1.25rem)
+    clamp(1.75rem, 5vh, 3rem);
+  border: 1px solid rgba(121, 183, 255, 0.1);
+  background:
+    linear-gradient(180deg, rgba(255, 252, 248, 0.03) 0, rgba(255, 252, 248, 0) 12rem),
+    rgba(3, 8, 20, 0.28);
+  box-shadow:
+    0 22px 64px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
   font-family: "Inter", system-ui, sans-serif;
   text-align: center;
-  /* Taille lisible sans scale() cinéma (évite flou / aliasing). */
   font-size: clamp(0.8rem, 0.35rem + 1.55vw, 1.12rem);
   line-height: 1.65;
   letter-spacing: clamp(0.045em, calc(0.04em + 0.12vw), 0.06em);
   text-shadow:
     0 0 20px rgba(0, 4, 16, 0.92),
     0 2px 24px rgba(0, 2, 10, 0.65);
-  transform-origin: 50% 0%;
-  transform: translate3d(0, 100vh, 0);
-  will-change: transform;
-}
-
-.voyage-credits-roll.is-rolling {
-  animation: voyage-credits-marquee var(--credits-duration, 52s) linear forwards;
-}
-
-@keyframes voyage-credits-marquee {
-  from {
-    transform: translate3d(0, 100vh, 0);
-  }
-  to {
-    transform: translate3d(0, calc(-100% - 100vh), 0);
-  }
+  transform: none;
+  will-change: auto;
 }
 
 .voyage-credits-main-title {
@@ -2525,38 +2497,15 @@ body.voyage-credits-active #scroll-mode-toggle {
   opacity: 1;
 }
 
-/** Proposition centrée - au-dessus du rouleau ; masquée jusqu’à la fin du défilement */
 .voyage-credits-cta {
-  position: fixed;
-  inset: 0;
-  z-index: 7110;
+  position: relative;
+  z-index: 4;
   display: flex;
-  align-items: center;
   justify-content: center;
-  padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
-    max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
-  pointer-events: none;
-  opacity: 1;
-  visibility: visible;
-  transition:
-    opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
-    visibility 0s linear 0s;
-}
-
-.voyage-credits-cta.is-locked-out {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition:
-    opacity 0s linear 0s,
-    visibility 0s linear 0.45s;
-}
-
-.voyage-credits-cta:not(.is-locked-out) {
-  pointer-events: none;
-  transition:
-    opacity 0.2s cubic-bezier(0.22, 1, 0.36, 1),
-    visibility 0s linear 0s;
+  width: min(100%, 52rem);
+  margin: auto auto 0;
+  padding: 0 clamp(0.65rem, 4vw, 1.25rem);
+  pointer-events: auto;
 }
 
 /**
@@ -2567,8 +2516,8 @@ body.voyage-credits-active #scroll-mode-toggle {
   position: relative;
   z-index: 1;
   pointer-events: auto;
+  width: min(100%, 22rem);
   padding: clamp(0.55rem, 1.8vw, 0.75rem);
-  max-width: min(calc(22rem + 1.4rem), calc(100vw - 1.25rem));
   filter: drop-shadow(0 14px 38px rgba(0, 0, 0, 0.55));
 }
 
@@ -2660,27 +2609,6 @@ body.voyage-credits-active #scroll-mode-toggle {
 }
 
 /** Réduit mouvement : générique défilant → liste défilable */
-.voyage-credits.voyage-credits--static .voyage-credits-roll-clip {
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  mask-image: none;
-  -webkit-mask-image: none;
-}
-
-.voyage-credits.voyage-credits--static .voyage-credits-roll {
-  animation: none !important;
-  transform: none !important;
-  margin-top: clamp(3.75rem, 14vw, 5rem);
-  margin-bottom: clamp(2.5rem, 10vw, 4rem);
-  padding-bottom: clamp(2.75rem, 10vw, 4rem);
-  will-change: auto;
-}
-
-.voyage-credits.voyage-credits--static .voyage-credits-bg-video-wrap {
-  transform: none !important;
-  transition: none !important;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .voyage-credits-bg-video-wrap {
     transform: none !important;
@@ -2688,24 +2616,8 @@ body.voyage-credits-active #scroll-mode-toggle {
   }
 
   .voyage-credits-roll {
-    animation: none !important;
     transform: none !important;
     will-change: auto;
-  }
-
-  .voyage-credits-roll.is-rolling {
-    animation: none !important;
-  }
-
-  .voyage-credits.is-open:not(.voyage-credits--static) .voyage-credits-roll-clip {
-    overflow-y: auto;
-    mask-image: none;
-    -webkit-mask-image: none;
-  }
-
-  .voyage-credits.is-open:not(.voyage-credits--static) .voyage-credits-roll {
-    margin-top: clamp(3.75rem, 14vw, 5rem);
-    padding-bottom: clamp(2.75rem, 10vw, 4rem);
   }
 }
 
