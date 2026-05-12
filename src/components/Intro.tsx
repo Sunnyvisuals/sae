@@ -1010,7 +1010,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                 <AuroraMeshBackground />
               </motion.div>
 
-            <motion.div
+            <motion.h1
               animate={{
                 opacity: isStarting ? 0 : 1,
                 y: isStarting ? -28 : 0,
@@ -1026,9 +1026,11 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                     "mx-auto flex min-h-[clamp(13rem,30vw,22rem)] w-screen max-w-[1500px] items-center justify-center px-6 md:px-10 select-none"
                   }
                 >
+                  <span className="sr-only">الرحلة</span>
                   <img
                     src={ARABIC_TITLE_IMAGE_SRC}
-                    alt="الرحلة"
+                    alt=""
+                    aria-hidden="true"
                     draggable={false}
                     className={
                       "mx-auto h-auto drop-shadow-[0_0_22px_rgba(197,160,89,0.28)] " +
@@ -1046,7 +1048,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                   }
                 />
               )}
-            </motion.div>
+            </motion.h1>
 
             <motion.div
               animate={{ opacity: isStarting ? 0 : 1, y: isStarting ? 40 : 0 }}

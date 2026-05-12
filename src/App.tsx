@@ -182,7 +182,9 @@ export default function App() {
     const isArabic = language === "ar-dz";
     html.lang = isArabic ? "ar-DZ" : "fr";
     html.dir = isArabic ? "rtl" : "ltr";
-    document.title = isArabic ? "الرحلة" : "Al-Rihla";
+    document.title = isArabic
+      ? "الرحلة | تجربة تفاعلية حول جان ساناك"
+      : "Al-Rihla | Expérience immersive autour de Jean Sénac";
   }, [language]);
 
   /** Chunks menu pause + rail Parcours (GSAP) : chargés en idle pour réduire le JS initial sans bloquer le premier rendu. */
