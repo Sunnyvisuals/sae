@@ -7,6 +7,7 @@
     "dev": "vite --port=3000 --host=0.0.0.0",
     "start": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build",
+    "assets:lang-bridge-mp4": "ffmpeg -y -i public/transitions/trans2-alpha.webm -an -c:v libx264 -pix_fmt yuv420p -profile:v high -movflags +faststart public/transitions/trans2-alpha.mp4",
     "preview": "vite preview --port 3000 --host",
     "deploy:netlify": "npm run build && npx netlify deploy --prod --dir=dist",
     "clean": "rm -rf dist",

@@ -31,6 +31,8 @@ const VIDEO_SOURCE = INTRO_VIDEO_SRC;
 const ARABIC_TITLE_IMAGE_SRC = `${import.meta.env.BASE_URL}images/al-rihla-arabic-title.svg`;
 /** Transition WebM avant le panneau de choix de langue (piste transparente possible). */
 const LANGUAGE_GATE_TRANSITION_WEBM = `${import.meta.env.BASE_URL}transitions/trans2-alpha.webm`;
+/** Safari / iOS : WebM VP9 souvent indisponible — même clip en H.264 (générer via `npm run assets:lang-bridge-mp4`). */
+const LANGUAGE_GATE_TRANSITION_MP4 = `${import.meta.env.BASE_URL}transitions/trans2-alpha.mp4`;
 /** `prefers-reduced-motion` : pas de fresque GSAP — délai avant le choix de langue. */
 const ARRIVAL_LANGUAGE_PRELUDE_MS = 8000;
 /**
@@ -285,7 +287,7 @@ function SuspenseOverlay({ prefersReducedMotion }: { prefersReducedMotion: boole
         className="absolute inset-0"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 1.1, ease: "easeIn" }}
+        transition={{ duration: 1.45, ease: "easeIn" }}
         style={{ background: "radial-gradient(ellipse 110% 110% at 50% 50%, rgba(4,2,1,0.82) 0%, rgba(2,1,0,0.97) 100%)" }}
       />
 
@@ -545,6 +547,9 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
   const launchAuraRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const arrivalLangBridgeVideoRef = useRef<HTMLVideoElement>(null);
+  const bridgeCrossfadeTimeoutRef = useRef<number | null>(null);
+  /** Safari : refus WebM ou échec décode → recharger uniquement le MP4. */
+  const [languageGateBridgeForceMp4, setLanguageGateBridgeForceMp4] = useState(false);
   const volumeRef = useRef(volume);
   const isMutedRef = useRef(isMuted);
   volumeRef.current = volume;
@@ -559,6 +564,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
   const openArrivalLanguageGate = useCallback(() => {
     setArrivalLanguageGateVisible(true);
     setArrivalLanguageBridgeCrossfading(false);
+    setLanguageGateBridgeForceMp4(false);
     if (prefersReducedMotion) {
       setLanguageBridgeReveal01(1);
       setArrivalLanguageBridgeVideoActive(false);
@@ -577,6 +583,14 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
     }
     setArrivalLanguageBridgeVideoActive(false);
   }, []);
+
+  const onLanguageGateBridgeVideoError = useCallback(() => {
+    if (!languageGateBridgeForceMp4) {
+      setLanguageGateBridgeForceMp4(true);
+      return;
+    }
+    finishBridgeVideoPlayback();
+  }, [languageGateBridgeForceMp4, finishBridgeVideoPlayback]);
 
   const endArrivalLanguageBridgeVideo = useCallback(() => {
     arrivalLangBridgeVideoRef.current?.pause();
@@ -627,6 +641,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
       setArrivalLanguageBridgeVideoActive(false);
       setArrivalLanguageBridgeCrossfading(false);
       setLanguageBridgeReveal01(0);
+      setLanguageGateBridgeForceMp4(false);
     }
   }, [showArrivalLanguageOverlay]);
 
@@ -643,7 +658,9 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
     };
     v.addEventListener("timeupdate", tick);
     v.addEventListener("loadedmetadata", tick);
-    v.volume = isMuted ? 0 : volume;
+    /* Chrome : autoplay sans geste utilisateur — lecture refusée si volume > 0 */
+    v.muted = true;
+    v.volume = 0;
     v.currentTime = 0;
     void v.play().catch(() => {
       setArrivalLanguageBridgeVideoActive(false);
@@ -652,7 +669,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
       v.removeEventListener("timeupdate", tick);
       v.removeEventListener("loadedmetadata", tick);
     };
-  }, [arrivalLanguageBridgeVideoActive, isMuted, volume]);
+  }, [arrivalLanguageBridgeVideoActive, languageGateBridgeForceMp4]);
 
   useEffect(() => {
     if (!arrivalLanguageBridgeVideoActive) return;
@@ -1544,17 +1561,32 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                     }}
                   />
                   {/*
-                    WebM : transparence seulement si encodage alpha (ex. VP9 + yuva420p).
+                    WebM (Chrome, Firefox) puis MP4 H.264 (Safari / iOS).
+                    MP4 : pas d’alpha — le dégradé z-0 sous la vidéo reste visible.
                   */}
                   <video
                     ref={arrivalLangBridgeVideoRef}
+                    key={languageGateBridgeForceMp4 ? "lang-bridge-mp4" : "lang-bridge-webm"}
                     className="relative z-[1] max-h-full max-w-full bg-transparent object-contain"
                     style={{ backgroundColor: "transparent" }}
                     playsInline
-                    src={LANGUAGE_GATE_TRANSITION_WEBM}
+                    muted
+                    preload="auto"
                     onEnded={finishBridgeVideoPlayback}
-                    onError={finishBridgeVideoPlayback}
-                  />
+                    onError={onLanguageGateBridgeVideoError}
+                  >
+                    {languageGateBridgeForceMp4 ? (
+                      <source src={LANGUAGE_GATE_TRANSITION_MP4} type="video/mp4" />
+                    ) : (
+                      <>
+                        <source
+                          src={LANGUAGE_GATE_TRANSITION_WEBM}
+                          type='video/webm; codecs="vp09.00.10.08"'
+                        />
+                        <source src={LANGUAGE_GATE_TRANSITION_MP4} type="video/mp4" />
+                      </>
+                    )}
+                  </video>
                 </div>
               )}
             </motion.div>
@@ -1587,7 +1619,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                     : showArrivalLanguageOverlay
                       ? 1.68
                       : isStarting
-                        ? 2.35
+                        ? 2.85
                         : 0.55,
                 ease: [0.22, 1, 0.36, 1],
               }}
@@ -1597,13 +1629,13 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                 className="pointer-events-none absolute inset-0 z-[1]"
                 initial={false}
                 animate={{ opacity: prefersReducedMotion ? 0 : isStarting ? 1 : 0 }}
-                transition={{ duration: 1.8, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ duration: 2.35, ease: [0.22, 1, 0.36, 1] }}
                 style={{ background: "radial-gradient(ellipse 72% 58% at 50% 48%, transparent 0%, rgba(8, 5, 3, 0.08) 45%, rgba(5, 3, 2, 0.72) 100%)" }}
               />
 
               <motion.div
                 animate={{ opacity: isStarting ? 0 : 1 }}
-                transition={{ duration: 1.5 }}
+                transition={{ duration: 1.92, ease: [0.22, 1, 0.36, 1] }}
                 className="absolute inset-0 z-[-1]"
                 >
                 <div ref={backgroundRevealRef} className="absolute inset-0 will-change-transform">
@@ -1880,8 +1912,12 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0, scale: 1.06 }}
                   transition={{
-                    opacity: { duration: prefersReducedMotion ? 0.2 : 0.65, delay: prefersReducedMotion ? 0 : 0.35, ease: [0.22, 1, 0.36, 1] },
-                    scale: { duration: 1.0, ease: [0.22, 1, 0.36, 1] },
+                    opacity: {
+                      duration: prefersReducedMotion ? 0.2 : 0.95,
+                      delay: prefersReducedMotion ? 0 : 0.5,
+                      ease: [0.22, 1, 0.36, 1],
+                    },
+                    scale: { duration: 1.25, ease: [0.22, 1, 0.36, 1] },
                   }}
                   className="absolute inset-0 z-[26]"
                 >
@@ -1898,7 +1934,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 2.5, ease: "easeInOut" }}
+          transition={{ duration: 3.1, delay: 0.12, ease: "easeInOut" }}
           className="absolute inset-0 w-full h-full z-10"
         >
           <motion.div
