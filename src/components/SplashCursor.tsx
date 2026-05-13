@@ -1274,7 +1274,7 @@ function SplashCursor({
               width: '100%',
               height: '100%',
             } as const)),
-        /* Plein viewport : au-dessus carte / HUD acte (~110), sous barre progression (~220+) et modales (190+).
+        /* Plein viewport : acte I/III ~120 (au-dessus scène z-20, sous barre progression ~220+). Acte II : fluide masqué dans App (iframe + rail Parcours).
            pointer-events: none → clics passent jusqu’aux boutons (z-[40]). */
         zIndex,
         pointerEvents: 'none',

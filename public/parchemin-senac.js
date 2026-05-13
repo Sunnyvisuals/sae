@@ -334,9 +334,48 @@
     senacScrollFillEl.style.boxShadow = shadow;
   }
 
+  /** Arche GLB pilotée par le scroll (voir `public/parchemin-arch-scene.mjs`). */
+  let senacArchApi = /** @type {{ sync: () => void; dispose: () => void } | null} */ (null);
+  let senacArchInitScheduled = false;
+
+  function scheduleSenacArchScene() {
+    if (senacArchInitScheduled) return;
+    const canvas = document.getElementById("senac-arch-canvas");
+    if (!(canvas instanceof HTMLCanvasElement)) return;
+    senacArchInitScheduled = true;
+    import("./parchemin-arch-scene.mjs?v=21")
+      .then((mod) =>
+        mod.initSenacArchScene({
+          canvas,
+          reducedMotion,
+          modelUrl: new URL("models/model.glb", window.location.href).href,
+          getScrollRatio() {
+            const max = getScrollMax();
+            let y = getScrollY();
+            if (yearGaugeLenis && typeof yearGaugeLenis.scroll === "number") {
+              y = yearGaugeLenis.scroll;
+            }
+            return Math.min(1, Math.max(0, y / max));
+          },
+        }),
+      )
+      .then((api) => {
+        senacArchApi = api;
+        senacArchApi.sync();
+      })
+      .catch((err) => {
+        console.error("[arch-scene] scheduleSenacArchScene failed:", err);
+        senacArchInitScheduled = false;
+      });
+  }
+
   function applyScrollDerivedState(scrollY) {
     computeImmersion(scrollY);
     updateSenacScrollProgressFill();
+    scheduleSenacArchScene();
+    if (senacArchApi && typeof senacArchApi.sync === "function") {
+      senacArchApi.sync();
+    }
   }
 
   let yearGaugeScrollTriggerInitScheduled = false;

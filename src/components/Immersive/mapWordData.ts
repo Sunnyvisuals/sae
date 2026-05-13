@@ -2,7 +2,7 @@
 
 import { ACT1_REVELATION_SEQUENCE } from "../../lib/act1IntroBridge";
 
-/** Aligné sur la vidéo d’intro : voir `src/lib/act1IntroBridge.ts`. */
+/** Séquence carte / bandeau : alignée sur `ACT1_PHRASE_STRIP` et la VO vidéo d’intro. */
 export const REVELATION_WORDS = ACT1_REVELATION_SEQUENCE;
 export type RevelationWord = (typeof REVELATION_WORDS)[number];
 
@@ -19,112 +19,119 @@ export interface WordEntry {
 
 export const WORD_DATA: Record<string, WordEntry> = {
   soleil: {
-    verse: 'Soleil, soleil, tu brûles ma bouche',
-    poem: "Vocation de l'arbre",
+    verse: 'Douce comme une peau que le soleil a longtemps aimée',
+    poem: 'Sahara — solstice',
     fontRole: 'serifPoem',
     importance: 3,
   },
   sable: {
-    verse: "Le sable garde l'empreinte du vent",
-    poem: 'Diwan du Noûn',
+    verse: "Une calligraphie de sable que personne n'a signée",
+    poem: 'Sahara — solstice',
     fontRole: 'sansNote',
     importance: 1,
   },
   mémoire: {
-    verse: 'Ma mémoire est une mer sans rivage',
-    poem: 'Corps corail',
+    verse: 'Rien dans les mains — le cœur ouvert comme une tente',
+    poem: 'Sahara — solstice',
     fontRole: 'serifPoem',
     importance: 2,
   },
   lumière: {
-    verse: 'La lumière ici est une blessure douce',
-    poem: 'Citoyens de beauté',
+    verse: 'Une terre nouvelle sous le rayon du lendemain',
+    poem: 'Sahara — solstice',
     fontRole: 'serifPoem',
     importance: 2,
   },
   désert: {
-    verse: "Le désert n'est pas absence, c'est présence absolue",
-    poem: 'Matinale de mon peuple',
+    verse: 'Un seul mot, et la bouche devient désert',
+    poem: 'Sahara — solstice',
     fontRole: 'sansNote',
     importance: 2,
   },
   algérie: {
-    verse: 'Algérie, mon amour, ma douleur',
-    poem: 'Citoyens de beauté',
+    verse:
+      'Tamanrasset, Djanet, Timimoun — ces noms sont de la musique avant d’être des lieux',
+    poem: 'Sahara — solstice',
     fontRole: 'sansNote',
     importance: 2,
   },
   liberté: {
-    verse: "Liberté, j'écris ton nom dans le sable",
-    poem: 'Matinale de mon peuple',
+    verse: 'Arriver quelque part en soi-même qu’on n’avait jamais visité',
+    poem: 'Sahara — solstice',
     fontRole: 'serifPoem',
     importance: 3,
   },
   nuit: {
-    verse: "La nuit ici a le goût du jasmin",
-    poem: 'Diwan du Noûn',
+    verse: 'La nuit du Sahara est une autre naissance',
+    poem: 'Sahara — solstice',
     fontRole: 'sansNote',
     importance: 1,
   },
   horizon: {
-    verse: "L'horizon est une promesse que le soleil tient",
-    poem: 'Corps corail',
+    verse: 'Tu es l’avant et l’après sous un ciel sans pitié',
+    poem: 'Sahara — solstice',
     fontRole: 'sansNote',
     importance: 1,
   },
   silence: {
-    verse: 'Le silence des pierres est une parole',
-    poem: "Vocation de l'arbre",
+    verse: 'L’erg est une mer qui a choisi le silence',
+    poem: 'Sahara — solstice',
     fontRole: 'serifPoem',
     importance: 2,
   },
   vent: {
-    verse: 'Le vent porte les noms des disparus',
-    poem: 'Diwan du Noûn',
+    verse: 'Le vent sculpte la nuit — demain tu trouves une terre nouvelle',
+    poem: 'Sahara — solstice',
     fontRole: 'sansNote',
     importance: 1,
   },
   étoile: {
-    verse: 'Chaque étoile est un œil qui nous regarde',
-    poem: 'Corps corail',
+    verse: 'Les étoiles descendent si bas qu’on pourrait les boire',
+    poem: 'Sahara — solstice',
     fontRole: 'serifPoem',
     importance: 2,
   },
   feu: {
-    verse: 'Le feu est la langue des ancêtres',
-    poem: 'Matinale de mon peuple',
+    verse: 'Des tambours dans la gorge, des feux dans la bouche',
+    poem: 'Sahara — solstice',
     fontRole: 'sansNote',
     importance: 1,
   },
   terre: {
-    verse: 'Cette terre est ma chair et mon sang',
-    poem: 'Citoyens de beauté',
+    verse: 'Ici le temps est une matière — on peut s’asseoir dessus',
+    poem: 'Sahara — solstice',
     fontRole: 'serifPoem',
     importance: 2,
   },
   naissance: {
-    verse: 'Naissance du poème, naissance du jour',
-    poem: 'Citoyens de beauté',
+    verse: 'La nuit du Sahara est une autre naissance',
+    poem: 'Sahara — solstice',
     fontRole: 'serifPoem',
     importance: 3,
   },
   immensité: {
-    verse: "L'immensité se mesure au silence qu'elle contient",
-    poem: 'Diwan du Noûn',
+    verse: 'Qu’on peut traverser l’immensité avec rien dans les mains',
+    poem: 'Sahara — solstice',
     fontRole: 'serifPoem',
     importance: 3,
   },
   corps: {
-    verse: 'Corps corail, corps de feu et de sel',
-    poem: 'Corps corail',
+    verse: 'Délicieusement minuscule, comme un grain parmi les grains',
+    poem: 'Sahara — solstice',
     fontRole: 'serifPoem',
     importance: 3,
   },
   mère: {
-    verse: 'Terre-mère, soleil au front des vagues',
-    poem: 'Matinale de mon peuple',
+    verse: 'Timimoun la rouge dort dans son ocre comme une braise',
+    poem: 'Sahara — solstice',
     fontRole: 'serifPoem',
     importance: 3,
+  },
+  dune: {
+    verse: 'Chaque dune est une vague arrêtée dans son élan',
+    poem: 'Sahara — solstice',
+    fontRole: 'serifPoem',
+    importance: 2,
   },
 };
 
@@ -180,8 +187,8 @@ function rnd(s: number, salt: number) {
 export function metaForWord(word: string): WordEntry {
   return (
     WORD_DATA[word] ?? {
-      verse: 'Fragment du vent et du sel',
-      poem: 'Œuvres',
+      verse: 'Sous le même ciel, un grain parmi les grains',
+      poem: 'Sahara — solstice',
       fontRole: 'sansNote',
       importance: 1,
     }

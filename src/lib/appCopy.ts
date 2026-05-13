@@ -177,21 +177,21 @@ const FR: Copy = {
     `Échelle de la carte, grossissement ${zoomText}`,
   act1HeaderLine: "Acte I - L'algérie",
   act1BottomTitle: "Acte I - L'algérie",
-  act1BottomChapter: "La Naissance",
-  act1AriaHud: "Acte I, L'algérie, La Naissance",
+  act1BottomChapter: "Sahara",
+  act1AriaHud: "Acte I — L’Algérie, Sahara",
   act1AriaStripWord: "Mot à trouver :",
   phraseStripComplete:
-    "Sous l’oasis du texte, la phrase entière se lit - le vers vous retient encore un instant.",
+    "Sous cette calligraphie de sable, les cinq vers se rejoignent — le vent vous retient encore un instant.",
   phraseStripSteps: [...ACT1_PHRASE_STRIP_STEPS_FR],
   revelationWordAria: {
-    naissance: "Mot à trouver : naissance",
-    soleil: "Mot à trouver : soleil",
-    mère: "Mot à trouver : mère",
-    liberté: "Mot à trouver : liberté",
-    corps: "Mot à trouver : corps",
+    désert: "Mot à trouver : désert",
+    silence: "Mot à trouver : silence",
+    dune: "Mot à trouver : dune",
+    nuit: "Mot à trouver : nuit",
+    immensité: "Mot à trouver : immensité",
   },
   chapterToastKicker: "Chapitre accompli",
-  chapterToastTitle: "La Naissance",
+  chapterToastTitle: "Sahara",
   chapterToastSubtitle:
     "Les cinq feux sont rallumés - la carte respire. Le voyage continue.",
   menuAria: "Menu - options et pause",
@@ -221,7 +221,7 @@ const FR: Copy = {
   orientationPhaseAct3Label: "Acte III - L’écriture",
   orientationSummaries: {
     intro: "Voix et paysage désert avant d'entrer dans la carte-mémoire.",
-    act1: "Une carte où cinq fragments viennent compléter le vers de Sénac dans l'Algérie.",
+    act1: "Une carte où cinq fragments posent cinq vers du désert dans l’Algérie.",
     act2:
       "Le rouleau nocturne : le poème, les archives au fil du défilement dans le bleu.",
     act3: "Fragments déjà croisés : vous recomposer le voyage comme un poème.",
@@ -398,21 +398,21 @@ const AR: Copy = {
   act1ScaleAria: (zoomText) => `مقياس الخريطة، تكبير ${zoomText}`,
   act1HeaderLine: "المشهد الأول - الجزائر",
   act1BottomTitle: "المشهد الأول - الجزائر",
-  act1BottomChapter: "الولادة",
-  act1AriaHud: "المشهد الأول، الجزائر، الولادة",
+  act1BottomChapter: "الصحراء",
+  act1AriaHud: "المشهد الأول، الجزائر، الصحراء",
   act1AriaStripWord: "كلمة لتُوجَد:",
   phraseStripComplete:
-    "تحت واحة النص تقرأ الجملة كاملة - البيت ما زال يمسككم لحظة.",
+    "تحت خطّ الرمل هذي تجتمع الخمس قطع البيت واحد واحد ما زالوا يخلّوه يتمّ.",
   phraseStripSteps: [...ACT1_PHRASE_STRIP_STEPS_AR],
   revelationWordAria: {
-    naissance: "كلمة لتُوجَد: الولادة",
-    soleil: "كلمة لتُوجَد: الشمس",
-    mère: "كلمة لتُوجَد: الأم",
-    liberté: "كلمة لتُوجَد: الحرّية",
-    corps: "كلمة لتُوجَد: الجسد",
+    désert: "كلمة لتُوجَد: الصحراء",
+    silence: "كلمة لتُوجَد: الصمت",
+    dune: "كلمة لتُوجَد: الكِسيب",
+    nuit: "كلمة لتُوجَد: الليل",
+    immensité: "كلمة لتُوجَد: الفَسحة",
   },
   chapterToastKicker: "المشهد مكمّل",
-  chapterToastTitle: "الولادة",
+  chapterToastTitle: "الصحراء",
   chapterToastSubtitle:
     "النجوم الخمس تشعل من جديد والخريطة تنبض. الرحلة تكمل.",
   menuAria: "القائمة - الخيارات والوقفة",
@@ -615,11 +615,11 @@ export function copyFor(language: AppLanguage): Copy {
 export function revelationWordUISurface(word: RevelationWord, language: AppLanguage): string {
   if (language !== "ar-dz") return word;
   const map: Record<RevelationWord, string> = {
-    naissance: "الولادة",
-    soleil: "الشمس",
-    mère: "الأم",
-    liberté: "الحرّية",
-    corps: "الجسد",
+    désert: "الصحراء",
+    silence: "الصمت",
+    dune: "الكسيب",
+    nuit: "الليل",
+    immensité: "الفسحة",
   };
   return map[word] ?? word;
 }

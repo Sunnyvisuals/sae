@@ -7,7 +7,7 @@ import { useAppCopy } from '../../hooks/useAppCopy';
 import { useLanguageStore } from '../../stores/languageStore';
 
 /** Durée totale du défilement (secondes). Augmenter si contenu plus long. */
-const SCROLL_DURATION_S = 52;
+const SCROLL_DURATION_S = 46;
 
 const MMI_LOGO_SRC = `${import.meta.env.BASE_URL}images/logo-mmi.png`;
 
@@ -76,7 +76,7 @@ export default function VoyageCreditsOverlay({ open, onClose, midnight }: Props)
   if (!open) return null;
 
   const skipBtn =
-    'pointer-events-auto fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-[10] ' +
+    'pointer-events-auto cursor-pointer fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-[12] ' +
     'border border-solar-gold/35 bg-da-depth-night/70 px-6 py-2.5 font-sans text-[10px] font-medium uppercase ' +
     'tracking-[0.32em] text-solar-gold/72 backdrop-blur-sm transition-colors hover:border-solar-gold/65 hover:text-solar-gold ' +
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-solar-gold/30';
@@ -103,16 +103,22 @@ export default function VoyageCreditsOverlay({ open, onClose, midnight }: Props)
         }}
       />
 
-      {/* Masques haut et bas pour l'effet cinéma */}
+      {/* Masques haut / bas — dégradé doux pour ne pas rogner les capitales du titre */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-32"
-        style={{ background: 'linear-gradient(to bottom, #05080f 0%, transparent 100%)' }}
+        className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-28 sm:h-32"
+        style={{
+          background:
+            'linear-gradient(to bottom, rgba(5,8,15,0.78) 0%, rgba(5,8,15,0.2) 55%, transparent 100%)',
+        }}
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] h-32"
-        style={{ background: 'linear-gradient(to top, #05080f 0%, transparent 100%)' }}
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] h-28 sm:h-32"
+        style={{
+          background:
+            'linear-gradient(to top, rgba(5,8,15,0.78) 0%, rgba(5,8,15,0.2) 55%, transparent 100%)',
+        }}
       />
 
       {/* Piste de défilement */}
@@ -122,8 +128,8 @@ export default function VoyageCreditsOverlay({ open, onClose, midnight }: Props)
         className="absolute inset-x-0 z-[2] mx-auto w-full max-w-lg px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] text-center"
         style={{ transform: 'translateY(100vh)' }}
       >
-        {/* Titre principal */}
-        <h1 className="font-bahlull text-[clamp(3rem,8vw,5rem)] italic leading-none tracking-tight text-transparent bg-gradient-to-br from-da-parchment-bright/90 via-solar-gold/80 to-da-oxide/70 bg-clip-text">
+        {/* Titre — line-height + padding pour ascendantes (Bahlull + bg-clip-text) */}
+        <h1 className="font-bahlull text-[clamp(3rem,8vw,5rem)] italic leading-[1.12] tracking-tight text-transparent bg-gradient-to-br from-da-parchment-bright/90 via-solar-gold/80 to-da-oxide/70 bg-clip-text [padding-block:0.15em_0.2em] [box-decoration-break:clone]">
           {copy.voyageCreditsTitle}
         </h1>
         <p className={`mt-4 font-sans text-[11px] uppercase tracking-[0.38em] ${muted}`}>

@@ -1457,15 +1457,14 @@ export default function App() {
 
       </main>
 
-      {/* Fluide + curseur custom : intro / actes I?III. Calque fluide `pointer-events: none` (SplashCursor) ? l?iframe acte II reste interactive. */}
-      {finePointer && (
+      {/* Fluide WebGL : acte II = iframe plein ?cran + fluide pilot? au scroll ? masquait le parchemin et le rail Parcours (z-120). Hors acte II, ou g?n?rique voyage (surcouche d?di?e). */}
+      {finePointer && (phase !== "act2" || act2VoyageCreditsOpen) && (
         <div
           style={{
             visibility:
               systemMenuOpen ||
               introVideoOpen ||
               act23BridgeOpen ||
-              act2VoyageCreditsOpen ||
               isLanguageMorphing
                 ? "hidden"
                 : "visible",
@@ -1482,6 +1481,7 @@ export default function App() {
           >
             <SplashCursor
               syncPaletteFromAmbient
+              zIndex={act2VoyageCreditsOpen ? 532 : 120}
               SIM_RESOLUTION={phase === "act1" || phase === "act2" ? 128 : 160}
               DYE_RESOLUTION={phase === "act1" ? 512 : phase === "act2" ? 640 : 720}
               DENSITY_DISSIPATION={phase === "act1" ? 12 : 10}
@@ -1497,6 +1497,12 @@ export default function App() {
         </div>
       )}
 
+      <VoyageCreditsOverlay
+        open={phase === "act2" && act2VoyageCreditsOpen}
+        midnight={(act2ParcheminTone ?? "solar") === "midnight"}
+        onClose={restartExperience}
+      />
+
       <ScrollProgressBar
         tone={act2AmbientMidnight ? "midnight" : "solar"}
         iframeFillRatio={phase === "act2" ? act2ScrollFillRatio : undefined}
@@ -1505,13 +1511,8 @@ export default function App() {
       </motion.div>
       <LanguageMorphHud visible={isLanguageMorphing} midnight={languageMorphMidnight} />
     </ReactLenis>
-    <VoyageCreditsOverlay
-      open={phase === "act2" && act2VoyageCreditsOpen}
-      midnight={(act2ParcheminTone ?? "solar") === "midnight"}
-      onClose={restartExperience}
-    />
-      {/* Curseur custom (portail body) ? au-dessus de l?iframe acte II (`pointer-events: none`). */}
-      {finePointer && (
+      {/* Curseur custom : désactivé en acte II (parchemin = losange dans l?iframe, curseur système sur le shell). */}
+      {finePointer && (phase !== "act2" || act2VoyageCreditsOpen) && (
       <CustomCursor
         overlayOpen={
           systemMenuOpen ||

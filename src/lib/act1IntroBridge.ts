@@ -4,19 +4,19 @@
  * À garder aligné avec le montage / VO de {@link INTRO_VIDEO_SRC} :
  * - Les cinq révélations doivent être **audibles dans le même ordre** que
  *   {@link ACT1_REVELATION_SEQUENCE}.
- * - Les lignes {@link ACT1_PHRASE_STRIP_STEPS_FR} / `_AR` sont les phrases affichées
- *   sous la carte ; adapte `before` / `after` quand tu finalises la vidéo.
+ * - Les lignes {@link ACT1_PHRASE_STRIP_STEPS_FR} / `_AR` reprennent des vers du
+ *   texte Sahara (prologue atmosphère) ; resynchronise la VO vidéo si besoin.
  */
 
 export const INTRO_VIDEO_SRC = "/al-rihla.mp4";
 
 /** Ordre strict des clics sur la carte = ordre d’écoute souhaité dans la vidéo. */
 export const ACT1_REVELATION_SEQUENCE = [
-  "naissance",
-  "soleil",
-  "mère",
-  "liberté",
-  "corps",
+  "désert",
+  "silence",
+  "dune",
+  "nuit",
+  "immensité",
 ] as const;
 
 export type Act1RevelationWordKey = (typeof ACT1_REVELATION_SEQUENCE)[number];
@@ -28,19 +28,51 @@ export type Act1PhraseStripRow = {
 };
 
 export const ACT1_PHRASE_STRIP_STEPS_FR: readonly Act1PhraseStripRow[] = [
-  { word: "naissance", before: "« ", after: " du poème, naissance du jour »" },
-  { word: "soleil", before: "« ", after: ", soleil, tu brûles ma bouche »" },
-  { word: "mère", before: "« Terre-", after: ", soleil au front des vagues »" },
-  { word: "liberté", before: "« ", after: ", j’écris ton nom dans le sable »" },
-  { word: "corps", before: "« ", after: " corail, corps de feu et de sel »" },
+  { word: "désert", before: "« Un seul mot, et la bouche devient ", after: " »" },
+  {
+    word: "silence",
+    before: "« L’erg est une mer qui a choisi le ",
+    after: " »",
+  },
+  {
+    word: "dune",
+    before: "« Chaque ",
+    after: " est une vague arrêtée dans son élan »",
+  },
+  {
+    word: "nuit",
+    before: "« La ",
+    after: " du Sahara est une autre naissance »",
+  },
+  {
+    word: "immensité",
+    before: "« … qu’on peut traverser l’",
+    after: " avec rien dans les mains »",
+  },
 ];
 
 export const ACT1_PHRASE_STRIP_STEPS_AR: readonly Act1PhraseStripRow[] = [
-  { word: "naissance", before: "« ", after: " للقصيدة ولادة الصباح »" },
-  { word: "soleil", before: "« ", after: "، يا شمس تحرّق فمي »" },
-  { word: "mère", before: "« أرض الأم، ", after: " وفوق موج البحر »" },
-  { word: "liberté", before: "« ", after: "، نكتب اسمك على الرمال »" },
-  { word: "corps", before: "« ", after: " مرجان، بدن النار والملح »" },
+  { word: "désert", before: "« كلمة واحدة، والفم يصبح ", after: " »" },
+  {
+    word: "silence",
+    before: "« البحر الرملي اختار ",
+    after: " »",
+  },
+  {
+    word: "dune",
+    before: "« كل ",
+    after: " موجة وقفت في اندفاعها »",
+  },
+  {
+    word: "nuit",
+    before: "« ",
+    after: " في عمق الصحراء ولادة ثانية »",
+  },
+  {
+    word: "immensité",
+    before: "« … يمكن قطع ",
+    after: " بلا شيء في الأكُفّ »",
+  },
 ];
 
 /** Dev : strip et liste ordonnée restent synchrones après édition manuelle. */

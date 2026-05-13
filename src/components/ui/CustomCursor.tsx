@@ -90,18 +90,27 @@ export default function CustomCursor({
     let timer: number = 0;
 
     const applyHtmlClass = (hidden: boolean) => {
+      if (overlayOpen) {
+        html.classList.remove(HTML_CURSOR_IDLE_CLASS);
+        return;
+      }
       if (hidden) html.classList.add(HTML_CURSOR_IDLE_CLASS);
       else html.classList.remove(HTML_CURSOR_IDLE_CLASS);
+    };
+
+    const scheduleIdleHide = () => {
+      window.clearTimeout(timer);
+      if (overlayOpen) return;
+      timer = window.setTimeout(() => {
+        setIdleHidden(true);
+        applyHtmlClass(true);
+      }, IDLE);
     };
 
     const poke = () => {
       setIdleHidden(false);
       applyHtmlClass(false);
-      window.clearTimeout(timer);
-      timer = window.setTimeout(() => {
-        setIdleHidden(true);
-        applyHtmlClass(true);
-      }, IDLE);
+      scheduleIdleHide();
     };
 
     poke();
@@ -121,7 +130,15 @@ export default function CustomCursor({
       window.removeEventListener('pointermove', onPointerMove, { capture: true });
       window.removeEventListener('pointerdown', onPointerDown, { capture: true });
     };
-  }, [mx, my]);
+  }, [mx, my, overlayOpen]);
+
+  /* Modales / crédits : garder halo + losange visibles (délais > 5 s sans idle). */
+  useEffect(() => {
+    if (!overlayOpen) return;
+    const html = document.documentElement;
+    setIdleHidden(false);
+    html.classList.remove(HTML_CURSOR_IDLE_CLASS);
+  }, [overlayOpen]);
 
   useLayoutEffect(() => {
     reparentCursorPortalToBodyEnd();
