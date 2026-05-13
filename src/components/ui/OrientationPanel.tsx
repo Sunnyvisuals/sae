@@ -297,25 +297,31 @@ export function ParcoursPanelInnerContent({
                   <button
                     type="button"
                     className={
-                      'w-full rounded-[2px] text-left transition-[background-color,box-shadow] duration-200 focus-visible:outline-none focus-visible:ring-1 ' +
+                      'group w-full cursor-pointer rounded-[3px] border border-transparent px-2 py-2 text-left transition-[background-color,box-shadow,border-color,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent active:scale-[0.992] motion-reduce:transition-none motion-reduce:active:scale-100 ' +
                       (nightRail
-                        ? 'focus-visible:ring-[rgba(139,213,255,0.35)] hover:bg-[rgba(8,18,38,0.35)]'
-                        : 'focus-visible:ring-solar-gold/35 hover:bg-black/25')
+                        ? 'focus-visible:ring-[rgba(148,206,255,0.55)] hover:border-[rgba(139,213,255,0.45)] hover:bg-[rgba(10,22,44,0.62)] hover:shadow-[inset_0_1px_0_rgba(180,218,255,0.07),0_0_0_1px_rgba(90,168,255,0.12),0_6px_28px_rgba(0,0,0,0.35)]'
+                        : 'focus-visible:ring-solar-gold/55 hover:border-solar-gold/42 hover:bg-black/48 hover:shadow-[inset_0_1px_0_rgba(253,248,238,0.06),0_0_0_1px_rgba(197,160,89,0.15),0_6px_26px_rgba(0,0,0,0.42)]')
                     }
                     onClick={() => onNavigatePhase(rowPhase)}
                   >
                     <p
                       className={
-                        'rounded-[2px] pl-0.5 pr-1 leading-snug text-[10px] tracking-wide sm:text-[11px] ' +
-                        navItemClass(active, nightRail)
+                        'rounded-[2px] pl-0.5 pr-1 leading-snug text-[10px] tracking-wide transition-[color,text-shadow] duration-200 sm:text-[11px] ' +
+                        navItemClass(active, nightRail) +
+                        (nightRail
+                          ? ' group-hover:text-[rgba(244,248,255,0.94)] group-hover:[text-shadow:0_0_20px_rgba(120,190,255,0.38),0_1px_14px_rgba(0,0,0,0.92)]'
+                          : ' group-hover:text-[rgba(253,246,228,0.95)] group-hover:[text-shadow:0_0_18px_rgba(232,212,164,0.45),0_1px_12px_rgba(0,0,0,0.88)]')
                       }
                     >
                       {rowLabel}
                     </p>
                     <p
                       className={
-                        'mt-1.5 pl-0.5 pr-1 text-[9px] font-normal leading-relaxed sm:text-[10px] ' +
-                        navSummaryClass(active, nightRail)
+                        'mt-1.5 pl-0.5 pr-1 text-[9px] font-normal leading-relaxed transition-[color] duration-200 sm:text-[10px] ' +
+                        navSummaryClass(active, nightRail) +
+                        (nightRail
+                          ? ' group-hover:text-[rgba(232,240,252,0.52)]'
+                          : ' group-hover:text-solar-gold/58')
                       }
                     >
                       {rowSummary}
