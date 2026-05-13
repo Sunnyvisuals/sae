@@ -509,7 +509,7 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, [systemMenuOpen, chapterToast, chapterDaTransition, phase, introVideoOpen, parcoursOpen, journeyReplayUnlocked]);
 
-  /** Flèches ← / → : menu (gauche) et rail Parcours desktop (droite). */
+  /** Flèches ← / → : ← ouvre le rail Parcours (desktop), → ouvre le menu ; → referme le Parcours s’il est ouvert. */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
@@ -526,7 +526,7 @@ export default function App() {
 
       const parcoursEligible = mdUp && (phase !== "intro" || journeyReplayUnlocked);
 
-      if (e.key === "ArrowRight") {
+      if (e.key === "ArrowLeft") {
         if (!parcoursEligible || parcoursOpen) return;
         e.preventDefault();
         dismissMenuHint(true);
@@ -534,16 +534,17 @@ export default function App() {
         return;
       }
 
-      if (parcoursOpen && parcoursEligible) {
+      if (e.key === "ArrowRight") {
+        if (parcoursOpen && parcoursEligible) {
+          e.preventDefault();
+          setParcoursOpen(false);
+          return;
+        }
+        if (phase === "intro" && !journeyReplayUnlocked) return;
         e.preventDefault();
-        setParcoursOpen(false);
-        return;
+        dismissMenuHint(true);
+        setSystemMenuOpen(true);
       }
-
-      if (phase === "intro" && !journeyReplayUnlocked) return;
-      e.preventDefault();
-      dismissMenuHint(true);
-      setSystemMenuOpen(true);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
