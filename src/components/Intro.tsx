@@ -1300,7 +1300,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                 transition={{ delay: 0.16, duration: 1.35, ease: [0.22, 1, 0.36, 1] }}
                 className="pointer-events-none absolute inset-0 z-[12] flex items-center justify-center"
               >
-                <div className="relative -mt-[3vh] flex flex-row flex-wrap items-baseline justify-center gap-x-5 gap-y-0 px-4">
+                <div className="relative mt-0 flex flex-row flex-wrap items-baseline justify-center gap-x-5 gap-y-0 px-4 pt-[max(0.5rem,env(safe-area-inset-top))]">
                   <span className="font-bahlull text-[clamp(3.8rem,10vw,8rem)] italic leading-none tracking-tight text-transparent">
                     Al Rihla
                   </span>

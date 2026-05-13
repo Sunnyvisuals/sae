@@ -15,33 +15,31 @@ export default function Act2() {
   const parcheminSrc = `${prefix}parchemin-senac.html?${PARCHEMIN_STATIC_QUERY}`;
 
   /**
-   * `absolute inset-0` aligné sur le parent `fixed inset-0` : évite `max(dvh,lvh)` plus haut que la chaîne
-   * `h-dvh` (Lenis/main) → débordement visible en 2–3 bandes horizontales au scroll.
-   * Iframe légèrement plus haute + clip sur le wrapper pour masquer la couture GPU.
+   * Iframe en pleine hauteur (`inset-0` + léger dépassement bas) : le document parchemin utilise
+   * `position:fixed` / repères `vh` — réduire la hauteur CSS de l’iframe cassait le centrage (titre
+   * coupé en haut, grand vide en bas).
    *
-   * Bande inférieure réservée pour un futur arrière-plan personnalisé (ex. dune, ciel, animation).
-   * - Hauteur : 18vh (~1/5 écran). Ajuste via les variables ci-dessous si besoin.
-   * - L'iframe s'arrête juste au-dessus pour laisser la place visible et libre de contenu parchemin.
+   * La zone pour ton futur décor est un calque **au-dessus** du bas du parchemin (`pointer-events-none`
+   * pour laisser passer les clics vers l’iframe si besoin).
    */
-  const bottomBackdropClass = "h-[18vh] sm:h-[20vh] md:h-[22vh]";
-  const iframeBottomOffset = "bottom-[18vh] sm:bottom-[20vh] md:bottom-[22vh]";
+  const bottomBackdropClass =
+    "h-[min(14vh,10rem)] sm:h-[min(16vh,11.5rem)] md:h-[min(18vh,13rem)]";
 
   return (
     <div className="absolute inset-0 min-h-0 w-full overflow-hidden bg-[#05080f]">
       <iframe
         title={copy.act2IframeTitle}
         src={parcheminSrc}
-        className={`absolute left-0 right-0 top-0 ${iframeBottomOffset} block w-full border-0 outline-none ring-0 [transform:translateZ(0)]`}
+        className="absolute inset-0 z-0 block h-[calc(100%+8px)] w-full border-0 outline-none ring-0 [transform:translateZ(0)]"
         loading="eager"
       />
 
-      {/* Bande arrière-plan Acte II — espace libre pour ton décor custom (image / canvas / SVG / motion). */}
       <div
         aria-hidden="true"
-        className={`pointer-events-none absolute inset-x-0 bottom-0 ${bottomBackdropClass} w-full bg-[#05080f]`}
+        className={`pointer-events-none absolute inset-x-0 bottom-0 z-[2] w-full bg-[#05080f] ${bottomBackdropClass}`}
         data-act2-backdrop="true"
       >
-        {/* TODO Acte II : insérer ici l'arrière-plan custom (image plein cadre, canvas, particules…). */}
+        {/* TODO Acte II : décor custom (dunes, ciel, canvas…) — même largeur que la vue ; masque le bas du scroll. */}
       </div>
     </div>
   );
