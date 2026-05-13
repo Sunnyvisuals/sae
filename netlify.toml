@@ -1,13 +1,18 @@
-# Netlify - Vite + React (assets dans /dist, fichiers public/ copiés tel quel)
+# Netlify — Vite + React (tout `public/` est copié dans `dist/` au build).
+#
+# Déploiement : connecter ce dépôt Git dans le tableau Netlify (Build ci‑dessous).
+# Tout le site est publié : `index.html`, `404.html`, `parchemin-senac.html`, assets, etc.
+#
+# En CLI : `npx netlify login` puis `npx netlify init` (lier un site existant si
+# la création auto renvoie Forbidden). Puis `npm run deploy:netlify`.
+#
+# Optionnel : Site settings → Environment variables (ex. GEMINI_API_KEY au build).
+
 [build]
   command = "npm install --legacy-peer-deps && npm run build"
   publish = "dist"
 
-# SPA : tout ce qui n’est pas un fichier statique → index.html
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+# Pas de catch-all SPA : URL sans fichier → `404.html` (statut 404).
 
 [build.environment]
   NODE_VERSION = "22"

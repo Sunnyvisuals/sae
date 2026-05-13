@@ -95,6 +95,13 @@
     overflow: hidden;
   }
 
+  @media (hover: hover) and (pointer: fine) {
+    html.phase-act2-root,
+    html.phase-act2-root body {
+      cursor: auto !important;
+    }
+  }
+
   #root {
     width: 100%;
     max-width: 100%;

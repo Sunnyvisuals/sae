@@ -1,6 +1,7 @@
 "use client";
 
 import { useAppCopy } from "../../hooks/useAppCopy";
+import { PARCHEMIN_STATIC_QUERY } from "../../lib/parcheminAssetVersion";
 
 /**
  * Acte II - frise parchemin Jean Sénac (page statique /public/parchemin-senac.html).
@@ -11,15 +12,19 @@ export default function Act2() {
   /** Jamais préfixer par "" - sinon `// fichier` devient une URL scheme-relative cassée (iframe blanche). */
   const base = import.meta.env.BASE_URL || "/";
   const prefix = base.endsWith("/") ? base : `${base}/`;
-  const parcheminSrc = `${prefix}parchemin-senac.html`;
+  const parcheminSrc = `${prefix}parchemin-senac.html?${PARCHEMIN_STATIC_QUERY}`;
 
-  /** Même ton que le bas du `linear-gradient` du parchemin (`body.senac-night` → `#05080f`) pour éviter une couture si l’iframe ne couvre pas un sous-pixel. */
+  /**
+   * `absolute inset-0` aligné sur le parent `fixed inset-0` : évite `max(dvh,lvh)` plus haut que la chaîne
+   * `h-dvh` (Lenis/main) → débordement visible en 2–3 bandes horizontales au scroll.
+   * Iframe légèrement plus haute + clip sur le wrapper pour masquer la couture GPU.
+   */
   return (
-    <div className="relative h-[100dvh] w-full overflow-hidden bg-[#05080f]">
+    <div className="absolute inset-0 min-h-0 w-full overflow-hidden bg-[#05080f]">
       <iframe
         title={copy.act2IframeTitle}
         src={parcheminSrc}
-        className="absolute inset-0 h-full w-full border-0"
+        className="absolute left-0 right-0 top-0 block h-[calc(100%+8px)] w-full border-0 outline-none ring-0 [transform:translateZ(0)]"
         loading="eager"
       />
     </div>

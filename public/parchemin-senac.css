@@ -29,11 +29,11 @@
   --da-card-border: rgba(148, 163, 184, 0.1);
   --da-card-border-soft: rgba(254, 243, 199, 0.09);
   --da-card-glow: 0 20px 54px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 252, 0.025) inset,
-    0 0 44px rgba(90, 168, 255, 0.06), 0 0 36px rgba(197, 160, 89, 0.045);
+    0 0 32px rgba(197, 160, 89, 0.04);
   --da-label: rgba(232, 220, 196, 0.72);
   --da-body: rgba(254, 250, 243, 0.86);
   --da-title: #f0e6d4;
-  --da-ghost-year: rgba(129, 140, 248, 0.13);
+  --da-ghost-year: rgba(197, 160, 89, 0.09);
   --mx: 50%;
   --my: 18%;
   /* Barre naturelle reservee si l'orbite JS n'est pas chargee ou absente du DOM */
@@ -150,6 +150,8 @@ body.senac-night {
       #0c1528 74%,
       #05080f 100%
     );
+  /* Sous-couche sous les calques (le shorthand `background:` efface une déclaration `background-color` placée avant). */
+  background-color: #05080f;
   font-family: "Lora", Georgia, serif;
   font-weight: 400;
   -webkit-font-smoothing: antialiased;
@@ -160,6 +162,78 @@ body.senac-night {
     cursor: none;
   }
 
+}
+
+/**
+ * Choix de mode Acte II : palette neutre (noir + or discret), sans halos bleus/violets du --ui-hue.
+ */
+html.senac-choice-pending body.senac-night {
+  background:
+    radial-gradient(ellipse 92% 72% at 50% -5%, rgba(197, 160, 89, 0.045) 0%, transparent 55%),
+    linear-gradient(180deg, #08090b 0%, #050506 48%, #070708 100%);
+}
+
+html.senac-choice-pending body.senac-night::before {
+  opacity: 0.32;
+  mix-blend-mode: normal;
+  background: radial-gradient(
+    circle at 50% 36%,
+    rgba(255, 250, 242, 0.035) 0%,
+    transparent 46%
+  );
+}
+
+html.senac-choice-pending body.senac-night::after {
+  opacity: 0.28;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html.senac-choice-pending body.senac-night {
+    cursor: auto;
+  }
+}
+
+/**
+ * Iframe Acte II (SPA) : hauteur % = cadre iframe (évite fente 100vh vs conteneur).
+ * #05080f = dernier stop du dégradé `body.senac-night`.
+ */
+html.senac-in-iframe {
+  height: 100%;
+  background-color: #05080f;
+  /* Évite le « rubber band » au scroll (bande claire / fond parent qui transparaît). */
+  overscroll-behavior: none;
+  overscroll-behavior-y: none;
+}
+
+/** Iframe Acte II (SPA) : curseur système — le losange custom est masqué, `cursor: none` casserait l’UX. */
+html.senac-in-iframe body.senac-night {
+  cursor: auto;
+  min-height: 100%;
+  overscroll-behavior: none;
+  overscroll-behavior-y: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html.senac-in-iframe body.senac-night {
+    cursor: auto;
+  }
+}
+
+/**
+ * Iframe (Acte II dans la SPA) : masque les « traits Totem » de `body.senac-night::after`
+ * (fils 1px + halos droite ~88 % / 92 % + bande `right center`) — doublon avec le rail Parcours
+ * parent et bandes très visibles au scroll / en pied de page.
+ */
+html.senac-in-iframe body.senac-night::after {
+  content: none;
+  display: none;
+}
+
+/** Lanternes atténuées pendant le choix — moins de « décor » concurrent au texte. */
+html.senac-choice-pending .senac-lantern {
+  opacity: 0.16;
+  filter: saturate(0.7);
+  transition: opacity 0.7s ease, filter 0.7s ease;
 }
 
 body.senac-night::before {
@@ -2917,19 +2991,16 @@ figure.archive-window[data-reveal]:not(.is-visible) {
   transition: opacity 0.4s var(--ease);
 }
 
-/* Backdrop séparé - évite les problèmes de stacking context avec ::before */
+/* Backdrop : neutre, aligné body phase-act2 (#05080f) — pas de radial bleu. */
 .smc-backdrop {
   position: fixed;
   inset: 0;
   z-index: 6999;
-  /* Même vocabulaire que l’intro : halo ambre + vignette basse, pas de grain */
   background:
-    radial-gradient(ellipse 78% 56% at 50% 36%, rgba(197, 160, 89, 0.09) 0%, transparent 55%),
-    radial-gradient(ellipse 95% 72% at 50% 0%, rgba(90, 168, 255, 0.04) 0%, transparent 48%),
-    radial-gradient(ellipse 110% 85% at 50% 118%, rgba(0, 0, 0, 0.62) 0%, transparent 52%),
-    #050408;
-  backdrop-filter: blur(20px) saturate(0.78);
-  -webkit-backdrop-filter: blur(20px) saturate(0.78);
+    radial-gradient(ellipse 82% 58% at 50% 32%, rgba(197, 160, 89, 0.04) 0%, transparent 54%),
+    #050508;
+  backdrop-filter: blur(14px) saturate(0.92);
+  -webkit-backdrop-filter: blur(14px) saturate(0.92);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.4s var(--ease);
@@ -3014,13 +3085,20 @@ figure.archive-window[data-reveal]:not(.is-visible) {
   }
 }
 
+/** Panneau central : sobre — pas de « verre » lourd ni ombres colorées. */
 .smc-inner {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0;
-  width: min(100%, 36rem);
-  padding: clamp(0.35rem, 1.5vh, 0.85rem) 0.5rem;
+  position: relative;
+  isolation: isolate;
+  width: min(100%, 38rem);
+  padding: clamp(1.35rem, 4vh, 2.15rem) clamp(1.15rem, 4vw, 2rem);
+  border-radius: 0;
+  border: 1px solid rgba(255, 252, 245, 0.07);
+  background: rgba(5, 5, 6, 0.72);
+  box-shadow: 0 1px 0 rgba(255, 252, 245, 0.04) inset;
 }
 
 /**
@@ -3028,9 +3106,9 @@ figure.archive-window[data-reveal]:not(.is-visible) {
  */
 .smc-da {
   position: relative;
-  margin: 0 0 clamp(1.25rem, 3.2vh, 1.95rem);
-  padding: 0 1rem;
-  max-width: min(94vw, 32rem);
+  margin: 0 0 clamp(1.35rem, 3.5vh, 2.1rem);
+  padding: 0 clamp(1rem, 3vw, 1.35rem);
+  max-width: min(94vw, 34rem);
   text-align: center;
 }
 
@@ -3039,15 +3117,13 @@ figure.archive-window[data-reveal]:not(.is-visible) {
   margin: 0 0 clamp(1.5rem, 3.8vh, 2.1rem);
   padding-bottom: clamp(0.95rem, 2.1vh, 1.2rem);
   font-family: "Inter", sans-serif;
-  font-size: clamp(0.64rem, 1.75vw, 0.72rem);
-  font-weight: 600;
-  letter-spacing: 0.48em;
-  line-height: 1.45;
+  font-size: clamp(0.62rem, 1.65vw, 0.7rem);
+  font-weight: 500;
+  letter-spacing: 0.5em;
+  line-height: 1.5;
   text-transform: uppercase;
-  color: hsla(var(--ui-hue), 48%, 70%, calc(0.44 + var(--immersive-shift, 0) * 0.12));
-  text-shadow:
-    0 1px 16px rgba(0, 0, 0, 0.88),
-    0 0 20px rgba(197, 160, 89, 0.12);
+  color: rgba(197, 160, 89, 0.52);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.75);
 }
 
 .smc-da-kicker::after {
@@ -3061,9 +3137,9 @@ figure.archive-window[data-reveal]:not(.is-visible) {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(254, 243, 199, 0.28) 20%,
-    rgba(186, 230, 253, 0.22) 50%,
-    rgba(254, 243, 199, 0.28) 80%,
+    rgba(197, 160, 89, 0.22) 22%,
+    rgba(255, 252, 245, 0.2) 50%,
+    rgba(197, 160, 89, 0.22) 78%,
     transparent
   );
   pointer-events: none;
@@ -3072,16 +3148,13 @@ figure.archive-window[data-reveal]:not(.is-visible) {
 .smc-da-title {
   margin: 0;
   font-family: "Bahlull", "Playfair Display", serif;
-  font-size: clamp(2.65rem, 7.5vw, 4.35rem);
+  font-size: clamp(2.75rem, 7.8vw, 4.5rem);
   font-weight: 400;
   font-style: italic;
   line-height: 0.98;
-  letter-spacing: -0.03em;
-  color: rgba(255, 252, 242, 0.98);
-  text-shadow:
-    0 0 40px hsla(calc(218deg + var(--immersive-shift, 0) * -25deg), 78%, 70%, calc(0.12 + var(--immersive-shift, 0) * 0.1)),
-    0 0 64px hsla(var(--ui-hue), 62%, 62%, calc(0.15 + var(--immersive-shift, 0) * 0.1)),
-    0 2px 28px rgba(0, 0, 0, 0.9);
+  letter-spacing: -0.02em;
+  color: rgba(255, 252, 245, 0.98);
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.88);
 }
 
 /** Pendant le choix de mode : pas de doublon flouté du hero sous le voile. */
@@ -3093,21 +3166,19 @@ html.senac-choice-pending .hero > .hero-subtitle {
 }
 
 .smc-kicker {
-  margin: 0 0 clamp(0.75rem, 2vh, 1.15rem);
+  margin: 0 0 clamp(0.95rem, 2.4vh, 1.35rem);
   max-width: min(34rem, 94vw);
-  padding: 0 1rem;
-  font-family: "Playfair Display", Georgia, serif;
-  font-size: clamp(0.88rem, 2.15vw, 1.05rem);
+  padding: 0 clamp(1rem, 3vw, 1.35rem);
+  font-family: "Inter", sans-serif;
+  font-size: clamp(0.78rem, 1.85vw, 0.88rem);
   font-weight: 400;
-  font-style: italic;
-  letter-spacing: 0.14em;
+  font-style: normal;
+  letter-spacing: 0.26em;
   line-height: 1.55;
-  text-transform: none;
-  color: rgba(244, 234, 210, 0.78);
+  text-transform: uppercase;
+  color: rgba(253, 250, 246, 0.78);
   text-align: center;
-  text-shadow:
-    0 1px 18px rgba(0, 0, 0, 0.88),
-    0 0 22px rgba(197, 160, 89, 0.14);
+  text-shadow: 0 1px 14px rgba(0, 0, 0, 0.72);
 }
 
 html[dir="rtl"] .smc-kicker,
@@ -3115,31 +3186,30 @@ html[lang="ar-DZ"] .smc-kicker {
   font-family: "Noto Naskh Arabic", Georgia, serif;
   font-style: normal;
   font-weight: 500;
-  letter-spacing: 0.02em;
-  line-height: 1.62;
+  letter-spacing: 0.06em;
+  line-height: 1.65;
+  text-transform: none;
 }
 
 /** Instruction : même registre que `.hero-copy` / `--da-body`. */
 .smc-choose-caption {
-  margin: 0 0 clamp(1.85rem, 4.5vh, 2.65rem);
-  max-width: min(94vw, 26rem);
-  padding: 0 1rem;
+  margin: 0 0 clamp(2.05rem, 5vh, 2.85rem);
+  max-width: min(94vw, 26.5rem);
+  padding: 0 clamp(1rem, 3vw, 1.35rem);
   font-family: "Inter", sans-serif;
-  font-size: clamp(0.72rem, 1.9vw, 0.82rem);
+  font-size: clamp(0.72rem, 1.85vw, 0.8rem);
   font-weight: 400;
-  line-height: 1.75;
-  letter-spacing: 0.035em;
+  line-height: 1.68;
+  letter-spacing: 0.02em;
   text-transform: none;
   text-align: center;
-  color: var(--da-body);
-  text-shadow:
-    0 1px 14px rgba(0, 0, 0, 0.88),
-    0 0 20px rgba(197, 160, 89, 0.06);
+  color: rgba(253, 250, 246, 0.58);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.65);
 }
 
 .smc-caption-em {
-  color: var(--gold-bright);
-  font-weight: 600;
+  color: rgba(197, 160, 89, 0.82);
+  font-weight: 500;
 }
 
 .smc-buttons {
@@ -3204,47 +3274,14 @@ html[lang="ar-DZ"] .smc-kicker {
 }
 
 /**
- * Cartes Cinéma / Exploration : zoom lent uniquement sur un cadre (::before) -
- * le texte et les icônes ne sont pas transformés (DA sobre, alternance organisée).
+ * Cartes Cinéma / Exploration : bordure sobre, pas d’anneau animé.
  */
-@keyframes smc-chamber-ring {
-  0%,
-  100% {
-    transform: scale(0.96);
-    opacity: 0.38;
-    border-color: rgba(197, 160, 89, 0.14);
-    box-shadow: 0 0 0 rgba(197, 160, 89, 0);
-  }
-  50% {
-    transform: scale(1.045);
-    opacity: 0.72;
-    border-color: rgba(234, 215, 164, 0.32);
-    box-shadow:
-      0 0 48px rgba(197, 160, 89, 0.1),
-      0 0 80px rgba(0, 0, 0, 0.12);
-  }
-}
-
-.scroll-mode-choice.is-visible .smc-btn--cinema::before,
-.scroll-mode-choice.is-visible .smc-btn--explore::before {
-  animation: smc-chamber-ring 7.5s cubic-bezier(0.42, 0, 0.58, 1) infinite;
-}
-
-.scroll-mode-choice.is-visible .smc-btn--explore::before {
-  animation-delay: -3.75s;
-}
-
-.scroll-mode-choice.is-visible .smc-btn--cinema:hover::before,
-.scroll-mode-choice.is-visible .smc-btn--explore:hover::before,
-.scroll-mode-choice.is-visible .smc-btn--cinema:focus-visible::before,
-.scroll-mode-choice.is-visible .smc-btn--explore:focus-visible::before {
-  animation: none;
+.scroll-mode-choice .smc-btn::before {
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .scroll-mode-choice.is-visible .smc-btn--cinema::before,
-  .scroll-mode-choice.is-visible .smc-btn--explore::before,
-  .scroll-mode-choice.is-visible .smc-choice-nudge-line {
+  .scroll-mode-choice .smc-choice-nudge-line {
     animation: none !important;
   }
 }
@@ -3252,52 +3289,30 @@ html[lang="ar-DZ"] .smc-kicker {
 .smc-btn {
   position: relative;
   isolation: isolate;
-  overflow: visible;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.72rem;
-  padding: 1.42rem 1.95rem 1.48rem;
-  border-radius: 2px;
-  border: 1px solid rgba(197, 160, 89, 0.26);
-  background: var(--da-card-surface);
-  backdrop-filter: blur(14px);
+  gap: 0.55rem;
+  padding: 1.35rem 1.65rem 1.42rem;
+  border-radius: 0;
+  border: 1px solid rgba(255, 252, 245, 0.1);
+  background: rgba(8, 8, 9, 0.65);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   cursor: pointer;
   transition:
-    border-color 0.45s var(--ease),
-    background 0.45s var(--ease),
-    transform 0.45s var(--ease),
-    box-shadow 0.45s var(--ease);
-  min-width: 148px;
+    border-color 0.28s var(--ease),
+    background 0.28s var(--ease),
+    transform 0.28s var(--ease);
+  min-width: 152px;
   outline: none;
 }
 
-/** Carte Cinéma : double filet (DA intro / cartes plein écran). */
-.smc-btn--cinema {
-  border: 1px solid rgba(197, 160, 89, 0.34);
-  box-shadow:
-    inset 0 0 0 1px rgba(234, 215, 164, 0.16),
-    0 0 0 1px rgba(197, 160, 89, 0.1);
-}
-
+.smc-btn--cinema,
 .smc-btn--explore {
-  border-color: rgba(148, 163, 184, 0.14);
-}
-
-.smc-btn::before {
-  content: "";
-  position: absolute;
-  inset: -10px;
-  border-radius: 3px;
-  border: 1px solid rgba(197, 160, 89, 0.16);
-  background: radial-gradient(
-    ellipse 72% 88% at 50% 48%,
-    rgba(197, 160, 89, 0.08) 0%,
-    transparent 68%
-  );
-  transform-origin: 50% 50%;
-  pointer-events: none;
-  z-index: 0;
+  border-color: rgba(255, 252, 245, 0.1);
+  box-shadow: none;
 }
 
 .smc-btn > * {
@@ -3306,62 +3321,55 @@ html[lang="ar-DZ"] .smc-kicker {
 }
 
 .smc-btn:hover {
-  border-color: rgba(234, 215, 164, 0.52);
-  background: rgba(14, 12, 9, 0.9);
-  box-shadow: 0 0 36px rgba(197, 160, 89, 0.08), 0 14px 40px rgba(0, 0, 0, 0.35);
-  transform: translateY(-2px);
+  border-color: rgba(197, 160, 89, 0.38);
+  background: rgba(12, 11, 9, 0.82);
+  box-shadow: none;
+  transform: none;
 }
 
 .smc-btn--cinema:hover {
-  box-shadow:
-    inset 0 0 0 1px rgba(234, 215, 164, 0.24),
-    0 0 0 1px rgba(197, 160, 89, 0.14),
-    0 0 36px rgba(197, 160, 89, 0.1),
-    0 14px 40px rgba(0, 0, 0, 0.35);
+  box-shadow: none;
 }
 
-/** Feedback clic : zoom rapide puis retour (spring CSS). */
 .smc-btn:active {
-  transform: scale(1.08);
-  border-color: rgba(234, 215, 164, 0.72);
-  box-shadow:
-    0 0 52px rgba(197, 160, 89, 0.22),
-    0 0 18px rgba(197, 160, 89, 0.14),
-    inset 0 1px 0 rgba(255, 252, 245, 0.12);
+  transform: scale(0.985);
+  border-color: rgba(197, 160, 89, 0.48);
+  background: rgba(10, 9, 7, 0.88);
+  box-shadow: none;
   transition:
-    transform 0.08s cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 0.08s ease,
-    box-shadow 0.08s ease;
+    transform 0.1s ease,
+    border-color 0.1s ease,
+    background 0.1s ease;
   animation: none;
 }
 
 .smc-btn-icon {
-  color: rgba(197, 160, 89, 0.76);
+  color: rgba(197, 160, 89, 0.72);
   display: flex;
-  opacity: 0.92;
+  opacity: 0.95;
 }
 
 .smc-btn-label {
   font-family: "Inter", sans-serif;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 600;
-  letter-spacing: 0.28em;
+  letter-spacing: 0.26em;
   text-transform: uppercase;
-  color: var(--da-title);
+  color: rgba(255, 252, 245, 0.92);
 }
 
 .smc-btn-sub {
   font-family: "Inter", sans-serif;
-  font-size: 0.64rem;
+  font-size: 0.65rem;
   font-weight: 400;
-  letter-spacing: 0.08em;
-  color: var(--da-label);
+  letter-spacing: 0.06em;
+  color: rgba(253, 250, 246, 0.48);
   line-height: 1.45;
 }
 
 .smc-btn:focus-visible {
-  outline: 1px solid rgba(197, 160, 89, 0.45);
-  outline-offset: 4px;
+  outline: 1px solid rgba(197, 160, 89, 0.4);
+  outline-offset: 3px;
 }
 
 /* ═══════════════════════════════════════════════
@@ -3373,6 +3381,8 @@ html[lang="ar-DZ"] .smc-kicker {
   bottom: max(2.2rem, calc(env(safe-area-inset-bottom, 0px) + 1.4rem));
   left: max(1.1rem, calc(env(safe-area-inset-left, 0px) + 0.85rem));
   z-index: 6500;
+  isolation: isolate;
+  contain: layout paint;
   display: flex;
   align-items: stretch;
   gap: 0.42rem;

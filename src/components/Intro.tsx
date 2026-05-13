@@ -1305,7 +1305,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                     Al Rihla
                   </span>
                   <span className="text-[9px] uppercase leading-none tracking-[0.42em] text-transparent">
-                    AI plus experience stylé
+                    La traversée
                   </span>
                 </div>
               </motion.div>

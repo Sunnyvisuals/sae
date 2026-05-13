@@ -7,11 +7,12 @@
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
     <meta name="google" content="notranslate" />
-    <title>Al-Rihla - Chapitre II : La Nuit saharienne · Jean Sénac</title>
-    <meta name="description" content="Traversez la nuit saharienne avec Jean Sénac - chapitre II de l'expérience Al-Rihla. Poèmes, archives et fragments d'une vie entre Alger et le désert." />
+    <title>Al Rihla · Acte II — Frise Jean Sénac</title>
+    <meta name="description" content="Al Rihla, La traversée — Acte II : frise narrative Jean Sénac, entre archives et nuit saharienne. Choisis ton rythme et poursuis le parcours." />
     <meta name="robots" content="noindex" />
     <link rel="icon" type="image/png" href="/favicon-camel.png" />
-    <link rel="stylesheet" href="/parchemin-senac.css" />
+    <!-- v=9 : garder en phase avec src/lib/parcheminAssetVersion.ts (cache-bust) -->
+    <link rel="stylesheet" href="/parchemin-senac.css?v=9" />
   </head>
   <body class="senac-night">
     <!-- SVG filter : warp + chromatic aberration portrait (piloté par JS) -->
@@ -155,15 +156,15 @@
     <div id="smc-backdrop" class="smc-backdrop" aria-hidden="true"></div>
 
     <!-- Choix de mode à l'arrivée -->
-    <div id="scroll-mode-choice" class="scroll-mode-choice" role="dialog" aria-modal="true" data-i18n-aria="smc_aria" aria-label="Choisissez votre mode de navigation" aria-describedby="smc-choose-caption">
+    <div id="scroll-mode-choice" class="scroll-mode-choice" role="dialog" aria-modal="true" data-i18n-aria="smc_aria" aria-label="Choisir un mode de lecture" aria-describedby="smc-choose-caption">
       <div class="smc-inner">
         <div class="smc-da" aria-hidden="true">
-          <p class="smc-da-kicker" data-i18n="hero_kicker">Acte II - nuits sahariennes</p>
-          <p class="smc-da-title" data-i18n="hero_title">Jean Sénac</p>
+          <p class="smc-da-kicker" data-i18n="hero_kicker">Acte II — Nuits sahariennes</p>
+          <p class="smc-da-title" data-i18n="hero_title">Al Rihla</p>
         </div>
-        <p class="smc-kicker" data-i18n="smc_kicker">Comment traverser cette nuit -</p>
+        <p class="smc-kicker" data-i18n="smc_kicker">La traversée</p>
         <p id="smc-choose-caption" class="smc-choose-caption" data-i18n-html="smc_caption_html">
-          Choisis ci-dessous <span class="smc-caption-em">un mode</span> pour entrer dans la nuit.
+          Deux rythmes pour la même <span class="smc-caption-em">traversée</span> — avant d’entrer dans la nuit.
         </p>
         <div class="smc-buttons">
           <button type="button" id="smc-cinema" class="smc-btn smc-btn--cinema">
@@ -174,7 +175,7 @@
               </svg>
             </span>
             <span class="smc-btn-label" data-i18n="smc_cinema_label">Cinéma</span>
-            <span class="smc-btn-sub" data-i18n="smc_cinema_sub">défilement automatique</span>
+            <span class="smc-btn-sub" data-i18n="smc_cinema_sub">défilement guidé</span>
           </button>
           <button type="button" id="smc-explore" class="smc-btn smc-btn--explore">
             <span class="smc-btn-icon" aria-hidden="true">
@@ -210,16 +211,16 @@
 
     <main class="chapter chapter-two">
       <header class="hero" data-reveal>
-        <p class="kicker" data-i18n="hero_kicker">Acte II - nuits sahariennes</p>
-        <h1 data-i18n="hero_title">Jean Sénac</h1>
-        <p class="hero-subtitle" data-i18n="hero_subtitle">une vie en versants</p>
+        <p class="kicker" data-i18n="hero_kicker">Acte II — Nuits sahariennes</p>
+        <h1 data-i18n="hero_title">Al Rihla</h1>
+        <p class="hero-subtitle" data-i18n="hero_subtitle">La traversée</p>
         <p class="hero-copy" data-i18n="hero_copy">
-          Une frise comme une traversée nocturne : les dates deviennent constellations,
-          les fragments s'allument au passage, et la voix de Sénac avance dans le bleu.
+          Jean Sénac : une frise entre chronologie et archives — où les dates deviennent constellations
+          et chaque fragment allume un peu plus la nuit.
         </p>
         <div class="senac-cross-nav-wrap">
           <p class="senac-cross-nav__status" data-i18n="cross_nav_status_kicker">
-            Acte I terminé - tu poursuis en Acte II
+            Al Rihla · suite du parcours
           </p>
           <p
             class="senac-cross-nav__links"
@@ -475,160 +476,8 @@
       </section>
     </main>
 
-    <section id="chapitre-3" class="chapter-three" aria-label="Suite du voyage">
-      <div class="chapter-three-parallax-mount" aria-hidden="true">
-        <div class="ch3-layer ch3-layer--deep"></div>
-        <div class="ch3-layer ch3-layer--mid"></div>
-        <div class="ch3-layer ch3-layer--near"></div>
-      </div>
-      <div class="chapter-three-inner">
-        <p class="kicker" data-i18n="ch3_kicker">Suite du voyage</p>
-        <p data-i18n="ch3_p">
-          La nuit se dissipe. Le fil d'or quitte la frise et ouvre un autre territoire.
-        </p>
-        <div class="chapter-three-actions">
-          <a href="/" id="ch3-back-experience" data-i18n="ch3_back">Retour à l'expérience</a>
-          <a href="/parchemin-senac.html" data-i18n="ch3_replay">Revoir la frise</a>
-        </div>
-      </div>
-      <div class="chapter-three-landscape" aria-hidden="true">
-        <div class="chapter-three-landscape__glow"></div>
-        <div class="chapter-three-landscape__dune chapter-three-landscape__dune--back"></div>
-        <img
-          src="/images/maghreb-skyline.svg"
-          alt=""
-          class="chapter-three-landscape__skyline"
-          loading="lazy"
-          decoding="async"
-        />
-        <div class="chapter-three-landscape__dune chapter-three-landscape__dune--front"></div>
-        <img
-          src="/favicon-camel.png"
-          alt=""
-          class="chapter-three-landscape__camel"
-          loading="lazy"
-          decoding="async"
-        />
-      </div>
-    </section>
-
-    <!-- Générique de fin - intégré au flux du parchemin -->
-    <section
-      id="voyage-credits"
-      class="voyage-credits"
-      aria-labelledby="voyage-credits-title"
-    >
-      <div class="voyage-credits-bg-video-wrap" aria-hidden="true">
-        <video
-          class="voyage-credits-bg-video"
-          src="/al-rihla.mp4"
-          muted
-          playsinline
-          loop
-          preload="metadata"
-        ></video>
-        <div class="voyage-credits-bg-video-bloom" aria-hidden="true"></div>
-      </div>
-      <div class="voyage-credits-particles" aria-hidden="true">
-        <canvas id="voyage-credits-sky-canvas"></canvas>
-        <canvas id="voyage-credits-fog-canvas"></canvas>
-      </div>
-      <div class="voyage-credits-vignette" aria-hidden="true"></div>
-      <div class="voyage-credits-roll-clip">
-        <div id="voyage-credits-roll" class="voyage-credits-roll">
-          <p id="voyage-credits-title" class="voyage-credits-main-title" data-i18n="vc_title">Al-Rihla</p>
-          <p class="voyage-credits-subtitle" data-i18n="vc_subtitle">Médiation culturelle - Jean Sénac</p>
-          <p class="voyage-credits-gap">&nbsp;</p>
-
-          <h3 class="voyage-credits-heading" data-i18n="vc_h_conception">Conception & réalisation</h3>
-          <ul class="voyage-credits-list">
-            <li data-i18n="vc_l_conception_1">Direction artistique et développement expérience interactive</li>
-            <li data-i18n="vc_l_conception_2">Parcours : Carte mémoire - Frise narrative - Clôture</li>
-          </ul>
-
-          <h3 class="voyage-credits-heading" data-i18n="vc_h_textes">Textes & citations</h3>
-          <ul class="voyage-credits-list voyage-credits-list--narrow">
-            <li data-i18n="vc_l_textes_1">
-              Fragments poétiques et titres d'œuvres : Jean Sénac - à compléter avec références précises
-              (éditions, années).
-            </li>
-            <li data-i18n="vc_l_textes_2">Citations affichées sur la frise : vérifier droits et sources dans votre dossier.</li>
-          </ul>
-
-          <h3 class="voyage-credits-heading" data-i18n="vc_h_images">Images & archives</h3>
-          <ul class="voyage-credits-list voyage-credits-list--narrow">
-            <li data-i18n="vc_l_images">Photographies et portraits intégrés au parchemin : crédits à reporter (institution, photographe, date).</li>
-          </ul>
-
-          <h3 class="voyage-credits-heading" data-i18n="vc_h_video">Vidéo</h3>
-          <ul class="voyage-credits-list voyage-credits-list--narrow">
-            <li data-i18n-html="vc_l_video"><cite>Al-Rihla</cite> - fichier média du projet ; auteurs image / son / musique à mentionner ici.</li>
-          </ul>
-
-          <h3 class="voyage-credits-heading" data-i18n="vc_h_audio">Musique & sons</h3>
-          <ul class="voyage-credits-list voyage-credits-list--narrow">
-            <li data-i18n="vc_l_audio">Ambiances et pistes utilisées : crédits et licences (ex. Creative Commons, bibliothèque).</li>
-          </ul>
-
-          <h3 class="voyage-credits-heading" data-i18n="vc_h_outils">Outils</h3>
-          <ul class="voyage-credits-list">
-            <li data-i18n="vc_l_outils_1">React, Vite, Motion - Parchemin : Lenis, canvas & WebGL (selon activation).</li>
-            <li data-i18n="vc_l_outils_2">
-              Création &amp; post-production : Adobe Photoshop, Premiere Pro, After Effects, Blackmagic DaVinci
-              Resolve.
-            </li>
-          </ul>
-
-          <p class="voyage-credits-gap">&nbsp;</p>
-          <h3 class="voyage-credits-heading">Cadre l&eacute;gal &amp; droits</h3>
-          <ul class="voyage-credits-list voyage-credits-list--narrow">
-            <li>Projet scolaire r&eacute;alis&eacute; dans le cadre d&apos;une SA&Eacute; (Situation d&apos;Apprentissage et d&apos;&Eacute;valuation) - BUT M&eacute;tiers du Multim&eacute;dia et de l&apos;Internet.</li>
-            <li>Usage strictement non commercial et non lucratif.</li>
-            <li>Les textes, extraits po&eacute;tiques et citations de Jean S&eacute;nac sont reproduits &agrave; titre p&eacute;dagogique, conform&eacute;ment &agrave; l&apos;exception p&eacute;dagogique du Code de la propri&eacute;t&eacute; intellectuelle (art.&nbsp;L.&nbsp;122-5 CPI).</li>
-            <li>Les photographies et archives sont reproduites &agrave; titre illustratif dans un cadre &eacute;ducatif. Tous droits r&eacute;serv&eacute;s &agrave; leurs auteurs et institutions respectifs.</li>
-            <li>Toute reproduction ou r&eacute;utilisation &agrave; des fins commerciales de ce projet est interdite sans autorisation pr&eacute;alable des auteurs.</li>
-          </ul>
-
-          <p class="voyage-credits-gap">&nbsp;</p>
-          <p class="voyage-credits-fin" data-i18n="vc_fin">Merci d&apos;avoir travers&eacute; cette nuit.</p>
-          <p class="voyage-credits-gap">&nbsp;</p>
-
-          <div class="voyage-credits-mmi-wrap">
-            <img
-              src="/images/logo-mmi-iut-toulon.png"
-              alt="BUT MMI - IUT de Toulon"
-              class="voyage-credits-logo-img--mmi"
-              loading="lazy"
-              decoding="async"
-            />
-          </div>
-          <p class="voyage-credits-gap">&nbsp;</p>
-        </div>
-      </div>
-
-      <div
-        id="voyage-credits-cta"
-        class="voyage-credits-cta"
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        <div class="voyage-credits-skip-frame">
-          <button
-            type="button"
-            id="voyage-credits-skip"
-            class="voyage-credits-skip"
-            data-i18n-title="vc_skip_title"
-            title="Retour à l'expérience principale (affiché à la fin du générique)"
-            data-i18n="vc_skip_btn"
-          >
-            Revenir à l'expérience
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <script src="/static-i18n.js"></script>
-    <script type="module" src="/parchemin-senac.js"></script>
+    <script src="/static-i18n.js?v=9"></script>
+    <script type="module" src="/parchemin-senac.js?v=9"></script>
   </body>
 </html>
 

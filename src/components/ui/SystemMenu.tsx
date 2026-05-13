@@ -94,7 +94,7 @@ function MajesticButton({
       onClick={onClick}
       aria-pressed={ariaPressed}
       aria-keyshortcuts={ariaKeyshortcuts}
-      className={`group relative w-full overflow-hidden rounded-[2px] border bg-black/30 px-4 py-3 text-center text-[11px] uppercase leading-snug tracking-[0.26em] backdrop-blur-[2px] transition-colors duration-500 sm:px-6 sm:py-[0.95rem] sm:text-[12px] sm:tracking-[0.32em] md:py-[1.15rem] md:text-[13px] md:tracking-[0.36em] ${styles}`}
+      className={`group relative w-full overflow-hidden rounded-[2px] border bg-black/30 px-4 py-3 text-center text-[11px] uppercase leading-snug tracking-[0.26em] backdrop-blur-[2px] transition-colors duration-500 sm:px-6 sm:py-[0.95rem] sm:text-[12px] sm:tracking-[0.32em] md:flex md:h-[57px] md:items-center md:justify-center md:py-[18px] md:text-[13px] md:tracking-[0.36em] ${styles}`}
     >
       <span
         className={`pointer-events-none absolute inset-y-0 left-0 w-[3px] ${stripeGrad} opacity-0 transition-opacity duration-500 group-hover:opacity-100`}
@@ -663,13 +663,13 @@ export default function SystemMenu({
               aria-hidden
             />
 
-            <motion.div variants={item} className="overflow-hidden px-1 text-center">
+            <motion.div variants={item} className="overflow-visible px-1 pt-0.5 text-center">
               <p
                 id="system-menu-title"
                 className={
                   midnight
-                    ? '-mt-1 text-[8px] uppercase tracking-[0.72em] text-sky-300/62 sm:-mt-2 sm:text-[9px] sm:tracking-[0.8em] md:text-[10px]'
-                    : '-mt-1 text-[8px] uppercase tracking-[0.72em] text-solar-gold/55 sm:-mt-2 sm:text-[9px] sm:tracking-[0.8em] md:text-[10px]'
+                    ? 'text-[8px] uppercase tracking-[0.72em] text-sky-300/62 sm:text-[9px] sm:tracking-[0.8em] md:text-[10px]'
+                    : 'text-[8px] uppercase tracking-[0.72em] text-solar-gold/55 sm:text-[9px] sm:tracking-[0.8em] md:text-[10px]'
                 }
               >
                 {copy.menuPause}
@@ -781,7 +781,7 @@ export default function SystemMenu({
 
             <motion.nav
               variants={item}
-              className="mt-5 flex w-full max-w-[min(100%,526px)] flex-col gap-2.5 self-center sm:mt-6 sm:gap-3"
+              className="mt-5 flex w-full max-w-[min(100%,526px)] flex-col gap-5 self-center sm:mt-6"
               aria-label={copy.menuNavAria}
             >
               <MajesticButton variant="gold" midnight={midnight} onClick={onClose}>

@@ -54,14 +54,17 @@ import {
   requestDocumentFullscreen,
 } from "./lib/fullscreenDocument";
 import { prefetchAct12BridgeVideo } from "./lib/act12BridgePrefetch";
+import { PARCHEMIN_STATIC_QUERY } from "./lib/parcheminAssetVersion";
 
 /** Page statique parchemin (ch. II / III) - respecte `import.meta.env.BASE_URL` (dÃ©ploiement sous sous-chemin). */
 function parcheminSenacHref(hash: string, options?: { previewCredits?: boolean }) {
   const base = import.meta.env.BASE_URL;
   const prefix = base.endsWith("/") ? base : `${base}/`;
   const h = hash.startsWith("#") ? hash : `#${hash}`;
-  const q = options?.previewCredits ? "?previewCredits=1" : "";
-  return `${prefix}parchemin-senac.html${q}${h}`;
+  const qs = options?.previewCredits
+    ? `?previewCredits=1&${PARCHEMIN_STATIC_QUERY}`
+    : `?${PARCHEMIN_STATIC_QUERY}`;
+  return `${prefix}parchemin-senac.html${qs}${h}`;
 }
 
 function SettingsIcon(props: SVGProps<SVGSVGElement>) {
@@ -242,8 +245,8 @@ export default function App() {
     html.lang = isArabic ? "ar-DZ" : "fr";
     html.dir = isArabic ? "rtl" : "ltr";
     document.title = isArabic
-      ? "الرحلة | AI plus experience stylé"
-      : "Al Rihla | AI plus experience stylé";
+      ? "الرحلة"
+      : "Al Rihla";
   }, [language]);
 
   /** Chunks menu pause + rail Parcours (GSAP) : chargÃ©s en idle pour rÃ©duire le JS initial sans bloquer le premier rendu. */
@@ -263,7 +266,7 @@ export default function App() {
 
   /** GÃ©nÃ©rique fin de voyage (iframe) : masque le fluide parent et remonte le curseur comme pour lâ€™intro. */
   const [act2VoyageCreditsOpen, setAct2VoyageCreditsOpen] = useState(false);
-  /** AlignÃ© synchrone avec les messages iframe (`senac-credits-chrome` avant les `senac-pointer`). */
+  /** Aligné synchrone avec les messages iframe (`senac-credits-chrome` avant les événements de progression). */
   const act2VoyageCreditsOpenRef = useRef(false);
 
   useEffect(() => {
@@ -387,24 +390,20 @@ export default function App() {
       pendingAct2.current = false;
       setChapterDaTransition(false);
       setPhase((p) => (p === "act1" ? "act2" : p));
-    }, 12000);
+    }, 30000);
     return () => window.clearTimeout(t);
   }, [chapterDaTransition]);
 
   const handleMemoryMapComplete = useCallback(() => {
     pendingAct2.current = true;
+    /** Précharge tôt : le pont et l’Acte II montent avec le toast « Acte I accompli ». */
+    void Promise.all([prefetchAct12BridgeVideo(), import("./components/Immersive/Act2")]);
     window.setTimeout(() => {
       setChapterToast(true);
+      setChapterDaTransition(true);
     }, CHAPTER_TOAST_DELAY_MS);
     window.setTimeout(() => {
       setChapterToast(false);
-      if (!pendingAct2.current) return;
-      void Promise.all([
-        prefetchAct12BridgeVideo(),
-        import("./components/Immersive/Act2"),
-      ]).finally(() => {
-        if (pendingAct2.current) setChapterDaTransition(true);
-      });
     }, CHAPTER_TOAST_DELAY_MS + CHAPTER_TOAST_VISIBLE_MS);
   }, []);
 
@@ -519,61 +518,11 @@ export default function App() {
   }, [parcoursOpen, phase, journeyReplayUnlocked]);
 
   /**
-   * Acte II : iframe - relais souris + progression Â« DÃ©filez Â» (postMessage).
+   * Acte II : iframe — progression « Défilez » et navigation (postMessage). Le relais `senac-pointer` a été retiré : curseur custom désactivé en acte II, le parchemin gère le losange local.
    */
   useEffect(() => {
     if (phase !== "act2") return;
     const expectedOrigin = window.location.origin;
-    let iframeSenacCached: HTMLIFrameElement | null = null;
-    let pointerRaf = 0;
-    let pendingIframeXY: { x: number; y: number } | null = null;
-
-    const resolveSenacIframe = (): HTMLIFrameElement | null => {
-      if (iframeSenacCached?.isConnected) return iframeSenacCached;
-      const el = document.querySelector('iframe[src*="parchemin-senac"]');
-      iframeSenacCached = el instanceof HTMLIFrameElement ? el : null;
-      return iframeSenacCached;
-    };
-
-    const invalidateIframeCache = () => {
-      iframeSenacCached = null;
-    };
-
-    const relayPointerFlush = () => {
-      pointerRaf = 0;
-      if (!pendingIframeXY) return;
-      const { x, y } = pendingIframeXY;
-      pendingIframeXY = null;
-      const iframe = resolveSenacIframe();
-      let gx = x;
-      let gy = y;
-      if (iframe) {
-        const r = iframe.getBoundingClientRect();
-        gx = x + r.left;
-        gy = y + r.top;
-      }
-      /** GÃ©nÃ©rique crÃ©dits : fluide Splash masquÃ© â†’ pas de faux `mousemove` vers WebGL idle. */
-      if (!act2VoyageCreditsOpenRef.current) {
-        window.dispatchEvent(
-          new MouseEvent("mousemove", {
-            clientX: gx,
-            clientY: gy,
-            bubbles: true,
-            view: window,
-          })
-        );
-      }
-      window.dispatchEvent(
-        new PointerEvent("pointermove", {
-          clientX: gx,
-          clientY: gy,
-          bubbles: true,
-          pointerId: 1,
-          pointerType: "mouse",
-          view: window,
-        })
-      );
-    };
 
     const onMsg = (e: MessageEvent) => {
       if (e.origin !== expectedOrigin) return;
@@ -621,7 +570,7 @@ export default function App() {
           setPhase("act1");
           return;
         }
-        /** Chapitre III : retour intro sans valider la traversÃ©e complÃ¨te (rÃ©servÃ©e Ã  la sortie du gÃ©nÃ©rique). */
+        /** Chapitre III : retour intro sans valider la traversée complète (réservée à la sortie du générique). */
         if (target === "intro") {
           pendingAct2.current = false;
           setParcoursOpen(false);
@@ -634,22 +583,11 @@ export default function App() {
         }
         return;
       }
-      if (e.data?.type !== "senac-pointer") return;
-      const x = e.data.x as number;
-      const y = e.data.y as number;
-      if (typeof x !== "number" || typeof y !== "number") return;
-      pendingIframeXY = { x, y };
-      if (pointerRaf !== 0) return;
-      pointerRaf = window.requestAnimationFrame(relayPointerFlush);
     };
 
     window.addEventListener("message", onMsg);
-    window.addEventListener("resize", invalidateIframeCache, { passive: true });
     return () => {
       window.removeEventListener("message", onMsg);
-      window.removeEventListener("resize", invalidateIframeCache);
-      iframeSenacCached = null;
-      if (pointerRaf !== 0) window.cancelAnimationFrame(pointerRaf);
     };
   }, [phase]);
 
@@ -714,6 +652,7 @@ export default function App() {
         {chapterDaTransition && (
           <ChapterAct12Bridge
             key="act12-bridge"
+            chapterToast={chapterToast}
             onSwapPhase={handleAct12BridgeSwapPhase}
             onFinish={handleAct12BridgeFinish}
           />
@@ -927,11 +866,13 @@ export default function App() {
 
       <main
         className={
-          phase === "act1"
+          phase === "act1" || phase === "act2"
             ? "relative h-dvh max-h-dvh min-h-0 w-full overflow-hidden"
             : "relative w-full min-h-dvh"
         }
-        style={{ background: "#0a0806" }}
+        style={{
+          background: phase === "act2" ? "#05080f" : "#0a0806",
+        }}
       >
         <AnimatePresence>
           {phase === "intro" && (
@@ -997,7 +938,7 @@ export default function App() {
         {phase === "act2" && (
           <motion.div
             key="act2"
-            className="fixed inset-0 z-20"
+            className="fixed inset-0 z-20 min-h-0 overflow-hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 1.2, ease: "easeInOut" }}
@@ -1048,8 +989,8 @@ export default function App() {
       </motion.div>
       <LanguageMorphHud visible={isLanguageMorphing} midnight={languageMorphMidnight} />
     </ReactLenis>
-      {/* Curseur custom (portail body) - au-dessus du fluide. */}
-      {finePointer && (
+      {/* Curseur custom (portail body) — désactivé en acte II : iframe parchemin a son propre losange. */}
+      {finePointer && phase !== "act2" && (
       <CustomCursor
         overlayOpen={
           systemMenuOpen ||

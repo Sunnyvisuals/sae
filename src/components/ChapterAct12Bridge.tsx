@@ -4,27 +4,30 @@ import { motion, useReducedMotion } from "motion/react";
 const ACT12_TRANSITION_WEBM = `${import.meta.env.BASE_URL}transitions/trans2-alpha-act12.webm`;
 const ACT12_TRANSITION_MP4 = `${import.meta.env.BASE_URL}transitions/trans2-alpha-act12.mp4`;
 
+/** Fondu de sortie du pont une fois la WebM terminée (sync avec l’apparition nette de l’Acte II). */
+const EXIT_DURATION_S = 0.72;
+
 type ChapterAct12BridgeProps = {
+  /** Tant que le toast « Acte I accompli » est visible, la WebM reste en pause (l’Acte II charge derrière). */
+  chapterToast: boolean;
   onSwapPhase: () => void;
   onFinish: () => void;
 };
 
 /**
- * Pont WebM entre Acte I et II : l’acte I reste affiché pendant le préchargement (voir App),
- * puis la vidéo joue en plein écran ; passage à l’acte II et retrait du voile à la fin du clip.
+ * Pont WebM Acte I → II : monte avec le toast, sous le toast (z-index).
+ * Phase act2 dès le montage ; lecture WebM seulement après fermeture du toast ;
+ * retrait du pont en fondu à la fin du clip — même logique de calques que l’intro (transparent + alpha).
  */
-const ChapterAct12Bridge: FC<ChapterAct12BridgeProps> = ({ onSwapPhase, onFinish }) => {
+const ChapterAct12Bridge: FC<ChapterAct12BridgeProps> = ({
+  chapterToast,
+  onSwapPhase,
+  onFinish,
+}) => {
   const prefersReducedMotion = useReducedMotion();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [forceMp4, setForceMp4] = useState(false);
-  const swappedRef = useRef(false);
   const finishedRef = useRef(false);
-
-  const swapOnce = useCallback(() => {
-    if (swappedRef.current) return;
-    swappedRef.current = true;
-    onSwapPhase();
-  }, [onSwapPhase]);
 
   const finishOnce = useCallback(() => {
     if (finishedRef.current) return;
@@ -35,52 +38,49 @@ const ChapterAct12Bridge: FC<ChapterAct12BridgeProps> = ({ onSwapPhase, onFinish
   const reduced = prefersReducedMotion === true;
 
   useLayoutEffect(() => {
-    if (!reduced) return;
     onSwapPhase();
-    onFinish();
+    if (reduced) onFinish();
   }, [reduced, onSwapPhase, onFinish]);
 
+  /** Lecture uniquement après le toast : la transition visible enchaîne directement sur l’écran Acte II. */
   useEffect(() => {
     if (reduced) return;
+    if (chapterToast) return;
     const v = videoRef.current;
     if (!v) return;
     v.muted = true;
     v.volume = 0;
     v.currentTime = 0;
-    void v.play().catch(() => {
-      swapOnce();
-      finishOnce();
-    });
-  }, [reduced, forceMp4, swapOnce, finishOnce]);
+    void v.play().catch(() => finishOnce());
+  }, [reduced, forceMp4, chapterToast, finishOnce]);
 
   const handleError = useCallback(() => {
     if (!forceMp4) {
       setForceMp4(true);
       return;
     }
-    swapOnce();
     finishOnce();
-  }, [forceMp4, swapOnce, finishOnce]);
+  }, [forceMp4, finishOnce]);
 
-  /** Fin du clip : Acte II derrière le voile, puis retrait du voile (l’acte I reste jusqu’ici). */
   const handleEnded = useCallback(() => {
-    swapOnce();
     requestAnimationFrame(() => {
       requestAnimationFrame(() => finishOnce());
     });
-  }, [swapOnce, finishOnce]);
+  }, [finishOnce]);
 
   if (reduced) return null;
 
   return (
     <motion.div
       aria-hidden="true"
-      className="pointer-events-none fixed inset-0 z-[205] min-h-[100dvh] w-full overflow-hidden bg-black"
-      initial={{ opacity: 0 }}
+      className="pointer-events-none fixed inset-0 z-[188] min-h-[100dvh] w-full overflow-hidden bg-transparent [isolation:isolate]"
+      initial={{ opacity: 1 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      exit={{ opacity: 0, transition: { duration: EXIT_DURATION_S, ease: [0.22, 1, 0.36, 1] } }}
     >
+      {/*
+        Même principe que l’intro : dégradé sous la vidéo pour l’alpha WebM et le fallback MP4 sans alpha.
+      */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 z-0"
