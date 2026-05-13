@@ -996,14 +996,21 @@ export default function App() {
             transition={{ duration: 1.2, ease: "easeInOut" }}
           >
             <Suspense fallback={<div className="fixed inset-0 bg-[#05080f]" aria-hidden />}>
-              <Act2 />
+              <Act2
+                iframeScrollRatio={act2ScrollFillRatio}
+                suppressFluid={
+                  systemMenuOpen ||
+                  introVideoOpen ||
+                  act2VoyageCreditsOpen ||
+                  isLanguageMorphing
+                }
+              />
             </Suspense>
           </motion.div>
         )}
       </main>
 
-      {/* Fluide curseur plein viewport : au-dessus scÃ¨ne (~z-20) et HUD carte (~110) ; sous ScrollProgressBar / modales.
-          Acte II : dÃ©sactivÃ© - le canvas fixed en 100vh se superposait mal Ã  lâ€™iframe parchemin (100dvh), bande sombre en bas. */}
+      {/* Fluide curseur plein viewport : intro / acte I uniquement. Acte II : fluide calque background dans Act2.tsx (fillContainer, pas fixed 100vh). */}
       {finePointer && phase !== "act2" && (
         <div
           style={{
