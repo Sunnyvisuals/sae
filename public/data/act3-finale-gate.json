@@ -1,0 +1,16 @@
+{
+  "fr": {
+    "prompt": "Complétez le mot manquant du vers, puis validez avec Entrée.",
+    "before": "Là où la carte devient constellation, ton ",
+    "after": " referme la nuit comme un rouleau, et la phrase tient encore le désert suspendu dans le bleu.",
+    "answers": ["souffle"],
+    "inputAria": "Mot manquant à compléter au clavier"
+  },
+  "ar": {
+    "prompt": "كمّل الكلمة الناقصة من البيت، ثم اضغط مفتاح الإدخال (Enter) للتثبيت.",
+    "before": "حيث تولّد الخريطة كواكب، ",
+    "after": " تقفَل الليل حال واحد مخطوف؛ والبيت بعدو يعلق الصحراء فالزرقة.",
+    "answers": ["نفسك"],
+    "inputAria": "الكلمة الناقصة تُكمَل من لوحة المفاتيح"
+  }
+}

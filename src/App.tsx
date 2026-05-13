@@ -1,4 +1,4 @@
-﻿import {
+import {
   useState,
   useEffect,
   useRef,
@@ -9,12 +9,14 @@
   Fragment,
 } from "react";
 import { ReactLenis } from "lenis/react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 import Intro from "./components/Intro";
 import ChapterAct12Bridge from "./components/ChapterAct12Bridge";
+import ChapterAct23Bridge from "./components/ChapterAct23Bridge";
 const AlgeriaMap = lazy(() => import("./components/Immersive/AlgeriaMap"));
 const Act2 = lazy(() => import("./components/Immersive/Act2"));
+const Act3Writing = lazy(() => import("./components/Immersive/Act3Writing"));
 
 const loadOrientationPanelMod = () => import("./components/ui/OrientationPanel");
 const OrientationPanel = lazy(() =>
@@ -27,7 +29,7 @@ const SystemMenu = lazy(() => import("./components/ui/SystemMenu"));
 const IntroVideoOverlay = lazy(() => import("./components/ui/IntroVideoOverlay"));
 
 import type { SVGProps } from "react";
-import type { ParcoursPhaseLabel } from "./components/ui/OrientationPanel";
+import type { MainAppPhase, ParcoursPhaseLabel } from "./components/ui/OrientationPanel";
 import CustomCursor from "./components/ui/CustomCursor";
 import CinematicOverlay from "./components/CinematicOverlay";
 import Soundscape from "./components/Soundscape";
@@ -36,6 +38,7 @@ import ChapterCompleteToast from "./components/ui/ChapterCompleteToast";
 import HintPanel from "./components/ui/HintPanel";
 import ScrollNudge from "./components/ui/ScrollNudge";
 import ScrollProgressBar from "./components/ui/ScrollProgressBar";
+import VoyageCreditsOverlay from "./components/ui/VoyageCreditsOverlay";
 import type { Act1QuestProgress, Act2QuestProgress } from "./components/ui/HintPanel";
 import type { Act1QuestStep } from "./components/Immersive/AlgeriaMap";
 import { useCursorStore } from "./hooks/useCursorContext";
@@ -53,10 +56,33 @@ import {
   isFullscreenApiSupported,
   requestDocumentFullscreen,
 } from "./lib/fullscreenDocument";
-import { prefetchAct12BridgeVideo } from "./lib/act12BridgePrefetch";
+import {
+  prefetchAct1MapChunk,
+  prefetchAct2TransitionAssets,
+  runWhenIdle,
+} from "./lib/actTransitionPrefetch";
+import { prefetchAct23BridgeVideo } from "./lib/act23Bridge";
 import { PARCHEMIN_STATIC_QUERY } from "./lib/parcheminAssetVersion";
+import {
+  ACT_SAVE_STORAGE_KEY,
+  getHydratedActSave,
+  JOURNEY_REPLAY_STORAGE_KEY,
+  patchActSave,
+  readJourneyReplayUnlocked,
+  setSessionJourneyReplayUnlocked,
+} from "./lib/actSave";
+import { REVELATION_WORDS } from "./components/Immersive/mapWordData";
+import {
+  canonicalizeLegacyActIIIUrlIfNeeded,
+  clearLegacyActIIIRewriteBootstrap,
+  peekLegacyActIIIRewritePending,
+  prepareActIIIEntry,
+  SESSION_BOOTSTRAP_ACTIII,
+  SESSION_OPEN_VOYAGE_CREDITS,
+  SESSION_RESUME_ACT2,
+} from "./lib/appRoutes";
 
-/** Page statique parchemin (ch. II / III) - respecte `import.meta.env.BASE_URL` (dÃ©ploiement sous sous-chemin). */
+/** Page statique parchemin (ch. II / III) - respecte `import.meta.env.BASE_URL` (d?ploiement sous sous-chemin). */
 function parcheminSenacHref(hash: string, options?: { previewCredits?: boolean }) {
   const base = import.meta.env.BASE_URL;
   const prefix = base.endsWith("/") ? base : `${base}/`;
@@ -84,21 +110,10 @@ function isEditableTarget(target: EventTarget | null): boolean {
   );
 }
 
-/** Persistance : traversÃ©e complÃ¨te â†’ navigation libre entre les actes. */
-const JOURNEY_REPLAY_STORAGE_KEY = "al-rihla-journey-complete";
+/** Progression actes / Parcours libre : m?moire de session (`lib/actSave`) ? F5 repart ? z?ro. */
 const MENU_HINT_SEEN_STORAGE_KEY = "al-rihla-menu-hint-seen";
-const EMPTY_ACT1_QUEST: Act1QuestProgress = { hover: false, clickWord: false, zoom: false };
 const COMPLETE_ACT1_QUEST: Act1QuestProgress = { hover: true, clickWord: true, zoom: true };
-const EMPTY_ACT2_QUEST: Act2QuestProgress = { scroll: false };
 const COMPLETE_ACT2_QUEST: Act2QuestProgress = { scroll: true };
-
-function readJourneyReplayUnlocked(): boolean {
-  try {
-    return typeof window !== "undefined" && window.localStorage.getItem(JOURNEY_REPLAY_STORAGE_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
 
 function readMenuHintSeen(): boolean {
   try {
@@ -108,9 +123,82 @@ function readMenuHintSeen(): boolean {
   }
 }
 
+/** Cl? `history.state` pour Pr?c?dent / Suivant navigateur ? phase SPA. */
+const HISTORY_PHASE_KEY = "alRihlaPhase";
+
+function mergeHistoryPhaseState(phase: MainAppPhase): Record<string, unknown> {
+  const prev = typeof window !== "undefined" ? window.history.state : null;
+  const base =
+    typeof prev === "object" && prev !== null && !Array.isArray(prev)
+      ? { ...(prev as Record<string, unknown>) }
+      : {};
+  base[HISTORY_PHASE_KEY] = phase;
+  return base;
+}
+
+/** ?cran Suspense entre phases : le temps du t?l?chargement du chunk sert au pr?chargement d?j? lanc? en idle. */
+function LazyPhaseFallback({
+  message,
+  bgClassName,
+  arabicUi,
+}: {
+  message: string;
+  bgClassName: string;
+  arabicUi: boolean;
+}) {
+  return (
+    <div
+      role="status"
+      aria-busy="true"
+      aria-live="polite"
+      className={`fixed inset-0 z-[21] flex flex-col items-center justify-center gap-3 px-8 ${bgClassName}`}
+    >
+      <p
+        className={
+          "max-w-[min(340px,88vw)] text-center text-[11px] font-medium leading-relaxed tracking-wide text-solar-gold/58 sm:text-[12px] " +
+          (arabicUi ? "font-arabic-ui" : "")
+        }
+      >
+        {message}
+      </p>
+    </div>
+  );
+}
+
+function readBootstrapMainPhase(): MainAppPhase {
+  if (typeof window === "undefined") return "intro";
+  try {
+    canonicalizeLegacyActIIIUrlIfNeeded();
+  } catch {
+    /* ignore */
+  }
+  try {
+    if (peekLegacyActIIIRewritePending()) {
+      prepareActIIIEntry({ resumeAct2: false });
+      return "act3";
+    }
+  } catch {
+    /* ignore */
+  }
+  try {
+    if (sessionStorage.getItem(SESSION_BOOTSTRAP_ACTIII) === "1") {
+      sessionStorage.removeItem(SESSION_BOOTSTRAP_ACTIII);
+      prepareActIIIEntry({ resumeAct2: false });
+      return "act3";
+    }
+  } catch {
+    /* ignore */
+  }
+  try {
+    return sessionStorage.getItem(SESSION_RESUME_ACT2) === "1" ? "act2" : "intro";
+  } catch {
+    return "intro";
+  }
+}
+
 export default function App() {
-  const phaseRef = useRef<"intro" | "act1" | "act2">("intro");
-  const [phase, setPhase] = useState<"intro" | "act1" | "act2">("intro");
+  const [phase, setPhase] = useState<MainAppPhase>(() => readBootstrapMainPhase());
+  const phaseRef = useRef<MainAppPhase>(phase);
   const [videoStarted, setVideoStarted] = useState(false);
   const [introKey, setIntroKey] = useState(0);
   const [systemMenuOpen, setSystemMenuOpen] = useState(false);
@@ -118,20 +206,47 @@ export default function App() {
   const [menuHintVisible, setMenuHintVisible] = useState(false);
   const [introVideoOpen, setIntroVideoOpen] = useState(false);
   const [introVideoNonce, setIntroVideoNonce] = useState(0);
+  /** Pont vid?o plein ?cran avant l?acte III (depuis l?acte II). */
+  const [act23BridgeOpen, setAct23BridgeOpen] = useState(false);
+  const act23ResumeRef = useRef(true);
+  const [act3KeywordGateOpen, setAct3KeywordGateOpen] = useState(false);
   const [chapterToast, setChapterToast] = useState(false);
   const [chapterDaTransition, setChapterDaTransition] = useState(false);
-  const [revelationCount, setRevelationCount] = useState(() => (readJourneyReplayUnlocked() ? 5 : 0));
-  /** Rail Parcours : ouvert / repliÃ© (animation GSAP dans OrientationPanel). */
+  const [revelationCount, setRevelationCount] = useState(() => {
+    const s = getHydratedActSave();
+    if (readJourneyReplayUnlocked() || s.act1.completed) return 5;
+    return s.act1.answers.revelationWords.length;
+  });
+  /** Rail Parcours : ouvert / repli? (animation GSAP dans OrientationPanel). */
   const [parcoursOpen, setParcoursOpen] = useState(false);
-  /** AprÃ¨s Ch. III / gÃ©nÃ©rique : retour intro + navigation libre entre actes (Parcours cliquable). */
+  /** Apr?s Ch. III / g?n?rique : retour intro + navigation libre entre actes (Parcours cliquable). */
   const [journeyReplayUnlocked, setJourneyReplayUnlocked] = useState(readJourneyReplayUnlocked);
-  const [act1Quest, setAct1Quest] = useState<Act1QuestProgress>(() =>
-    readJourneyReplayUnlocked() ? COMPLETE_ACT1_QUEST : EMPTY_ACT1_QUEST
-  );
-  const [act2Quest, setAct2Quest] = useState<Act2QuestProgress>(() =>
-    readJourneyReplayUnlocked() ? COMPLETE_ACT2_QUEST : EMPTY_ACT2_QUEST
-  );
+  const [act1Quest, setAct1Quest] = useState<Act1QuestProgress>(() => getHydratedActSave().act1.answers.quest);
+  const [act2Quest, setAct2Quest] = useState<Act2QuestProgress>(() => getHydratedActSave().act2.answers.quest);
   const showDevChapterJumps = (import.meta as ImportMeta & { env?: { DEV?: boolean } }).env?.DEV === true;
+
+  const act1Persist = useMemo(
+    () => (phase === "act1" ? getHydratedActSave().act1 : null),
+    [phase]
+  );
+  /** Pont carte-m?moire franchi : Parcours doit garder Acte II ouvrable depuis Acte I. */
+  const act2UnlockedAfterBridge = useMemo(
+    () => getHydratedActSave().act1.completed,
+    [phase, revelationCount, journeyReplayUnlocked]
+  );
+  /**
+   * Ligne ? Acte III ? : m?me logique UX que l?Acte II ? d?s le pont Acte I franchi, le fil ? droite montre
+   * l??criture comme suite cliquable (sans attendre un premier passage iframe). Parcours libre / d?j? visit? : inchang?.
+   */
+  const act3RailUnlocked = useMemo(
+    () =>
+      journeyReplayUnlocked ||
+      Boolean(getHydratedActSave().act3Unlocked) ||
+      act2UnlockedAfterBridge,
+    [phase, revelationCount, journeyReplayUnlocked, act2UnlockedAfterBridge],
+  );
+  const act2ScrollPersistTimerRef = useRef(0);
+  const act2ScrollPersistRatioRef = useRef<number | null>(null);
 
   const pendingAct2 = useRef(false);
   const setCursorAmbient = useCursorStore((s) => s.setAmbient);
@@ -142,26 +257,60 @@ export default function App() {
   const playbackUnlockedRef = useRef(playbackUnlocked);
   masterVolumeRef.current = masterVolume;
   playbackUnlockedRef.current = playbackUnlocked;
-  /** Ton UI acte II (iframe parchemin) : solaire en haut, minuit aprÃ¨s dÃ©file - via `senac-chrome`. */
+  /** Ton UI acte II (iframe parchemin) : solaire en haut, minuit apr?s d?file - via `senac-chrome`. */
   const [act2ParcheminTone, setAct2ParcheminTone] = useState<"solar" | "midnight" | null>(null);
-  /** Progression de scroll remontÃ©e par l'iframe parchemin pour la barre parent en haut. */
+  /** Progression de scroll remont?e par l'iframe parchemin pour la barre parent en haut. */
   const [act2ScrollFillRatio, setAct2ScrollFillRatio] = useState<number | undefined>(undefined);
 
   const act2AmbientMidnight =
-    phase === "act2" && (act2ParcheminTone ?? "solar") === "midnight";
+    (phase === "act2" && (act2ParcheminTone ?? "solar") === "midnight") || phase === "act3";
 
   const mdUp = useMediaQuery("(min-width: 768px)");
-  /** `(any-pointer: fine)` inclut souris/stylus/trackpad mÃªme si `(hover:hover)` est faux sur hybrides. */
+  /** `(any-pointer: fine)` inclut souris/stylus/trackpad m?me si `(hover:hover)` est faux sur hybrides. */
   const finePointer = useMediaQuery("(any-pointer: fine)");
   const language = useLanguageStore((s) => s.language);
   const isLanguageMorphing = useLanguageStore((s) => s.isLanguageMorphing);
   const copy = useAppCopy();
+  const prefersReducedMotion = useReducedMotion();
   const introVideoPlaying = phase === "intro" && videoStarted;
 
-  /** Palettes du voile langue - alignÃ©es acte II minuit sinon dorÃ© dÃ©sert */
-  const languageMorphMidnight = phase === "act2" && act2AmbientMidnight;
+  /** Palettes du voile langue - align?es acte II minuit sinon dor? d?sert */
+  const languageMorphMidnight = (phase === "act2" && act2AmbientMidnight) || phase === "act3";
 
   phaseRef.current = phase;
+
+  useEffect(() => {
+    clearLegacyActIIIRewriteBootstrap();
+  }, []);
+
+  /** Historique navigateur : une entr?e par transition de phase (sans changer l?URL). */
+  const historyPhaseBootRef = useRef(false);
+  const phaseFromHistoryPopRef = useRef(false);
+
+  useEffect(() => {
+    const onPopState = (e: PopStateEvent) => {
+      const st = e.state as Record<string, unknown> | null;
+      const p = st?.[HISTORY_PHASE_KEY];
+      if (p !== "intro" && p !== "act1" && p !== "act2" && p !== "act3") return;
+      phaseFromHistoryPopRef.current = true;
+      setPhase(p);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  useEffect(() => {
+    if (!historyPhaseBootRef.current) {
+      historyPhaseBootRef.current = true;
+      window.history.replaceState(mergeHistoryPhaseState(phase), "", window.location.href);
+      return;
+    }
+    if (phaseFromHistoryPopRef.current) {
+      phaseFromHistoryPopRef.current = false;
+      return;
+    }
+    window.history.pushState(mergeHistoryPhaseState(phase), "", window.location.href);
+  }, [phase]);
 
   const dismissMenuHint = useCallback(
     (persist = false) => {
@@ -179,8 +328,13 @@ export default function App() {
 
   useEffect(() => {
     if (phase !== "act2") {
+      window.clearTimeout(act2ScrollPersistTimerRef.current);
+      act2ScrollPersistTimerRef.current = 0;
       setAct2ParcheminTone(null);
       setAct2ScrollFillRatio(undefined);
+    } else {
+      const chrome = getHydratedActSave().act2.answers.chromeMode;
+      setAct2ParcheminTone(chrome === "midnight" ? "midnight" : "solar");
     }
   }, [phase]);
 
@@ -189,8 +343,7 @@ export default function App() {
       menuHintSeen ||
       systemMenuOpen ||
       introVideoOpen ||
-      chapterDaTransition ||
-      phase === "intro"
+      chapterDaTransition
     ) {
       setMenuHintVisible(false);
       return;
@@ -228,14 +381,15 @@ export default function App() {
     }
   }, [phase, act2AmbientMidnight, setCursorAmbient]);
 
-  /** Acte I / II : pas de scroll documentaire - Ã©vite Lenis + fond body crÃ¨me qui Â« fuient Â» sous la scÃ¨ne fixed. */
+  /** Acte I / II : pas de scroll documentaire - ?vite Lenis + fond body cr?me qui ? fuient ? sous la sc?ne fixed. */
   useEffect(() => {
     const rootEl = document.documentElement;
-    rootEl.classList.remove("phase-act1-root", "phase-act2-root");
+    rootEl.classList.remove("phase-act1-root", "phase-act2-root", "phase-act3-root");
     if (phase === "act1") rootEl.classList.add("phase-act1-root");
     if (phase === "act2") rootEl.classList.add("phase-act2-root");
+    if (phase === "act3") rootEl.classList.add("phase-act3-root");
     return () => {
-      rootEl.classList.remove("phase-act1-root", "phase-act2-root");
+      rootEl.classList.remove("phase-act1-root", "phase-act2-root", "phase-act3-root");
     };
   }, [phase]);
 
@@ -244,17 +398,23 @@ export default function App() {
     const isArabic = language === "ar-dz";
     html.lang = isArabic ? "ar-DZ" : "fr";
     html.dir = isArabic ? "rtl" : "ltr";
-    document.title = isArabic
-      ? "الرحلة"
-      : "Al Rihla";
+    document.title =
+      phase === "act3"
+        ? isArabic
+          ? "?????? ? ???????"
+          : "Al Rihla ? L??criture"
+        : isArabic
+          ? "??????"
+          : "Al Rihla";
   }, [language]);
 
-  /** Chunks menu pause + rail Parcours (GSAP) : chargÃ©s en idle pour rÃ©duire le JS initial sans bloquer le premier rendu. */
+  /** Chunks menu pause + rail Parcours (GSAP) : charg?s en idle pour r?duire le JS initial sans bloquer le premier rendu. */
   useEffect(() => {
     const prefetch = () => {
       void loadOrientationPanelMod();
       void import("./components/ui/SystemMenu");
       void import("./components/ui/IntroVideoOverlay");
+      void import("./components/Immersive/Act3Writing");
     };
     if (typeof requestIdleCallback !== "undefined") {
       const id = requestIdleCallback(prefetch);
@@ -264,9 +424,33 @@ export default function App() {
     return () => clearTimeout(t);
   }, []);
 
-  /** GÃ©nÃ©rique fin de voyage (iframe) : masque le fluide parent et remonte le curseur comme pour lâ€™intro. */
+  /** Intro : pr?charge le chunk carte ; si Parcours libre, pr?pare aussi l?acte II pour un saut direct. */
+  useEffect(() => {
+    if (phase !== "intro") return;
+    const cancel = runWhenIdle(() => {
+      void prefetchAct1MapChunk();
+      if (journeyReplayUnlocked) prefetchAct2TransitionAssets();
+    });
+    return cancel;
+  }, [phase, journeyReplayUnlocked]);
+
+  /** Carte : pendant le jeu, pr?pare bundle acte II + HTML parchemin + vid?os de pont (I?II, II?III). */
+  useEffect(() => {
+    if (phase !== "act1") return;
+    const cancel = runWhenIdle(() => prefetchAct2TransitionAssets());
+    return cancel;
+  }, [phase]);
+
+  /** Acte II : renforce le prefetch de la vid?o II?III une fois le parchemin affich?. */
+  useEffect(() => {
+    if (phase !== "act2") return;
+    const cancel = runWhenIdle(() => prefetchAct23BridgeVideo());
+    return cancel;
+  }, [phase]);
+
+  /** G?n?rique fin de voyage (iframe) : masque le fluide parent et remonte le curseur comme pour l?intro. */
   const [act2VoyageCreditsOpen, setAct2VoyageCreditsOpen] = useState(false);
-  /** Aligné synchrone avec les messages iframe (`senac-credits-chrome` avant les événements de progression). */
+  /** Align? synchrone avec les messages iframe (`senac-credits-chrome` avant les ?v?nements de progression). */
   const act2VoyageCreditsOpenRef = useRef(false);
 
   useEffect(() => {
@@ -278,7 +462,23 @@ export default function App() {
 
   act2VoyageCreditsOpenRef.current = act2VoyageCreditsOpen;
 
-  /** DÃ©verrouille l'audio au premier geste utilisateur (autoplay policy navigateur). */
+  useEffect(() => {
+    if (phase !== "act2") return;
+    try {
+      if (sessionStorage.getItem(SESSION_RESUME_ACT2) === "1") {
+        sessionStorage.removeItem(SESSION_RESUME_ACT2);
+      }
+      if (sessionStorage.getItem(SESSION_OPEN_VOYAGE_CREDITS) === "1") {
+        sessionStorage.removeItem(SESSION_OPEN_VOYAGE_CREDITS);
+        act2VoyageCreditsOpenRef.current = true;
+        setAct2VoyageCreditsOpen(true);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [phase]);
+
+  /** D?verrouille l'audio au premier geste utilisateur (autoplay policy navigateur). */
   useEffect(() => {
     if (playbackUnlocked) return;
     const onFirstGesture = () => {
@@ -342,8 +542,8 @@ export default function App() {
   }, [phase, masterVolume, playbackUnlocked]);
 
   /**
-   * Lâ€™iframe redemande lâ€™Ã©tat audio une fois prÃªte : le premier postMessage parent part souvent
-   * avant que `initChapterTwoAmbience` nâ€™ait enregistrÃ© son listener (message perdu).
+   * L?iframe redemande l??tat audio une fois pr?te : le premier postMessage parent part souvent
+   * avant que `initChapterTwoAmbience` n?ait enregistr? son listener (message perdu).
    */
   useEffect(() => {
     if (phase !== "act2") return;
@@ -368,9 +568,9 @@ export default function App() {
     return () => window.removeEventListener("message", onMsg);
   }, [phase]);
 
-  /** DÃ©lai avant le toast : laisser voir la carte + fond Â« cÃ©lÃ©bration Â» sans masque plein Ã©cran. */
+  /** D?lai avant le toast : laisser voir la carte + fond ? c?l?bration ? sans masque plein ?cran. */
   const CHAPTER_TOAST_DELAY_MS = 3200;
-  /** DurÃ©e lecture toast + sortie avant pont WebM Acte I â†’ II */
+  /** Dur?e lecture toast + sortie avant pont WebM Acte I ? II */
   const CHAPTER_TOAST_VISIBLE_MS = 5200;
 
   const handleAct12BridgeSwapPhase = useCallback(() => {
@@ -383,7 +583,7 @@ export default function App() {
     setChapterDaTransition(false);
   }, []);
 
-  /** SÃ©curitÃ© : dÃ©bloquer si la WebM ne se termine jamais (erreur rare). */
+  /** S?curit? : d?bloquer si la WebM ne se termine jamais (erreur rare). */
   useEffect(() => {
     if (!chapterDaTransition) return;
     const t = window.setTimeout(() => {
@@ -395,9 +595,21 @@ export default function App() {
   }, [chapterDaTransition]);
 
   const handleMemoryMapComplete = useCallback(() => {
+    patchActSave((s) => ({
+      ...s,
+      act1: {
+        completed: true,
+        answers: {
+          ...s.act1.answers,
+          revelationWords: [...REVELATION_WORDS],
+          quest: COMPLETE_ACT1_QUEST,
+          hasZoomed: true,
+        },
+      },
+    }));
     pendingAct2.current = true;
-    /** Précharge tôt : le pont et l’Acte II montent avec le toast « Acte I accompli ». */
-    void Promise.all([prefetchAct12BridgeVideo(), import("./components/Immersive/Act2")]);
+    /** Renforce le pr?chargement (idempotent) : pont WebM + chunk Act2 + page parchemin. */
+    prefetchAct2TransitionAssets();
     window.setTimeout(() => {
       setChapterToast(true);
       setChapterDaTransition(true);
@@ -407,7 +619,7 @@ export default function App() {
     }, CHAPTER_TOAST_DELAY_MS + CHAPTER_TOAST_VISIBLE_MS);
   }, []);
 
-  /** Surcouche vidÃ©o uniquement : ne change pas la phase, ne recharge pas, garde carte / acte. */
+  /** Surcouche vid?o uniquement : ne change pas la phase, ne recharge pas, garde carte / acte. */
   const openIntroVideoOverlay = useCallback(() => {
     setSystemMenuOpen(false);
     setIntroVideoNonce((n) => n + 1);
@@ -420,17 +632,69 @@ export default function App() {
   const restartExperience = useCallback(() => {
     try {
       window.localStorage.removeItem(JOURNEY_REPLAY_STORAGE_KEY);
+      window.localStorage.removeItem(ACT_SAVE_STORAGE_KEY);
     } catch {
       /* ignore */
     }
     window.location.reload();
   }, []);
 
+  /** Acte III dans la SPA : m?me URL que le voyage (sans `/act3`). */
+  const goEnterActIII = useCallback((resumeAct2?: boolean) => {
+    prepareActIIIEntry({ resumeAct2 });
+    setParcoursOpen(false);
+    setSystemMenuOpen(false);
+    setPhase("act3");
+  }, []);
+
+  const beginActIIIEntrance = useCallback(
+    (resumeAct2?: boolean) => {
+      if (prefersReducedMotion === true) {
+        goEnterActIII(resumeAct2);
+        return;
+      }
+      if (phaseRef.current === "act2") {
+        act23ResumeRef.current = !!resumeAct2;
+        setAct23BridgeOpen(true);
+        return;
+      }
+      goEnterActIII(resumeAct2);
+    },
+    [goEnterActIII, prefersReducedMotion]
+  );
+
+  const handleAct23BridgeComplete = useCallback(() => {
+    goEnterActIII(act23ResumeRef.current);
+  }, [goEnterActIII]);
+
+  useEffect(() => {
+    if (phase !== "act2") setAct23BridgeOpen(false);
+  }, [phase]);
+
+  const exitAct3ToParchemin = useCallback(() => {
+    setPhase("act2");
+  }, []);
+
+  const exitAct3ToCredits = useCallback(() => {
+    act2VoyageCreditsOpenRef.current = true;
+    setAct2VoyageCreditsOpen(true);
+    setPhase("act2");
+  }, []);
+
+  const closeVoyageCreditsOverlay = useCallback(() => {
+    act2VoyageCreditsOpenRef.current = false;
+    setAct2VoyageCreditsOpen(false);
+  }, []);
+
   const navigateParcoursPhase = useCallback((next: ParcoursPhaseLabel) => {
     setParcoursOpen(false);
     setSystemMenuOpen(false);
+    if (next === "act3") {
+      beginActIIIEntrance(phaseRef.current === "act2");
+      return;
+    }
     setPhase(next);
-  }, []);
+  }, [beginActIIIEntrance]);
 
   useEffect(() => {
     const expectedOrigin = window.location.origin;
@@ -440,11 +704,31 @@ export default function App() {
       if (d?.type !== "senac-journey-complete") return;
       const iframe = document.querySelector('iframe[src*="parchemin-senac"]');
       if (!(iframe instanceof HTMLIFrameElement) || e.source !== iframe.contentWindow) return;
-      try {
-        window.localStorage.setItem(JOURNEY_REPLAY_STORAGE_KEY, "1");
-      } catch {
-        /* ignore */
-      }
+      setSessionJourneyReplayUnlocked(true);
+      patchActSave((s) => ({
+        ...s,
+        act1: {
+          completed: true,
+          answers: {
+            ...s.act1.answers,
+            revelationWords: [...REVELATION_WORDS],
+            quest: COMPLETE_ACT1_QUEST,
+            consignesDismissed: true,
+            hasZoomed: true,
+          },
+        },
+        act2: {
+          completed: true,
+          answers: {
+            ...s.act2.answers,
+            quest: COMPLETE_ACT2_QUEST,
+            scrollRatio: 1,
+            chromeMode: "midnight",
+            entryChosen: true,
+          },
+        },
+        act3Unlocked: true,
+      }));
       setJourneyReplayUnlocked(true);
       setAct1Quest(COMPLETE_ACT1_QUEST);
       setAct2Quest(COMPLETE_ACT2_QUEST);
@@ -462,10 +746,47 @@ export default function App() {
   }, []);
 
   const onAct1QuestStep = useCallback((step: Act1QuestStep) => {
-    setAct1Quest((p) => (p[step] ? p : { ...p, [step]: true }));
+    setAct1Quest((p) => {
+      if (p[step]) return p;
+      const next = { ...p, [step]: true };
+      patchActSave((s) => ({
+        ...s,
+        act1: { ...s.act1, answers: { ...s.act1.answers, quest: next } },
+      }));
+      return next;
+    });
   }, []);
 
-  /** Acte I carte : Lenis sans lissage molette (zoom molette prÃ©cis sur le canvas). Autres phases : glide doux. */
+  const onAct1RevelationWords = useCallback((words: string[]) => {
+    setRevelationCount(words.length);
+    patchActSave((s) => {
+      const completed = words.length >= 5 || s.act1.completed;
+      return {
+        ...s,
+        act1: {
+          ...s.act1,
+          completed,
+          answers: { ...s.act1.answers, revelationWords: [...words] },
+        },
+      };
+    });
+  }, []);
+
+  const onAct1ConsignesDismissed = useCallback(() => {
+    patchActSave((s) => ({
+      ...s,
+      act1: { ...s.act1, answers: { ...s.act1.answers, consignesDismissed: true } },
+    }));
+  }, []);
+
+  const onAct1HasZoomedPersist = useCallback(() => {
+    patchActSave((s) => ({
+      ...s,
+      act1: { ...s.act1, answers: { ...s.act1.answers, hasZoomed: true } },
+    }));
+  }, []);
+
+  /** Acte I carte : Lenis sans lissage molette (zoom molette pr?cis sur le canvas). Autres phases : glide doux. */
   const lenisOptions = useMemo(
     () =>
       phase === "act1"
@@ -501,7 +822,6 @@ export default function App() {
         setParcoursOpen(false);
         return;
       }
-      if (phase === "intro" && !journeyReplayUnlocked) return;
       e.preventDefault();
       setSystemMenuOpen(true);
     };
@@ -509,7 +829,7 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, [systemMenuOpen, chapterToast, chapterDaTransition, phase, introVideoOpen, parcoursOpen, journeyReplayUnlocked]);
 
-  /** Flèches ← / → : ← ouvre le rail Parcours (desktop), → ouvre le menu ; → referme le Parcours s’il est ouvert. */
+  /** Fl?ches ? / ? : ? ouvre le rail Parcours (desktop), ? ouvre le menu ; ? referme le Parcours s?il est ouvert. */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
@@ -540,7 +860,6 @@ export default function App() {
           setParcoursOpen(false);
           return;
         }
-        if (phase === "intro" && !journeyReplayUnlocked) return;
         e.preventDefault();
         dismissMenuHint(true);
         setSystemMenuOpen(true);
@@ -570,7 +889,7 @@ export default function App() {
   }, [parcoursOpen, phase, journeyReplayUnlocked]);
 
   /**
-   * Acte II : iframe — progression « Défilez » et navigation (postMessage). Le relais `senac-pointer` a été retiré : curseur custom désactivé en acte II, le parchemin gère le losange local.
+   * Acte II : iframe ? progression ? D?filez ? et navigation (postMessage). Le relais `senac-pointer` a ?t? retir? : curseur custom d?sactiv? en acte II, le parchemin g?re le losange local.
    */
   useEffect(() => {
     if (phase !== "act2") return;
@@ -579,10 +898,30 @@ export default function App() {
     const onMsg = (e: MessageEvent) => {
       if (e.origin !== expectedOrigin) return;
       const d = e.data as Record<string, unknown>;
+      if (e.data?.type === "senac-entry-mode") {
+        const mode = e.data.mode as string;
+        if (mode !== "cinema" && mode !== "explore") return;
+        patchActSave((s) => ({
+          ...s,
+          act2: {
+            ...s.act2,
+            answers: { ...s.act2.answers, entryMode: mode, entryChosen: true },
+          },
+        }));
+        return;
+      }
       if (e.data?.type === "senac-quest") {
         const step = e.data.step as string;
         if (step === "scroll") {
-          setAct2Quest((p) => (p.scroll ? p : { ...p, scroll: true }));
+          setAct2Quest((p) => {
+            if (p.scroll) return p;
+            const next = { ...p, scroll: true };
+            patchActSave((s) => ({
+              ...s,
+              act2: { ...s.act2, answers: { ...s.act2.answers, quest: next } },
+            }));
+            return next;
+          });
         }
         return;
       }
@@ -590,13 +929,34 @@ export default function App() {
         const mode = e.data.mode as string;
         if (mode === "midnight" || mode === "solar") {
           setAct2ParcheminTone(mode);
+          patchActSave((s) => ({
+            ...s,
+            act2: {
+              ...s.act2,
+              answers: {
+                ...s.act2.answers,
+                chromeMode: mode === "midnight" ? "midnight" : "solar",
+              },
+            },
+          }));
         }
         return;
       }
       if (e.data?.type === "senac-scroll-progress") {
         const ratio = e.data.ratio as number;
         if (typeof ratio === "number" && Number.isFinite(ratio)) {
-          setAct2ScrollFillRatio(Math.min(1, Math.max(0, ratio)));
+          const clamped = Math.min(1, Math.max(0, ratio));
+          setAct2ScrollFillRatio(clamped);
+          act2ScrollPersistRatioRef.current = clamped;
+          window.clearTimeout(act2ScrollPersistTimerRef.current);
+          act2ScrollPersistTimerRef.current = window.setTimeout(() => {
+            const r = act2ScrollPersistRatioRef.current;
+            if (r == null || !Number.isFinite(r)) return;
+            patchActSave((s) => ({
+              ...s,
+              act2: { ...s.act2, answers: { ...s.act2.answers, scrollRatio: r } },
+            }));
+          }, 400);
         }
         return;
       }
@@ -610,10 +970,14 @@ export default function App() {
         return;
       }
       if (d?.type === "senac-navigate") {
+        const target = typeof d.target === "string" ? d.target : "";
+        if (target === "act3-writing") {
+          beginActIIIEntrance(true);
+          return;
+        }
         if (phaseRef.current !== "act2") return;
         const iframe = document.querySelector('iframe[src*="parchemin-senac"]');
         if (!(iframe instanceof HTMLIFrameElement) || e.source !== iframe.contentWindow) return;
-        const target = typeof d.target === "string" ? d.target : "";
         if (target === "intro-video") {
           openIntroVideoOverlayRef.current();
           return;
@@ -622,7 +986,7 @@ export default function App() {
           setPhase("act1");
           return;
         }
-        /** Chapitre III : retour intro sans valider la traversée complète (réservée à la sortie du générique). */
+        /** Chapitre III : retour intro sans valider la travers?e compl?te (r?serv?e ? la sortie du g?n?rique). */
         if (target === "intro") {
           pendingAct2.current = false;
           setParcoursOpen(false);
@@ -640,6 +1004,45 @@ export default function App() {
     window.addEventListener("message", onMsg);
     return () => {
       window.removeEventListener("message", onMsg);
+      window.clearTimeout(act2ScrollPersistTimerRef.current);
+      act2ScrollPersistTimerRef.current = 0;
+    };
+  }, [phase, beginActIIIEntrance]);
+
+  /** R?hydrate le parchemin (scroll + mode d?entr?e) apr?s un premier passage ; premier rendu garde le choix Cin?ma / Exploration. */
+  useEffect(() => {
+    if (phase !== "act2") return;
+    const save = getHydratedActSave();
+    if (!save.act2.answers.entryChosen) return;
+
+    const payload = {
+      entryMode: save.act2.answers.entryMode,
+      scrollRatio: save.act2.answers.scrollRatio,
+    };
+
+    const send = () => {
+      const iframe = document.querySelector('iframe[src*="parchemin-senac"]');
+      if (!(iframe instanceof HTMLIFrameElement) || !iframe.contentWindow) return;
+      try {
+        iframe.contentWindow.postMessage({ type: "senac-hydrate", payload }, window.location.origin);
+      } catch {
+        /* ignore */
+      }
+    };
+
+    send();
+    const iframeEl = document.querySelector('iframe[src*="parchemin-senac"]');
+    if (iframeEl instanceof HTMLIFrameElement) {
+      iframeEl.addEventListener("load", send, { once: true });
+    }
+    const t = window.setTimeout(send, 520);
+    const t2 = window.setTimeout(send, 1700);
+    return () => {
+      window.clearTimeout(t);
+      window.clearTimeout(t2);
+      if (iframeEl instanceof HTMLIFrameElement) {
+        iframeEl.removeEventListener("load", send);
+      }
     };
   }, [phase]);
 
@@ -680,12 +1083,12 @@ export default function App() {
         }}
         style={{ transformOrigin: "50% 40%" }}
         className={
-          phase === "act1" || phase === "act2"
+          phase === "act1" || phase === "act2" || phase === "act3"
             ? "isolate h-dvh max-h-dvh min-h-0 w-full overflow-hidden will-change-[opacity,filter,transform]"
             : "isolate min-h-0 w-full will-change-[opacity,filter,transform]"
         }
       >
-      {/* Acte II : pas dâ€™overlay cinÃ© (z-[52]) au-dessus de lâ€™iframe - vignette = bande sombre Â« pied de page Â». */}
+      {/* Acte II : pas d?overlay cin? (z-[52]) au-dessus de l?iframe - vignette = bande sombre ? pied de page ?. */}
       {phase !== "act2" && <CinematicOverlay />}
       <Soundscape enabled={phase !== "act2"} />
 
@@ -721,6 +1124,10 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      {act23BridgeOpen && phase === "act2" ? (
+        <ChapterAct23Bridge open={true} onComplete={handleAct23BridgeComplete} />
+      ) : null}
+
       <AnimatePresence>
         {systemMenuOpen && (
           <Fragment key="sysmenu">
@@ -743,10 +1150,14 @@ export default function App() {
                         phase={phase}
                         revelationCount={revelationCount}
                         parcoursRailMidnight={
-                          phase === "act2" ? (act2ParcheminTone ?? "solar") === "midnight" : false
+                          phase === "act2"
+                            ? (act2ParcheminTone ?? "solar") === "midnight"
+                            : phase === "act3"
                         }
                         act2VoyageCreditsOpen={phase === "act2" ? act2VoyageCreditsOpen : false}
                         journeyReplayUnlocked={journeyReplayUnlocked}
+                        act2UnlockedAfterBridge={act2UnlockedAfterBridge}
+                        act3Reachable={act3RailUnlocked}
                         onNavigatePhase={navigateParcoursPhase}
                       />
                     </Suspense>
@@ -758,7 +1169,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Fermeture du rail uniquement viewport md+ (le rail est masquÃ© sous md). */}
+      {/* Fermeture du rail uniquement viewport md+ (le rail est masqu? sous md). */}
       {mdUp && parcoursOpen && (phase !== "intro" || journeyReplayUnlocked) && (
         <div
           className="fixed inset-0 z-[39] pointer-events-auto"
@@ -767,7 +1178,78 @@ export default function App() {
         />
       )}
 
-      {(phase !== "intro" || journeyReplayUnlocked) && (
+      {/* R?glages : visibles d?s l?intro (volume, langue, plein ?cran, etc.). */}
+      {(phase !== "intro" || journeyReplayUnlocked) && !act3KeywordGateOpen && <motion.button
+        type="button"
+        onClick={() => {
+          dismissMenuHint(true);
+          setSystemMenuOpen(true);
+        }}
+        onPointerEnter={() => dismissMenuHint(true)}
+        onFocus={() => dismissMenuHint(true)}
+        whileHover="hovered"
+        initial="idle"
+        className={
+          "group pointer-events-auto fixed z-[40] flex items-center justify-center rounded-[2px] p-2.5 backdrop-blur-sm transition-[border-color,background-color,box-shadow,filter,color] duration-300 focus-visible:outline-none focus-visible:ring-1 left-[max(1.25rem,calc(env(safe-area-inset-left)+0.5rem))] top-[max(1.25rem,calc(env(safe-area-inset-top)+0.5rem))] md:left-[max(2rem,calc(env(safe-area-inset-left)+1rem))] md:top-[max(1.75rem,calc(env(safe-area-inset-top)+0.75rem))] " +
+          (phase === "act2" && act2AmbientMidnight
+            ? "border border-[rgba(139,213,255,0.34)] bg-[rgba(3,12,34,0.55)] shadow-[0_6px_28px_rgba(0,0,0,0.52),inset_0_1px_0_rgba(180,218,255,0.06),0_0_28px_rgba(72,148,230,0.09)] hover:border-[rgba(155,226,255,0.5)] hover:bg-[rgba(5,18,42,0.68)] hover:shadow-[0_8px_34px_rgba(0,0,0,0.58),0_0_40px_rgba(90,168,255,0.13)] active:brightness-[0.97] focus-visible:ring-[rgba(148,206,255,0.4)]"
+            : "border border-[color:rgba(197,160,89,0.38)] bg-[rgba(0,0,0,0.48)] shadow-[0_6px_28px_rgba(0,0,0,0.45),0_0_28px_rgba(197,160,89,0.18)] hover:border-[color:rgba(197,160,89,0.55)] hover:bg-black/58 hover:shadow-[0_8px_32px_rgba(0,0,0,0.52),0_0_34px_rgba(197,160,89,0.28)] focus-visible:ring-[color:rgba(197,160,89,0.45)]")
+        }
+        aria-haspopup="dialog"
+        aria-expanded={systemMenuOpen}
+        aria-label={copy.menuAria}
+      >
+        {menuHintVisible && (
+          <motion.span
+            aria-hidden
+            className={
+              "pointer-events-none absolute -inset-2 rounded-[4px] border " +
+              (phase === "act2" && act2AmbientMidnight
+                ? "border-[rgba(155,226,255,0.28)]"
+                : "border-[rgba(197,160,89,0.28)]")
+            }
+            animate={{ opacity: [0.2, 0.62, 0.2], scale: [1, 1.08, 1] }}
+            transition={{ duration: 2.2, repeat: Infinity, ease: [0.45, 0, 0.55, 1] }}
+          />
+        )}
+        <motion.span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-[2px]"
+          variants={{
+            idle: { opacity: 0, scale: 0.8 },
+            hovered: { opacity: 1, scale: 1 },
+          }}
+          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          style={
+            phase === "act2" && act2AmbientMidnight
+              ? {
+                  background:
+                    "radial-gradient(circle at 50% 50%, rgba(100,172,235,0.16) 0%, transparent 58%, rgba(197,160,89,0.05) 100%)",
+                }
+              : {
+                  background:
+                    "radial-gradient(circle at 50% 50%, rgba(197,160,89,0.2) 0%, transparent 75%)",
+                }
+          }
+        />
+        <motion.span
+          className={
+            "relative flex items-center justify-center transition-[color,filter] duration-300 " +
+            (phase === "act2" && act2AmbientMidnight
+              ? "text-[rgba(198,226,252,0.92)] group-hover:text-[#f0ebd4] group-hover:drop-shadow-[0_0_14px_rgba(120,185,255,0.45)]"
+              : "text-[rgba(229,206,154,0.95)] group-hover:text-[#fdf8ee] group-hover:drop-shadow-[0_0_12px_rgba(197,160,89,0.55)]")
+          }
+          variants={{
+            idle: { rotate: 0, scale: 1 },
+            hovered: { rotate: 90, scale: 1.12 },
+          }}
+          transition={{ duration: 0.55, ease: [0.34, 1.56, 0.64, 1] }}
+        >
+          <SettingsIcon className="h-5 w-5" aria-hidden />
+        </motion.span>
+      </motion.button>}
+
+      {(phase !== "intro" || journeyReplayUnlocked) && !act3KeywordGateOpen && (
         <>
           <AnimatePresence>
             {menuHintVisible && !systemMenuOpen && (
@@ -817,74 +1299,6 @@ export default function App() {
               </motion.div>
             )}
           </AnimatePresence>
-          <motion.button
-            type="button"
-            onClick={() => {
-              dismissMenuHint(true);
-              setSystemMenuOpen(true);
-            }}
-            onPointerEnter={() => dismissMenuHint(true)}
-            onFocus={() => dismissMenuHint(true)}
-            whileHover="hovered"
-            initial="idle"
-            className={
-              "group pointer-events-auto fixed z-[40] flex items-center justify-center rounded-[2px] p-2.5 backdrop-blur-sm transition-[border-color,background-color,box-shadow,filter,color] duration-300 focus-visible:outline-none focus-visible:ring-1 left-[max(1.25rem,calc(env(safe-area-inset-left)+0.5rem))] top-[max(1.25rem,calc(env(safe-area-inset-top)+0.5rem))] md:left-[max(2rem,calc(env(safe-area-inset-left)+1rem))] md:top-[max(1.75rem,calc(env(safe-area-inset-top)+0.75rem))] " +
-              (phase === "act2" && act2AmbientMidnight
-                ? "border border-[rgba(139,213,255,0.34)] bg-[rgba(3,12,34,0.55)] shadow-[0_6px_28px_rgba(0,0,0,0.52),inset_0_1px_0_rgba(180,218,255,0.06),0_0_28px_rgba(72,148,230,0.09)] hover:border-[rgba(155,226,255,0.5)] hover:bg-[rgba(5,18,42,0.68)] hover:shadow-[0_8px_34px_rgba(0,0,0,0.58),0_0_40px_rgba(90,168,255,0.13)] active:brightness-[0.97] focus-visible:ring-[rgba(148,206,255,0.4)]"
-                : "border border-[color:rgba(197,160,89,0.38)] bg-[rgba(0,0,0,0.48)] shadow-[0_6px_28px_rgba(0,0,0,0.45),0_0_28px_rgba(197,160,89,0.18)] hover:border-[color:rgba(197,160,89,0.55)] hover:bg-black/58 hover:shadow-[0_8px_32px_rgba(0,0,0,0.52),0_0_34px_rgba(197,160,89,0.28)] focus-visible:ring-[color:rgba(197,160,89,0.45)]")
-            }
-            aria-haspopup="dialog"
-            aria-expanded={systemMenuOpen}
-            aria-label={copy.menuAria}
-          >
-            {menuHintVisible && (
-              <motion.span
-                aria-hidden
-                className={
-                  "pointer-events-none absolute -inset-2 rounded-[4px] border " +
-                  (phase === "act2" && act2AmbientMidnight
-                    ? "border-[rgba(155,226,255,0.28)]"
-                    : "border-[rgba(197,160,89,0.28)]")
-                }
-                animate={{ opacity: [0.2, 0.62, 0.2], scale: [1, 1.08, 1] }}
-                transition={{ duration: 2.2, repeat: Infinity, ease: [0.45, 0, 0.55, 1] }}
-              />
-            )}
-            <motion.span
-              aria-hidden
-              className="pointer-events-none absolute inset-0 rounded-[2px]"
-              variants={{
-                idle: { opacity: 0, scale: 0.8 },
-                hovered: { opacity: 1, scale: 1 },
-              }}
-              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-              style={
-                phase === "act2" && act2AmbientMidnight
-                  ? {
-                      background:
-                        "radial-gradient(circle at 50% 50%, rgba(100,172,235,0.16) 0%, transparent 58%, rgba(197,160,89,0.05) 100%)",
-                    }
-                  : {
-                      background: "radial-gradient(circle at 50% 50%, rgba(197,160,89,0.2) 0%, transparent 75%)",
-                    }
-              }
-            />
-            <motion.span
-              className={
-                "relative flex items-center justify-center transition-[color,filter] duration-300 " +
-                (phase === "act2" && act2AmbientMidnight
-                  ? "text-[rgba(198,226,252,0.92)] group-hover:text-[#f0ebd4] group-hover:drop-shadow-[0_0_14px_rgba(120,185,255,0.45)]"
-                  : "text-[rgba(229,206,154,0.95)] group-hover:text-[#fdf8ee] group-hover:drop-shadow-[0_0_12px_rgba(197,160,89,0.55)]")
-              }
-              variants={{
-                idle: { rotate: 0, scale: 1 },
-                hovered: { rotate: 90, scale: 1.12 },
-              }}
-              transition={{ duration: 0.55, ease: [0.34, 1.56, 0.64, 1] }}
-            >
-              <SettingsIcon className="h-5 w-5" aria-hidden />
-            </motion.span>
-          </motion.button>
           <Suspense fallback={null}>
             <OrientationPanel
               phase={phase}
@@ -892,39 +1306,39 @@ export default function App() {
               expanded={parcoursOpen}
               onExpandedChange={setParcoursOpen}
               parcoursRailMidnight={
-                phase === "act2" ? (act2ParcheminTone ?? "solar") === "midnight" : false
+                phase === "act2" ? (act2ParcheminTone ?? "solar") === "midnight" : phase === "act3"
               }
               act2VoyageCreditsOpen={phase === "act2" ? act2VoyageCreditsOpen : false}
               journeyReplayUnlocked={journeyReplayUnlocked}
+              act2UnlockedAfterBridge={act2UnlockedAfterBridge}
+              act3Reachable={act3RailUnlocked}
               onNavigatePhase={navigateParcoursPhase}
             />
           </Suspense>
         </>
       )}
 
-      {/* HintPanel : acte I uniquement - le parchemin (acte II) gÃ¨re sa propre navigation (mode CinÃ©ma / Exploration). */}
-      {phase !== "act2" && (
+      {/* HintPanel : acte I uniquement - le parchemin (acte II) g?re sa propre navigation (mode Cin?ma / Exploration). */}
+      {(phase === "intro" || phase === "act1") && (
         <HintPanel
-          phase={phase}
+          phase={phase === "act1" ? "act1" : "intro"}
           suppress={systemMenuOpen || introVideoOpen}
           act1Quest={phase === "act1" ? act1Quest : undefined}
         />
       )}
 
-      {/* Nudge scroll - acte I uniquement, masquÃ© dÃ¨s que le zoom est acquis */}
+      {/* Nudge scroll - acte I uniquement, masqu? d?s que le zoom est acquis */}
       {phase === "act1" && !systemMenuOpen && !introVideoOpen && !act1Quest.zoom && (
         <ScrollNudge key="scroll-nudge-act1" />
       )}
 
       <main
         className={
-          phase === "act1" || phase === "act2"
-            ? "relative h-dvh max-h-dvh min-h-0 w-full overflow-hidden"
-            : "relative w-full min-h-dvh"
+          (phase === "act1" || phase === "act2" || phase === "act3"
+            ? "relative h-dvh max-h-dvh min-h-0 w-full overflow-hidden "
+            : "relative w-full min-h-dvh ") +
+          (phase === "act2" || phase === "act3" ? "bg-da-depth-night" : "bg-da-depth-intro")
         }
-        style={{
-          background: phase === "act2" ? "#05080f" : "#0a0806",
-        }}
       >
         <AnimatePresence>
           {phase === "intro" && (
@@ -944,7 +1358,7 @@ export default function App() {
                         goChapter1: () => setPhase("act1"),
                         goChapter2: () => setPhase("act2"),
                         goChapter3: () => {
-                          window.location.assign(parcheminSenacHref("chapitre-3"));
+                          beginActIIIEntrance(false);
                         },
                         previewCredits: () => {
                           window.location.assign(
@@ -969,18 +1383,24 @@ export default function App() {
           >
             <Suspense
               fallback={
-                <div
-                  className="fixed inset-0 bg-[#080604]"
-                  style={{ background: "#080604" }}
-                  aria-hidden
+                <LazyPhaseFallback
+                  message={copy.lazySuspenseAct1}
+                  bgClassName="bg-da-depth-map"
+                  arabicUi={language === "ar-dz"}
                 />
               }
             >
               <AlgeriaMap
-                onRevelationProgress={setRevelationCount}
+                onRevelationWordsChange={onAct1RevelationWords}
                 onMemoryMapComplete={handleMemoryMapComplete}
                 onQuestStepComplete={onAct1QuestStep}
-                completedReplay={journeyReplayUnlocked}
+                completedReplay={journeyReplayUnlocked || (act1Persist?.completed ?? false)}
+                initialRevelationWords={act1Persist?.answers.revelationWords}
+                initialQuestProgress={act1Persist?.answers.quest}
+                initialHasZoomed={act1Persist?.answers.hasZoomed}
+                initialConsignesDismissed={act1Persist?.answers.consignesDismissed}
+                onConsignesDismissed={onAct1ConsignesDismissed}
+                onHasZoomedPersist={onAct1HasZoomedPersist}
                 parcoursRailExpanded={mdUp && parcoursOpen}
               />
             </Suspense>
@@ -995,39 +1415,75 @@ export default function App() {
             animate={{ opacity: 1 }}
             transition={{ duration: 1.2, ease: "easeInOut" }}
           >
-            <Suspense fallback={<div className="fixed inset-0 bg-[#05080f]" aria-hidden />}>
-              <Act2
-                iframeScrollRatio={act2ScrollFillRatio}
-                suppressFluid={
-                  systemMenuOpen ||
-                  introVideoOpen ||
-                  act2VoyageCreditsOpen ||
-                  isLanguageMorphing
-                }
+            <Suspense
+              fallback={
+                <LazyPhaseFallback
+                  message={copy.lazySuspenseAct2}
+                  bgClassName="bg-da-depth-night"
+                  arabicUi={language === "ar-dz"}
+                />
+              }
+            >
+              <Act2 onOpenActIII={() => beginActIIIEntrance(true)} />
+            </Suspense>
+          </motion.div>
+        )}
+
+        {phase === "act3" && (
+          <motion.div
+            key="act3"
+            className="fixed inset-0 z-[25] min-h-0 overflow-hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.9, ease: "easeInOut" }}
+          >
+            <Suspense
+              fallback={
+                <LazyPhaseFallback
+                  message={copy.lazySuspenseAct3}
+                  bgClassName="bg-da-depth-night"
+                  arabicUi={language === "ar-dz"}
+                />
+              }
+            >
+              <Act3Writing
+                onContinueToCredits={exitAct3ToCredits}
+                onBackToParchemin={exitAct3ToParchemin}
+                onKeywordGateChange={setAct3KeywordGateOpen}
               />
             </Suspense>
           </motion.div>
         )}
+
       </main>
 
-      {/* Fluide curseur plein viewport : intro / acte I uniquement. Acte II : fluide calque background dans Act2.tsx (fillContainer, pas fixed 100vh). */}
-      {finePointer && phase !== "act2" && (
+      {/* Fluide + curseur custom : intro / actes I?III. Calque fluide `pointer-events: none` (SplashCursor) ? l?iframe acte II reste interactive. */}
+      {finePointer && (
         <div
           style={{
             visibility:
               systemMenuOpen ||
               introVideoOpen ||
+              act23BridgeOpen ||
               act2VoyageCreditsOpen ||
               isLanguageMorphing
                 ? "hidden"
                 : "visible",
           }}
         >
-          <Fragment key={phase === "act1" ? "splash-act1" : "splash-default"}>
+          <Fragment
+            key={
+              phase === "act1"
+                ? "splash-act1"
+                : phase === "act2"
+                  ? "splash-act2"
+                  : "splash-default"
+            }
+          >
             <SplashCursor
               syncPaletteFromAmbient
-              SIM_RESOLUTION={phase === "act1" ? 128 : 160}
-              DYE_RESOLUTION={phase === "act1" ? 512 : 720}
+              SIM_RESOLUTION={phase === "act1" || phase === "act2" ? 128 : 160}
+              DYE_RESOLUTION={phase === "act1" ? 512 : phase === "act2" ? 640 : 720}
               DENSITY_DISSIPATION={phase === "act1" ? 12 : 10}
               VELOCITY_DISSIPATION={5}
               PRESSURE={0.1}
@@ -1035,6 +1491,7 @@ export default function App() {
               SPLAT_RADIUS={0.05}
               SPLAT_FORCE={phase === "act1" ? 9000 : 12000}
               COLOR_UPDATE_SPEED={10}
+              iframeScrollRatio={phase === "act2" ? act2ScrollFillRatio : undefined}
             />
           </Fragment>
         </div>
@@ -1048,8 +1505,13 @@ export default function App() {
       </motion.div>
       <LanguageMorphHud visible={isLanguageMorphing} midnight={languageMorphMidnight} />
     </ReactLenis>
-      {/* Curseur custom (portail body) — désactivé en acte II : iframe parchemin a son propre losange. */}
-      {finePointer && phase !== "act2" && (
+    <VoyageCreditsOverlay
+      open={phase === "act2" && act2VoyageCreditsOpen}
+      midnight={(act2ParcheminTone ?? "solar") === "midnight"}
+      onClose={restartExperience}
+    />
+      {/* Curseur custom (portail body) ? au-dessus de l?iframe acte II (`pointer-events: none`). */}
+      {finePointer && (
       <CustomCursor
         overlayOpen={
           systemMenuOpen ||
@@ -1063,7 +1525,7 @@ export default function App() {
   );
 }
 
-/** Pastille + voile DA (mÃªme vocabulaire que le passage chapitre II : halos, grain, losange). */
+/** Pastille + voile DA (m?me vocabulaire que le passage chapitre II : halos, grain, losange). */
 function LanguageMorphHud({
   visible,
   midnight,
@@ -1097,7 +1559,7 @@ function LanguageMorphHud({
         <motion.div
           key="lang-morph-overlay"
           role="presentation"
-          className="pointer-events-none fixed inset-0 z-[562] flex items-center justify-center overflow-hidden bg-[#02040c]"
+          className="pointer-events-none fixed inset-0 z-[562] flex items-center justify-center overflow-hidden bg-da-depth-abyss"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -1116,7 +1578,7 @@ function LanguageMorphHud({
             aria-hidden
           />
 
-          {/* Fil de lumiÃ¨re type transition chapitre */}
+          {/* Fil de lumi?re type transition chapitre */}
           <motion.div
             aria-hidden
             className="absolute inset-y-0 left-0 w-[110vw] origin-left opacity-80"

@@ -187,7 +187,7 @@ export default function HintPanel({ phase, suppress = false, act1Quest, act2Ques
               'relative w-[min(248px,calc(100vw-2rem))] overflow-hidden rounded-[2px] backdrop-blur-xl ' +
               (nightChapter
                 ? 'border border-[rgba(139,213,255,0.26)] bg-[rgba(2,6,18,0.88)] shadow-[0_16px_52px_rgba(0,0,0,0.58),0_0_0_1px_rgba(90,168,255,0.07),0_0_48px_rgba(90,168,255,0.07)]'
-                : 'border border-solar-gold/[0.28] bg-[#080604]/[0.88] shadow-[0_16px_48px_rgba(0,0,0,0.65),0_0_0_1px_rgba(197,160,89,0.06)]')
+                : 'border border-solar-gold/[0.28] bg-da-depth-map/[0.88] shadow-[0_16px_48px_rgba(0,0,0,0.65),0_0_0_1px_rgba(197,160,89,0.06)]')
             }
           >
             <span

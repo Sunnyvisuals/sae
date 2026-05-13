@@ -41,11 +41,11 @@
       doc_title: "Al Rihla · Acte II",
       js_cinema_callout_html:
         '<p class="senac-cinema-explore-callout__text">Pour poursuivre la traversée, appuie sur <strong>Exploration</strong> en bas à gauche.</p><div class="senac-cinema-explore-callout__arrows" aria-hidden="true"><span class="senac-ce-arrow"></span><span class="senac-ce-arrow"></span><span class="senac-ce-arrow"></span></div>',
-      js_scroll_nudge_label: "Molette · défiler",
+      js_scroll_nudge_label: "Scroll vers le bas",
       smc_aria: "Choisir un mode de lecture",
       smc_kicker: "La traversée",
       smc_caption_html:
-        'Deux rythmes pour la même <span class="smc-caption-em">traversée</span> — avant d\'entrer dans la nuit.',
+        'Deux rythmes pour la même <span class="smc-caption-em">traversée</span> avant d\'entrer dans la nuit.',
       smc_cinema_label: "Cinéma",
       smc_cinema_sub: "défilement guidé",
       smc_explore_label: "Exploration",
@@ -55,7 +55,7 @@
       smt_explore_title: "Mode Exploration (manuel)",
       smt_cinema: "Cinéma",
       smt_explore: "Exploration",
-      hero_kicker: "Acte II — Nuits sahariennes",
+      hero_kicker: "Acte II - Nuits sahariennes",
       hero_title: "Al Rihla",
       hero_subtitle: "La traversée",
       hero_copy:
@@ -71,7 +71,7 @@
       hero_img_alt: "Jean Sénac assis sur des rochers, face à la mer.",
       hero_figcaption: "Jean Sénac - portrait d'archive",
       scroll_cue_aria: "Faire défiler vers la frise narrative",
-      scroll_cue_label: "Faire défiler",
+      scroll_cue_label: "Molette · vers le bas",
       timeline_aria: "Frise narrative Jean Sénac",
       s1926_date: "29 novembre - Alger, Belcourt",
       s1926_h2: "Naissance",
@@ -155,11 +155,11 @@
       doc_title: "الرحلة · الجزء الثاني",
       js_cinema_callout_html:
         '<p class="senac-cinema-explore-callout__text">باش تكمّل المسيرة، ضغط على <strong>استكشاف</strong> لتحت على اليسار.</p><div class="senac-cinema-explore-callout__arrows" aria-hidden="true"><span class="senac-ce-arrow"></span><span class="senac-ce-arrow"></span><span class="senac-ce-arrow"></span></div>',
-      js_scroll_nudge_label: "الحرّاف",
+      js_scroll_nudge_label: "لتحت · الحرّاف",
       smc_aria: "اختَر نمط القراءة",
       smc_kicker: "المسيرة",
       smc_caption_html:
-        'إيقاعان لنفس <span class="smc-caption-em">المسيرة</span> — قبل ما تدخل لليل.',
+        'إيقاعان لنفس <span class="smc-caption-em">المسيرة</span> قبل ما تدخل لليل.',
       smc_cinema_label: "سينما",
       smc_cinema_sub: "تمرير موجّه",
       smc_explore_label: "استكشاف",
@@ -169,7 +169,7 @@
       smt_explore_title: "نمط استكشاف (يدوي)",
       smt_cinema: "سينما",
       smt_explore: "استكشاف",
-      hero_kicker: "الجزء الثاني — ليالٍ صحراوية",
+      hero_kicker: "الجزء الثاني - ليالٍ صحراوية",
       hero_title: "الرحلة",
       hero_subtitle: "المسيرة",
       hero_copy:

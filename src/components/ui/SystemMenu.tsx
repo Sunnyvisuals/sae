@@ -751,7 +751,7 @@ export default function SystemMenu({
               <motion.div variants={item} className="mt-4 w-full max-w-[min(100%,526px)] sm:mt-5">
                 <details
                   className={
-                    'group rounded-[2px] px-3 py-2.5 sm:px-4 sm:py-3 ' +
+                    'group rounded-none px-3 py-2.5 sm:px-4 sm:py-3 ' +
                     (midnight ? 'bg-[rgba(4,10,22,0.22)]' : 'bg-black/12')
                   }
                 >

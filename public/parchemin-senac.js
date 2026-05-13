@@ -12,6 +12,46 @@
     document.getElementById("senac-scroll-progress")?.remove();
   }
 
+  /** Racine SPA (`index.html`), même dossier que `parchemin-senac.html` (`new URL(".", …)`). */
+  function spaRootHref() {
+    try {
+      const path = window.location.pathname.replace(/\\/g, "/");
+      const slash = path.lastIndexOf("/");
+      const dir = slash >= 0 ? path.slice(0, slash + 1) : "/";
+      const u = new URL(".", window.location.origin + dir);
+      let pathname = u.pathname.replace(/\/+/g, "/");
+      if (pathname.length > 1 && pathname.endsWith("/")) pathname = pathname.slice(0, -1);
+      const qs = window.location.search || "";
+      return `${window.location.origin}${pathname || "/"}${qs}`;
+    } catch (_) {
+      try {
+        return `${window.location.origin}/`;
+      } catch {
+        return "/";
+      }
+    }
+  }
+
+  /**
+   * Parchemin en page pleine → recharger la racine SPA (même lien que le voyage) puis monter l’acte III.
+   * Clé synchronisée avec `SESSION_BOOTSTRAP_ACTIII` dans `src/lib/appRoutes.ts`.
+   */
+  function bootstrapSpaActIIIEntry(opts) {
+    const replace = Boolean(opts && opts.replace);
+    try {
+      sessionStorage.setItem("al-rihla-bootstrap-act3", "1");
+    } catch (_) {
+      /* ignore */
+    }
+    const href = spaRootHref();
+    try {
+      if (replace) window.location.replace(href);
+      else window.location.assign(href);
+    } catch (_) {
+      window.location.href = href;
+    }
+  }
+
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   /** Ambiance locale chapitre II (copiée dans /public). */
   const SENAC_AMBIENCE_SRC_PUBLIC = "/Emotional%20Arabian%20Oud.mp3";
@@ -1401,10 +1441,7 @@
     return null;
   }
 
-  /**
-   * Ancres `#chapitre-3` / `#voyage-credits` : nettoyer l’URL si encore bookmarkée.
-
-  /** Acte II ↔ SPA parent : boutons `data-senac-navigate` (vidéo d'intro, carte Acte I). */
+  /** Acte II ↔ SPA parent : boutons `[data-senac-navigate]` (intro-video, act1-map, act3-writing). */
   function initSenacParentNavigateBridge() {
     document.addEventListener(
       "click",
@@ -1413,9 +1450,30 @@
           e.target instanceof Element ? e.target.closest("[data-senac-navigate]") : null;
         if (!el) return;
         const raw = el.getAttribute("data-senac-navigate");
-        if (raw !== "intro-video" && raw !== "act1-map") return;
+        if (
+          raw !== "intro-video" &&
+          raw !== "act1-map" &&
+          raw !== "act3-writing"
+        ) {
+          return;
+        }
         e.preventDefault();
         const origin = window.location.origin;
+        if (raw === "act3-writing") {
+          if (window.parent !== window) {
+            try {
+              window.parent.postMessage(
+                { type: "senac-navigate", target: "act3-writing" },
+                origin
+              );
+            } catch (_) {
+              /* ignore */
+            }
+          } else {
+            bootstrapSpaActIIIEntry();
+          }
+          return;
+        }
         if (window.parent !== window) {
           try {
             window.parent.postMessage({ type: "senac-navigate", target: raw }, origin);
@@ -1839,6 +1897,14 @@
       if (mode === "explore" && wasCinema && !fromChoice) {
         window.setTimeout(showScrollNudge, 160);
       }
+
+      if (window.parent !== window && mode) {
+        try {
+          window.parent.postMessage({ type: "senac-entry-mode", mode }, window.location.origin);
+        } catch (_) {
+          /* ignore */
+        }
+      }
     }
 
     /* ── Overlay de choix ── */
@@ -1862,22 +1928,14 @@
       const nudgeLabel =
         typeof window.SENAC_T === "function"
           ? window.SENAC_T("js_scroll_nudge_label")
-          : "Molette · défiler";
-      /* Couleurs figées comme ScrollNudge.tsx (Acte I) pour même rendu or désert. */
+          : "Scroll vers le bas";
+      /* Même picto que ScrollNudge.tsx : chevron vers le bas, sans cadre. */
       nudge.innerHTML = `
-        <svg width="48" height="52" viewBox="0 0 44 48" fill="none" focusable="false">
-          <path d="M22 4c-5.5 0-10 4-10 9.2V28c0 5.2 4.5 9.2 10 9.2s10-4 10-9.2V13.2C32 8 27.5 4 22 4Z"
-            stroke="rgba(229,206,154,0.78)" stroke-width="1.45"/>
-          <g class="scroll-cue-wheel-wrap">
-            <rect x="19" y="14" width="6" height="7" rx="1.2"
-              fill="rgba(234,215,164,0.98)"/>
+        <svg width="44" height="44" viewBox="0 0 44 44" fill="none" focusable="false">
+          <g class="scroll-cue-chevrons-wrap" fill="none" stroke-linecap="round" stroke-linejoin="round"
+            stroke="rgba(197,160,89,0.68)" stroke-width="1.35">
+            <path d="M14 17.5 L22 25 L30 17.5"/>
           </g>
-          <path d="M22 1.2l-3.2 3.2 1.2 1.1 2-2 2 2 1.2-1.1L22 1.2Z"
-            fill="rgba(229,206,154,0.82)"/>
-          <path d="M22 40l3.2-3.2-1.2-1.1-2 2-2-2-1.2 1.1L22 40Z"
-            fill="rgba(229,206,154,0.82)"/>
-          <line x1="12" y1="22" x2="32" y2="22"
-            stroke="rgba(197,160,89,0.22)" stroke-width="0.65"/>
         </svg>
         <span class="senac-scroll-nudge-label">${nudgeLabel}</span>`;
       document.body.appendChild(nudge);
@@ -1887,19 +1945,48 @@
         requestAnimationFrame(() => nudge.classList.add("is-visible"));
       });
 
-      /* Disparaît au premier scroll ou après 5 s */
+      /* Disparaît dès un défilement vers le bas (comme ScrollNudge.tsx). */
       let nudgeGone = false;
+      let lastScrollY = window.scrollY || 0;
+      let lastTouchY = /** @type {number | null} */ (null);
+
       function removeNudge() {
         if (nudgeGone) return;
         nudgeGone = true;
         nudge.classList.add("is-leaving");
-        window.removeEventListener("wheel",     removeNudge);
-        window.removeEventListener("touchmove", removeNudge);
+        window.removeEventListener("wheel", removeNudgeOnWheel);
+        window.removeEventListener("scroll", removeNudgeOnScroll);
+        window.removeEventListener("touchstart", onNudgeTouchStart);
+        window.removeEventListener("touchmove", removeNudgeOnTouchMove);
         window.setTimeout(() => nudge.remove(), 550);
       }
-      window.setTimeout(removeNudge, 5000);
-      window.addEventListener("wheel",     removeNudge, { passive: true, once: true });
-      window.addEventListener("touchmove", removeNudge, { passive: true, once: true });
+
+      function removeNudgeOnWheel(/** @type {WheelEvent} */ e) {
+        if (e.deltaY > 0.5) removeNudge();
+      }
+
+      function removeNudgeOnScroll() {
+        const y = window.scrollY || 0;
+        if (y > lastScrollY + 1) removeNudge();
+        lastScrollY = y;
+      }
+
+      function onNudgeTouchStart(/** @type {TouchEvent} */ e) {
+        lastTouchY = e.touches[0] ? e.touches[0].clientY : null;
+      }
+
+      function removeNudgeOnTouchMove(/** @type {TouchEvent} */ e) {
+        if (lastTouchY == null || !e.touches[0]) return;
+        const y = e.touches[0].clientY;
+        const dy = y - lastTouchY;
+        lastTouchY = y;
+        if (dy < -4) removeNudge();
+      }
+
+      window.addEventListener("wheel", removeNudgeOnWheel, { passive: true });
+      window.addEventListener("scroll", removeNudgeOnScroll, { passive: true });
+      window.addEventListener("touchstart", onNudgeTouchStart, { passive: true });
+      window.addEventListener("touchmove", removeNudgeOnTouchMove, { passive: true });
     }
 
     function dismissChoice(chosen) {
@@ -1938,6 +2025,55 @@
         window.setTimeout(showScrollNudge, Math.max(unlockMs, 260));
       }
     }
+
+    let parentHydrateApplied = false;
+
+    /** Parent SPA : restaurer mode d’entrée + ratio de scroll (après premier choix utilisateur, cf. `entryChosen`). */
+    function applyParentHydrate(payload) {
+      const p = payload || {};
+      const em =
+        p.entryMode === "cinema" || p.entryMode === "explore" ? p.entryMode : "explore";
+      const sr =
+        typeof p.scrollRatio === "number" && Number.isFinite(p.scrollRatio)
+          ? Math.min(1, Math.max(0, p.scrollRatio))
+          : null;
+
+      dismissChoice(em);
+
+      const unlockMs =
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? 120
+          : 420;
+
+      window.setTimeout(() => {
+        stopAutoScroll();
+        if (sr == null) return;
+        const lenis = yearGaugeLenis;
+        if (lenis && typeof lenis.scrollTo === "function") {
+          const maxY = getScrollMax();
+          lenis.scrollTo(sr * maxY, { immediate: true });
+          applyScrollDerivedState(lenis.scroll);
+        } else {
+          const maxY = getScrollMax();
+          window.scrollTo(0, sr * maxY);
+          applyScrollDerivedState(getScrollY());
+        }
+      }, unlockMs + 120);
+    }
+
+    window.addEventListener(
+      "message",
+      (event) => {
+        if (event.origin !== window.location.origin) return;
+        const d = event.data;
+        if (!d || d.type !== "senac-hydrate") return;
+        if (parentHydrateApplied) return;
+        parentHydrateApplied = true;
+        applyParentHydrate(d.payload);
+      },
+      false,
+    );
 
     cinemaBtn.addEventListener("click",  () => dismissChoice("cinema"));
     exploreBtn.addEventListener("click", () => dismissChoice("explore"));
@@ -2066,10 +2202,25 @@
     });
   }
 
-  /** Après chargement Lenis : ancres #section (deep link, refresh). */
+  /** Ancre `#chapitre-3` : même URL racine que la SPA puis acte III. */
   function scrollToHashChapterIfNeeded() {
     try {
       const raw = (window.location.hash || "").replace(/^#/, "");
+      if (raw === "chapitre-3") {
+        if (window.parent !== window) {
+          try {
+            window.parent.postMessage(
+              { type: "senac-navigate", target: "act3-writing" },
+              window.location.origin
+            );
+          } catch (_) {
+            /* ignore */
+          }
+          return;
+        }
+        bootstrapSpaActIIIEntry({ replace: true });
+        return;
+      }
       if (!raw) return;
       const el = document.getElementById(decodeURIComponent(raw));
       if (!(el instanceof HTMLElement)) return;

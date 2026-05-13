@@ -9,6 +9,9 @@ import { useCursorStore } from '../../hooks/useCursorContext';
  */
 const CURSOR_ROOT_Z = 2147483647;
 
+const CURSOR_IDLE_HIDE_MS = 5000;
+const HTML_CURSOR_IDLE_CLASS = 'al-rihla-cursor-idle';
+
 /** Dernier enfant du `body` = au-dessus des autres couches `fixed` même z-index (ordre de peinture). */
 function reparentCursorPortalToBodyEnd() {
   const el = document.getElementById('__custom-cursor-root');
@@ -24,6 +27,8 @@ export default function CustomCursor({
   overlayOpen?: boolean;
 }) {
   const [mounted, setMounted] = useState(false);
+  /** Après 5 s sans mouvement/clic : halo + losange invisibles ; tout mouvement rouvre. */
+  const [idleHidden, setIdleHidden] = useState(false);
   const [portalHost, setPortalHost] = useState<HTMLElement | null>(null);
   const mode = useCursorStore((s) => s.mode);
   const label = useCursorStore((s) => s.label);
@@ -53,6 +58,11 @@ export default function CustomCursor({
   const tx = useSpring(mx, haloSpring);
   const ty = useSpring(my, haloSpring);
 
+  const move = (e: PointerEvent) => {
+    mx.set(e.clientX);
+    my.set(e.clientY);
+  };
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -74,6 +84,45 @@ export default function CustomCursor({
     setPortalHost(el);
   }, []);
 
+  useEffect(() => {
+    const html = document.documentElement;
+    const IDLE = CURSOR_IDLE_HIDE_MS;
+    let timer: number = 0;
+
+    const applyHtmlClass = (hidden: boolean) => {
+      if (hidden) html.classList.add(HTML_CURSOR_IDLE_CLASS);
+      else html.classList.remove(HTML_CURSOR_IDLE_CLASS);
+    };
+
+    const poke = () => {
+      setIdleHidden(false);
+      applyHtmlClass(false);
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        setIdleHidden(true);
+        applyHtmlClass(true);
+      }, IDLE);
+    };
+
+    poke();
+
+    const onPointerMove = (e: PointerEvent) => {
+      move(e);
+      poke();
+    };
+    const onPointerDown = () => poke();
+
+    window.addEventListener('pointermove', onPointerMove, { passive: true, capture: true });
+    window.addEventListener('pointerdown', onPointerDown, { passive: true, capture: true });
+
+    return () => {
+      window.clearTimeout(timer);
+      html.classList.remove(HTML_CURSOR_IDLE_CLASS);
+      window.removeEventListener('pointermove', onPointerMove, { capture: true });
+      window.removeEventListener('pointerdown', onPointerDown, { capture: true });
+    };
+  }, [mx, my]);
+
   useLayoutEffect(() => {
     reparentCursorPortalToBodyEnd();
     if (!overlayOpen) return;
@@ -85,25 +134,17 @@ export default function CustomCursor({
     };
   }, [portalHost, overlayOpen]);
 
-  const move = (e: PointerEvent) => {
-    mx.set(e.clientX);
-    my.set(e.clientY);
-  };
-
-  useEffect(() => {
-    window.addEventListener('pointermove', move, { passive: true, capture: true });
-    return () => window.removeEventListener('pointermove', move, { capture: true });
-  }, [mx, my]);
-
   const isHalo = mode === 'halo';
   const isFeather = mode === 'feather';
   const isDrag = mode === 'drag';
 
   const tree = (
-    <div
+    <motion.div
       className="pointer-events-none fixed inset-0"
       style={{ zIndex: 1, transform: 'translateZ(0)' }}
       aria-hidden
+      animate={{ opacity: idleHidden ? 0 : 1 }}
+      transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
     >
       <motion.div
         className="pointer-events-none fixed rounded-full will-change-transform"
@@ -233,7 +274,7 @@ export default function CustomCursor({
           {label}
         </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 
   if (!mounted || typeof document === 'undefined' || !portalHost) return null;

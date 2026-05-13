@@ -8,6 +8,12 @@
   font-display: swap;
 }
 
+/**
+ * Direction artistique — une seule matrice pour tout le voyage :
+ * ├─ Solo / jour : parchemin, ocre (solar-gold), grains chauds, profondeurs terre (#da-depth-intro, #da-depth-map)
+ * └─ Nuit / constellation : bleu indigo profond (#da-depth-night), filets #da-starline (alignés curseur midnight)
+ * Rayons UI : --radius-da (filets 1px, coins quasi carrés type rouleau / timbre).
+ */
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Playfair Display", ui-serif, Georgia, serif;
@@ -17,6 +23,25 @@
   --color-solar-sand: #f5f0e6;
   --color-solar-gold: #c5a059;
   --color-solar-brown: #2d241e;
+  /** Sahara DA — même grille que l’écran langue : sable, parchemin, umber */
+  --color-da-parchment: #d4c5b0;
+  --color-da-parchment-bright: #f4ead2;
+  --color-da-umber: #1a130f;
+  /** Ombre chaude sur titre acte III (gradient typographique) */
+  --color-da-oxide: #7a5c32;
+  /** Profondeurs plein écran (intro, carte, parchemin, écriture) — ne pas disperser d’hex ailleurs */
+  --color-da-depth-map: #080604;
+  --color-da-depth-night: #05080f;
+  --color-da-depth-intro: #0a0806;
+  /** Voiles modaux très sombres (clôtures, overlays denses) */
+  --color-da-depth-abyss: #020818;
+  /** Accent « constellation » = lueur midnight (curseur / chrome acte II-III nuit) */
+  --color-da-starline: #8bd5ff;
+  /** Rayons cadres chrome (menus, pills, vignettes DA) */
+  --radius-da: 2px;
+  --tracking-da-eyebrow: 0.48em;
+  --tracking-da-display: 0.22em;
+  --tracking-da-curtain: 0.34em;
 }
 
 @layer base {
@@ -57,7 +82,7 @@
     min-height: 100dvh;
     max-height: 100dvh;
     overscroll-behavior: none;
-    background-color: #080604;
+    background-color: var(--color-da-depth-map);
     background-image: none;
   }
 
@@ -84,7 +109,7 @@
     min-height: 100dvh;
     max-height: 100dvh;
     overscroll-behavior: none;
-    background-color: #05080f;
+    background-color: var(--color-da-depth-night);
     background-image: none;
   }
 
@@ -100,6 +125,30 @@
     html.phase-act2-root body {
       cursor: auto !important;
     }
+  }
+
+  /** Acte III : même cavité optique que le parchemin (nuit constellation), évite fente sous scène fixed. */
+  html.phase-act3-root {
+    overflow: hidden !important;
+    height: 100dvh;
+    max-height: 100dvh;
+    overscroll-behavior: none;
+  }
+
+  html.phase-act3-root body {
+    overflow: hidden !important;
+    min-height: 100dvh;
+    max-height: 100dvh;
+    overscroll-behavior: none;
+    background-color: var(--color-da-depth-night);
+    background-image: none;
+  }
+
+  html.phase-act3-root #root {
+    height: 100dvh;
+    max-height: 100dvh;
+    min-height: 100dvh;
+    overflow: hidden;
   }
 
   #root {
@@ -190,6 +239,71 @@
 @layer utilities {
   .cursor-none {
     cursor: none !important;
+  }
+
+  /**
+   * DA minimal « sahara oriental poétique » — alignée sur l’écran choix de langue :
+   * interlignage aéré, filets 1px, sable / parchemin sur fond profond.
+   */
+  .da-eyebrow {
+    @apply font-sans text-[10px] font-normal uppercase text-solar-gold/55;
+    letter-spacing: var(--tracking-da-eyebrow);
+    text-shadow: 0 0 12px rgba(0, 0, 0, 0.82);
+  }
+
+  .da-eyebrow-ar {
+    @apply font-arabic-ui text-[10px] font-medium text-solar-gold/55;
+    letter-spacing: 0.12em;
+    text-shadow: 0 0 12px rgba(0, 0, 0, 0.82);
+  }
+
+  .da-display-title {
+    @apply font-sans font-medium uppercase text-da-parchment/92;
+    font-size: clamp(1.8rem, 4.6vw, 3rem);
+    letter-spacing: var(--tracking-da-display);
+    text-shadow: 0 0 18px rgba(0, 0, 0, 0.78);
+  }
+
+  .da-display-title-ar {
+    @apply font-arabic-ui font-light leading-snug text-da-parchment/92;
+    font-size: clamp(1.8rem, 4.6vw, 3rem);
+    letter-spacing: 0.02em;
+    text-shadow: 0 0 18px rgba(0, 0, 0, 0.78);
+  }
+
+  .da-title-rule {
+    @apply h-px w-12 origin-center bg-solar-gold/38 transition-all duration-500 group-hover:w-20 group-hover:bg-solar-gold/72;
+  }
+
+  .da-curtain-fr {
+    @apply text-[clamp(0.68rem,0.84vw,0.88rem)] font-normal uppercase text-da-parchment/72;
+    letter-spacing: var(--tracking-da-curtain);
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.72);
+  }
+
+  .da-curtain-ar {
+    @apply font-arabic-ui text-[clamp(0.82rem,1.02vw,0.96rem)] font-medium text-da-parchment/78;
+    letter-spacing: 0.06em;
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.72);
+  }
+
+  /** Hint fixe bas d’écran (molette) — micro-légende DA */
+  .da-hint-micro {
+    @apply max-w-[14rem] text-center font-sans text-[8px] font-medium uppercase text-da-parchment/72 sm:text-[9px];
+    letter-spacing: 0.24em;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+  }
+
+  /** Panneaux flottants type « rouleau sous verre » — solar (désert) */
+  .da-glass-solar {
+    border-radius: var(--radius-da);
+    @apply border border-solar-gold/34 bg-black/48 backdrop-blur-sm shadow-[0_12px_40px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(253,248,238,0.05)];
+  }
+
+  /** Panneaux flottants — midnight (constellation / parchemin immergé) */
+  .da-glass-moon {
+    border-radius: var(--radius-da);
+    @apply border border-[rgb(139_213_255/0.36)] bg-[rgba(4,14,38,0.55)] backdrop-blur-sm shadow-[0_12px_40px_rgba(0,0,0,0.58),inset_0_1px_0_rgba(180,218,255,0.06),0_0_32px_rgba(72,148,230,0.06)];
   }
 }
 
@@ -370,6 +484,24 @@
   [data-theme="midnight"] #root *::after {
     cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='30' viewBox='0 0 22 30'%3E%3Cpolygon points='11,1 21,11 11,21 1,11' fill='rgba(90,168,255,0.15)' stroke='%238bd5ff' stroke-width='1.2'/%3E%3Ccircle cx='11' cy='11' r='1.5' fill='%23cce8ff'/%3E%3Cline x1='11' y1='22' x2='11' y2='28' stroke='%238bd5ff' stroke-width='1' stroke-opacity='0.7'/%3E%3Cpolyline points='8,25 11,29 14,25' fill='none' stroke='%238bd5ff' stroke-width='1' stroke-opacity='0.7' stroke-linejoin='round'/%3E%3C/svg%3E") 11 11, auto !important;
   }
+
+  /** Inactivité 5 s (CustomCursor) : plus aucun curseur système tant qu’on ne bouge pas. */
+  html.al-rihla-cursor-idle,
+  html.al-rihla-cursor-idle body,
+  html.al-rihla-cursor-idle #root,
+  html.al-rihla-cursor-idle #root *,
+  html.al-rihla-cursor-idle #root *::before,
+  html.al-rihla-cursor-idle #root *::after {
+    cursor: none !important;
+  }
+}
+
+/*
+ * Input texte dans la gate finale (acte III) : force le curseur I-beam
+ * malgré le curseur losange custom du thème midnight (!important).
+ */
+[data-cursor-text] {
+  cursor: text !important;
 }
 
 /*

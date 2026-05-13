@@ -34,6 +34,11 @@
   --da-body: rgba(254, 250, 243, 0.86);
   --da-title: #f0e6d4;
   --da-ghost-year: rgba(197, 160, 89, 0.09);
+  /** Grille typo unifiée (écran langue / hero ch. II) : minimal sahara */
+  --da-parchment-tone: #d4c5b0;
+  --da-eyebrow-track: 0.48em;
+  --da-display-track: 0.22em;
+  --da-curtain-track: 0.34em;
   --mx: 50%;
   --my: 18%;
   /* Barre naturelle reservee si l'orbite JS n'est pas chargee ou absente du DOM */
@@ -882,7 +887,8 @@ body.senac-smoke-fallback #fog-canvas {
   margin: 0 auto;
   padding-top: max(env(safe-area-inset-top, 0px), clamp(3.25rem, 8vmin, 5.75rem));
   padding-right: clamp(1.25rem, 4vw, 3rem);
-  padding-bottom: clamp(4.5rem, 11vh, 8.5rem);
+  /* Scroll libre sous la frise (fonds fixed inchangés) — zone vide pour futurs visuels */
+  padding-bottom: calc(clamp(4.5rem, 11vh, 8.5rem) + clamp(45vh, 65vmin, 95vh));
   padding-left: clamp(1.25rem, 4vw, 3rem);
   position: relative;
 }
@@ -919,8 +925,8 @@ body.senac-smoke-fallback #fog-canvas {
   padding-bottom: clamp(1.1rem, 2.5vmin, 1.45rem);
   font-family: "Inter", sans-serif;
   font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.48em;
+  font-weight: 500;
+  letter-spacing: var(--da-eyebrow-track);
   text-transform: uppercase;
   color: hsla(var(--ui-hue), 48%, 70%, calc(0.44 + var(--immersive-shift, 0) * 0.12));
   transition: color 0.85s var(--ease);
@@ -1086,7 +1092,8 @@ html[dir="rtl"] .senac-cross-nav--compact {
   align-items: center;
   gap: 0.52rem;
   margin-top: auto;
-  padding-top: clamp(1.75rem, 5vmin, 3.25rem);
+  /* Air sous la légende + animation double chevron (plus de souris fine qui se confond avec la légende). */
+  padding-top: clamp(2.35rem, 6.5vmin, 4rem);
   margin-bottom: max(env(safe-area-inset-bottom, 0px), clamp(0.05rem, 0.8vmin, 0.45rem));
   transform-origin: center center;
   color: hsla(var(--ui-hue), 62%, 84%, calc(0.88 + var(--immersive-shift, 0) * 0.06));
@@ -1108,8 +1115,10 @@ html[dir="rtl"] .senac-cross-nav--compact {
 .scroll-cue-mouse {
   display: block;
   flex-shrink: 0;
-  width: clamp(38px, 10vw, 46px);
-  opacity: 0.92;
+  width: clamp(44px, 11vw, 54px);
+  padding-top: 0.35rem;
+  margin-top: 0.1rem;
+  opacity: 0.96;
   filter:
     drop-shadow(0 0 14px hsla(var(--ui-hue), 68%, 62%, calc(0.38 + var(--immersive-shift, 0) * 0.06)))
     drop-shadow(0 0 26px hsla(calc(215deg + var(--immersive-shift, 0) * -10deg), 72%, 72%, calc(0.18 + var(--immersive-shift, 0) * 0.05)));
@@ -1121,32 +1130,31 @@ html[dir="rtl"] .senac-cross-nav--compact {
   width: 100%;
   height: auto;
   overflow: visible;
-  transform-origin: 50% 55%;
-  animation: scroll-cue-mouse-drift 2.8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  transform-origin: 50% 45%;
+  animation: scroll-cue-arrows-drift 2.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
   color: hsla(var(--ui-hue), 58%, 62%, 1);
 }
 
-.scroll-cue-mouse svg > path:first-of-type {
+.scroll-cue-chevrons-wrap {
+  transform-box: fill-box;
+  transform-origin: center center;
+  animation: scroll-cue-chevrons-nudge 2s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+}
+
+.scroll-cue-mouse svg > rect {
   stroke: hsla(var(--ui-hue), 62%, 78%, 0.72) !important;
 }
 
-.scroll-cue-mouse svg .scroll-cue-wheel-wrap rect {
-  fill: hsla(var(--ui-hue), 66%, 62%, 0.92) !important;
+.scroll-cue-mouse svg .scroll-cue-chevrons-wrap path:nth-of-type(1) {
+  stroke: hsla(var(--ui-hue), 66%, 82%, 0.94) !important;
 }
 
-.scroll-cue-mouse svg > path:nth-of-type(2),
-.scroll-cue-mouse svg > path:nth-of-type(3) {
-  fill: hsla(var(--ui-hue), 65%, 82%, 0.78) !important;
+.scroll-cue-mouse svg .scroll-cue-chevrons-wrap path:nth-of-type(2) {
+  stroke: hsla(var(--ui-hue), 62%, 76%, 0.78) !important;
 }
 
-.scroll-cue-mouse svg > line {
-  stroke: hsla(var(--ui-hue), 40%, 62%, 0.16) !important;
-}
-
-.scroll-cue-wheel-wrap {
-  transform-box: fill-box;
-  transform-origin: center center;
-  animation: scroll-cue-wheel 2.2s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+.scroll-cue-mouse svg .scroll-cue-chevrons-wrap path:nth-of-type(3) {
+  stroke: hsla(var(--ui-hue), 56%, 70%, 0.58) !important;
 }
 
 .scroll-cue-label {
@@ -1172,7 +1180,7 @@ html[dir="rtl"] .senac-cross-nav--compact {
 }
 
 .scroll-cue.is-dismissing .scroll-cue-mouse svg,
-.scroll-cue.is-dismissing .scroll-cue-wheel-wrap,
+.scroll-cue.is-dismissing .scroll-cue-chevrons-wrap,
 .scroll-cue.is-dismissing .scroll-cue-label {
   animation-play-state: paused;
 }
@@ -1185,7 +1193,7 @@ html[dir="rtl"] .senac-cross-nav--compact {
 
 /* Portrait hero - grande taille, pas de bloc carré (éviter ratio 1:1 + blend sur tout le rectangle) */
 .hero-portrait {
-  margin: clamp(1.65rem, 4.5vmin, 2.75rem) auto 0;
+  margin: clamp(1.65rem, 4.5vmin, 2.75rem) auto clamp(1.35rem, 3.8vmin, 2.5rem);
   max-width: min(34rem, 94vw);
   text-align: center;
   /* perspective pour le tilt 3D */
@@ -1253,6 +1261,7 @@ html[dir="rtl"] .senac-cross-nav--compact {
 
 .hero-portrait figcaption {
   margin-top: 0.85rem;
+  margin-bottom: clamp(0.35rem, 1.2vmin, 0.65rem);
   font-family: "Inter", sans-serif;
   font-size: 0.68rem;
   font-weight: 600;
@@ -1262,13 +1271,25 @@ html[dir="rtl"] .senac-cross-nav--compact {
   transition: color 0.85s var(--ease);
 }
 
-@keyframes scroll-cue-mouse-drift {
+@keyframes scroll-cue-arrows-drift {
   0%,
   100% {
     transform: translateY(0);
-    opacity: 0.82;
+    opacity: 0.88;
   }
-  52% {
+  50% {
+    transform: translateY(8px);
+    opacity: 1;
+  }
+}
+
+@keyframes scroll-cue-chevrons-nudge {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.92;
+  }
+  50% {
     transform: translateY(5px);
     opacity: 1;
   }
@@ -1328,21 +1349,6 @@ html[dir="rtl"] .senac-cross-nav--compact {
   }
 }
 
-@keyframes scroll-cue-wheel {
-  0%,
-  20% {
-    transform: translateY(-6px) scaleY(0.62);
-    opacity: 0;
-  }
-  58% {
-    transform: translateY(6px) scaleY(1);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(10px) scaleY(0.76);
-    opacity: 0;
-  }
-}
 
 /** Invite au scroll : opacité pleine → disparition (~un cycle / 2.75s). */
 @keyframes scroll-cue-label-opacity-pulse {
@@ -1359,6 +1365,13 @@ html[dir="rtl"] .senac-cross-nav--compact {
   .scroll-cue-label {
     animation-duration: 5s;
     animation-timing-function: linear;
+  }
+
+  .scroll-cue-mouse svg,
+  .scroll-cue-chevrons-wrap,
+  .senac-scroll-nudge svg,
+  .senac-scroll-nudge .scroll-cue-chevrons-wrap {
+    animation: none !important;
   }
 }
 
@@ -2766,7 +2779,7 @@ figure.archive-window[data-reveal]:not(.is-visible) {
   }
 
   .scroll-cue {
-    padding-top: clamp(2rem, 4.5vmin, 3.25rem);
+    padding-top: clamp(2.5rem, 5.5vmin, 4rem);
   }
 }
 
@@ -2982,13 +2995,15 @@ figure.archive-window[data-reveal]:not(.is-visible) {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-top: max(6vh, calc(env(safe-area-inset-top, 0px) + 1.25rem));
-  padding-bottom: max(6vh, calc(env(safe-area-inset-bottom, 0px) + 1rem));
+  padding-top: max(8vh, calc(env(safe-area-inset-top, 0px) + 1.75rem));
+  padding-bottom: max(8vh, calc(env(safe-area-inset-bottom, 0px) + 1.35rem));
   padding-left: max(1rem, env(safe-area-inset-left, 0px));
   padding-right: max(1rem, env(safe-area-inset-right, 0px));
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.4s var(--ease);
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
 }
 
 /* Backdrop : neutre, aligné body phase-act2 (#05080f) — pas de radial bleu. */
@@ -3093,12 +3108,31 @@ figure.archive-window[data-reveal]:not(.is-visible) {
   gap: 0;
   position: relative;
   isolation: isolate;
-  width: min(100%, 38rem);
-  padding: clamp(1.35rem, 4vh, 2.15rem) clamp(1.15rem, 4vw, 2rem);
+  flex-shrink: 0;
+  width: min(100%, 640px);
+  height: 700px;
+  max-height: min(90dvh, calc(100svh - 2.5rem));
+  padding: clamp(2rem, 6vh, 3.15rem) clamp(1.55rem, 5.5vw, 2.85rem);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   border-radius: 0;
   border: 1px solid rgba(255, 252, 245, 0.07);
   background: rgba(5, 5, 6, 0.72);
   box-shadow: 0 1px 0 rgba(255, 252, 245, 0.04) inset;
+}
+
+/** Contenu sous le bloc DA : centré dans l’espace restant du panneau (Acte II reste en tête). */
+.smc-main {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  align-self: stretch;
+  width: 100%;
+  min-height: 0;
 }
 
 /**
@@ -3106,20 +3140,21 @@ figure.archive-window[data-reveal]:not(.is-visible) {
  */
 .smc-da {
   position: relative;
-  margin: 0 0 clamp(1.35rem, 3.5vh, 2.1rem);
-  padding: 0 clamp(1rem, 3vw, 1.35rem);
-  max-width: min(94vw, 34rem);
+  flex-shrink: 0;
+  margin: 0 0 clamp(1.55rem, 4vh, 2.35rem);
+  padding: 0 clamp(1.15rem, 3.5vw, 1.65rem);
+  max-width: min(94vw, 39rem);
   text-align: center;
 }
 
 .smc-da-kicker {
   position: relative;
-  margin: 0 0 clamp(1.5rem, 3.8vh, 2.1rem);
-  padding-bottom: clamp(0.95rem, 2.1vh, 1.2rem);
+  margin: 0 0 clamp(1.65rem, 4.2vh, 2.35rem);
+  padding-bottom: clamp(1rem, 2.4vh, 1.35rem);
   font-family: "Inter", sans-serif;
   font-size: clamp(0.62rem, 1.65vw, 0.7rem);
   font-weight: 500;
-  letter-spacing: 0.5em;
+  letter-spacing: var(--da-eyebrow-track);
   line-height: 1.5;
   text-transform: uppercase;
   color: rgba(197, 160, 89, 0.52);
@@ -3166,14 +3201,14 @@ html.senac-choice-pending .hero > .hero-subtitle {
 }
 
 .smc-kicker {
-  margin: 0 0 clamp(0.95rem, 2.4vh, 1.35rem);
-  max-width: min(34rem, 94vw);
-  padding: 0 clamp(1rem, 3vw, 1.35rem);
+  margin: 0 0 clamp(1.15rem, 2.9vh, 1.65rem);
+  max-width: min(36rem, 94vw);
+  padding: 0 clamp(1.1rem, 3.5vw, 1.55rem);
   font-family: "Inter", sans-serif;
   font-size: clamp(0.78rem, 1.85vw, 0.88rem);
   font-weight: 400;
   font-style: normal;
-  letter-spacing: 0.26em;
+  letter-spacing: var(--da-display-track);
   line-height: 1.55;
   text-transform: uppercase;
   color: rgba(253, 250, 246, 0.78);
@@ -3193,9 +3228,9 @@ html[lang="ar-DZ"] .smc-kicker {
 
 /** Instruction : même registre que `.hero-copy` / `--da-body`. */
 .smc-choose-caption {
-  margin: 0 0 clamp(2.05rem, 5vh, 2.85rem);
-  max-width: min(94vw, 26.5rem);
-  padding: 0 clamp(1rem, 3vw, 1.35rem);
+  margin: 0 0 clamp(2.35rem, 5.8vh, 3.35rem);
+  max-width: min(94vw, 31rem);
+  padding: 0 clamp(1.1rem, 3.5vw, 1.55rem);
   font-family: "Inter", sans-serif;
   font-size: clamp(0.72rem, 1.85vw, 0.8rem);
   font-weight: 400;
@@ -3216,13 +3251,13 @@ html[lang="ar-DZ"] .smc-kicker {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: clamp(1.85rem, 6vw, 3rem);
+  gap: 78px;
+  height: 118px;
   align-items: stretch;
 }
 
 @media (min-width: 520px) {
   .smc-buttons {
-    gap: clamp(2.75rem, 7vw, 4.25rem);
     flex-wrap: nowrap;
   }
 }
@@ -3293,8 +3328,8 @@ html[lang="ar-DZ"] .smc-kicker {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.55rem;
-  padding: 1.35rem 1.65rem 1.42rem;
+  gap: 0.62rem;
+  padding: 1.55rem 1.9rem 1.65rem;
   border-radius: 0;
   border: 1px solid rgba(255, 252, 245, 0.1);
   background: rgba(8, 8, 9, 0.65);
@@ -3305,7 +3340,7 @@ html[lang="ar-DZ"] .smc-kicker {
     border-color 0.28s var(--ease),
     background 0.28s var(--ease),
     transform 0.28s var(--ease);
-  min-width: 152px;
+  min-width: 172px;
   outline: none;
 }
 
@@ -3515,7 +3550,7 @@ body.senac-night .smt-btn:not(.is-active):hover {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.65rem;
+  gap: 1rem;
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
@@ -3535,29 +3570,57 @@ body.senac-night .smt-btn:not(.is-active):hover {
 
 .senac-scroll-nudge svg {
   display: block;
-  width: 48px;
+  width: 44px;
   height: auto;
-  animation: scroll-cue-mouse-drift 2.8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
-  transform-origin: 50% 55%;
-  filter: drop-shadow(0 0 16px rgba(197, 160, 89, 0.55));
+  animation: senac-scroll-nudge-float-down 2.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  transform-origin: 50% 50%;
+  filter: drop-shadow(0 2px 12px rgba(197, 160, 89, 0.28));
+}
+
+.senac-scroll-nudge .scroll-cue-chevrons-wrap {
+  transform-box: fill-box;
+  transform-origin: center center;
+  animation: senac-scroll-nudge-chevron-down 2s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+}
+
+@keyframes senac-scroll-nudge-float-down {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translateY(6px);
+    opacity: 1;
+  }
+}
+
+@keyframes senac-scroll-nudge-chevron-down {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.62;
+  }
+  50% {
+    transform: translateY(4px);
+    opacity: 1;
+  }
 }
 
 .senac-scroll-nudge-label {
   font-family: "Inter", sans-serif;
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.32em;
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: rgba(241, 223, 168, 0.92);
-  text-shadow:
-    0 0 20px rgba(197, 160, 89, 0.35),
-    0 1px 14px rgba(0, 0, 0, 0.92);
+  color: rgba(212, 197, 176, 0.72);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
   animation: scroll-cue-label-opacity-pulse 2.75s ease-in-out infinite;
 }
 
 @media (min-width: 640px) {
   .senac-scroll-nudge-label {
-    font-size: 10px;
+    font-size: 9px;
   }
 }
 

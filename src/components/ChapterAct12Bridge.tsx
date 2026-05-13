@@ -4,11 +4,11 @@ import { motion, useReducedMotion } from "motion/react";
 const ACT12_TRANSITION_WEBM = `${import.meta.env.BASE_URL}transitions/trans2-alpha-act12.webm`;
 const ACT12_TRANSITION_MP4 = `${import.meta.env.BASE_URL}transitions/trans2-alpha-act12.mp4`;
 
-/** Fondu de sortie du pont une fois la WebM terminée (sync avec l’apparition nette de l’Acte II). */
+/** Fondu de sortie du pont une fois la WebM terminée (sync avec l'apparition nette de l'Acte II). */
 const EXIT_DURATION_S = 0.72;
 
 type ChapterAct12BridgeProps = {
-  /** Tant que le toast « Acte I accompli » est visible, la WebM reste en pause (l’Acte II charge derrière). */
+  /** Tant que le toast « Acte I accompli » est visible, la WebM reste en pause (l'Acte II charge derrière). */
   chapterToast: boolean;
   onSwapPhase: () => void;
   onFinish: () => void;
@@ -17,7 +17,7 @@ type ChapterAct12BridgeProps = {
 /**
  * Pont WebM Acte I → II : monte avec le toast, sous le toast (z-index).
  * Phase act2 dès le montage ; lecture WebM seulement après fermeture du toast ;
- * retrait du pont en fondu à la fin du clip — même logique de calques que l’intro (transparent + alpha).
+ * retrait du pont en fondu à la fin du clip — fond transparent pour laisser l'alpha VP9 agir.
  */
 const ChapterAct12Bridge: FC<ChapterAct12BridgeProps> = ({
   chapterToast,
@@ -42,7 +42,7 @@ const ChapterAct12Bridge: FC<ChapterAct12BridgeProps> = ({
     if (reduced) onFinish();
   }, [reduced, onSwapPhase, onFinish]);
 
-  /** Lecture uniquement après le toast : la transition visible enchaîne directement sur l’écran Acte II. */
+  /** Lecture uniquement après le toast : la transition visible enchaîne directement sur l'écran Acte II. */
   useEffect(() => {
     if (reduced) return;
     if (chapterToast) return;
@@ -78,17 +78,6 @@ const ChapterAct12Bridge: FC<ChapterAct12BridgeProps> = ({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, transition: { duration: EXIT_DURATION_S, ease: [0.22, 1, 0.36, 1] } }}
     >
-      {/*
-        Même principe que l’intro : dégradé sous la vidéo pour l’alpha WebM et le fallback MP4 sans alpha.
-      */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 z-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 95% 80% at 50% 32%, rgba(118, 82, 52, 0.42) 0%, rgba(36, 22, 14, 0.88) 42%, rgba(8, 5, 3, 0.97) 100%), linear-gradient(180deg, #100a07 0%, #060403 100%)",
-        }}
-      />
       <video
         ref={videoRef}
         key={forceMp4 ? "act12-mp4" : "act12-webm"}

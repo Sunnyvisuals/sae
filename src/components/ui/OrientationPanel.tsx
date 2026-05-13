@@ -7,9 +7,11 @@ import { useReducedMotion } from 'motion/react';
 import { ALGERIA_PATH } from '../Immersive/algeriaOutlinePath';
 import { useAppCopy } from '../../hooks/useAppCopy';
 
-type PhaseLabel = 'intro' | 'act1' | 'act2';
-
-export type { PhaseLabel as ParcoursPhaseLabel };
+/** Phase courante de l’app (acte III = même route que le reste du voyage). */
+export type MainAppPhase = 'intro' | 'act1' | 'act2' | 'act3';
+/** Cible navigation Parcours (les actes + intro). */
+export type ParcoursPhaseLabel = MainAppPhase;
+type TimelinePhase = MainAppPhase;
 
 /** Largeur repliée (px) - alignée avec AlgeriaMap (indicateur échelle). */
 const PARCOURS_COLLAPSED_PX = 40;
@@ -18,7 +20,7 @@ const GSAP_CLOSE_S = 0.9;
 const GSAP_OPEN_S = 1.58;
 
 type Props = {
-  phase: PhaseLabel;
+  phase: MainAppPhase;
   revelationCount?: number;
   expanded: boolean;
   onExpandedChange: (expanded: boolean) => void;
@@ -28,20 +30,27 @@ type Props = {
   act2VoyageCreditsOpen?: boolean;
   /** Après traversée complète : étapes du fil cliquables pour revivre chaque acte. */
   journeyReplayUnlocked?: boolean;
-  onNavigatePhase?: (phase: PhaseLabel) => void;
+  /**
+   * Acte I terminé (pont vers Acte II franchi) : Acte II reste visible et cliquable
+   * même si on revient à l’Acte I (sans attendre le mode « Parcours libre »).
+   */
+  act2UnlockedAfterBridge?: boolean;
+  /** Débloque la ligne « Acte III » (entrée depuis le parchemin ou Parcours libre). */
+  act3Reachable?: boolean;
+  onNavigatePhase?: (phase: ParcoursPhaseLabel) => void;
 };
 
-const PHASE_NAV_INDEX: Record<PhaseLabel, number> = { intro: 0, act1: 1, act2: 2 };
+const PHASE_NAV_INDEX: Record<TimelinePhase, number> = { intro: 0, act1: 1, act2: 2, act3: 3 };
 
 /** Lignes fixes du fil (actes réels + jalons à venir). */
 type ParcoursRow = {
   key: string;
   /** `null` = placeholder (pas encore jouable). */
-  phase: PhaseLabel | null;
+  phase: TimelinePhase | null;
   label: string;
   summary: string;
   variant: 'past' | 'current' | 'future';
-  /** Ligne « Crédits » : affichage révélé (non cryptique) même si `phase` est null. */
+  /** Ligne « Crédits » (overlay rouleau) : affichage révélé même si `phase` est null. */
   forceReveal?: boolean;
 };
 
@@ -170,27 +179,36 @@ export function ParcoursPanelInnerContent({
   parcoursRailMidnight,
   act2VoyageCreditsOpen = false,
   journeyReplayUnlocked = false,
+  act2UnlockedAfterBridge = false,
+  act3Reachable = false,
   onNavigatePhase,
   className = '',
 }: Omit<Props, 'expanded' | 'onExpandedChange'> & { className?: string }) {
   const prefersReducedMotion = useReducedMotion();
   const copy = useAppCopy();
   const nightRail =
-    phase === 'act2' ? (typeof parcoursRailMidnight === 'boolean' ? parcoursRailMidnight : true) : false;
+    phase === 'act2'
+      ? typeof parcoursRailMidnight === 'boolean'
+        ? parcoursRailMidnight
+        : true
+      : phase === 'act3';
   const activeStep = PHASE_NAV_INDEX[phase];
 
-  const lockedTitle = (p: PhaseLabel) =>
+  const lockedTitle = (p: TimelinePhase) =>
     p === 'intro'
       ? copy.orientationLockedIntro
       : p === 'act1'
         ? copy.orientationLockedAct1
-        : copy.orientationLockedAct2;
+        : p === 'act2'
+          ? copy.orientationLockedAct2
+          : copy.orientationFutureAct3;
 
   const navRows: ParcoursRow[] = (() => {
-    const order: { label: string; phase: PhaseLabel }[] = [
+    const order: { label: string; phase: TimelinePhase }[] = [
       { label: copy.orientationPhaseIntroLabel, phase: 'intro' },
       { label: copy.orientationPhaseAct1Label, phase: 'act1' },
       { label: copy.orientationPhaseAct2Label, phase: 'act2' },
+      { label: copy.orientationPhaseAct3Label, phase: 'act3' },
     ];
     const sums = copy.orientationSummaries;
     const baseRows: ParcoursRow[] = [
@@ -207,17 +225,10 @@ export function ParcoursPanelInnerContent({
         };
       }),
       {
-        key: 'act3-suivante',
-        phase: null,
-        label: copy.orientationFutureAct3,
-        summary: '---',
-        variant: 'future' as const,
-      },
-      {
         key: 'act4-suivante',
         phase: null,
         label: copy.orientationFutureAct4,
-        summary: '---',
+        summary: copy.orientationFutureAct4Summary,
         variant: 'future' as const,
       },
     ];
@@ -268,36 +279,48 @@ export function ParcoursPanelInnerContent({
           /** Quand les crédits sont ouverts, seule la ligne Crédits (forceReveal) est active. */
           const creditsMode = phase === 'act2' && act2VoyageCreditsOpen;
           const active = !!forceReveal || (!creditsMode && rowPhase !== null && phase === rowPhase);
+          const act2RowReachable =
+            journeyReplayUnlocked || (rowPhase === 'act2' && act2UnlockedAfterBridge);
+          const act3RowReachable = journeyReplayUnlocked || (rowPhase === 'act3' && act3Reachable);
+          const rowReachableFromProgress = act2RowReachable || act3RowReachable;
           const cryptic =
             !journeyReplayUnlocked &&
             !forceReveal &&
+            !rowReachableFromProgress &&
             (rowPhase === null || (rowPhase !== null && PHASE_NAV_INDEX[rowPhase] > activeStep));
+          /** Dernière ligne du fil (après acte III) : toujours masquée, style grisé + points d’interrogation. */
+          const act4MysteryRow = key === 'act4-suivante';
+          const visualCryptic = cryptic || act4MysteryRow;
           const showCrypticCopy = cryptic && rowPhase !== null;
           const rowLabel = showCrypticCopy ? lockedTitle(rowPhase) : label;
           const rowSummary = showCrypticCopy ? '---' : summary;
-          /** Retour : étapes déjà franchies cliquables même sans mode « revivre » ; tout reste cliquable une fois débloqué. */
+          /** Retour + suite déjà débloquée (pont Acte I) : cliquable sans « Parcours libre ». */
           const canNavigate =
             typeof onNavigatePhase === 'function' &&
             rowPhase !== null &&
             !forceReveal &&
-            (journeyReplayUnlocked || PHASE_NAV_INDEX[rowPhase] < activeStep);
+            (journeyReplayUnlocked ||
+              PHASE_NAV_INDEX[rowPhase] < activeStep ||
+              (rowPhase === 'act2' && act2UnlockedAfterBridge) ||
+              (rowPhase === 'act3' && act3Reachable));
           return (
             <div
               key={key}
               className={
                 'relative z-[1] flex items-start gap-3 py-3 pr-1 sm:py-3.5 ' +
-                (cryptic ? 'select-none' : '')
+                (visualCryptic ? 'select-none' : '') +
+                (act4MysteryRow ? ' opacity-[0.72]' : '')
               }
             >
               <div className="flex w-[22px] shrink-0 flex-col items-center pt-[3px]">
-                <TimelineDot cryptic={cryptic} variant={variant} night={nightRail} />
+                <TimelineDot cryptic={visualCryptic} variant={variant} night={nightRail} />
               </div>
               <div className="min-w-0 flex-1">
                 {canNavigate ? (
                   <button
                     type="button"
                     className={
-                      'group w-full cursor-pointer rounded-[3px] border border-transparent px-2 py-2 text-left transition-[background-color,box-shadow,border-color,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent active:scale-[0.992] motion-reduce:transition-none motion-reduce:active:scale-100 ' +
+                      'group w-full cursor-pointer rounded-none border border-transparent px-2 py-2 text-left transition-[background-color,box-shadow,border-color,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent active:scale-[0.992] motion-reduce:transition-none motion-reduce:active:scale-100 ' +
                       (nightRail
                         ? 'focus-visible:ring-[rgba(148,206,255,0.55)] hover:border-[rgba(139,213,255,0.45)] hover:bg-[rgba(10,22,44,0.62)] hover:shadow-[inset_0_1px_0_rgba(180,218,255,0.07),0_0_0_1px_rgba(90,168,255,0.12),0_6px_28px_rgba(0,0,0,0.35)]'
                         : 'focus-visible:ring-solar-gold/55 hover:border-solar-gold/42 hover:bg-black/48 hover:shadow-[inset_0_1px_0_rgba(253,248,238,0.06),0_0_0_1px_rgba(197,160,89,0.15),0_6px_26px_rgba(0,0,0,0.42)]')
@@ -306,7 +329,7 @@ export function ParcoursPanelInnerContent({
                   >
                     <p
                       className={
-                        'rounded-[2px] pl-0.5 pr-1 leading-snug text-[10px] tracking-wide transition-[color,text-shadow] duration-200 sm:text-[11px] ' +
+                        'pl-0.5 pr-1 leading-snug text-[10px] tracking-wide transition-[color,text-shadow] duration-200 sm:text-[11px] ' +
                         navItemClass(active, nightRail) +
                         (nightRail
                           ? ' group-hover:text-[rgba(244,248,255,0.94)] group-hover:[text-shadow:0_0_20px_rgba(120,190,255,0.38),0_1px_14px_rgba(0,0,0,0.92)]'
@@ -331,9 +354,9 @@ export function ParcoursPanelInnerContent({
                   <>
                     <p
                       className={
-                        cryptic
-                          ? 'rounded-[2px] pl-0.5 pr-1 leading-snug ' + parcoursCrypticTitleClass(nightRail)
-                          : 'rounded-[2px] pl-0.5 pr-1 leading-snug text-[10px] tracking-wide sm:text-[11px] ' +
+                        visualCryptic
+                          ? 'pl-0.5 pr-1 leading-snug ' + parcoursCrypticTitleClass(nightRail)
+                          : 'pl-0.5 pr-1 leading-snug text-[10px] tracking-wide sm:text-[11px] ' +
                             navItemClass(active, nightRail)
                       }
                     >
@@ -341,7 +364,7 @@ export function ParcoursPanelInnerContent({
                     </p>
                     <p
                       className={
-                        cryptic
+                        visualCryptic
                           ? 'mt-1.5 pl-0.5 pr-1 leading-relaxed ' + parcoursCrypticSummaryClass(nightRail)
                           : 'mt-1.5 pl-0.5 pr-1 text-[9px] font-normal leading-relaxed sm:text-[10px] ' +
                             navSummaryClass(active, nightRail)
@@ -419,7 +442,7 @@ export function ParcoursPanelInnerContent({
           <p className="mb-2 text-[9px] font-medium uppercase tracking-[0.32em] text-solar-gold/40">
             {copy.orientationMiniMap}
           </p>
-          <div className="relative aspect-square w-full overflow-hidden rounded-[2px] border border-solar-gold/18 bg-black/30 p-2">
+          <div className="relative aspect-square w-full overflow-hidden rounded-none border border-solar-gold/18 bg-black/30 p-2">
             <svg viewBox="0 0 400 400" className="h-full w-full text-solar-gold" aria-hidden>
               <path
                 d={ALGERIA_PATH}
@@ -467,6 +490,8 @@ export default function OrientationPanel({
   parcoursRailMidnight,
   act2VoyageCreditsOpen,
   journeyReplayUnlocked,
+  act2UnlockedAfterBridge,
+  act3Reachable = false,
   onNavigatePhase,
 }: Props) {
   const copy = useAppCopy();
@@ -541,7 +566,11 @@ export default function OrientationPanel({
   }, [expandedW, expanded]);
 
   const nightRail =
-    phase === 'act2' ? (typeof parcoursRailMidnight === 'boolean' ? parcoursRailMidnight : true) : false;
+    phase === 'act2'
+      ? typeof parcoursRailMidnight === 'boolean'
+        ? parcoursRailMidnight
+        : true
+      : phase === 'act3';
 
   const quietCollapsed = !expanded && collapsedMinimal;
 
@@ -663,7 +692,7 @@ export default function OrientationPanel({
             {/* Indicateur de fermeture : fine flèche vers la droite */}
             <span
               className={
-                'flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border transition-[border-color,color] duration-200 ' +
+                'flex h-5 w-5 shrink-0 items-center justify-center rounded-none border transition-[border-color,color] duration-200 ' +
                 (nightRail
                   ? 'border-[rgba(139,213,255,0.22)] text-[rgba(139,213,255,0.4)] group-hover:border-[rgba(139,213,255,0.45)] group-hover:text-[rgba(234,215,164,0.65)]'
                   : 'border-solar-gold/20 text-solar-gold/35 group-hover:border-solar-gold/45 group-hover:text-solar-gold/65')
@@ -682,6 +711,8 @@ export default function OrientationPanel({
             parcoursRailMidnight={parcoursRailMidnight}
             act2VoyageCreditsOpen={act2VoyageCreditsOpen}
             journeyReplayUnlocked={journeyReplayUnlocked}
+            act2UnlockedAfterBridge={act2UnlockedAfterBridge}
+            act3Reachable={act3Reachable}
             onNavigatePhase={onNavigatePhase}
           />
         </div>

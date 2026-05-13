@@ -6,13 +6,20 @@
 # En CLI : `npx netlify login` puis `npx netlify init` (lier un site existant si
 # la création auto renvoie Forbidden). Puis `npm run deploy:netlify`.
 #
-# Optionnel : Site settings → Environment variables (ex. GEMINI_API_KEY au build).
-
 [build]
   command = "npm install --legacy-peer-deps && npm run build"
   publish = "dist"
 
-# Pas de catch-all SPA : URL sans fichier → `404.html` (statut 404).
+# Anciens signets `/act3` : redirection vers la racine SPA (l’app réécrit l’URL au chargement aussi).
+[[redirects]]
+  from = "/act3"
+  to = "/"
+  status = 302
+
+[[redirects]]
+  from = "/act3/"
+  to = "/"
+  status = 302
 
 [build.environment]
   NODE_VERSION = "22"

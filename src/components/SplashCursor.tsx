@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef } from 'react';
+import type { CSSProperties } from 'react';
 import { useCursorStore } from '../hooks/useCursorContext';
 
 interface SplashCursorProps {
@@ -37,6 +38,11 @@ interface SplashCursorProps {
   fillContainer?: boolean;
   /** Opacité wrapper en mode `background` ; sinon valeur par défaut (plein écran ou scène). */
   ambientOpacity?: number;
+  /**
+   * Fusion du calque WebGL « background » (défaut `soft-light`).
+   * Passer `normal` au-dessus d’une iframe opaque évite de délavé les modales (ex. choix scroll Acte II).
+   */
+  ambientMixBlendMode?: CSSProperties['mixBlendMode'];
 }
 
 function SplashCursor({
@@ -62,6 +68,7 @@ function SplashCursor({
   iframeScrollRatio,
   fillContainer = false,
   ambientOpacity,
+  ambientMixBlendMode,
 }: SplashCursorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const iframeScrollRatioRef = useRef<number | undefined>(iframeScrollRatio);
@@ -1274,7 +1281,7 @@ function SplashCursor({
         ...(layer === 'background'
           ? {
               opacity: bgOpacityAmbient,
-              mixBlendMode: 'soft-light' as const,
+              mixBlendMode: (ambientMixBlendMode ?? 'soft-light') as CSSProperties['mixBlendMode'],
             }
           : {}),
       }}

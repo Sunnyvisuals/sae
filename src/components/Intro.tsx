@@ -33,6 +33,8 @@ const ARABIC_TITLE_IMAGE_SRC = `${import.meta.env.BASE_URL}images/al-rihla-arabi
 const LANGUAGE_GATE_TRANSITION_WEBM = `${import.meta.env.BASE_URL}transitions/trans2-alpha.webm`;
 /** Safari / iOS : WebM VP9 souvent indisponible — même clip en H.264 (générer via `npm run assets:lang-bridge-mp4`). */
 const LANGUAGE_GATE_TRANSITION_MP4 = `${import.meta.env.BASE_URL}transitions/trans2-alpha.mp4`;
+/** SFX fumée / sable — joué en parallèle de la WebM pont langue (`trans2-alpha`). */
+const LANGUAGE_GATE_SMOKE_SFX = `${import.meta.env.BASE_URL}sounds/smoke-transition-slow.wav`;
 /** `prefers-reduced-motion` : pas de fresque GSAP — délai avant le choix de langue. */
 const ARRIVAL_LANGUAGE_PRELUDE_MS = 8000;
 /**
@@ -55,8 +57,6 @@ const LANDING_DIAMOND_ENTRANCE_DELAY_S =
   INTRO_GSAP_SUBTITLE_END_S + LANDING_DIAMOND_PAUSE_AFTER_SUBTITLE_S;
 /** Entrée lente « finale » (somme délai + durée ≈ fin du timeline GSAP avant le volet langue). */
 const LANDING_DIAMOND_ENTRANCE_DURATION_S = 0.85;
-/** Respiration après l’entrée (plus lente que l’ancien 3.2s). */
-const LANDING_DIAMOND_BREATHE_DURATION_S = 5.75;
 
 const INTRO_CTA_WORDS_FR = ["Cliquer", "ou", "Entrée"] as const;
 const INTRO_CTA_WORDS_AR = ["إضغط", "أو", "إنتر"] as const;
@@ -177,7 +177,7 @@ const AnimatedTitle = ({
       {heroMotion && (
         <div
           aria-hidden
-          className="pointer-events-none absolute -inset-12 -z-10 opacity-40 blur-3xl transition-opacity md:opacity-50"
+          className="pointer-events-none absolute -inset-[clamp(3rem,14vmin,10rem)] -z-10 opacity-40 blur-3xl transition-opacity md:-inset-[clamp(4rem,18vmin,14rem)] md:opacity-50"
           style={{
             background:
               "radial-gradient(ellipse 55% 45% at var(--shine-x, 50%) var(--shine-y, 50%), rgba(197, 160, 89, 0.45), transparent 62%)",
@@ -547,6 +547,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
   const launchAuraRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const arrivalLangBridgeVideoRef = useRef<HTMLVideoElement>(null);
+  const languageGateSmokeSfxRef = useRef<import("howler").Howl | null>(null);
   const bridgeCrossfadeTimeoutRef = useRef<number | null>(null);
   /** Safari : refus WebM ou échec décode → recharger uniquement le MP4. */
   const [languageGateBridgeForceMp4, setLanguageGateBridgeForceMp4] = useState(false);
@@ -560,6 +561,18 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
     typeof window !== "undefined" &&
     isFullscreenApiSupported();
   const showArrivalLanguageOverlay = !arrivalLanguageConfirmed && arrivalLanguageGateVisible;
+
+  const stopLanguageGateSmokeSfx = useCallback(() => {
+    const h = languageGateSmokeSfxRef.current;
+    if (!h) return;
+    try {
+      h.stop();
+      h.unload();
+    } catch {
+      /* ignore */
+    }
+    languageGateSmokeSfxRef.current = null;
+  }, []);
 
   const openArrivalLanguageGate = useCallback(() => {
     setArrivalLanguageGateVisible(true);
@@ -575,6 +588,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
   }, [prefersReducedMotion]);
 
   const finishBridgeVideoPlayback = useCallback(() => {
+    stopLanguageGateSmokeSfx();
     setLanguageBridgeReveal01(1);
     setArrivalLanguageBridgeCrossfading(false);
     if (bridgeCrossfadeTimeoutRef.current != null) {
@@ -582,7 +596,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
       bridgeCrossfadeTimeoutRef.current = null;
     }
     setArrivalLanguageBridgeVideoActive(false);
-  }, []);
+  }, [stopLanguageGateSmokeSfx]);
 
   const onLanguageGateBridgeVideoError = useCallback(() => {
     if (!languageGateBridgeForceMp4) {
@@ -594,6 +608,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
 
   const endArrivalLanguageBridgeVideo = useCallback(() => {
     arrivalLangBridgeVideoRef.current?.pause();
+    stopLanguageGateSmokeSfx();
     setLanguageBridgeReveal01(1);
     if (prefersReducedMotion) {
       setArrivalLanguageBridgeVideoActive(false);
@@ -616,6 +631,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
     prefersReducedMotion,
     arrivalLanguageBridgeCrossfading,
     arrivalLanguageBridgeVideoActive,
+    stopLanguageGateSmokeSfx,
   ]);
 
   useEffect(() => {
@@ -662,14 +678,36 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
     v.muted = true;
     v.volume = 0;
     v.currentTime = 0;
-    void v.play().catch(() => {
-      setArrivalLanguageBridgeVideoActive(false);
-    });
+    void v
+      .play()
+      .then(() => {
+        if (prefersReducedMotion || isMutedRef.current) return;
+        stopLanguageGateSmokeSfx();
+        void import("howler").then(({ Howl }) => {
+          if (!arrivalLangBridgeVideoRef.current) return;
+          const h = new Howl({
+            src: [LANGUAGE_GATE_SMOKE_SFX],
+            html5: true,
+            volume: Math.min(0.52, Math.max(0.1, volumeRef.current * 4)),
+          });
+          languageGateSmokeSfxRef.current = h;
+          h.play();
+        });
+      })
+      .catch(() => {
+        setArrivalLanguageBridgeVideoActive(false);
+      });
     return () => {
       v.removeEventListener("timeupdate", tick);
       v.removeEventListener("loadedmetadata", tick);
+      stopLanguageGateSmokeSfx();
     };
-  }, [arrivalLanguageBridgeVideoActive, languageGateBridgeForceMp4]);
+  }, [
+    arrivalLanguageBridgeVideoActive,
+    languageGateBridgeForceMp4,
+    prefersReducedMotion,
+    stopLanguageGateSmokeSfx,
+  ]);
 
   useEffect(() => {
     if (!arrivalLanguageBridgeVideoActive) return;
@@ -1304,8 +1342,8 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                   <span className="font-bahlull text-[clamp(3.8rem,10vw,8rem)] italic leading-none tracking-tight text-transparent">
                     Al Rihla
                   </span>
-                  <span className="text-[9px] uppercase leading-none tracking-[0.42em] text-transparent">
-                    La traversée
+                  <span className="text-[8px] uppercase leading-none tracking-[0.38em] text-transparent">
+                    « La traversée »
                   </span>
                 </div>
               </motion.div>
@@ -1347,17 +1385,14 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                   }
                 >
                   <span className="hidden h-px w-[min(6.5rem,16vw)] bg-gradient-to-r from-transparent to-[#c5a059]/22 sm:block" />
-                  <span
-                    dir="rtl"
-                    className="font-arabic-ui text-[clamp(0.82rem,1.02vw,0.96rem)] font-medium tracking-[0.03em] text-[#e8d5a4]/82 drop-shadow-[0_0_10px_rgba(0,0,0,0.72)]"
-                  >
+                  <span dir="rtl" className="da-curtain-ar drop-shadow-[0_0_10px_rgba(0,0,0,0.72)]">
                     اختر لغتك
                   </span>
                   <span
                     aria-hidden
                     className="h-[3px] w-[3px] rounded-full bg-[#c5a059]/42 shadow-[0_0_8px_rgba(197,160,89,0.16)]"
                   />
-                  <span className="text-[clamp(0.68rem,0.84vw,0.88rem)] uppercase tracking-[0.34em] text-[#e8d5a4]/72 drop-shadow-[0_0_10px_rgba(0,0,0,0.72)] sm:tracking-[0.4em]">
+                  <span className="da-curtain-fr sm:tracking-[0.4em]">
                     Choisissez votre langue
                   </span>
                   <span className="hidden h-px w-[min(9rem,22vw)] bg-gradient-to-l from-transparent to-[#c5a059]/18 sm:block" />
@@ -1407,7 +1442,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                       initial={{ opacity: 0, y: -8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.55, duration: 0.9 }}
-                      className="text-[10px] uppercase tracking-[0.54em] text-[#c5a059]/68 drop-shadow-[0_0_12px_rgba(0,0,0,0.82)]"
+                      className="da-eyebrow"
                     >
                       Langue
                     </motion.span>
@@ -1416,7 +1451,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                       initial={{ opacity: 0, y: 14 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.65, duration: 1, ease: [0.22, 1, 0.36, 1] }}
-                      className="text-[clamp(1.8rem,4.6vw,3rem)] font-light uppercase tracking-[0.26em] text-[#f4ead2]/88 drop-shadow-[0_0_18px_rgba(0,0,0,0.8)] transition-colors duration-300 group-hover:text-[#fff4dc]"
+                      className="da-display-title transition-colors duration-300 group-hover:text-[#fff4dc]"
                     >
                       Français
                     </motion.span>
@@ -1425,7 +1460,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                       initial={{ scaleX: 0 }}
                       animate={{ scaleX: 1 }}
                       transition={{ delay: 0.8, duration: 0.7 }}
-                      className="h-px w-12 origin-center bg-[#c5a059]/38 transition-all duration-500 group-hover:w-20 group-hover:bg-[#c5a059]/72"
+                      className="da-title-rule"
                     />
                   </div>
                 </motion.button>
@@ -1499,7 +1534,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                       initial={{ opacity: 0, y: -8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.55, duration: 0.9 }}
-                      className="text-[10px] tracking-[0.24em] text-[#c5a059]/68 drop-shadow-[0_0_12px_rgba(0,0,0,0.82)]"
+                      className="da-eyebrow-ar"
                     >
                       لغة
                     </motion.span>
@@ -1508,7 +1543,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                       initial={{ opacity: 0, y: 14 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.65, duration: 1, ease: [0.22, 1, 0.36, 1] }}
-                      className="text-[clamp(1.8rem,4.6vw,3rem)] font-light text-[#f4ead2]/88 drop-shadow-[0_0_18px_rgba(0,0,0,0.8)] transition-colors duration-300 group-hover:text-[#fff4dc]"
+                      className="da-display-title-ar transition-colors duration-300 group-hover:text-[#fff4dc]"
                     >
                       العربية الجزائرية
                     </motion.span>
@@ -1517,7 +1552,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                       initial={{ scaleX: 0 }}
                       animate={{ scaleX: 1 }}
                       transition={{ delay: 0.8, duration: 0.7 }}
-                      className="h-px w-12 origin-center bg-[#c5a059]/38 transition-all duration-500 group-hover:w-20 group-hover:bg-[#c5a059]/72"
+                      className="da-title-rule"
                     />
                   </div>
                 </motion.button>
@@ -1550,7 +1585,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                 >
                   {/*
                     Fond derrière la vidéo : sans calque ici, les zones « vides » (lettres object-contain,
-                    vraie alpha WebM) révèlent le body / main (#0a0806) → impression de noir plat.
+                    vraie alpha WebM) révèlent le body / main (da-depth-intro) → impression de noir plat.
                   */}
                   <div
                     aria-hidden
@@ -1702,6 +1737,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                 ) : (
                   <AnimatedTitle
                     heroMotion
+                    viewportTracking
                     text="Al Rihla"
                     className={
                       "font-bahlull text-white tracking-tighter italic drop-shadow-[0_0_22px_rgba(197,160,89,0.35)] " +
@@ -1722,8 +1758,8 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                 animate={{ opacity: isStarting ? 0 : 1, y: isStarting ? -4 : 0 }}
                 transition={{ duration: 0.95, delay: 0.72, ease: [0.22, 1, 0.36, 1] }}
                 className={
-                  "mx-auto max-w-[min(min(22rem,90vw),28rem)] px-6 text-center [font-feature-settings:'kern'_1] " +
-                  (compactDesktop ? "mt-3 mb-2" : "mt-4 mb-3")
+                  "mx-auto max-w-[min(min(18rem,88vw),22rem)] px-6 text-center [font-feature-settings:'kern'_1] " +
+                  (compactDesktop ? "mt-3 mb-2" : "mt-3 mb-2")
                 }
               >
                 <div ref={subtitleRevealRef}>
@@ -1733,8 +1769,8 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                       className={
                         "font-arabic-ui font-medium leading-relaxed text-[#f4ead2]/78 drop-shadow-[0_0_18px_rgba(197,160,89,0.22)] " +
                         (compactDesktop
-                          ? "text-[clamp(1rem,2.1vw,1.25rem)] tracking-[0.08em]"
-                          : "text-[clamp(1.05rem,2.5vw,1.4rem)] tracking-[0.08em]")
+                          ? "text-[clamp(0.82rem,1.65vw,1rem)] tracking-[0.06em]"
+                          : "text-[clamp(0.88rem,1.95vw,1.12rem)] tracking-[0.06em]")
                       }
                     >
                       {copy.introJeanSenacSubtitle}
@@ -1742,8 +1778,8 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                   ) : (
                     <p
                       className={
-                        "font-serif italic font-normal leading-none text-[#f4ead2]/78 tracking-[0.24em] drop-shadow-[0_0_18px_rgba(197,160,89,0.2)] " +
-                        (compactDesktop ? "text-[clamp(1rem,1.9vw,1.18rem)]" : "text-[clamp(1.05rem,2.3vw,1.35rem)]")
+                        "font-serif italic font-normal leading-none text-[#f4ead2]/78 tracking-[0.18em] drop-shadow-[0_0_18px_rgba(197,160,89,0.2)] " +
+                        (compactDesktop ? "text-[clamp(0.8rem,1.45vw,0.95rem)]" : "text-[clamp(0.85rem,1.75vw,1.05rem)]")
                       }
                     >
                       {copy.introJeanSenacSubtitle}
@@ -1757,7 +1793,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                   <motion.div
                     key="landing-diamond"
                     aria-hidden
-                    className="pointer-events-none mt-10 flex justify-center sm:mt-12"
+                    className="pointer-events-none mt-14 flex justify-center sm:mt-16"
                     initial={{ opacity: 0, y: 18, scale: 0.92 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -8, scale: 0.96 }}
@@ -1775,26 +1811,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                           }
                     }
                   >
-                    <motion.div
-                      className="relative flex h-14 w-14 items-center justify-center sm:h-16 sm:w-16"
-                      animate={
-                        prefersReducedMotion
-                          ? { opacity: 1 }
-                          : { opacity: [1, 0.28, 1] }
-                      }
-                      transition={
-                        prefersReducedMotion
-                          ? { duration: 0 }
-                          : {
-                              opacity: {
-                                duration: LANDING_DIAMOND_BREATHE_DURATION_S,
-                                repeat: Infinity,
-                                ease: [0.42, 0, 0.58, 1],
-                                times: [0, 0.5, 1],
-                              },
-                            }
-                      }
-                    >
+                    <motion.div className="relative flex h-14 w-14 items-center justify-center sm:h-16 sm:w-16">
                       <div className="absolute inset-0 rotate-45 border border-white/22 bg-black/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-[2px]" />
                       <div className="relative z-[1] flex -rotate-45 items-center justify-center">
                         <motion.div

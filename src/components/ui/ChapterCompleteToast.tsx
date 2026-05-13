@@ -19,7 +19,7 @@ export default function ChapterCompleteToast({ chapterTitle, subtitle }: Props) 
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-      className="fixed inset-0 z-[190] flex cursor-none flex-col items-center justify-center bg-gradient-to-b from-black/90 via-[#0a0806]/92 to-black/90 px-6 backdrop-blur-xl"
+      className="fixed inset-0 z-[190] flex cursor-none flex-col items-center justify-center bg-gradient-to-b from-black/90 via-da-depth-intro/92 to-black/90 px-6 backdrop-blur-xl"
     >
       <motion.div
         initial={{ opacity: 0, y: 20 }}

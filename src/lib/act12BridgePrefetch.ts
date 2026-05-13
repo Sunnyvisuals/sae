@@ -37,11 +37,24 @@ function waitCanPlayThrough(src: string, timeoutMs: number): Promise<boolean> {
  * Précharge la transition Acte I → II **avant** d’afficher le pont (Acte I reste visible).
  * WebM d’abord si le navigateur l’annonce, sinon MP4.
  */
-export async function prefetchAct12BridgeVideo(): Promise<void> {
+async function prefetchAct12BridgeVideoOnce(): Promise<void> {
   if (typeof document === "undefined") return;
   if (browserLikelyPlaysWebm()) {
     const ok = await waitCanPlayThrough(WEBM, 12000);
     if (ok) return;
   }
   await waitCanPlayThrough(MP4, 12000);
+}
+
+let bridgeVideoPrefetch: Promise<void> | null = null;
+
+/**
+ * Plusieurs appels (idle acte I + complétion carte) partagent la même promesse :
+ * le réseau n’est sollicité qu’une fois.
+ */
+export function prefetchAct12BridgeVideo(): Promise<void> {
+  if (!bridgeVideoPrefetch) {
+    bridgeVideoPrefetch = prefetchAct12BridgeVideoOnce();
+  }
+  return bridgeVideoPrefetch;
 }

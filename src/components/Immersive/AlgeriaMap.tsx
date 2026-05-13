@@ -23,6 +23,7 @@ import { revelationWordUISurface } from '../../lib/appCopy';
 import { arabicPoemWordLabel } from '../../lib/mapWordArabicDisplay';
 import { wordTooltipLines } from '../../lib/wordTooltipLocale';
 import { useLanguageStore } from '../../stores/languageStore';
+import type { Act1QuestProgress } from '../../components/ui/HintPanel';
 import ActOneAmbiance from './ActOneAmbiance';
 import ActOnePhraseStrip from './ActOnePhraseStrip';
 import { ALGERIA_PATH } from './algeriaOutlinePath';
@@ -153,13 +154,28 @@ function canvasFontForParticle(p: Particle, hover: boolean): string {
 
 export type Act1QuestStep = 'hover' | 'clickWord' | 'zoom';
 
+function sanitizeInitialRevelations(words: string[] | undefined): string[] {
+  if (!words?.length) return [];
+  const valid = new Set(REVELATION_WORDS as readonly string[]);
+  return words.filter((w) => valid.has(w));
+}
+
 type AlgeriaMapProps = {
   onMemoryMapComplete?: () => void;
   onRevelationProgress?: (count: number) => void;
+  /** Liste persistée des mots « révélation » trouvés (ordre découverte conservé). */
+  onRevelationWordsChange?: (words: string[]) => void;
   /** Premiers gestes (panneau gauche) : survol mot, clic sur le bon fragment, zoom */
   onQuestStepComplete?: (step: Act1QuestStep) => void;
   /** Mode revisite après traversée complète : carte déjà éveillée, sans auto-transition vers l'acte II. */
   completedReplay?: boolean;
+  /** État carte restauré depuis la sauvegarde (sans forcément avoir terminé la traversée globale). */
+  initialRevelationWords?: string[];
+  initialQuestProgress?: Act1QuestProgress;
+  initialHasZoomed?: boolean;
+  initialConsignesDismissed?: boolean;
+  onConsignesDismissed?: () => void;
+  onHasZoomedPersist?: () => void;
   /** Rail développé vs replié - largeur alignée avec `OrientationPanel`. */
   parcoursRailExpanded?: boolean;
 };
@@ -167,8 +183,15 @@ type AlgeriaMapProps = {
 export default function AlgeriaMap({
   onMemoryMapComplete,
   onRevelationProgress,
+  onRevelationWordsChange,
   onQuestStepComplete,
   completedReplay = false,
+  initialRevelationWords,
+  initialQuestProgress,
+  initialHasZoomed = false,
+  initialConsignesDismissed = false,
+  onConsignesDismissed,
+  onHasZoomedPersist,
   parcoursRailExpanded = true,
 }: AlgeriaMapProps) {
   const canvasRef  = useRef<HTMLCanvasElement>(null);
@@ -206,9 +229,9 @@ export default function AlgeriaMap({
     });
   }, []);
   const [revelationFound, setRevelationFound] = useState<string[]>(() =>
-    completedReplay ? [...REVELATION_WORDS] : []
+    completedReplay ? [...REVELATION_WORDS] : sanitizeInitialRevelations(initialRevelationWords)
   );
-  const [hasZoomed, setHasZoomed] = useState(completedReplay);
+  const [hasZoomed, setHasZoomed] = useState(() => completedReplay || initialHasZoomed === true);
   const prefersReducedMotion = useReducedMotion();
   const copy = useAppCopy();
   const arabicUi = useLanguageStore((s) => s.language === 'ar-dz');
@@ -223,9 +246,21 @@ export default function AlgeriaMap({
 
   const revelRef = useRef(0);
   const mapAwakenedRef = useRef(false);
-  const awakenNotify = useRef(completedReplay);
+  const awakenNotify = useRef(
+    completedReplay || sanitizeInitialRevelations(initialRevelationWords).length >= 5
+  );
   const hoveredIdx = useRef(-1);
-  const questDone = useRef({ hover: completedReplay, clickWord: completedReplay, zoom: completedReplay });
+  const questDone = useRef({
+    hover:
+      completedReplay ||
+      (initialQuestProgress?.hover ?? false),
+    clickWord:
+      completedReplay ||
+      (initialQuestProgress?.clickWord ?? false),
+    zoom:
+      completedReplay ||
+      (initialQuestProgress?.zoom ?? false),
+  });
   const downPt = useRef<{ x: number; y: number } | null>(null);
   const panPending = useRef(false);
   const mapParallaxLayerRef = useRef<HTMLDivElement>(null);
@@ -255,6 +290,10 @@ export default function AlgeriaMap({
   useEffect(() => {
     onRevelationProgress?.(revelationFound.length);
   }, [revelationFound, onRevelationProgress]);
+
+  useEffect(() => {
+    onRevelationWordsChange?.(revelationFound);
+  }, [revelationFound, onRevelationWordsChange]);
 
   const { setMode } = useCursorStore();
 
@@ -300,6 +339,7 @@ export default function AlgeriaMap({
   /** Tutoriel consignes + voile - false si déjà vu (localStorage) */
   const [tutorialActive, setTutorialActive] = useState(() => {
     if (typeof window === 'undefined') return true;
+    if (initialConsignesDismissed) return false;
     try {
       return localStorage.getItem(LS_CONSIGNES_KEY) !== '1';
     } catch {
@@ -323,6 +363,7 @@ export default function AlgeriaMap({
       } catch {
         /* ignore */
       }
+      onConsignesDismissed?.();
       setTutorialActive(false);
       dismissRunningRef.current = false;
     };
@@ -349,7 +390,7 @@ export default function AlgeriaMap({
     }
     if (!veil && cons) tl.duration(0.75);
     if (veil && !cons) tl.duration(0.9);
-  }, [tutorialActive]);
+  }, [tutorialActive, onConsignesDismissed]);
 
   useEffect(() => {
     if (!tutorialActive) return;
@@ -798,13 +839,16 @@ export default function AlgeriaMap({
     mpanY.set(next <= ZOOM_MIN ? 0 : ny);
     mzoom.set(next);
     if (next > 1.12) {
-      setHasZoomed(true);
+      setHasZoomed((was) => {
+        if (!was) onHasZoomedPersist?.();
+        return true;
+      });
       if (onQuestStepComplete && !questDone.current.zoom) {
         questDone.current.zoom = true;
         onQuestStepComplete('zoom');
       }
     }
-  }, [mzoom, mpanX, mpanY, tutorialActive, dismissTutorial, onQuestStepComplete]);
+  }, [mzoom, mpanX, mpanY, tutorialActive, dismissTutorial, onQuestStepComplete, onHasZoomedPersist]);
 
   const handleMouseDown = useCallback(
     (e: ReactMouseEvent<HTMLCanvasElement>) => {
@@ -875,7 +919,7 @@ export default function AlgeriaMap({
   const memoryAwake = revelationFound.length >= 5;
 
   return (
-    <div className="relative h-full min-h-0 w-full min-w-0 max-w-full overflow-x-hidden overflow-y-visible" style={{ background: '#080604' }}>
+    <div className="relative h-full min-h-0 w-full min-w-0 max-w-full overflow-x-hidden overflow-y-visible bg-da-depth-map">
       <ActOneAmbiance chapterComplete={memoryAwake} />
 
       {/* ── Grille narrative : chapitre + progression (5 mots-révélation) ── */}

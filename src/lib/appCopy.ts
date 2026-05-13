@@ -43,18 +43,29 @@ type Copy = {
   daTitle: string;
   daSubtitle: string;
   act2IframeTitle: string;
+  act2NavigateActIII: string;
+  act2NavigateActIIIAria: string;
+  /** Suspense lazy : message pendant le chargement du chunk acte I */
+  lazySuspenseAct1: string;
+  /** Suspense lazy : message pendant le chargement du chunk acte II */
+  lazySuspenseAct2: string;
+  lazySuspenseAct3: string;
   orientationBreadcrumbAria: string;
   orientationCreditsLabel: string;
   orientationCreditsSummary: string;
   orientationFutureAct3: string;
+  /** Dernière ligne du fil (placeholder) : points d’interrogation, non cliquable. */
   orientationFutureAct4: string;
+  /** Sous-texte du même placeholder (même ton mystère). */
+  orientationFutureAct4Summary: string;
   orientationLockedIntro: string;
   orientationLockedAct1: string;
   orientationLockedAct2: string;
   orientationPhaseIntroLabel: string;
   orientationPhaseAct1Label: string;
   orientationPhaseAct2Label: string;
-  orientationSummaries: { intro: string; act1: string; act2: string };
+  orientationPhaseAct3Label: string;
+  orientationSummaries: { intro: string; act1: string; act2: string; act3: string };
   orientationFlux: string;
   orientationFluxCredits: string;
   orientationFluxScroll: string;
@@ -132,6 +143,26 @@ type Copy = {
   introVideoMuteOn: string;
   introVideoMuteOff: string;
   introVideoVolumeRange: string;
+  /** Clôture Acte II · phrase à compléter avant crédits */
+  act2FinaleAria: string;
+  act2FinaleStem: string;
+  act2FinalePlaceholder: string;
+  act2FinaleHint: string;
+  act2FinaleSubmit: string;
+  voyageCreditsTitle: string;
+  voyageCreditsSubtitle: string;
+  voyageCreditsClose: string;
+  voyageCreditsFin: string;
+  voyageCreditsBlocks: { heading: string; lines: string[] }[];
+  act3Aria: string;
+  act3Kicker: string;
+  act3Hint: string;
+  act3ContinueCredits: string;
+  act3BackScroll: string;
+  act3FinaleWrong: string;
+  act3FinaleEnterHint: string;
+  act3FinaleLoading: string;
+  act3FinaleRedirecting: string;
 };
 
 const FR: Copy = {
@@ -169,22 +200,31 @@ const FR: Copy = {
   daTitle: "La nuit s'ouvre",
   daSubtitle: "Le désert quitte l'or chaud. Le fil devient constellation.",
   act2IframeTitle: "Jean Sénac - frise narrative",
+  act2NavigateActIII: "Acte III — L’écriture",
+  act2NavigateActIIIAria:
+    "Ouvre la poésie interactive sur une page dédiée ; vous pouvez ensuite revenir au rouleau d’ici.",
+  lazySuspenseAct1: "Préparation de la carte-mémoire…",
+  lazySuspenseAct2: "Ouverture du rouleau — chargement du parchemin…",
+  lazySuspenseAct3: "Ouverture de l’écriture — souffle et fragments…",
   orientationBreadcrumbAria: "Fil d'Ariane",
   orientationCreditsLabel: "Crédits",
   orientationCreditsSummary: "Générique de fin, remerciements et fermeture de ce voyage.",
   orientationFutureAct3: "Acte III - -",
-  orientationFutureAct4: "Acte IV - -",
+  orientationFutureAct4: "--- — ---",
+  orientationFutureAct4Summary: "---- ---- ---- ----",
   orientationLockedIntro: "Intro - -",
   orientationLockedAct1: "Acte I - -",
   orientationLockedAct2: "Acte II - -",
   orientationPhaseIntroLabel: "Intro - Prologue",
   orientationPhaseAct1Label: "Acte I - L'algérie",
   orientationPhaseAct2Label: "Acte II - (suite)",
+  orientationPhaseAct3Label: "Acte III - L’écriture",
   orientationSummaries: {
     intro: "Voix et paysage désert avant d'entrer dans la carte-mémoire.",
     act1: "Une carte où cinq fragments viennent compléter le vers de Sénac dans l'Algérie.",
     act2:
       "Le rouleau nocturne : le poème, les archives au fil du défilement dans le bleu.",
+    act3: "Fragments déjà croisés : vous recomposer le voyage comme un poème.",
   },
   orientationFlux: "Flux",
   orientationFluxCredits:
@@ -238,8 +278,8 @@ const FR: Copy = {
   menuFullscreenShortcutExit: "Échap",
   introDevPreviewCreditsTitle: "Prévisualiser le générique de fin (-previewCredits=1)",
   introAlRihlaSubtitle: "Jean Sénac",
-  introJeanSenacSubtitle: "La traversée",
-  scrollNudge: "Molette · défiler",
+  introJeanSenacSubtitle: "« La traversée »",
+  scrollNudge: "Scroll vers le bas",
   chapterCompleteAria: "révélation carte-mémoire",
   hintTitles: { act1: "Premiers gestes", act2: "Comment naviguer" },
   hintCloseAria: "Fermer les consignes",
@@ -295,6 +335,55 @@ const FR: Copy = {
   introVideoMuteOn: "Couper le son",
   introVideoMuteOff: "Activer le son",
   introVideoVolumeRange: "Volume",
+  act2FinaleAria: "Clôture du voyage — complétez la phrase pour accéder aux crédits",
+  act2FinaleStem: "Une traversée existe vraiment quand",
+  act2FinalePlaceholder: "… quelques mots suffisent",
+  act2FinaleHint:
+    "Écrivez votre fin de phrase ci-dessous. Ce n’est ni un test ni une notation — seulement votre trace.",
+  act2FinaleSubmit: "Voir les crédits",
+  voyageCreditsTitle: "Al Rihla",
+  voyageCreditsSubtitle: "Médiation culturelle — Jean Sénac",
+  voyageCreditsClose: "Fermer (Échap)",
+  voyageCreditsFin: "Merci d’avoir traversé cette nuit.",
+  voyageCreditsBlocks: [
+    {
+      heading: "Conception & réalisation",
+      lines: [
+        "Direction artistique et développement de l’expérience interactive.",
+        "Parcours : carte-mémoire, frise narrative, clôture du voyage.",
+      ],
+    },
+    {
+      heading: "Textes & citations",
+      lines: [
+        "Fragments et citations : Jean Sénac — références et droits à compléter dans le dossier du projet.",
+      ],
+    },
+    {
+      heading: "Images & archives",
+      lines: ["Photographies et documents intégrés au parchemin : crédits à reporter (institutions, dates)."],
+    },
+    {
+      heading: "Vidéo · musique",
+      lines: [
+        "Médias du projet — auteurs image, son et musique à mentionner dans les crédits finaux.",
+      ],
+    },
+    {
+      heading: "Outils",
+      lines: ["React, Vite, Motion. Parchemin : Lenis, canvas & effets ambiants.", "Merci aux librairies open source utilisées dans la chaîne de production."],
+    },
+  ],
+  act3Aria: "Acte III — poésie interactive, recomposition des fragments du voyage",
+  act3Kicker: "écriture",
+  act3Hint:
+    "Chaque clic pose une trace déjà vivante dans le voyage. L’ordre est libre. Quand tout est présent, le poème dit son dernier souffle.",
+  act3ContinueCredits: "Voir les crédits",
+  act3BackScroll: "Retour au parchemin",
+  act3FinaleWrong: "Ce n’est pas le mot attendu, réessayez.",
+  act3FinaleEnterHint: "Entrée : valider le mot, le bon mot ouvre les crédits du voyage.",
+  act3FinaleLoading: "Préparation du dernier vers…",
+  act3FinaleRedirecting: "Ouverture des crédits…",
 };
 
 const AR: Copy = {
@@ -332,22 +421,30 @@ const AR: Copy = {
   daTitle: "الليل تنفتح",
   daSubtitle: "الصحراء تخلّي الذهب الحار الخيط يولّي كواكب.",
   act2IframeTitle: "جان السنّاك - الزمن السردي",
+  act2NavigateActIII: "المشهد الثالث — الكتابة",
+  act2NavigateActIIIAria: "صفحة خاصّة لتجميع الشقوف كقصيدة؛ ترجع للرّقّ من هنا وقت ما تحب.",
+  lazySuspenseAct1: "تجهيز خريطة الذاكرة…",
+  lazySuspenseAct2: "فتح المخطوف وتحميل الرّقّ…",
+  lazySuspenseAct3: "فتح الكتابة — نَفَس وشقوف…",
   orientationBreadcrumbAria: "مسار الرحلة",
   orientationCreditsLabel: "التذييل",
   orientationCreditsSummary: "التذييل النهائي، شكر وهدايا، وكتامة الدرب.",
   orientationFutureAct3: "المشهد الثالث - ؟",
-  orientationFutureAct4: "المشهد الرابع - ؟",
+  orientationFutureAct4: "؟؟؟ — ؟؟؟",
+  orientationFutureAct4Summary: "؟؟؟ - ؟؟؟ - ؟؟؟ - ؟؟؟",
   orientationLockedIntro: "المقدمة - ؟",
   orientationLockedAct1: "المشهد الأول - ؟",
   orientationLockedAct2: "المشهد الثاني - ؟",
   orientationPhaseIntroLabel: "المقدمة - تمهيد",
   orientationPhaseAct1Label: "المشهد الأول - الجزائر",
   orientationPhaseAct2Label: "المشهد الثاني - مواصلة",
+  orientationPhaseAct3Label: "المشهد الثالث - الكتابة",
   orientationSummaries: {
     intro: "صوت ومشهد صحر قبل ما تدخل لخريطة الذاكرة.",
     act1: "خريطة فيها خمس قطع تكمّل بيت ساناك ما بين أرض الجزائر.",
     act2:
       "الطبقة الليلانية: القصيدة والمحفوظات كلّها على التصفّر في الزّرقة.",
+    act3: "شقوف لقيتوها قبل: تعيد تبني الرحلة قصيدة.",
   },
   orientationFlux: "التموّج",
   orientationFluxCredits:
@@ -401,8 +498,8 @@ const AR: Copy = {
   menuFullscreenShortcutExit: "Esc",
   introDevPreviewCreditsTitle: "تشوف التذييل النهاية (-previewCredits=1)",
   introAlRihlaSubtitle: "جان ساناك",
-  introJeanSenacSubtitle: "المسيرة",
-  scrollNudge: "الحرّاف",
+  introJeanSenacSubtitle: "« المسيرة »",
+  scrollNudge: "لتحت · الحرّاف",
   chapterCompleteAria: "كشوف خريطة الذاكرة",
   hintTitles: { act1: "أول خطوات", act2: "كيف تمشي في الموقع" },
   hintCloseAria: "سكر الإرشادات",
@@ -458,6 +555,56 @@ const AR: Copy = {
   introVideoMuteOn: "كمّ الصوت",
   introVideoMuteOff: "فعّل الصوت",
   introVideoVolumeRange: "مستوى الصوت",
+  act2FinaleAria: "ختام الرحلة — أكمّل الجملة باش توصل لتذييل الفريق",
+  act2FinaleStem: "المسيرة تكون حقيقية كي",
+  act2FinalePlaceholder: "… بكلمات قلّال يكفي",
+  act2FinaleHint:
+    "كتب خواتيس الجملة. ماكاش تقييم — غير أثر تنخلّيه وأنت تنقرا.",
+  act2FinaleSubmit: "شوف التذييل",
+  voyageCreditsTitle: "الرحلة",
+  voyageCreditsSubtitle: "وساطة ثقافية — جان سنّاك",
+  voyageCreditsClose: "سكر (Esc)",
+  voyageCreditsFin: "شكرًا على اجتياز هاد الليل.",
+  voyageCreditsBlocks: [
+    {
+      heading: "الإعداد والإنجاز",
+      lines: [
+        "الإخراج الفنّي وتطوير التجرّبة التفاعلية.",
+        "المسار: خريطة الذاكرة، خط زمني، ختام الرحلة.",
+      ],
+    },
+    {
+      heading: "النصوص والاقتباسات",
+      lines: [
+        "قطع واقتباسات جان سنّاك — ثبّت المراجع والحقوق في ملفّ المشروع.",
+      ],
+    },
+    {
+      heading: "الصور والأرشيف",
+      lines: ["صور ومستندات في الرّقّ — الإسناد كي يتكمّل (مؤسسات، تواريخ)."],
+    },
+    {
+      heading: "الفيديو والموسيقى",
+      lines: ["وسائط المشروع — صورة وصوت وموسيقى تذكر في التذييل النهائي."],
+    },
+    {
+      heading: "الأدوات",
+      lines: [
+        "React، Vite، Motion. الرقّ: Lenis وطبقات رسوم وحسّية.",
+        "شكر لمكتبات المصدر المفتوح المعتمدة في السلسلة.",
+      ],
+    },
+  ],
+  act3Aria: "المشهد الثالث — قصيدة تفاعلية، إعادة تجميع الشقوف",
+  act3Kicker: "الكتابة",
+  act3Hint:
+    "كل نقرة تدي أثر كان عيشتو في الدرب الترتيب حر ملي يكمّلو الكل، القصيدة تقول بعدها نقفوتها الخير.",
+  act3ContinueCredits: "شوف التذييل",
+  act3BackScroll: "ارجع للرّقّ",
+  act3FinaleWrong: "هاذي مش الكلمة المنتظرة، جرب من جديد.",
+  act3FinaleEnterHint: "Entrée (الدخول) يثبّت الكلمة، الكلمة الصحيحة تفتح تذييل الرحلة.",
+  act3FinaleLoading: "تجهيز البيت الأخير…",
+  act3FinaleRedirecting: "فتح التذييل…",
 };
 
 export function copyFor(language: AppLanguage): Copy {
