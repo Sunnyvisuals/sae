@@ -36,6 +36,7 @@ import ChapterCompleteToast from "./components/ui/ChapterCompleteToast";
 import HintPanel from "./components/ui/HintPanel";
 import ScrollNudge from "./components/ui/ScrollNudge";
 import ScrollProgressBar from "./components/ui/ScrollProgressBar";
+import UxEdgeOpenControls from "./components/ui/UxEdgeOpenControls";
 import type { Act1QuestProgress, Act2QuestProgress } from "./components/ui/HintPanel";
 import type { Act1QuestStep } from "./components/Immersive/AlgeriaMap";
 import { useCursorStore } from "./hooks/useCursorContext";
@@ -509,6 +510,57 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, [systemMenuOpen, chapterToast, chapterDaTransition, phase, introVideoOpen, parcoursOpen, journeyReplayUnlocked]);
 
+  /** Flèches ← / → : menu (gauche) et rail Parcours desktop (droite). */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      if (isEditableTarget(e.target)) return;
+      if (
+        systemMenuOpen ||
+        introVideoOpen ||
+        chapterToast ||
+        chapterDaTransition ||
+        isLanguageMorphing
+      ) {
+        return;
+      }
+
+      const parcoursEligible = mdUp && (phase !== "intro" || journeyReplayUnlocked);
+
+      if (e.key === "ArrowRight") {
+        if (!parcoursEligible || parcoursOpen) return;
+        e.preventDefault();
+        dismissMenuHint(true);
+        setParcoursOpen(true);
+        return;
+      }
+
+      if (parcoursOpen && parcoursEligible) {
+        e.preventDefault();
+        setParcoursOpen(false);
+        return;
+      }
+
+      if (phase === "intro" && !journeyReplayUnlocked) return;
+      e.preventDefault();
+      dismissMenuHint(true);
+      setSystemMenuOpen(true);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [
+    mdUp,
+    phase,
+    journeyReplayUnlocked,
+    parcoursOpen,
+    systemMenuOpen,
+    introVideoOpen,
+    chapterToast,
+    chapterDaTransition,
+    isLanguageMorphing,
+    dismissMenuHint,
+  ]);
+
   /** Rail Parcours ouvert : la molette / le trackpad le referme (comme un clic sur le voile). */
   useEffect(() => {
     if (!parcoursOpen || (phase === "intro" && !journeyReplayUnlocked)) return;
@@ -833,6 +885,27 @@ export default function App() {
               <SettingsIcon className="h-5 w-5" aria-hidden />
             </motion.span>
           </motion.button>
+          {!systemMenuOpen &&
+            !introVideoOpen &&
+            !chapterToast &&
+            !chapterDaTransition &&
+            !isLanguageMorphing && (
+              <UxEdgeOpenControls
+                midnight={phase === "act2" && act2AmbientMidnight}
+                mdUp={mdUp}
+                parcoursOpen={parcoursOpen}
+                menuAriaLabel={copy.menuAria}
+                parcoursAriaLabel={copy.orientationOpenPanel}
+                onOpenMenu={() => {
+                  dismissMenuHint(true);
+                  setSystemMenuOpen(true);
+                }}
+                onOpenParcours={() => {
+                  dismissMenuHint(true);
+                  setParcoursOpen(true);
+                }}
+              />
+            )}
           <Suspense fallback={null}>
             <OrientationPanel
               phase={phase}
