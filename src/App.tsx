@@ -695,7 +695,7 @@ export default function App() {
                         }
                         act2VoyageCreditsOpen={phase === "act2" ? act2VoyageCreditsOpen : false}
                         journeyReplayUnlocked={journeyReplayUnlocked}
-                        onNavigatePhase={journeyReplayUnlocked ? navigateParcoursPhase : undefined}
+                        onNavigatePhase={navigateParcoursPhase}
                       />
                     </Suspense>
                   ) : undefined
@@ -844,7 +844,7 @@ export default function App() {
               }
               act2VoyageCreditsOpen={phase === "act2" ? act2VoyageCreditsOpen : false}
               journeyReplayUnlocked={journeyReplayUnlocked}
-              onNavigatePhase={journeyReplayUnlocked ? navigateParcoursPhase : undefined}
+              onNavigatePhase={navigateParcoursPhase}
             />
           </Suspense>
         </>

@@ -275,8 +275,12 @@ export function ParcoursPanelInnerContent({
           const showCrypticCopy = cryptic && rowPhase !== null;
           const rowLabel = showCrypticCopy ? lockedTitle(rowPhase) : label;
           const rowSummary = showCrypticCopy ? '---' : summary;
+          /** Retour : étapes déjà franchies cliquables même sans mode « revivre » ; tout reste cliquable une fois débloqué. */
           const canNavigate =
-            journeyReplayUnlocked && typeof onNavigatePhase === 'function' && rowPhase !== null && !forceReveal;
+            typeof onNavigatePhase === 'function' &&
+            rowPhase !== null &&
+            !forceReveal &&
+            (journeyReplayUnlocked || PHASE_NAV_INDEX[rowPhase] < activeStep);
           return (
             <div
               key={key}
