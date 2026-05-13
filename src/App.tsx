@@ -1540,7 +1540,9 @@ export default function App() {
           >
             <SplashCursor
               syncPaletteFromAmbient
-              zIndex={act2VoyageCreditsOpen ? 532 : 120}
+              zIndex={
+                act2VoyageCreditsOpen ? 532 : phase === "act2" ? 10 : 120
+              }
               SIM_RESOLUTION={phase === "act1" || phase === "act2" ? 128 : 160}
               DYE_RESOLUTION={phase === "act1" ? 512 : phase === "act2" ? 640 : 720}
               DENSITY_DISSIPATION={phase === "act1" ? 12 : 10}

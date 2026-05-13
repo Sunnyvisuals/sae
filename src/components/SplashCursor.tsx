@@ -1274,7 +1274,7 @@ function SplashCursor({
               width: '100%',
               height: '100%',
             } as const)),
-        /* Plein viewport : acte I/III ~120 (au-dessus scène z-20, sous barre progression ~220+). Acte II : fluide masqué dans App (iframe + rail Parcours).
+        /* Plein viewport : acte I/III ~120 (au-dessus scène z-20). Acte II : ~10 (sous le parchemin z-20) ; crédits voyage ~532. Barre progression z-[480]+.
            pointer-events: none → clics passent jusqu’aux boutons (z-[40]). */
         zIndex,
         pointerEvents: 'none',
