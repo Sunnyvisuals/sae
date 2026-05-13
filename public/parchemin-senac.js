@@ -433,7 +433,7 @@
     const canvas = document.getElementById("senac-arch-canvas");
     if (!(canvas instanceof HTMLCanvasElement)) return;
     senacArchInitScheduled = true;
-    import("./parchemin-arch-scene.mjs?v=36")
+    import("./parchemin-arch-scene.mjs?v=37")
       .then((mod) =>
         mod.initSenacArchScene({
           canvas,

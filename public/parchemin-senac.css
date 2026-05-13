@@ -759,15 +759,15 @@ body.senac-smoke-fallback #fog-canvas {
   animation: celestial-rotate 80s linear infinite;
 }
 
-/* Grille tres legere - sans trait central ni bandes horizontales (illisibles sur le texte) */
+/* Profondeur : larges fades radiaux uniquement — pas de repeating-linear (Traits verticaux
+   très visibles derrière backdrop-filter blur sur scroll-mode-choice — bug GPU / composite). */
 .depth-lines {
   z-index: 2;
-  opacity: calc(0.09 + var(--frise-t, 0) * 0.04);
-  background: repeating-linear-gradient(
-    90deg,
-    transparent 0 10.5rem,
-    rgba(90, 168, 255, calc(0.028 + var(--frise-t, 0) * 0.032)) 10.52rem 10.56rem
-  );
+  opacity: calc(0.08 + var(--frise-t, 0) * 0.035);
+  background:
+    radial-gradient(ellipse 120% 130% at 16% 58%, rgba(90, 168, 255, calc(0.05 + var(--frise-t, 0) * 0.04)) 0%, transparent 62%),
+    radial-gradient(ellipse 95% 110% at 84% 44%, rgba(70, 128, 210, calc(0.038 + var(--frise-t, 0) * 0.04)) 0%, transparent 58%),
+    radial-gradient(ellipse 88% 100% at 50% 76%, rgba(12, 32, 64, calc(0.065 + var(--frise-t, 0) * 0.05)) 0%, transparent 72%);
   mask-image: radial-gradient(ellipse 78% 72% at 50% 40%, black 22%, transparent 76%);
   -webkit-mask-image: radial-gradient(ellipse 78% 72% at 50% 40%, black 22%, transparent 76%);
   animation: depth-drift 36s ease-in-out infinite alternate;
