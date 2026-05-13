@@ -1,16 +1,37 @@
-import { motion } from 'motion/react';
-import { useAppCopy } from '../../hooks/useAppCopy';
+import { motion } from "motion/react";
+import { useAppCopy } from "../../hooks/useAppCopy";
 
 type Props = {
   chapterTitle: string;
   subtitle: string;
+  /**
+   * Voile plus léger + carte lisible sous la typo : laisse voir la WebM I→II derrière pendant
+   * le toast « chapitre accompli ».
+   */
+  blendBridgeBackdrop?: boolean;
 };
 
 /**
  * Chapitre accompli - entrée sobre (pas de zoom / flou agressif), alignée carte / or du projet.
  */
-export default function ChapterCompleteToast({ chapterTitle, subtitle }: Props) {
+export default function ChapterCompleteToast({
+  chapterTitle,
+  subtitle,
+  blendBridgeBackdrop = false,
+}: Props) {
   const copy = useAppCopy();
+
+  const outer =
+    "fixed inset-0 z-[190] flex cursor-none flex-col items-center justify-center px-6 ";
+  const backdropHeavy =
+    "bg-gradient-to-b from-black/90 via-da-depth-intro/92 to-black/90 backdrop-blur-xl";
+  const backdropLight =
+    "bg-gradient-to-b from-black/[0.48] via-da-depth-intro/[0.54] to-black/[0.5] backdrop-blur-md";
+
+  const innerTint = blendBridgeBackdrop
+    ? "relative rounded-[2px] border border-solar-gold/[0.14] bg-[rgba(10,10,18,0.78)] px-8 py-10 shadow-[0_8px_48px_rgba(0,0,0,0.55)] backdrop-blur-sm sm:px-10"
+    : "";
+
   return (
     <motion.div
       role="status"
@@ -19,14 +40,14 @@ export default function ChapterCompleteToast({ chapterTitle, subtitle }: Props) 
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-      className="fixed inset-0 z-[190] flex cursor-none flex-col items-center justify-center bg-gradient-to-b from-black/90 via-da-depth-intro/92 to-black/90 px-6 backdrop-blur-xl"
+      className={outer + (blendBridgeBackdrop ? backdropLight : backdropHeavy)}
     >
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 12 }}
         transition={{ duration: 0.95, ease: [0.22, 1, 0.36, 1], delay: 0.06 }}
-        className="max-w-lg text-center"
+        className={"max-w-lg text-center " + innerTint}
       >
         <motion.p
           initial={{ opacity: 0, y: 6 }}
@@ -41,7 +62,7 @@ export default function ChapterCompleteToast({ chapterTitle, subtitle }: Props) 
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
           className="font-bahlull mt-5 text-4xl italic text-white md:text-5xl"
-          style={{ textShadow: '0 1px 0 rgba(0,0,0,0.65), 0 0 40px rgba(197,160,89,0.12)' }}
+          style={{ textShadow: "0 1px 0 rgba(0,0,0,0.65), 0 0 40px rgba(197,160,89,0.12)" }}
         >
           {chapterTitle}
         </motion.h2>

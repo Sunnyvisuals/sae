@@ -1,7 +1,7 @@
 /** Pas d’ajustement au clavier (aligné sur le slider, ~5 % par frappe). */
-export const VOLUME_KEY_STEP = 0.05;
+const VOLUME_KEY_STEP = 0.05;
 
-export type VolumeKeyDirection = 'up' | 'down';
+type VolumeKeyDirection = 'up' | 'down';
 
 /**
  * Pavé numérique : NumpadAdd / NumpadSubtract.

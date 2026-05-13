@@ -4,20 +4,18 @@ import { motion, useReducedMotion } from "motion/react";
 const ACT12_TRANSITION_WEBM = `${import.meta.env.BASE_URL}transitions/trans2-alpha-act12.webm`;
 const ACT12_TRANSITION_MP4 = `${import.meta.env.BASE_URL}transitions/trans2-alpha-act12.mp4`;
 
-/** Fondu de sortie du pont une fois la WebM terminée (sync avec l'apparition nette de l'Acte II). */
+/** Fondu de sortie du pont une fois bundle toast + vidéo terminés. */
 const EXIT_DURATION_S = 0.72;
 
 type ChapterAct12BridgeProps = {
-  /** Tant que le toast « Acte I accompli » est visible, la WebM reste en pause (l'Acte II charge derrière). */
   chapterToast: boolean;
   onSwapPhase: () => void;
   onFinish: () => void;
 };
 
 /**
- * Pont WebM Acte I → II : monte avec le toast, sous le toast (z-index).
- * Phase act2 dès le montage ; lecture WebM seulement après fermeture du toast ;
- * retrait du pont en fondu à la fin du clip — fond transparent pour laisser l'alpha VP9 agir.
+ * Pont WebM Acte I → II : passe derrière un toast léger lisible mais visible dès « chapitre accompli ».
+ * La vidéo démarre tout de suite ; la couche retire seulement quand la clip est finie **et** le toast fermé.
  */
 const ChapterAct12Bridge: FC<ChapterAct12BridgeProps> = ({
   chapterToast,
@@ -28,6 +26,10 @@ const ChapterAct12Bridge: FC<ChapterAct12BridgeProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [forceMp4, setForceMp4] = useState(false);
   const finishedRef = useRef(false);
+  const chapterToastRef = useRef(chapterToast);
+  const videoEndedRef = useRef(false);
+
+  chapterToastRef.current = chapterToast;
 
   const finishOnce = useCallback(() => {
     if (finishedRef.current) return;
@@ -35,38 +37,56 @@ const ChapterAct12Bridge: FC<ChapterAct12BridgeProps> = ({
     onFinish();
   }, [onFinish]);
 
+  /** Ne enlève pas le pont pendant que le message de réussite est encore là. */
+  const tryFinishWhenReady = useCallback(() => {
+    if (finishedRef.current) return;
+    if (!videoEndedRef.current) return;
+    if (chapterToastRef.current) return;
+    finishOnce();
+  }, [finishOnce]);
+
   const reduced = prefersReducedMotion === true;
 
   useLayoutEffect(() => {
     onSwapPhase();
-    if (reduced) onFinish();
-  }, [reduced, onSwapPhase, onFinish]);
+    if (reduced) finishOnce();
+  }, [reduced, onSwapPhase, finishOnce]);
 
-  /** Lecture uniquement après le toast : la transition visible enchaîne directement sur l'écran Acte II. */
+  /** Lecture dès montage du pont (avec le toast : même instant). */
   useEffect(() => {
     if (reduced) return;
-    if (chapterToast) return;
     const v = videoRef.current;
     if (!v) return;
     v.muted = true;
     v.volume = 0;
     v.currentTime = 0;
-    void v.play().catch(() => finishOnce());
-  }, [reduced, forceMp4, chapterToast, finishOnce]);
+    void v.play().catch(() => {
+      videoEndedRef.current = true;
+      tryFinishWhenReady();
+    });
+  }, [reduced, forceMp4, tryFinishWhenReady]);
+
+  /** Toast refermé alors que la WebM existe déjà : terminer le pont. */
+  useEffect(() => {
+    if (!chapterToast) tryFinishWhenReady();
+  }, [chapterToast, tryFinishWhenReady]);
 
   const handleError = useCallback(() => {
     if (!forceMp4) {
       setForceMp4(true);
+      videoEndedRef.current = false;
       return;
     }
-    finishOnce();
-  }, [forceMp4, finishOnce]);
+    videoEndedRef.current = true;
+    tryFinishWhenReady();
+  }, [forceMp4, tryFinishWhenReady]);
 
   const handleEnded = useCallback(() => {
+    videoEndedRef.current = true;
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => finishOnce());
+      requestAnimationFrame(() => tryFinishWhenReady());
     });
-  }, [finishOnce]);
+  }, [tryFinishWhenReady]);
 
   if (reduced) return null;
 

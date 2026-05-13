@@ -21,15 +21,72 @@ export function prefetchAct1MapChunk(): Promise<unknown> {
   return import("../components/Immersive/AlgeriaMap");
 }
 
+/**
+ * Premier geste sur la page : déclenche le préchargement du chunk carte tout de suite
+ * (Lighthouse navigation ne simule pas d’interaction → pas de téléchargement prématuré du chunk).
+ */
+export function attachAct1MapPrefetchOnFirstUserGesture(): () => void {
+  if (typeof window === "undefined") return () => {};
+  let done = false;
+  const fire = () => {
+    if (done) return;
+    done = true;
+    void prefetchAct1MapChunk();
+    window.removeEventListener("pointerdown", fire, true);
+    window.removeEventListener("keydown", fire, true);
+  };
+  window.addEventListener("pointerdown", fire, { passive: true, capture: true });
+  window.addEventListener("keydown", fire, { capture: true });
+  return () => {
+    done = true;
+    window.removeEventListener("pointerdown", fire, true);
+    window.removeEventListener("keydown", fire, true);
+  };
+}
+
+/**
+ * File d’attente après `load` + léger délai : évite de rivaliser avec FCP/LCP et le thread principal
+ * au tout premier chargement (même rendu final ; les joueurs interactifs sont couverts par le geste ci-dessus).
+ */
+export function scheduleIdleAct1MapPrefetchAfterLoad(): () => void {
+  if (typeof window === "undefined") return () => {};
+  let cancelIdle: (() => void) | undefined;
+  let settleTimer = 0;
+  let cancelled = false;
+
+  const arm = () => {
+    if (cancelled) return;
+    cancelIdle = runWhenIdle(() => {
+      void prefetchAct1MapChunk();
+    }, 9200);
+  };
+
+  const onLoad = () => {
+    if (cancelled) return;
+    window.clearTimeout(settleTimer);
+    settleTimer = window.setTimeout(arm, 420);
+  };
+
+  if (document.readyState === "complete") onLoad();
+  else window.addEventListener("load", onLoad, { once: true });
+
+  return () => {
+    cancelled = true;
+    window.clearTimeout(settleTimer);
+    window.removeEventListener("load", onLoad);
+    cancelIdle?.();
+  };
+}
+
 /** Chunk lazy `Act2` — à précharger pendant la carte pour un iframe qui s’ouvre plus vite. */
-export function prefetchAct2ShellChunk(): Promise<unknown> {
+function prefetchAct2ShellChunk(): Promise<unknown> {
   return import("../components/Immersive/Act2");
 }
 
 let parcheminDocumentPrefetched = false;
 
 /** `<link rel=prefetch>` sur la page parchemin (même URL que l’iframe acte II). */
-export function prefetchParcheminSenacDocument(): void {
+function prefetchParcheminSenacDocument(): void {
   if (typeof document === "undefined" || parcheminDocumentPrefetched) return;
   parcheminDocumentPrefetched = true;
   const base = import.meta.env.BASE_URL || "/";

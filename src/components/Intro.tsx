@@ -27,7 +27,6 @@ import { useMediaQuery } from "../hooks/useMediaQuery";
 import { useAppCopy } from "../hooks/useAppCopy";
 
 // --- CONFIGURATION VIDÉO : même source que `act1IntroBridge` (Acte I aligné sur cette piste) ---
-const VIDEO_SOURCE = INTRO_VIDEO_SRC;
 const ARABIC_TITLE_IMAGE_SRC = `${import.meta.env.BASE_URL}images/al-rihla-arabic-title.svg`;
 /** Transition WebM avant le panneau de choix de langue (piste transparente possible). */
 const LANGUAGE_GATE_TRANSITION_WEBM = `${import.meta.env.BASE_URL}transitions/trans2-alpha.webm`;
@@ -36,12 +35,12 @@ const LANGUAGE_GATE_TRANSITION_MP4 = `${import.meta.env.BASE_URL}transitions/tra
 /** SFX fumée / sable — joué en parallèle de la WebM pont langue (`trans2-alpha`). */
 const LANGUAGE_GATE_SMOKE_SFX = `${import.meta.env.BASE_URL}sounds/smoke-transition-slow.wav`;
 /** `prefers-reduced-motion` : pas de fresque GSAP — délai avant le choix de langue. */
-const ARRIVAL_LANGUAGE_PRELUDE_MS = 8000;
+const ARRIVAL_LANGUAGE_PRELUDE_MS = 6500;
 /**
  * Après la fin du timeline GSAP (titre + sous-titre visibles) : temps pour lire l’écran
  * (losange, fond) avant le volet langue. ~5–10 s demandé côté DA.
  */
-const ARRIVAL_LANGUAGE_HOLD_AFTER_TIMELINE_S = 8;
+const ARRIVAL_LANGUAGE_HOLD_AFTER_TIMELINE_S = 6.5;
 /** Début du volet langue / WebM avant la fin du hold GSAP — évite coupure titre ↔ transi. */
 const LANGUAGE_GATE_TIMELINE_OVERLAP_S = 1.45;
 /** Fondu sortie WebM (skip utilisateur) — lecture naturelle : démontage direct en fin de clip. */
@@ -463,7 +462,7 @@ function GoldPlayIcon({ className }: { className?: string }) {
   );
 }
 
-export type DevChapterJumps = {
+type DevChapterJumps = {
   goChapter1: () => void;
   goChapter2: () => void;
   goChapter3: () => void;
@@ -1053,7 +1052,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
     if (isStarting || videoStarted) return;
     primeSuspenseAudio();
     setIsStarting(true);
-    const suspenseDuration = 5200;
+    const suspenseDuration = 3700;
     setTimeout(() => {
       setVideoStarted(true);
       onVideoStart?.();
@@ -1725,6 +1724,8 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                     <span className="sr-only">الرحلة</span>
                     <img
                       src={ARABIC_TITLE_IMAGE_SRC}
+                      width={1400}
+                      height={520}
                       alt=""
                       aria-hidden="true"
                       draggable={false}
@@ -1965,7 +1966,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
               muted={isMuted}
               playsInline
               autoPlay
-              src={VIDEO_SOURCE}
+              src={INTRO_VIDEO_SRC}
             />
           </motion.div>
 

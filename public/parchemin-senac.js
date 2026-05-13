@@ -12,6 +12,51 @@
     document.getElementById("senac-scroll-progress")?.remove();
   }
 
+  /**
+   * SPA : le parent ne reçoit pas `pointermove` quand le pointeur est dans l’iframe → CustomCursor / SplashCursor
+   * restent figés ou passent en idle. On relaie les coords (viewport iframe = clientX/Y) ; le parent translate
+   * avec getBoundingClientRect() de l’iframe.
+   */
+  if (suppressScrollProgressChrome) {
+    const origin = window.location.origin;
+    let senacPointerRaf = 0;
+    let pendingX = 0;
+    let pendingY = 0;
+    function flushSenacPointer() {
+      senacPointerRaf = 0;
+      try {
+        window.parent.postMessage({ type: "senac-pointer", clientX: pendingX, clientY: pendingY }, origin);
+      } catch (_) {
+        /* ignore */
+      }
+    }
+    document.addEventListener(
+      "pointermove",
+      function (/** @type {PointerEvent} */ e) {
+        pendingX = e.clientX;
+        pendingY = e.clientY;
+        if (!senacPointerRaf) {
+          senacPointerRaf = window.requestAnimationFrame(flushSenacPointer);
+        }
+      },
+      { passive: true }
+    );
+    document.addEventListener(
+      "pointerdown",
+      function (/** @type {PointerEvent} */ e) {
+        try {
+          window.parent.postMessage(
+            { type: "senac-pointer", clientX: e.clientX, clientY: e.clientY, down: true },
+            origin
+          );
+        } catch (_) {
+          /* ignore */
+        }
+      },
+      { passive: true }
+    );
+  }
+
   /** Racine SPA (`index.html`), même dossier que `parchemin-senac.html` (`new URL(".", …)`). */
   function spaRootHref() {
     try {
@@ -80,11 +125,6 @@
 
   function setRevealStagger() {
     document.querySelectorAll("[data-reveal]").forEach((el, index) => {
-      /**
-       * Rythme plus “ciné” : moins linéaire et moins lent au début.
-       * - départ rapide (les 6-8 premiers arrivent vite)
-       * - puis espacement qui s’étire doucement, sans dépasser un cap
-       */
       const i = Math.max(0, index);
       const base = Math.min(26 + i * 22, 520);
       const pulse = Math.round(Math.sin(i * 0.85) * 8); // micro-variation organique
@@ -95,6 +135,7 @@
   const friseEl = document.getElementById("timeline-start");
   /** Lenis (scroll lissé) ; null si indisponible (reduced-motion ou échec import). */
   let yearGaugeLenis = null;
+  let senacLenisWheelSnapTimer = 0;
   let yearGaugeGsap = null;
   /** Ré-appel depuis initLenis : figer scroll si le overlay de choix est encore là. */
   let senacFreezeLenisForChoiceOverlay = /** @type {(() => void) | null} */ (null);
@@ -121,8 +162,56 @@
   }
 
 
+  /**
+   * Coller au repère utilisé par Lenis (`scrollHeight − clientHeight` sur `html`, pas `innerHeight`)
+   * pour éviter un écart vite / scrollbar / arche. Compare aussi `body` si plus haut que `documentElement`.
+   */
   function getScrollMax() {
-    return Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+    const root = document.documentElement;
+    const body = document.body;
+    const scrollH = Math.max(root.scrollHeight, body ? body.scrollHeight : 0);
+    const viewH = Math.max(1, root.clientHeight || window.innerHeight || 1);
+    return Math.max(1, scrollH - viewH);
+  }
+
+  /** Après inertia Lenis ou si limit pas rafraîchi : petite correction vers le bas réel du document. */
+  function snapLenisNearBottomAfterIdle() {
+    const lx = yearGaugeLenis;
+    if (!lx || typeof lx.resize !== "function" || typeof lx.scrollTo !== "function") return;
+    lx.resize();
+    const domMax = getScrollMax();
+    const lim =
+      typeof lx.limit === "number" && Number.isFinite(lx.limit) ? lx.limit : domMax;
+    const target = Math.max(domMax, lim);
+    const gap = target - lx.scroll;
+    if (gap > 0.25 && gap <= 72) {
+      lx.scrollTo(target, { immediate: true });
+      applyScrollDerivedState(lx.scroll);
+    }
+  }
+
+  function scheduleSenacLenisWheelEndSnap() {
+    if (!yearGaugeLenis) return;
+    window.clearTimeout(senacLenisWheelSnapTimer);
+    senacLenisWheelSnapTimer = window.setTimeout(() => {
+      senacLenisWheelSnapTimer = 0;
+      snapLenisNearBottomAfterIdle();
+    }, 140);
+  }
+
+  /**
+   * Lenis peut rester quelques px sous le max du document : le ratio reste alors sous 1 et zoom / fondu arche
+   * ne se terminent pas. On assimile le bas de page dans un petit epsilon (px).
+   */
+  const SENAC_SCROLL_RATIO_BOTTOM_EPS_PX = 14;
+
+  /** @param {number} scrollY */
+  function senacScrollRatio(scrollY) {
+    const max = getScrollMax();
+    if (max <= 0) return 1;
+    const y = Math.min(max, Math.max(0, scrollY));
+    if (max - y <= SENAC_SCROLL_RATIO_BOTTOM_EPS_PX) return 1;
+    return y / max;
   }
 
   function getScrollY() {
@@ -288,15 +377,13 @@
   }
 
   function updateSenacScrollProgressFill() {
-    if (suppressScrollProgressChrome) return;
-
-    const max = getScrollMax();
     let y = getScrollY();
     if (yearGaugeLenis && typeof yearGaugeLenis.scroll === "number") {
       y = yearGaugeLenis.scroll;
     }
-    const ratio = Math.min(1, Math.max(0, y / max));
+    const ratio = senacScrollRatio(y);
 
+    /** SPA : barre du haut = `ScrollProgressBar` parent (iframe ne rend plus #senac-scroll-progress). */
     if (window.parent !== window) {
       try {
         window.parent.postMessage({ type: "senac-scroll-progress", ratio }, window.location.origin);
@@ -304,6 +391,9 @@
         /* ignore */
       }
     }
+
+    /** Page parchemin seule : barre locale dans #senac-scroll-progress. */
+    if (suppressScrollProgressChrome) return;
 
     if (!senacScrollFillEl) {
       const n = document.querySelector(".senac-scroll-progress__fill");
@@ -343,19 +433,18 @@
     const canvas = document.getElementById("senac-arch-canvas");
     if (!(canvas instanceof HTMLCanvasElement)) return;
     senacArchInitScheduled = true;
-    import("./parchemin-arch-scene.mjs?v=21")
+    import("./parchemin-arch-scene.mjs?v=36")
       .then((mod) =>
         mod.initSenacArchScene({
           canvas,
           reducedMotion,
           modelUrl: new URL("models/model.glb", window.location.href).href,
           getScrollRatio() {
-            const max = getScrollMax();
             let y = getScrollY();
             if (yearGaugeLenis && typeof yearGaugeLenis.scroll === "number") {
               y = yearGaugeLenis.scroll;
             }
-            return Math.min(1, Math.max(0, y / max));
+            return senacScrollRatio(y);
           },
         }),
       )
@@ -369,6 +458,61 @@
       });
   }
 
+  /**
+   * Zoom arche : même repère que `ARCH_ZOOM_BEGIN` (`parchemin-arch-scene.mjs`).
+   * Le fondu démarrait historiquement +0.02 après le vieux seuil zoom (0.82 vs 0.8).
+   */
+  const ARCH_ZOOM_START_RATIO = 0.86;
+  const ARCH_WHITEOUT_BEGIN_RATIO = ARCH_ZOOM_START_RATIO + 0.02;
+  /** Équivalent de l’ancien 0.92 quand le ramp allait [0.82 → 1] : fraction du dernier intervalle. */
+  const ARCH_WHITEOUT_TO_ACT3_RATIO =
+    ARCH_WHITEOUT_BEGIN_RATIO +
+    ((0.92 - 0.82) / (1 - 0.82)) * (1 - ARCH_WHITEOUT_BEGIN_RATIO);
+
+  /** Fondu blanc → Acte III quand le scroll atteint le fond (arche zoom). */
+  let archWhiteoutTriggered = false;
+  const archWhiteoutEl = document.getElementById("senac-arch-whiteout");
+
+  function updateArchWhiteout(scrollY) {
+    if (!archWhiteoutEl || archWhiteoutTriggered) return;
+    const ratio = senacScrollRatio(scrollY);
+
+    const denom = Math.max(1e-6, 1 - ARCH_WHITEOUT_BEGIN_RATIO);
+
+    const archCanvas = document.getElementById("senac-arch-canvas");
+    if (ratio < ARCH_WHITEOUT_BEGIN_RATIO) {
+      archWhiteoutEl.style.opacity = "0";
+      if (archCanvas) archCanvas.style.opacity = "0.55";
+      return;
+    }
+
+    if (archCanvas) {
+      const opT = (ratio - ARCH_WHITEOUT_BEGIN_RATIO) / denom;
+      archCanvas.style.opacity = String(Math.min(1, 0.55 + opT * 0.45));
+    }
+
+    const fadeT = (ratio - ARCH_WHITEOUT_BEGIN_RATIO) / denom;
+    const eased = fadeT * fadeT;
+    archWhiteoutEl.style.opacity = String(Math.min(1, eased));
+
+    if (ratio >= ARCH_WHITEOUT_TO_ACT3_RATIO && !archWhiteoutTriggered) {
+      archWhiteoutTriggered = true;
+      window.setTimeout(() => {
+        const origin = window.location.origin;
+        if (window.parent !== window) {
+          try {
+            window.parent.postMessage(
+              { type: "senac-navigate", target: "act3-writing" },
+              origin
+            );
+          } catch (_) { /* ignore */ }
+        } else {
+          bootstrapSpaActIIIEntry();
+        }
+      }, 600);
+    }
+  }
+
   function applyScrollDerivedState(scrollY) {
     computeImmersion(scrollY);
     updateSenacScrollProgressFill();
@@ -376,6 +520,7 @@
     if (senacArchApi && typeof senacArchApi.sync === "function") {
       senacArchApi.sync();
     }
+    updateArchWhiteout(scrollY);
   }
 
   let yearGaugeScrollTriggerInitScheduled = false;
@@ -435,6 +580,9 @@
       window.addEventListener(
         "resize",
         () => {
+          if (yearGaugeLenis && typeof yearGaugeLenis.resize === "function") {
+            yearGaugeLenis.resize();
+          }
           yearGaugeScrollTriggerPlugin?.refresh(true);
           applyScrollDerivedState(yearGaugeLenis ? yearGaugeLenis.scroll : getScrollY());
         },
@@ -850,24 +998,6 @@
     requestAnimationFrame(drawFog);
   }
 
-  /** @type {{ stop: () => void } | null} */
-  let voyageCreditsParticlesHandle = null;
-
-  function stopVoyageCreditsParticles() {
-    voyageCreditsParticlesHandle?.stop();
-  }
-
-  function startVoyageCreditsParticles(_overlay) {
-    /* Section credits retires du DOM */
-  }
-
-  /**
-   * Fumée WebGL plein écran (Three.js ShaderMaterial)
-   * - fBm 4 octaves
-   * - rampe chaude transparente -> ocre -> transparente
-   * - montée lente
-   * - répulsion/tourbillon léger autour du curseur
-   */
   async function initSmokeShader() {
     if (reducedMotion) return false;
 
@@ -943,7 +1073,6 @@
           return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
         }
 
-        // fBm 4 octaves
         float fbm(vec2 p) {
           float v = 0.0;
           float a = 0.5;
@@ -969,10 +1098,8 @@
           float s = clamp(uScroll01, 0.0, 1.0);
           float sEase = easeInOut(s);
 
-          // Fumée monte lentement ; le scroll ajoute surtout de l'amplitude (pas un boost vitesse agressif).
           vec2 flow = vec2(0.0, uTime * (0.028 + sEase * 0.006));
 
-          // souris : influence douce (plus cinématique, moins "agressive")
           vec2 m = (uMouse - 0.5) * aspect;
           vec2 d = p - m;
           float dist = length(d);
@@ -981,11 +1108,9 @@
           vec2 perp = normalize(vec2(-d.y, d.x) + 1e-6);
           vec2 disp = (perp * (0.018 + sEase * 0.006) + radial * (0.012 + sEase * 0.004)) * influence;
 
-          // drift global très léger vers la souris pour conserver du vivant
           vec2 mouseVec = (uMouse - 0.5) * 2.0;
           vec2 mouseDrift = vec2(mouseVec.x * 0.045, -mouseVec.y * 0.036) * (0.22 + sEase * 0.28);
 
-          // "3D smoke" : 3 couches volumétriques simulées (profondeur parallax + vitesses différentes)
           float depthDrift = sin(uTime * 0.12 + p.y * 1.4) * 0.03;
           vec2 baseUv = p * (2.02 + sEase * 0.16) + flow + mouseDrift + vec2(0.0, depthDrift);
 
@@ -997,20 +1122,16 @@
           float smoke = smoothstep(0.31, 0.67, n);
           smoke *= smoothstep(1.26, 0.08, length(p));
 
-          // respiration lente (mouvement "beau", pas brutal)
           float breathe = 0.92 + sin(uTime * 0.22 + p.x * 0.9) * 0.08;
           smoke *= breathe;
 
-          // immersion chapitre II : plus bleu en frise, plus chaud en hero
           float shift = clamp(uHero * 0.42 + uFrise * 0.58, 0.0, 1.0);
           vec3 warm = vec3(0.6, 0.35, 0.15);
           vec3 cool = vec3(0.40, 0.55, 0.72);
           vec3 tint = mix(warm, cool, shift * 0.72);
 
-          // rampe alpha: transparent -> warm -> transparent
           float alpha = smoke * (0.19 + sEase * 0.11);
           alpha *= smoothstep(0.0, 0.2, smoke) * (1.0 - smoothstep(0.75, 1.0, smoke));
-          alpha *= 1.0;
 
           gl_FragColor = vec4(tint, alpha);
         }
@@ -1028,9 +1149,8 @@
       const f = parseFloat(root.style.getPropertyValue("--frise-t").trim() || "0");
       uniforms.uHero.value = Number.isFinite(h) ? Math.min(1, Math.max(0, h)) : 0;
       uniforms.uFrise.value = Number.isFinite(f) ? Math.min(1, Math.max(0, f)) : 0;
-      const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
       const y = yearGaugeLenis && typeof yearGaugeLenis.scroll === "number" ? yearGaugeLenis.scroll : getScrollY();
-      uniforms.uScroll01.value = Math.min(1, Math.max(0, y / max));
+      uniforms.uScroll01.value = senacScrollRatio(y);
     };
 
     const onResize = () => {
@@ -1263,7 +1383,7 @@
       const lenis = new Lenis({
         lerp: 0.14,
         smoothWheel: true,
-        wheelMultiplier: 1.05,
+        wheelMultiplier: 1.4,
         syncTouch: false,
         smoothTouch: false,
       });
@@ -1272,12 +1392,30 @@
         applyScrollDerivedState(lenis.scroll);
       });
 
+      document.addEventListener("wheel", scheduleSenacLenisWheelEndSnap, { passive: true });
+      window.addEventListener("touchend", scheduleSenacLenisWheelEndSnap, { passive: true });
+      window.addEventListener(
+        "load",
+        () => {
+          lenis.resize();
+          applyScrollDerivedState(lenis.scroll);
+        },
+        { once: true },
+      );
+
       const raf = (time) => {
         lenis.raf(time);
         requestAnimationFrame(raf);
       };
 
       requestAnimationFrame(raf);
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          lenis.resize();
+          applyScrollDerivedState(lenis.scroll);
+        });
+      });
 
       root.classList.add("lenis");
       root.classList.add("senac-parallax-live");
@@ -1471,15 +1609,6 @@
     elements.forEach((el) => observer.observe(el));
   }
 
-  function initChapterThree() {
-    /* Section chapitre III retirée du DOM */
-  }
-
-  /** Ancien générique / crédits (contenu supprimé du parchemin). */
-  function initVoyageCredits() {
-    return null;
-  }
-
   /** Acte II ↔ SPA parent : boutons `[data-senac-navigate]` (intro-video, act1-map, act3-writing). */
   function initSenacParentNavigateBridge() {
     document.addEventListener(
@@ -1634,8 +1763,8 @@
       if (base < 0.002) return 0;
 
       /** Tout en haut : ambiance retenue ; le volume se déploie en scrollant. */
-      const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-      const scroll01 = Math.min(1, Math.max(0, getScrollY() / max));
+      const yVol = yearGaugeLenis && typeof yearGaugeLenis.scroll === "number" ? yearGaugeLenis.scroll : getScrollY();
+      const scroll01 = senacScrollRatio(yVol);
       const topWindow = Math.min(1, scroll01 / 0.2);
       const topEase = topWindow * topWindow * (3 - 2 * topWindow);
       const topMul = 0.24 + topEase * 0.76;
@@ -1757,8 +1886,8 @@
 
   /**
    * Choix d'entrée Cinéma / Exploration + toggle permanent bas-gauche.
-   * Mode Cinéma : défilement auto uniquement (molette/clavier/tactile bloqués) jusqu'en bas ;
-   * l'utilisateur doit appuyer sur Exploration (toggle bas-gauche) pour continuer.
+   * Mode Cinéma : défilement auto jusqu’en bas ; molette/trackpad/barre restent actifs pour ne pas casser Lenis /
+   * l’accès au bas de page. Après lecture, passer en Exploration (toggle bas-gauche) poursuit parcours.
    */
   function initScrollModeChoice() {
     const choiceEl  = document.getElementById("scroll-mode-choice");
@@ -1835,9 +1964,9 @@
       );
     }
 
-    /** Bloque scroll tant que le modal impose le gel ou que le mode Cinéma impose le gel */
+    /** Bloque entrées scroll seulement pendant l’overlay de choix (cinéma n’intercepte pas la molette pour éviter le « scrollbar oui / roue non »). */
     function scrollGuardActive() {
-      return choiceOverlayScrollLock || mode === "cinema";
+      return choiceOverlayScrollLock;
     }
 
     function onWheelCinemaLock(e) {
@@ -2070,6 +2199,10 @@
     /** Parent SPA : restaurer mode d’entrée + ratio de scroll (après premier choix utilisateur, cf. `entryChosen`). */
     function applyParentHydrate(payload) {
       const p = payload || {};
+      /** Retour SPA depuis l’acte III vers crédits : scroll ~1 sinon relance `senac-navigate act3-writing`. */
+      if (p.suppressArchToAct3 === true) {
+        archWhiteoutTriggered = true;
+      }
       const em =
         p.entryMode === "cinema" || p.entryMode === "explore" ? p.entryMode : "explore";
       const sr =
@@ -2283,22 +2416,10 @@
     tryScheduleSenacScrollTriggerEffects();
     initWordSplits();
     initReveal();
-    initChapterThree();
-    const scrollToCredits = initVoyageCredits();
 
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
         scrollToHashChapterIfNeeded();
-        try {
-          const params = new URLSearchParams(window.location.search);
-          if (params.has("previewCredits")) {
-            window.requestAnimationFrame(() => {
-              scrollToCredits?.({ immediate: reducedMotion, updateHash: true });
-            });
-          }
-        } catch {
-          /* ignore */
-        }
       });
     });
   });

@@ -9,7 +9,7 @@ export type RevelationWord = (typeof REVELATION_WORDS)[number];
 export type WordFontRole = 'serifPoem' | 'sansNote';
 export type Importance = 1 | 2 | 3;
 
-export interface WordEntry {
+interface WordEntry {
   verse: string;
   poem: string;
   /** Sert au choix Serif vs Sans sur la carte */
@@ -17,7 +17,7 @@ export interface WordEntry {
   importance: Importance;
 }
 
-export const WORD_DATA: Record<string, WordEntry> = {
+const WORD_DATA: Record<string, WordEntry> = {
   soleil: {
     verse: 'Douce comme une peau que le soleil a longtemps aimée',
     poem: 'Sahara — solstice',

@@ -1,4 +1,4 @@
-# Netlify — Vite + React (tout `public/` est copié dans `dist/` au build).
+# Netlify — Vite + React (alternative : Vercel + `vercel.json` avec les mêmes redirects / SPA).
 #
 # Déploiement : connecter ce dépôt Git dans le tableau Netlify (Build ci‑dessous).
 # Tout le site est publié : `index.html`, `404.html`, `parchemin-senac.html`, assets, etc.

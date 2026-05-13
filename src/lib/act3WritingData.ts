@@ -12,7 +12,7 @@ import {
 import { metaForWord } from "../components/Immersive/mapWordData";
 import { wordTooltipLines } from "./wordTooltipLocale";
 
-export type Act3FragmentSpec = {
+type Act3FragmentSpec = {
   id: string;
   /** Vers ou phrase affichés dans la composition ET sur la pastilleinteractive. */
   line: string;

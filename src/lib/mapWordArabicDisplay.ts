@@ -3,7 +3,7 @@ import { isRevelationWord } from '../components/Immersive/mapWordData';
 import { revelationWordUISurface } from './appCopy';
 
 /** Étiquettes arabe-darija / MSA pour les clés françaises des particules carte (canvas + UI homogène) */
-export const MAP_WORD_ARABIC_LABEL: Record<string, string> = {
+const MAP_WORD_ARABIC_LABEL: Record<string, string> = {
   soleil: 'الشمس',
   sable: 'الرمال',
   mémoire: 'الذاكرة',

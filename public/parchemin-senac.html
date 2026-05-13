@@ -11,8 +11,8 @@
     <meta name="description" content="Al Rihla, La traversée — Acte II : frise narrative Jean Sénac, entre archives et nuit saharienne. Choisis ton rythme et poursuis le parcours." />
     <meta name="robots" content="noindex" />
     <link rel="icon" type="image/png" href="/favicon-camel.png" />
-    <!-- v=21 : garder en phase avec src/lib/parcheminAssetVersion.ts (cache-bust) -->
-    <link rel="stylesheet" href="/parchemin-senac.css?v=21" />
+    <!-- v=36 : garder en phase avec src/lib/parcheminAssetVersion.ts (cache-bust) -->
+    <link rel="stylesheet" href="/parchemin-senac.css?v=36" />
   </head>
   <body class="senac-night">
     <!-- SVG filter : warp + chromatic aberration portrait (piloté par JS) -->
@@ -483,13 +483,16 @@
           </div>
         </article>
 
-        <!-- Dernière plage de scroll : finit la descente / rotation sans nouveau texte (ratio→1 ↔ arche posée). -->
+        <!-- Dernière plage de scroll : zoom arche + fondu blanc → Acte III. -->
         <div class="senac-arch-scroll-tail" aria-hidden="true"></div>
+
+    <!-- Voile blanc plein écran : opacity pilotée par JS quand ratio > 0.82 -->
+    <div id="senac-arch-whiteout" aria-hidden="true"></div>
       </section>
     </main>
 
-    <script src="/static-i18n.js?v=21"></script>
-    <script type="module" src="/parchemin-senac.js?v=21"></script>
+    <script src="/static-i18n.js?v=36"></script>
+    <script type="module" src="/parchemin-senac.js?v=36"></script>
   </body>
 </html>
 

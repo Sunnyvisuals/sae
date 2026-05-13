@@ -4,16 +4,16 @@ import { REVELATION_WORDS } from "../components/Immersive/mapWordData";
 export const ACT_SAVE_STORAGE_KEY = "al-rihla-act-save";
 export const JOURNEY_REPLAY_STORAGE_KEY = "al-rihla-journey-complete";
 
-export const ACT_SAVE_VERSION = 1;
+const ACT_SAVE_VERSION = 1;
 
-export type Act1Answers = {
+type Act1Answers = {
   revelationWords: string[];
   quest: Act1QuestProgress;
   consignesDismissed: boolean;
   hasZoomed: boolean;
 };
 
-export type Act2Answers = {
+type Act2Answers = {
   quest: Act2QuestProgress;
   scrollRatio: number;
   entryMode: "cinema" | "explore";
@@ -26,7 +26,7 @@ export type Act2Answers = {
   finaleComplete?: boolean;
 };
 
-export type ActSaveState = {
+type ActSaveState = {
   version: number;
   act1: { completed: boolean; answers: Act1Answers };
   act2: { completed: boolean; answers: Act2Answers };
@@ -80,7 +80,7 @@ function defaultAct2Answers(): Act2Answers {
   };
 }
 
-export function defaultActSave(): ActSaveState {
+function defaultActSave(): ActSaveState {
   return {
     version: ACT_SAVE_VERSION,
     act1: { completed: false, answers: defaultAct1Answers() },
@@ -89,7 +89,7 @@ export function defaultActSave(): ActSaveState {
   };
 }
 
-export function loadActSave(): ActSaveState {
+function loadActSave(): ActSaveState {
   if (typeof window === "undefined") return defaultActSave();
   if (!sessionSave) {
     sessionSave = defaultActSave();
@@ -97,7 +97,7 @@ export function loadActSave(): ActSaveState {
   return sessionSave;
 }
 
-export function writeActSave(state: ActSaveState): void {
+function writeActSave(state: ActSaveState): void {
   if (typeof window === "undefined") return;
   sessionSave = state;
 }

@@ -9,6 +9,7 @@ import { useLanguageStore } from '../../stores/languageStore';
 /** Durée totale du défilement (secondes). Augmenter si contenu plus long. */
 const SCROLL_DURATION_S = 46;
 
+/** Logo institutionnel fourni — blanc sur fond sombre (`public/images/logo-mmi.png`). */
 const MMI_LOGO_SRC = `${import.meta.env.BASE_URL}images/logo-mmi.png`;
 
 type Props = {
@@ -121,6 +122,23 @@ export default function VoyageCreditsOverlay({ open, onClose, midnight }: Props)
         }}
       />
 
+      {/* Logo MMI IUT — fixé (reste lisible tout le générique ; au-dessus du fondu bas) */}
+      <div
+        className="pointer-events-none absolute bottom-[max(5rem,calc(env(safe-area-inset-bottom)+4.25rem))] left-[max(1rem,env(safe-area-inset-left))] z-[8] md:bottom-[max(5.5rem,calc(env(safe-area-inset-bottom)+4.75rem))] md:left-[max(1.5rem,env(safe-area-inset-left))]"
+      >
+        <img
+          src={MMI_LOGO_SRC}
+          alt="MMI — IUT de Toulon"
+          className="block h-[clamp(52px,9vw,72px)] w-auto opacity-[0.88] brightness-105 contrast-105 md:h-[clamp(56px,7vw,80px)]"
+          loading="lazy"
+          decoding="async"
+          draggable={false}
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).style.display = "none";
+          }}
+        />
+      </div>
+
       {/* Piste de défilement */}
       <div
         ref={trackRef}
@@ -160,16 +178,6 @@ export default function VoyageCreditsOverlay({ open, onClose, midnight }: Props)
         <p className={`font-serif text-[clamp(1rem,2.5vw,1.18rem)] italic leading-relaxed ${muted}`}>
           {copy.voyageCreditsFin}
         </p>
-
-        {/* Logo MMI */}
-        <div className="mt-12 flex justify-center">
-          <img
-            src={MMI_LOGO_SRC}
-            alt="MMI IUT"
-            className="h-16 w-auto opacity-60 sm:h-20"
-            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-          />
-        </div>
 
         {/* Espace bas pour que la dernière ligne monte bien hors écran */}
         <div className="h-[50vh]" aria-hidden />

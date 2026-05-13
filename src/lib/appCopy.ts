@@ -5,13 +5,13 @@ import {
   ACT1_PHRASE_STRIP_STEPS_FR,
 } from "./act1IntroBridge";
 
-export type PhraseStripStep = {
+type PhraseStripStep = {
   word: RevelationWord;
   before: string;
   after: string;
 };
 
-export type PoetryLevel = {
+type PoetryLevel = {
   text: string;
   missing: string[];
   options: string[];
@@ -121,7 +121,7 @@ type Copy = {
   introDevPreviewCreditsTitle: string;
   introAlRihlaSubtitle: string;
   introJeanSenacSubtitle: string;
-  scrollNudge: string;
+  zoomNudge: string;
   chapterCompleteAria: string;
   hintTitles: { act1: string; act2: string };
   hintCloseAria: string;
@@ -157,6 +157,13 @@ type Copy = {
   act3Aria: string;
   act3Kicker: string;
   act3Hint: string;
+  /** En-tête panneau liste (acte III) — typo consignes / HintPanel */
+  act3FragmentsPanelTitle: string;
+  act3FragmentsPanelSub: string;
+  act3CompositionPanelTitle: string;
+  act3CompositionPanelSub: string;
+  /** Zone vide — composition encore sans ligne */
+  act3CompositionEmptyBody: string;
   act3ContinueCredits: string;
   act3BackScroll: string;
   act3FinaleWrong: string;
@@ -224,7 +231,8 @@ const FR: Copy = {
     act1: "Une carte où cinq fragments posent cinq vers du désert dans l’Algérie.",
     act2:
       "Le rouleau nocturne : le poème, les archives au fil du défilement dans le bleu.",
-    act3: "Fragments déjà croisés : vous recomposer le voyage comme un poème.",
+    act3:
+      "Une dernière feuille : les voix rencontrées se rassemblent en un même vers.",
   },
   orientationFlux: "Flux",
   orientationFluxCredits:
@@ -279,7 +287,7 @@ const FR: Copy = {
   introDevPreviewCreditsTitle: "Prévisualiser le générique de fin (-previewCredits=1)",
   introAlRihlaSubtitle: "Jean Sénac",
   introJeanSenacSubtitle: "« La traversée »",
-  scrollNudge: "Scroll vers le bas",
+  zoomNudge: "Zoom vers le haut",
   chapterCompleteAria: "révélation carte-mémoire",
   hintTitles: { act1: "Premiers gestes", act2: "Comment naviguer" },
   hintCloseAria: "Fermer les consignes",
@@ -377,7 +385,15 @@ const FR: Copy = {
   act3Aria: "Acte III — poésie interactive, recomposition des fragments du voyage",
   act3Kicker: "écriture",
   act3Hint:
-    "Chaque clic pose une trace déjà vivante dans le voyage. L’ordre est libre. Quand tout est présent, le poème dit son dernier souffle.",
+    "Touchez les fragments retrouvés sur votre route — intro, carte, parchemin — pour les aligner ici, à la façon du bandeau du premier acte. L’ordre est libre : rassemblez-les tous pour que le dernier vers apparaisse.",
+  act3FragmentsPanelTitle: "Souvenirs du parcours",
+  act3FragmentsPanelSub:
+    "Introduction, lignes carte-mémoire et passages du rouleau : tout ce qui vous est déjà apparu dans le voyage.",
+  act3CompositionPanelTitle: "Vers recomposés",
+  act3CompositionPanelSub:
+    "Une ligne après l’autre, dans l’ordre que vous imposez jusqu’à la clôture du poème.",
+  act3CompositionEmptyBody:
+    "Touchez une première ligne à gauche pour qu’elle s’installe ici comme un vers central.",
   act3ContinueCredits: "Voir les crédits",
   act3BackScroll: "Retour au parchemin",
   act3FinaleWrong: "Ce n’est pas le mot attendu, réessayez.",
@@ -444,7 +460,8 @@ const AR: Copy = {
     act1: "خريطة فيها خمس قطع تكمّل بيت ساناك ما بين أرض الجزائر.",
     act2:
       "الطبقة الليلانية: القصيدة والمحفوظات كلّها على التصفّر في الزّرقة.",
-    act3: "شقوف لقيتوها قبل: تعيد تبني الرحلة قصيدة.",
+    act3:
+      "ورقة آخيرة: تجمع الأصوات اللي قطعتي معاكم وتولّد بيت وحيد.",
   },
   orientationFlux: "التموّج",
   orientationFluxCredits:
@@ -499,7 +516,7 @@ const AR: Copy = {
   introDevPreviewCreditsTitle: "تشوف التذييل النهاية (-previewCredits=1)",
   introAlRihlaSubtitle: "جان ساناك",
   introJeanSenacSubtitle: "« المسيرة »",
-  scrollNudge: "لتحت · الحرّاف",
+  zoomNudge: "لفوق · التكبير",
   chapterCompleteAria: "كشوف خريطة الذاكرة",
   hintTitles: { act1: "أول خطوات", act2: "كيف تمشي في الموقع" },
   hintCloseAria: "سكر الإرشادات",
@@ -598,7 +615,15 @@ const AR: Copy = {
   act3Aria: "المشهد الثالث — قصيدة تفاعلية، إعادة تجميع الشقوف",
   act3Kicker: "الكتابة",
   act3Hint:
-    "كل نقرة تدي أثر كان عيشتو في الدرب الترتيب حر ملي يكمّلو الكل، القصيدة تقول بعدها نقفوتها الخير.",
+    "قطع وأبيات كانوا معاك في الطريق تظهرو كلهم كقطع مختارة؛ نقرة على وحدة وباش تطبّقها وسط الواجهة مثل خطّ البيت في الدخول الأول. الترتيب حر، لازم تجمع كلّ الشقايح قبل آخر لفظة الدرب.",
+  act3FragmentsPanelTitle: "أثر المسيرة",
+  act3FragmentsPanelSub:
+    "من المقدّمة وفيديو، من خريطة الذاكرة ومقاطع من الرّقّ: كل هادّي دار معاكم.",
+  act3CompositionPanelTitle: "بيت يتجمّع",
+  act3CompositionPanelSub:
+    "سطر فوق سطر؛ كي تكمّلي القائمة كلّها، تقفل القصيدة بنفس وحدة خطّ الأحرف.",
+  act3CompositionEmptyBody:
+    "ابدءي بنقلة على قطعة طرف « أثر المسيرة »؛ تزاد هنا وسط الواجهة كالبيت المركز.",
   act3ContinueCredits: "شوف التذييل",
   act3BackScroll: "ارجع للرّقّ",
   act3FinaleWrong: "هاذي مش الكلمة المنتظرة، جرب من جديد.",

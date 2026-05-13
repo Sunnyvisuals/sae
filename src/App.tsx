@@ -57,9 +57,10 @@ import {
   requestDocumentFullscreen,
 } from "./lib/fullscreenDocument";
 import {
-  prefetchAct1MapChunk,
+  attachAct1MapPrefetchOnFirstUserGesture,
   prefetchAct2TransitionAssets,
   runWhenIdle,
+  scheduleIdleAct1MapPrefetchAfterLoad,
 } from "./lib/actTransitionPrefetch";
 import { prefetchAct23BridgeVideo } from "./lib/act23Bridge";
 import { PARCHEMIN_STATIC_QUERY } from "./lib/parcheminAssetVersion";
@@ -82,7 +83,7 @@ import {
   SESSION_RESUME_ACT2,
 } from "./lib/appRoutes";
 
-/** Page statique parchemin (ch. II / III) - respecte `import.meta.env.BASE_URL` (d?ploiement sous sous-chemin). */
+/** Page statique parchemin (ch. II / III) ; respecte `import.meta.env.BASE_URL` (d?ploiement sous sous-chemin). */
 function parcheminSenacHref(hash: string, options?: { previewCredits?: boolean }) {
   const base = import.meta.env.BASE_URL;
   const prefix = base.endsWith("/") ? base : `${base}/`;
@@ -110,7 +111,7 @@ function isEditableTarget(target: EventTarget | null): boolean {
   );
 }
 
-/** Progression actes / Parcours libre : m?moire de session (`lib/actSave`) ? F5 repart ? z?ro. */
+/** Progression actes / Parcours libre : m?moire de session (`lib/actSave`), F5 repart ? z?ro. */
 const MENU_HINT_SEEN_STORAGE_KEY = "al-rihla-menu-hint-seen";
 const COMPLETE_ACT1_QUEST: Act1QuestProgress = { hover: true, clickWord: true, zoom: true };
 const COMPLETE_ACT2_QUEST: Act2QuestProgress = { scroll: true };
@@ -265,6 +266,10 @@ export default function App() {
   const act2AmbientMidnight =
     (phase === "act2" && (act2ParcheminTone ?? "solar") === "midnight") || phase === "act3";
 
+  /** Hydrate SplashCursor après 2 cadres paint : évite de rivaliser avec FCP/LCP (rendu inchangé par la suite). */
+  const [splashWebglReady, setSplashWebglReady] = useState(false);
+  const splashWebglMountedRef = useRef(false);
+
   const mdUp = useMediaQuery("(min-width: 768px)");
   /** `(any-pointer: fine)` inclut souris/stylus/trackpad m?me si `(hover:hover)` est faux sur hybrides. */
   const finePointer = useMediaQuery("(any-pointer: fine)");
@@ -401,12 +406,12 @@ export default function App() {
     document.title =
       phase === "act3"
         ? isArabic
-          ? "?????? ? ???????"
-          : "Al Rihla ? L??criture"
+          ? "\u0627\u0644\u0631\u062d\u0644\u0629 \u00b7 \u0627\u0644\u0643\u062a\u0627\u0628\u0629"
+          : "Al-Rihla \u00b7 L'\u00e9criture"
         : isArabic
-          ? "??????"
-          : "Al Rihla";
-  }, [language]);
+          ? "\u0627\u0644\u0631\u062d\u0644\u0629"
+          : "Al-Rihla";
+  }, [language, phase]);
 
   /** Chunks menu pause + rail Parcours (GSAP) : charg?s en idle pour r?duire le JS initial sans bloquer le premier rendu. */
   useEffect(() => {
@@ -424,15 +429,46 @@ export default function App() {
     return () => clearTimeout(t);
   }, []);
 
-  /** Intro : pr?charge le chunk carte ; si Parcours libre, pr?pare aussi l?acte II pour un saut direct. */
+  /** Intro : prefetch carte apr?s interaction ou apr?s load idle ? pas de t?l?chargement pr?matur? sans geste utilisateur. */
   useEffect(() => {
     if (phase !== "intro") return;
-    const cancel = runWhenIdle(() => {
-      void prefetchAct1MapChunk();
-      if (journeyReplayUnlocked) prefetchAct2TransitionAssets();
-    });
-    return cancel;
+    const detachGesture = attachAct1MapPrefetchOnFirstUserGesture();
+    const cancelIdleFallback = scheduleIdleAct1MapPrefetchAfterLoad();
+    return () => {
+      detachGesture();
+      cancelIdleFallback();
+    };
+  }, [phase]);
+
+  /** Parcours libre : pr?pare acte II une fois la page stabilis?e (?vite pic r?seau/CPU au premier rendu intro). */
+  useEffect(() => {
+    if (phase !== "intro" || !journeyReplayUnlocked) return;
+    let cancelAct2Prefetch: (() => void) | undefined;
+    const onLoad = () => {
+      cancelAct2Prefetch = runWhenIdle(() => prefetchAct2TransitionAssets(), 3600);
+    };
+    if (document.readyState === "complete") onLoad();
+    else window.addEventListener("load", onLoad, { once: true });
+    return () => {
+      window.removeEventListener("load", onLoad);
+      cancelAct2Prefetch?.();
+    };
   }, [phase, journeyReplayUnlocked]);
+
+  useEffect(() => {
+    if (!finePointer || splashWebglMountedRef.current) return;
+    let rafTail = 0;
+    const rafHead = requestAnimationFrame(() => {
+      rafTail = requestAnimationFrame(() => {
+        splashWebglMountedRef.current = true;
+        setSplashWebglReady(true);
+      });
+    });
+    return () => {
+      cancelAnimationFrame(rafHead);
+      cancelAnimationFrame(rafTail);
+    };
+  }, [finePointer]);
 
   /** Carte : pendant le jeu, pr?pare bundle acte II + HTML parchemin + vid?os de pont (I?II, II?III). */
   useEffect(() => {
@@ -889,7 +925,8 @@ export default function App() {
   }, [parcoursOpen, phase, journeyReplayUnlocked]);
 
   /**
-   * Acte II : iframe ? progression ? D?filez ? et navigation (postMessage). Le relais `senac-pointer` a ?t? retir? : curseur custom d?sactiv? en acte II, le parchemin g?re le losange local.
+   * Acte II : iframe ? progression, navigation, et relais pointeur (`senac-pointer`) pour que le curseur
+   * fluide + losange React suivent la souris au-dessus du parchemin (sinon seuls le rail Parcours re?oivent les events).
    */
   useEffect(() => {
     if (phase !== "act2") return;
@@ -898,6 +935,25 @@ export default function App() {
     const onMsg = (e: MessageEvent) => {
       if (e.origin !== expectedOrigin) return;
       const d = e.data as Record<string, unknown>;
+      if (d?.type === "senac-pointer") {
+        if (phaseRef.current !== "act2") return;
+        const iframe = document.querySelector('iframe[src*="parchemin-senac"]');
+        if (!(iframe instanceof HTMLIFrameElement) || e.source !== iframe.contentWindow) return;
+        const cx = typeof d.clientX === "number" && Number.isFinite(d.clientX) ? d.clientX : 0;
+        const cy = typeof d.clientY === "number" && Number.isFinite(d.clientY) ? d.clientY : 0;
+        const r = iframe.getBoundingClientRect();
+        const x = r.left + cx;
+        const y = r.top + cy;
+        if (d.down === true) {
+          window.dispatchEvent(
+            new PointerEvent("pointerdown", { clientX: x, clientY: y, bubbles: true, cancelable: false }),
+          );
+        }
+        window.dispatchEvent(
+          new PointerEvent("pointermove", { clientX: x, clientY: y, bubbles: true, cancelable: false }),
+        );
+        return;
+      }
       if (e.data?.type === "senac-entry-mode") {
         const mode = e.data.mode as string;
         if (mode !== "cinema" && mode !== "explore") return;
@@ -1015,7 +1071,7 @@ export default function App() {
     const save = getHydratedActSave();
     if (!save.act2.answers.entryChosen) return;
 
-    const payload = {
+    const basePayload = {
       entryMode: save.act2.answers.entryMode,
       scrollRatio: save.act2.answers.scrollRatio,
     };
@@ -1024,6 +1080,10 @@ export default function App() {
       const iframe = document.querySelector('iframe[src*="parchemin-senac"]');
       if (!(iframe instanceof HTMLIFrameElement) || !iframe.contentWindow) return;
       try {
+        const payload = {
+          ...basePayload,
+          suppressArchToAct3: act2VoyageCreditsOpenRef.current === true,
+        };
         iframe.contentWindow.postMessage({ type: "senac-hydrate", payload }, window.location.origin);
       } catch {
         /* ignore */
@@ -1093,17 +1153,6 @@ export default function App() {
       <Soundscape enabled={phase !== "act2"} />
 
       <AnimatePresence mode="sync">
-        {chapterToast && (
-          <Fragment key="ch1-toast">
-            <ChapterCompleteToast
-              chapterTitle={copy.chapterToastTitle}
-              subtitle={copy.chapterToastSubtitle}
-            />
-          </Fragment>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence mode="wait">
         {chapterDaTransition && (
           <ChapterAct12Bridge
             key="act12-bridge"
@@ -1111,6 +1160,15 @@ export default function App() {
             onSwapPhase={handleAct12BridgeSwapPhase}
             onFinish={handleAct12BridgeFinish}
           />
+        )}
+        {chapterToast && (
+          <Fragment key="ch1-toast">
+            <ChapterCompleteToast
+              chapterTitle={copy.chapterToastTitle}
+              subtitle={copy.chapterToastSubtitle}
+              blendBridgeBackdrop
+            />
+          </Fragment>
         )}
       </AnimatePresence>
 
@@ -1327,9 +1385,9 @@ export default function App() {
         />
       )}
 
-      {/* Nudge scroll - acte I uniquement, masqu? d?s que le zoom est acquis */}
+      {/* Rep?re zoom ? acte I ? masqu? d?s que le zoom carte est acquis */}
       {phase === "act1" && !systemMenuOpen && !introVideoOpen && !act1Quest.zoom && (
-        <ScrollNudge key="scroll-nudge-act1" />
+        <ScrollNudge key="zoom-nudge-act1" />
       )}
 
       <main
@@ -1457,10 +1515,11 @@ export default function App() {
 
       </main>
 
-      {/* Fluide WebGL : acte II = iframe plein ?cran + fluide pilot? au scroll ? masquait le parchemin et le rail Parcours (z-120). Hors acte II, ou g?n?rique voyage (surcouche d?di?e). */}
-      {finePointer && (phase !== "act2" || act2VoyageCreditsOpen) && (
+      {/* Fluide WebGL : toutes les phases (pointer-events: none, ne bloque pas l'iframe). */}
+      {finePointer && splashWebglReady && (
         <div
           style={{
+            pointerEvents: "none",
             visibility:
               systemMenuOpen ||
               introVideoOpen ||
@@ -1503,16 +1562,18 @@ export default function App() {
         onClose={restartExperience}
       />
 
-      <ScrollProgressBar
-        tone={act2AmbientMidnight ? "midnight" : "solar"}
-        iframeFillRatio={phase === "act2" ? act2ScrollFillRatio : undefined}
-        aboveChrome={false}
-      />
+      {phase === "act2" && !act2VoyageCreditsOpen && !act23BridgeOpen && !introVideoOpen ? (
+        <ScrollProgressBar
+          tone={act2AmbientMidnight ? "midnight" : "solar"}
+          iframeFillRatio={act2ScrollFillRatio}
+          aboveChrome={false}
+        />
+      ) : null}
       </motion.div>
       <LanguageMorphHud visible={isLanguageMorphing} midnight={languageMorphMidnight} />
     </ReactLenis>
-      {/* Curseur custom : désactivé en acte II (parchemin = losange dans l?iframe, curseur système sur le shell). */}
-      {finePointer && (phase !== "act2" || act2VoyageCreditsOpen) && (
+      {/* Curseur custom : d?sactiv? en acte II (parchemin = losange dans l?iframe, curseur syst?me sur le shell). */}
+      {finePointer && (
       <CustomCursor
         overlayOpen={
           systemMenuOpen ||

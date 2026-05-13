@@ -19,9 +19,9 @@ export const ACT1_REVELATION_SEQUENCE = [
   "immensité",
 ] as const;
 
-export type Act1RevelationWordKey = (typeof ACT1_REVELATION_SEQUENCE)[number];
+type Act1RevelationWordKey = (typeof ACT1_REVELATION_SEQUENCE)[number];
 
-export type Act1PhraseStripRow = {
+type Act1PhraseStripRow = {
   word: Act1RevelationWordKey;
   before: string;
   after: string;
@@ -76,7 +76,7 @@ export const ACT1_PHRASE_STRIP_STEPS_AR: readonly Act1PhraseStripRow[] = [
 ];
 
 /** Dev : strip et liste ordonnée restent synchrones après édition manuelle. */
-export function assertAct1PhraseStripsOrdered(): void {
+function assertAct1PhraseStripsOrdered(): void {
   if (import.meta.env.PROD) return;
   const check = (rows: readonly Act1PhraseStripRow[], label: string) => {
     if (rows.length !== ACT1_REVELATION_SEQUENCE.length) {

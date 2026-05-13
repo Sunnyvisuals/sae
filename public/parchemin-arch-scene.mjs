@@ -3,7 +3,7 @@
  * Modèle : public/models/model.glb — ratio = scrollY / scrollMax.
  *
  * Le canvas couvre tout le viewport (CSS fixed inset 0, 100% × 100%).
- * Le modèle descend depuis le haut et se pose centré, droit, face caméra à t = 1.
+ * Le modèle descend puis, en phase zoom final (fin du scroll), slerp quaternion + petite caméra pour cadrer l'entrée d'arche — à tuner : _scratchEulerB (0.28…) et camera.lookAt Y.
  */
 
 const THREE_VER = "0.170.0";
@@ -11,6 +11,9 @@ const THREE_SRC = `https://esm.sh/three@${THREE_VER}`;
 const GLTF_LOADER_SRC = `https://esm.sh/three@${THREE_VER}/examples/jsm/loaders/GLTFLoader.js?deps=three@${THREE_VER}`;
 const DRACO_LOADER_SRC = `https://esm.sh/three@${THREE_VER}/examples/jsm/loaders/DRACOLoader.js?deps=three@${THREE_VER}`;
 const DRACO_DECODER_PATH = `https://esm.sh/three@${THREE_VER}/examples/jsm/libs/draco/gltf/`;
+
+/** Ratio scroll où commence le zoom. Plus bas = phase zoom plus longue (moins « rapide » à la molette). Synchro `parchemin-senac.js`. */
+const ARCH_ZOOM_BEGIN = 0.86;
 
 /**
  * @param {object} opts
@@ -80,7 +83,6 @@ export async function initSenacArchScene(opts) {
     console.warn("[arch-scene] WebGL context lost");
   });
   canvas.addEventListener("webglcontextrestored", () => {
-    console.info("[arch-scene] WebGL context restored");
     fitSize();
     if (meshReady) renderer.render(scene, camera);
   });
@@ -97,6 +99,12 @@ export async function initSenacArchScene(opts) {
   const animRoot = new THREE.Group();
   scene.add(animRoot);
 
+  const _scratchEulerA = new THREE.Euler();
+  const _scratchEulerB = new THREE.Euler();
+  const _scratchQFrom = new THREE.Quaternion();
+  const _scratchQTo = new THREE.Quaternion();
+  const _scratchQWobble = new THREE.Quaternion();
+
   function fitSize() {
     const w = window.innerWidth;
     const h = window.innerHeight;
@@ -109,15 +117,69 @@ export async function initSenacArchScene(opts) {
   }
 
   /**
-   * t = 0 → modèle haut hors écran
-   * t = 1 → modèle centré (0,0,0), droit, face caméra, aucune rotation
+   * Une seule courbe descente→zoom : wobble quaternion enveloppé (0 aux bords du zoom)
+   * pour éviter le « pop » perceptif à l’entrée de phase zoom (~ARCH_ZOOM_BEGIN).
    */
   function applyPose(tRaw) {
     const t = Math.min(1, Math.max(0, tRaw));
-    const yPos = reducedMotion ? 0 : THREE.MathUtils.lerp(3.0, -0.7, t);
-    const xSwing = reducedMotion ? 0 : Math.sin(t * Math.PI * 2) * (1 - t) * 2.0;
-    animRoot.position.set(xSwing, yPos, 0);
-    animRoot.rotation.set(t * Math.PI * -6.15, -9.9, 0);
+
+    camera.position.set(0, 0, 4.6);
+    camera.lookAt(0, 0, 0);
+
+    if (reducedMotion) {
+      animRoot.quaternion.identity();
+      animRoot.position.set(0, 0, 0);
+      return;
+    }
+
+    const z0 = ARCH_ZOOM_BEGIN;
+    const zSpan = Math.max(1e-6, 1 - z0);
+
+    const tDescend = Math.min(t / z0, 1);
+    const yDescend = THREE.MathUtils.lerp(3.0, -0.2, tDescend);
+    const xDescend = Math.sin(tDescend * Math.PI * 2) * (1 - tDescend) * 3.0;
+    const rxDesc = tDescend * Math.PI * -6.15;
+    const ryDesc = -9.9;
+
+    const zoomT = Math.min(1, Math.max(0, (t - z0) / zSpan));
+    const zoomEased = THREE.MathUtils.smoothstep(zoomT, 0, 1);
+    const wobbleEnv = zoomEased * (1 - zoomEased) * 4;
+
+    const pz = zoomEased * 5.1;
+    const py = THREE.MathUtils.lerp(yDescend, -0.34, zoomEased);
+    const px =
+      THREE.MathUtils.lerp(xDescend, 0, zoomEased) +
+      Math.sin(zoomT * Math.PI * 4.2) * 0.048 * wobbleEnv;
+
+    _scratchEulerA.set(rxDesc, ryDesc, 0, "XYZ");
+    _scratchQFrom.setFromEuler(_scratchEulerA);
+    _scratchEulerB.set(0.28, 0.05, -0.04, "XYZ");
+    _scratchQTo.setFromEuler(_scratchEulerB);
+    _scratchQFrom.slerp(_scratchQTo, zoomEased);
+
+    const wAmp = wobbleEnv * 0.12;
+    _scratchEulerB.set(
+      Math.sin(zoomT * Math.PI * 5.5) * wAmp,
+      Math.sin(zoomT * Math.PI * 3.1) * wAmp * 0.85,
+      Math.cos(zoomT * Math.PI * 4.3) * wAmp * 0.62,
+      "XYZ",
+    );
+    _scratchQWobble.setFromEuler(_scratchEulerB);
+    _scratchQFrom.multiply(_scratchQWobble);
+
+    animRoot.quaternion.copy(_scratchQFrom);
+    animRoot.position.set(px, py, pz);
+
+    camera.position.set(
+      THREE.MathUtils.lerp(0, -0.12, zoomEased),
+      THREE.MathUtils.lerp(0, 0.06, zoomEased),
+      4.6,
+    );
+    camera.lookAt(
+      THREE.MathUtils.lerp(0, 0.02, zoomEased),
+      THREE.MathUtils.lerp(0, -0.56, zoomEased),
+      0,
+    );
   }
 
   let meshReady = false;
@@ -148,7 +210,6 @@ export async function initSenacArchScene(opts) {
       animRoot.clear();
       animRoot.add(model);
       meshReady = true;
-      console.info("[arch-scene] GLB ready — scale:", scale.toFixed(3));
       fitSize();
       applyPose(getScrollRatio());
       renderer.render(scene, camera);

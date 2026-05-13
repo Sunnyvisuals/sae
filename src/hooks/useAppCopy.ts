@@ -1,8 +1,6 @@
 import { useMemo } from "react";
 import { useLanguageStore } from "../stores/languageStore";
-import { copyFor, type PoetryLevel } from "../lib/appCopy";
-
-export type { PoetryLevel };
+import { copyFor } from "../lib/appCopy";
 
 export function useAppCopy() {
   const lang = useLanguageStore((s) => s.language);

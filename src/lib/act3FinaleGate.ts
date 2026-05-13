@@ -9,7 +9,7 @@ export type Act3FinaleGateLocale = {
 };
 
 /** Secours si `public/data/act3-finale-gate.json` est absent ou invalide — garder aligné avec ce fichier. */
-export const ACT3_FINALE_GATE_FALLBACK: Record<"fr" | "ar", Act3FinaleGateLocale> = {
+const ACT3_FINALE_GATE_FALLBACK: Record<"fr" | "ar", Act3FinaleGateLocale> = {
   fr: {
     prompt:
       "Complétez le mot manquant du vers, puis validez avec Entrée.",
@@ -67,7 +67,7 @@ export async function loadAct3FinaleGate(language: AppLanguage): Promise<Act3Fin
   }
 }
 
-export function normalizeFinaleAnswer(raw: string, arabicUi: boolean): string {
+function normalizeFinaleAnswer(raw: string, arabicUi: boolean): string {
   let s = raw.trim();
   if (!arabicUi) {
     return s

@@ -25,16 +25,16 @@ export default function ScrollNudge() {
       if (!dismissedRef.current) setVisible(true);
     }, DELAY_MS);
 
-    /** Masqué dès que l’utilisateur fait défiler vers le bas (action attendue). */
+    /** Acte I : masqué dès un zoom avant (molette / pincement) ou équivalent geste cartographique. */
     const onWheel = (e: WheelEvent) => {
       if (dismissedRef.current) return;
-      if (e.deltaY > 0.5) dismiss();
+      if (e.deltaY < -0.5) dismiss();
     };
 
     const onScroll = () => {
       if (dismissedRef.current) return;
       const y = window.scrollY;
-      if (y > lastScrollYRef.current + 1) dismiss();
+      if (y < lastScrollYRef.current - 1) dismiss();
       lastScrollYRef.current = y;
     };
 
@@ -48,7 +48,7 @@ export default function ScrollNudge() {
       if (y == null) return;
       const dy = y - lastTouchYRef.current;
       lastTouchYRef.current = y;
-      if (dy < -4) dismiss();
+      if (dy > 4) dismiss();
     };
 
     window.addEventListener('wheel', onWheel, { passive: true });
@@ -86,14 +86,14 @@ export default function ScrollNudge() {
           exit={{ opacity: 0, y: 6 }}
           transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
         >
-          {/* Chevron vers le bas — invite au défilement descendant. */}
+          {/* Chevron vers le haut — invite au zoom sur la carte. */}
           <motion.svg
             width="44"
             height="44"
             viewBox="0 0 44 44"
             fill="none"
             aria-hidden
-            animate={{ y: [0, 5, 0] }}
+            animate={{ y: [0, -5, 0] }}
             transition={{ duration: 2.8, repeat: Infinity, ease: [0.45, 0, 0.55, 1] }}
           >
             <motion.path
@@ -102,13 +102,13 @@ export default function ScrollNudge() {
               fill="none"
               stroke="rgba(197, 160, 89, 0.68)"
               strokeWidth="1.35"
-              d="M14 17.5 L22 25 L30 17.5"
+              d="M14 26.5 L22 18.5 L30 26.5"
               animate={{ opacity: [0.55, 0.95, 0.55] }}
               transition={{ duration: 2.2, repeat: Infinity, ease: [0.42, 0, 0.58, 1] }}
             />
           </motion.svg>
 
-          <p className="da-hint-micro">{copy.scrollNudge}</p>
+          <p className="da-hint-micro">{copy.zoomNudge}</p>
         </motion.div>
       )}
     </AnimatePresence>

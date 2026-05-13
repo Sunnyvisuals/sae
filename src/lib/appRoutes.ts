@@ -16,7 +16,7 @@ function baseDirUrl(): string {
 }
 
 /** Racine SPA (dossier de `index.html`). */
-export function mainSpaPathHref(): string {
+function mainSpaPathHref(): string {
   const u = new URL(".", `${window.location.origin}${baseDirUrl()}`);
   let pathname = u.pathname.replace(/\/+/g, "/");
   if (pathname.length > 1 && pathname.endsWith("/")) pathname = pathname.slice(0, -1);
@@ -36,7 +36,7 @@ function normalizePathSansBase(pathname: string): string {
 }
 
 /** Ancien lien `/act3` (bookmark / partage). */
-export function pathnameIsActIII(): boolean {
+function pathnameIsActIII(): boolean {
   if (typeof window === "undefined") return false;
   return normalizePathSansBase(window.location.pathname) === "/act3";
 }

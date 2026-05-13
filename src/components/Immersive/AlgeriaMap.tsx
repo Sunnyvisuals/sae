@@ -920,6 +920,7 @@ export default function AlgeriaMap({
 
   return (
     <div className="relative h-full min-h-0 w-full min-w-0 max-w-full overflow-x-hidden overflow-y-visible bg-da-depth-map">
+      <span className="sr-only">{copy.act1AriaHud}</span>
       <ActOneAmbiance chapterComplete={memoryAwake} />
 
       {/* ── Grille narrative : chapitre + progression (5 mots-révélation) ── */}
@@ -1045,68 +1046,40 @@ export default function AlgeriaMap({
         )}
       </AnimatePresence>
 
-      {/* ── HUD acte : bandeau fixe bas-gauche (flux normal - plus de vol GSAP / ancre) ── */}
-      <div
-        className="pointer-events-none absolute bottom-0 left-0 z-[45] flex w-full max-w-[min(calc(100vw-1.25rem),380px)] flex-col items-start pb-[max(1.75rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-4 pt-3 select-none sm:pr-6 md:pb-[max(2.5rem,env(safe-area-inset-bottom))] md:pl-8 md:pr-8"
-      >
-        <div className="relative w-full">
+      {/* ── Consignes tutoriel : bas-gauche (anciennement + bandeau Acte / Sahara — retiré) ── */}
+      {tutorialActive && (
+        <div
+          className="pointer-events-none absolute bottom-0 left-0 z-[45] flex w-full max-w-[min(calc(100vw-1.25rem),380px)] flex-col items-start pb-[max(1.75rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-4 pt-3 select-none sm:pr-6 md:pb-[max(2.5rem,env(safe-area-inset-bottom))] md:pl-8 md:pr-8"
+        >
           <motion.div
-            initial={
-              prefersReducedMotion
-                ? { opacity: 1, y: 0 }
-                : { opacity: 0, y: 22 }
-            }
+            ref={actConsignesRef}
+            className="relative mt-0 flex w-full flex-col gap-2"
+            initial={prefersReducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={
               prefersReducedMotion
                 ? { duration: 0.01 }
-                : { duration: 1, delay: 0.35, ease: [0.22, 1, 0.36, 1] }
+                : { delay: 1.15, duration: 0.5, ease: [0.22, 1, 0.36, 1] }
             }
-            className="w-full text-left"
-            role="status"
-            aria-label={copy.act1AriaHud}
           >
-            <div className="min-w-0 pr-1">
-              <p className="text-[10px] font-semibold uppercase leading-relaxed tracking-[0.4em] text-solar-gold/88 md:text-[11px] md:tracking-[0.42em] [text-shadow:0_1px_14px_rgba(0,0,0,0.9)]">
-                {copy.act1BottomTitle}
+            <p className="pl-0.5 text-[9px] font-semibold uppercase tracking-[0.45em] text-solar-gold/65">
+              {copy.act1TutorialHeading}
+            </p>
+            <div className="rounded-[2px] border border-solar-gold/28 bg-[#060504]/85 px-3 py-2.5 shadow-[0_0_0_1px_rgba(197,160,89,0.08),0_8px_28px_rgba(0,0,0,0.4)] backdrop-blur-md md:px-3.5 md:py-3">
+              <p
+                className="text-[10px] font-semibold uppercase leading-relaxed tracking-[0.22em] text-solar-gold [text-shadow:0_0_20px_rgba(197,160,89,0.45),0_1px_8px_rgba(0,0,0,0.85)] md:text-[11px] md:tracking-[0.26em]"
+              >
+                {copy.act1TutorialLine1}
               </p>
-              <h2 className="font-bahlull mt-2.5 text-[clamp(1.6rem,4.2vw,2.25rem)] italic leading-[1.12] tracking-tight text-[#fefaf4] [text-shadow:0_2px_18px_rgba(0,0,0,0.95),0_0_32px_rgba(197,160,89,0.28)] md:mt-3">
-                {copy.act1BottomChapter}
-              </h2>
+              <p
+                className="mt-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-solar-gold/92 [text-shadow:0_0_18px_rgba(197,160,89,0.4),0_1px_8px_rgba(0,0,0,0.8)] md:text-[11px]"
+              >
+                {copy.act1TutorialLine2}
+              </p>
             </div>
           </motion.div>
-
-          {tutorialActive && (
-            <motion.div
-              ref={actConsignesRef}
-              className="mt-7 flex flex-col gap-2 md:mt-8"
-              initial={prefersReducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={
-                prefersReducedMotion
-                  ? { duration: 0.01 }
-                  : { delay: 1.15, duration: 0.5, ease: [0.22, 1, 0.36, 1] }
-              }
-            >
-              <p className="pl-0.5 text-[9px] font-semibold uppercase tracking-[0.45em] text-solar-gold/65">
-                {copy.act1TutorialHeading}
-              </p>
-              <div className="rounded-[2px] border border-solar-gold/28 bg-[#060504]/85 px-3 py-2.5 shadow-[0_0_0_1px_rgba(197,160,89,0.08),0_8px_28px_rgba(0,0,0,0.4)] backdrop-blur-md md:px-3.5 md:py-3">
-                <p
-                  className="text-[10px] font-semibold uppercase leading-relaxed tracking-[0.22em] text-solar-gold [text-shadow:0_0_20px_rgba(197,160,89,0.45),0_1px_8px_rgba(0,0,0,0.85)] md:text-[11px] md:tracking-[0.26em]"
-                >
-                  {copy.act1TutorialLine1}
-                </p>
-                <p
-                  className="mt-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-solar-gold/92 [text-shadow:0_0_18px_rgba(197,160,89,0.4),0_1px_8px_rgba(0,0,0,0.8)] md:text-[11px]"
-                >
-                  {copy.act1TutorialLine2}
-                </p>
-              </div>
-            </motion.div>
-          )}
         </div>
-      </div>
+      )}
 
       {/* ── Échelle / zoom : bas droite, décal si rail Parcours (cf. OrientationPanel) ── */}
       <AnimatePresence>

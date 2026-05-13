@@ -166,10 +166,10 @@ function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
     (midnight ? 'text-sky-300/70 hover:text-sky-100' : 'text-solar-gold/68 hover:text-solar-gold');
 
   return (
-    <motion.div variants={item} className="mt-4 w-full max-w-[min(100%,526px)] px-0 sm:mt-5">
+    <motion.div variants={item} className="mt-3 w-full max-w-[min(100%,526px)] px-0 sm:mt-4">
       <div
         className={
-          'rounded-[2px] px-3 py-2.5 sm:px-4 sm:py-3 ' +
+          'rounded-[2px] px-3 py-1.5 sm:px-4 sm:py-2 ' +
           (midnight
             ? 'bg-[rgba(4,10,22,0.22)]'
             : 'bg-black/12')
@@ -183,7 +183,7 @@ function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
           onClick={toggleSoundPanel}
           aria-labelledby={`${panelId}-label`}
           className={
-            'group flex w-full min-w-0 items-center justify-between gap-3 py-1 text-start outline-none transition-[opacity,color] duration-300 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent sm:py-1.5 ' +
+            'group flex w-full min-w-0 items-center justify-between gap-3 py-0 text-start outline-none transition-[opacity,color] duration-300 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ' +
             (midnight
               ? 'focus-visible:ring-[rgba(90,168,255,0.38)]'
               : 'focus-visible:ring-solar-gold/40')
@@ -331,10 +331,10 @@ function PauseLanguagePicker({ midnight }: { midnight: boolean }) {
     : 'from-solar-gold/[0.04] via-solar-gold/45 to-solar-gold/[0.04]';
 
   return (
-    <motion.div variants={item} className="mt-4 w-full max-w-[min(100%,526px)] px-0 sm:mt-5">
+    <motion.div variants={item} className="mt-2 w-full max-w-[min(100%,526px)] px-0 sm:mt-2.5">
       <div
         className={
-          'rounded-[2px] px-3 py-2.5 sm:px-4 sm:py-3 ' +
+          'rounded-[2px] px-3 py-1.5 sm:px-4 sm:py-2 ' +
           (midnight
             ? 'bg-[rgba(4,10,22,0.22)]'
             : 'bg-black/12')
@@ -348,7 +348,7 @@ function PauseLanguagePicker({ midnight }: { midnight: boolean }) {
           onClick={toggleLanguagePanel}
           aria-labelledby={`${panelId}-label`}
           className={
-            'group flex w-full min-w-0 items-center justify-between gap-3 py-1 text-start outline-none transition-[opacity,color] duration-300 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent sm:py-1.5 ' +
+            'group flex w-full min-w-0 items-center justify-between gap-3 py-0 text-start outline-none transition-[opacity,color] duration-300 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ' +
             (midnight
               ? 'focus-visible:ring-[rgba(90,168,255,0.38)]'
               : 'focus-visible:ring-solar-gold/40')
@@ -459,10 +459,10 @@ function PauseFullscreenPanel({ midnight }: { midnight: boolean }) {
     : `${copy.menuFullscreenStateOff} · ${copy.menuFullscreenShortcutEnter}`;
 
   return (
-    <motion.div variants={item} className="mt-4 w-full max-w-[min(100%,526px)] px-0 sm:mt-5">
+    <motion.div variants={item} className="mt-2 w-full max-w-[min(100%,526px)] px-0 sm:mt-2.5">
       <div
         className={
-          'rounded-[2px] px-3 py-2.5 sm:px-4 sm:py-3 ' +
+          'rounded-[2px] px-3 py-1.5 sm:px-4 sm:py-2 ' +
           (midnight ? 'bg-[rgba(4,10,22,0.22)]' : 'bg-black/12')
         }
       >
@@ -474,7 +474,7 @@ function PauseFullscreenPanel({ midnight }: { midnight: boolean }) {
           onClick={togglePanel}
           aria-labelledby={`${panelId}-label`}
           className={
-            'group flex w-full min-w-0 items-center justify-between gap-3 py-1 text-start outline-none transition-[opacity,color] duration-300 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent sm:py-1.5 ' +
+            'group flex w-full min-w-0 items-center justify-between gap-3 py-0 text-start outline-none transition-[opacity,color] duration-300 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ' +
             (midnight
               ? 'focus-visible:ring-[rgba(90,168,255,0.38)]'
               : 'focus-visible:ring-solar-gold/40')
@@ -700,34 +700,6 @@ export default function SystemMenu({
               </h2>
             </motion.div>
 
-            <motion.div
-              variants={item}
-              className="relative z-[1] mx-auto mt-4 flex w-full max-w-sm items-center justify-center gap-2 sm:mt-5 sm:max-w-md sm:gap-2.5"
-            >
-              <div
-                className={
-                  midnight
-                    ? 'h-px flex-1 bg-gradient-to-r from-transparent via-[rgba(139,213,255,0.45)] to-[rgba(90,168,255,0.15)]'
-                    : 'h-px flex-1 bg-gradient-to-r from-transparent via-solar-gold/45 to-solar-gold/20'
-                }
-              />
-              <div
-                className={
-                  midnight
-                    ? 'relative z-[2] h-3 w-3 shrink-0 rotate-45 border border-[rgba(139,213,255,0.5)] bg-[#040a14] shadow-[0_0_16px_rgba(90,168,255,0.22)] sm:h-3.5 sm:w-3.5'
-                    : 'relative z-[2] h-3 w-3 shrink-0 rotate-45 border border-solar-gold/55 bg-[#050302] shadow-[0_0_16px_rgba(197,160,89,0.15)] sm:h-3.5 sm:w-3.5'
-                }
-                aria-hidden
-              />
-              <div
-                className={
-                  midnight
-                    ? 'h-px flex-1 bg-gradient-to-l from-transparent via-[rgba(139,213,255,0.45)] to-[rgba(90,168,255,0.15)]'
-                    : 'h-px flex-1 bg-gradient-to-l from-transparent via-solar-gold/45 to-solar-gold/20'
-                }
-              />
-            </motion.div>
-
             <motion.p
               variants={item}
               className={
@@ -748,16 +720,16 @@ export default function SystemMenu({
             <PauseFullscreenPanel midnight={midnight} />
 
             {embeddedParcours && (
-              <motion.div variants={item} className="mt-4 w-full max-w-[min(100%,526px)] sm:mt-5">
+              <motion.div variants={item} className="mt-2 w-full max-w-[min(100%,526px)] sm:mt-2.5">
                 <details
                   className={
-                    'group rounded-none px-3 py-2.5 sm:px-4 sm:py-3 ' +
+                    'group rounded-none px-3 py-1.5 sm:px-4 sm:py-2 ' +
                     (midnight ? 'bg-[rgba(4,10,22,0.22)]' : 'bg-black/12')
                   }
                 >
                   <summary
                     className={
-                      'flex cursor-pointer list-none items-center justify-between gap-3 py-1 outline-none transition-[color,opacity] duration-300 marker:content-none [&::-webkit-details-marker]:hidden sm:py-1.5 ' +
+                      'flex cursor-pointer list-none items-center justify-between gap-3 py-0 outline-none transition-[color,opacity] duration-300 marker:content-none [&::-webkit-details-marker]:hidden ' +
                       (midnight
                         ? 'text-sky-400/72 focus-visible:ring-2 focus-visible:ring-[rgba(90,168,255,0.38)] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent'
                         : 'text-solar-gold/65 focus-visible:ring-2 focus-visible:ring-solar-gold/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent')

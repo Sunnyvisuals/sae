@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
     "start": "vite --port=3000 --host=0.0.0.0",
@@ -11,8 +14,10 @@
     "assets:act12-bridge-mp4": "ffmpeg -y -i public/transitions/trans2-alpha-act12.webm -an -c:v libx264 -pix_fmt yuv420p -profile:v high -movflags +faststart public/transitions/trans2-alpha-act12.mp4",
     "preview": "vite preview --port 3000 --host",
     "deploy:netlify": "npm run build && npx netlify deploy --prod --dir=dist",
+    "deploy:vercel": "vercel deploy --prod",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
+    "knip": "knip",
     "verify": "npm run lint && npm run build"
   },
   "dependencies": {
@@ -30,7 +35,7 @@
     "@types/howler": "^2.2.12",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.4",
-    "autoprefixer": "^10.4.21",
+    "knip": "^5.88.1",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
