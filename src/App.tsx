@@ -1,9 +1,8 @@
-import {
+﻿import {
   useState,
   useEffect,
   useRef,
   useCallback,
-  useLayoutEffect,
   lazy,
   Suspense,
   useMemo,
@@ -11,9 +10,9 @@ import {
 } from "react";
 import { ReactLenis } from "lenis/react";
 import { AnimatePresence, motion } from "motion/react";
-import gsap from "gsap";
 
 import Intro from "./components/Intro";
+import ChapterAct12Bridge from "./components/ChapterAct12Bridge";
 const AlgeriaMap = lazy(() => import("./components/Immersive/AlgeriaMap"));
 const Act2 = lazy(() => import("./components/Immersive/Act2"));
 
@@ -54,8 +53,9 @@ import {
   isFullscreenApiSupported,
   requestDocumentFullscreen,
 } from "./lib/fullscreenDocument";
+import { prefetchAct12BridgeVideo } from "./lib/act12BridgePrefetch";
 
-/** Page statique parchemin (ch. II / III) - respecte `import.meta.env.BASE_URL` (déploiement sous sous-chemin). */
+/** Page statique parchemin (ch. II / III) - respecte `import.meta.env.BASE_URL` (dÃ©ploiement sous sous-chemin). */
 function parcheminSenacHref(hash: string, options?: { previewCredits?: boolean }) {
   const base = import.meta.env.BASE_URL;
   const prefix = base.endsWith("/") ? base : `${base}/`;
@@ -81,7 +81,7 @@ function isEditableTarget(target: EventTarget | null): boolean {
   );
 }
 
-/** Persistance : traversée complète → navigation libre entre les actes. */
+/** Persistance : traversÃ©e complÃ¨te â†’ navigation libre entre les actes. */
 const JOURNEY_REPLAY_STORAGE_KEY = "al-rihla-journey-complete";
 const MENU_HINT_SEEN_STORAGE_KEY = "al-rihla-menu-hint-seen";
 const EMPTY_ACT1_QUEST: Act1QuestProgress = { hover: false, clickWord: false, zoom: false };
@@ -118,9 +118,9 @@ export default function App() {
   const [chapterToast, setChapterToast] = useState(false);
   const [chapterDaTransition, setChapterDaTransition] = useState(false);
   const [revelationCount, setRevelationCount] = useState(() => (readJourneyReplayUnlocked() ? 5 : 0));
-  /** Rail Parcours : ouvert / replié (animation GSAP dans OrientationPanel). */
+  /** Rail Parcours : ouvert / repliÃ© (animation GSAP dans OrientationPanel). */
   const [parcoursOpen, setParcoursOpen] = useState(false);
-  /** Après Ch. III / générique : retour intro + navigation libre entre actes (Parcours cliquable). */
+  /** AprÃ¨s Ch. III / gÃ©nÃ©rique : retour intro + navigation libre entre actes (Parcours cliquable). */
   const [journeyReplayUnlocked, setJourneyReplayUnlocked] = useState(readJourneyReplayUnlocked);
   const [act1Quest, setAct1Quest] = useState<Act1QuestProgress>(() =>
     readJourneyReplayUnlocked() ? COMPLETE_ACT1_QUEST : EMPTY_ACT1_QUEST
@@ -139,23 +139,23 @@ export default function App() {
   const playbackUnlockedRef = useRef(playbackUnlocked);
   masterVolumeRef.current = masterVolume;
   playbackUnlockedRef.current = playbackUnlocked;
-  /** Ton UI acte II (iframe parchemin) : solaire en haut, minuit après défile - via `senac-chrome`. */
+  /** Ton UI acte II (iframe parchemin) : solaire en haut, minuit aprÃ¨s dÃ©file - via `senac-chrome`. */
   const [act2ParcheminTone, setAct2ParcheminTone] = useState<"solar" | "midnight" | null>(null);
-  /** Progression de scroll remontée par l'iframe parchemin pour la barre parent en haut. */
+  /** Progression de scroll remontÃ©e par l'iframe parchemin pour la barre parent en haut. */
   const [act2ScrollFillRatio, setAct2ScrollFillRatio] = useState<number | undefined>(undefined);
 
   const act2AmbientMidnight =
     phase === "act2" && (act2ParcheminTone ?? "solar") === "midnight";
 
   const mdUp = useMediaQuery("(min-width: 768px)");
-  /** `(any-pointer: fine)` inclut souris/stylus/trackpad même si `(hover:hover)` est faux sur hybrides. */
+  /** `(any-pointer: fine)` inclut souris/stylus/trackpad mÃªme si `(hover:hover)` est faux sur hybrides. */
   const finePointer = useMediaQuery("(any-pointer: fine)");
   const language = useLanguageStore((s) => s.language);
   const isLanguageMorphing = useLanguageStore((s) => s.isLanguageMorphing);
   const copy = useAppCopy();
   const introVideoPlaying = phase === "intro" && videoStarted;
 
-  /** Palettes du voile langue - alignées acte II minuit sinon doré désert */
+  /** Palettes du voile langue - alignÃ©es acte II minuit sinon dorÃ© dÃ©sert */
   const languageMorphMidnight = phase === "act2" && act2AmbientMidnight;
 
   phaseRef.current = phase;
@@ -210,9 +210,22 @@ export default function App() {
     const theme = act2AmbientMidnight ? "midnight" : "solar";
     setCursorAmbient(theme);
     document.documentElement.setAttribute("data-theme", theme);
+
+    const base = import.meta.env.BASE_URL || "/";
+    const prefix = base.endsWith("/") ? base : `${base}/`;
+    const iconHref =
+      theme === "midnight" ? `${prefix}favicon-camel.png` : `${prefix}favicon-camel-solar.png`;
+    let link = document.querySelector<HTMLLinkElement>("#app-favicon");
+    if (!link) {
+      link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+    }
+    if (link) {
+      link.type = "image/png";
+      link.href = iconHref;
+    }
   }, [phase, act2AmbientMidnight, setCursorAmbient]);
 
-  /** Acte I / II : pas de scroll documentaire - évite Lenis + fond body crème qui « fuient » sous la scène fixed. */
+  /** Acte I / II : pas de scroll documentaire - Ã©vite Lenis + fond body crÃ¨me qui Â« fuient Â» sous la scÃ¨ne fixed. */
   useEffect(() => {
     const rootEl = document.documentElement;
     rootEl.classList.remove("phase-act1-root", "phase-act2-root");
@@ -229,11 +242,11 @@ export default function App() {
     html.lang = isArabic ? "ar-DZ" : "fr";
     html.dir = isArabic ? "rtl" : "ltr";
     document.title = isArabic
-      ? "الرحلة | تجربة تفاعلية حول جان ساناك"
-      : "Al-Rihla | Expérience immersive autour de Jean Sénac";
+      ? "الرحلة | AI plus experience stylé"
+      : "Al Rihla | AI plus experience stylé";
   }, [language]);
 
-  /** Chunks menu pause + rail Parcours (GSAP) : chargés en idle pour réduire le JS initial sans bloquer le premier rendu. */
+  /** Chunks menu pause + rail Parcours (GSAP) : chargÃ©s en idle pour rÃ©duire le JS initial sans bloquer le premier rendu. */
   useEffect(() => {
     const prefetch = () => {
       void loadOrientationPanelMod();
@@ -248,9 +261,9 @@ export default function App() {
     return () => clearTimeout(t);
   }, []);
 
-  /** Générique fin de voyage (iframe) : masque le fluide parent et remonte le curseur comme pour l’intro. */
+  /** GÃ©nÃ©rique fin de voyage (iframe) : masque le fluide parent et remonte le curseur comme pour lâ€™intro. */
   const [act2VoyageCreditsOpen, setAct2VoyageCreditsOpen] = useState(false);
-  /** Aligné synchrone avec les messages iframe (`senac-credits-chrome` avant les `senac-pointer`). */
+  /** AlignÃ© synchrone avec les messages iframe (`senac-credits-chrome` avant les `senac-pointer`). */
   const act2VoyageCreditsOpenRef = useRef(false);
 
   useEffect(() => {
@@ -262,7 +275,7 @@ export default function App() {
 
   act2VoyageCreditsOpenRef.current = act2VoyageCreditsOpen;
 
-  /** Déverrouille l'audio au premier geste utilisateur (autoplay policy navigateur). */
+  /** DÃ©verrouille l'audio au premier geste utilisateur (autoplay policy navigateur). */
   useEffect(() => {
     if (playbackUnlocked) return;
     const onFirstGesture = () => {
@@ -326,8 +339,8 @@ export default function App() {
   }, [phase, masterVolume, playbackUnlocked]);
 
   /**
-   * L’iframe redemande l’état audio une fois prête : le premier postMessage parent part souvent
-   * avant que `initChapterTwoAmbience` n’ait enregistré son listener (message perdu).
+   * Lâ€™iframe redemande lâ€™Ã©tat audio une fois prÃªte : le premier postMessage parent part souvent
+   * avant que `initChapterTwoAmbience` nâ€™ait enregistrÃ© son listener (message perdu).
    */
   useEffect(() => {
     if (phase !== "act2") return;
@@ -352,13 +365,31 @@ export default function App() {
     return () => window.removeEventListener("message", onMsg);
   }, [phase]);
 
-  /** Délai avant le toast : laisser voir la carte + fond « célébration » sans masque plein écran. */
+  /** DÃ©lai avant le toast : laisser voir la carte + fond Â« cÃ©lÃ©bration Â» sans masque plein Ã©cran. */
   const CHAPTER_TOAST_DELAY_MS = 3200;
-  /** Durée lecture toast + sortie avant acte II */
+  /** DurÃ©e lecture toast + sortie avant pont WebM Acte I â†’ II */
   const CHAPTER_TOAST_VISIBLE_MS = 5200;
-  /** Fondu DA : doré désert -> bleu nuit saharien avant le chapitre II. */
-  const CHAPTER_DA_TRANSITION_MS = 2600;
-  const CHAPTER_DA_PHASE_SWAP_MS = 1550;
+
+  const handleAct12BridgeSwapPhase = useCallback(() => {
+    if (!pendingAct2.current) return;
+    setPhase("act2");
+  }, []);
+
+  const handleAct12BridgeFinish = useCallback(() => {
+    pendingAct2.current = false;
+    setChapterDaTransition(false);
+  }, []);
+
+  /** SÃ©curitÃ© : dÃ©bloquer si la WebM ne se termine jamais (erreur rare). */
+  useEffect(() => {
+    if (!chapterDaTransition) return;
+    const t = window.setTimeout(() => {
+      pendingAct2.current = false;
+      setChapterDaTransition(false);
+      setPhase((p) => (p === "act1" ? "act2" : p));
+    }, 12000);
+    return () => window.clearTimeout(t);
+  }, [chapterDaTransition]);
 
   const handleMemoryMapComplete = useCallback(() => {
     pendingAct2.current = true;
@@ -367,22 +398,17 @@ export default function App() {
     }, CHAPTER_TOAST_DELAY_MS);
     window.setTimeout(() => {
       setChapterToast(false);
-      if (pendingAct2.current) {
-        setChapterDaTransition(true);
-        window.setTimeout(() => {
-          if (pendingAct2.current) {
-            setPhase("act2");
-            pendingAct2.current = false;
-          }
-        }, CHAPTER_DA_PHASE_SWAP_MS);
-        window.setTimeout(() => {
-          setChapterDaTransition(false);
-        }, CHAPTER_DA_TRANSITION_MS);
-      }
+      if (!pendingAct2.current) return;
+      void Promise.all([
+        prefetchAct12BridgeVideo(),
+        import("./components/Immersive/Act2"),
+      ]).finally(() => {
+        if (pendingAct2.current) setChapterDaTransition(true);
+      });
     }, CHAPTER_TOAST_DELAY_MS + CHAPTER_TOAST_VISIBLE_MS);
   }, []);
 
-  /** Surcouche vidéo uniquement : ne change pas la phase, ne recharge pas, garde carte / acte. */
+  /** Surcouche vidÃ©o uniquement : ne change pas la phase, ne recharge pas, garde carte / acte. */
   const openIntroVideoOverlay = useCallback(() => {
     setSystemMenuOpen(false);
     setIntroVideoNonce((n) => n + 1);
@@ -440,7 +466,7 @@ export default function App() {
     setAct1Quest((p) => (p[step] ? p : { ...p, [step]: true }));
   }, []);
 
-  /** Acte I carte : Lenis sans lissage molette (zoom molette précis sur le canvas). Autres phases : glide doux. */
+  /** Acte I carte : Lenis sans lissage molette (zoom molette prÃ©cis sur le canvas). Autres phases : glide doux. */
   const lenisOptions = useMemo(
     () =>
       phase === "act1"
@@ -493,7 +519,7 @@ export default function App() {
   }, [parcoursOpen, phase, journeyReplayUnlocked]);
 
   /**
-   * Acte II : iframe - relais souris + progression « Défilez » (postMessage).
+   * Acte II : iframe - relais souris + progression Â« DÃ©filez Â» (postMessage).
    */
   useEffect(() => {
     if (phase !== "act2") return;
@@ -526,7 +552,7 @@ export default function App() {
         gx = x + r.left;
         gy = y + r.top;
       }
-      /** Générique crédits : fluide Splash masqué → pas de faux `mousemove` vers WebGL idle. */
+      /** GÃ©nÃ©rique crÃ©dits : fluide Splash masquÃ© â†’ pas de faux `mousemove` vers WebGL idle. */
       if (!act2VoyageCreditsOpenRef.current) {
         window.dispatchEvent(
           new MouseEvent("mousemove", {
@@ -595,7 +621,7 @@ export default function App() {
           setPhase("act1");
           return;
         }
-        /** Chapitre III : retour intro sans valider la traversée complète (réservée à la sortie du générique). */
+        /** Chapitre III : retour intro sans valider la traversÃ©e complÃ¨te (rÃ©servÃ©e Ã  la sortie du gÃ©nÃ©rique). */
         if (target === "intro") {
           pendingAct2.current = false;
           setParcoursOpen(false);
@@ -669,7 +695,7 @@ export default function App() {
             : "isolate min-h-0 w-full will-change-[opacity,filter,transform]"
         }
       >
-      {/* Acte II : pas d’overlay ciné (z-[52]) au-dessus de l’iframe - vignette = bande sombre « pied de page ». */}
+      {/* Acte II : pas dâ€™overlay cinÃ© (z-[52]) au-dessus de lâ€™iframe - vignette = bande sombre Â« pied de page Â». */}
       {phase !== "act2" && <CinematicOverlay />}
       <Soundscape enabled={phase !== "act2"} />
 
@@ -685,7 +711,13 @@ export default function App() {
       </AnimatePresence>
 
       <AnimatePresence mode="wait">
-        {chapterDaTransition && <ChapterDaTransition />}
+        {chapterDaTransition && (
+          <ChapterAct12Bridge
+            key="act12-bridge"
+            onSwapPhase={handleAct12BridgeSwapPhase}
+            onFinish={handleAct12BridgeFinish}
+          />
+        )}
       </AnimatePresence>
 
       <AnimatePresence>
@@ -735,7 +767,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Fermeture du rail uniquement viewport md+ (le rail est masqué sous md). */}
+      {/* Fermeture du rail uniquement viewport md+ (le rail est masquÃ© sous md). */}
       {mdUp && parcoursOpen && (phase !== "intro" || journeyReplayUnlocked) && (
         <div
           className="fixed inset-0 z-[39] pointer-events-auto"
@@ -879,7 +911,7 @@ export default function App() {
         </>
       )}
 
-      {/* HintPanel : acte I uniquement - le parchemin (acte II) gère sa propre navigation (mode Cinéma / Exploration). */}
+      {/* HintPanel : acte I uniquement - le parchemin (acte II) gÃ¨re sa propre navigation (mode CinÃ©ma / Exploration). */}
       {phase !== "act2" && (
         <HintPanel
           phase={phase}
@@ -888,7 +920,7 @@ export default function App() {
         />
       )}
 
-      {/* Nudge scroll - acte I uniquement, masqué dès que le zoom est acquis */}
+      {/* Nudge scroll - acte I uniquement, masquÃ© dÃ¨s que le zoom est acquis */}
       {phase === "act1" && !systemMenuOpen && !introVideoOpen && !act1Quest.zoom && (
         <ScrollNudge key="scroll-nudge-act1" />
       )}
@@ -977,8 +1009,8 @@ export default function App() {
         )}
       </main>
 
-      {/* Fluide curseur plein viewport : au-dessus scène (~z-20) et HUD carte (~110) ; sous ScrollProgressBar / modales.
-          Acte II : désactivé - le canvas fixed en 100vh se superposait mal à l’iframe parchemin (100dvh), bande sombre en bas. */}
+      {/* Fluide curseur plein viewport : au-dessus scÃ¨ne (~z-20) et HUD carte (~110) ; sous ScrollProgressBar / modales.
+          Acte II : dÃ©sactivÃ© - le canvas fixed en 100vh se superposait mal Ã  lâ€™iframe parchemin (100dvh), bande sombre en bas. */}
       {finePointer && phase !== "act2" && (
         <div
           style={{
@@ -1031,7 +1063,7 @@ export default function App() {
   );
 }
 
-/** Pastille + voile DA (même vocabulaire que le passage chapitre II : halos, grain, losange). */
+/** Pastille + voile DA (mÃªme vocabulaire que le passage chapitre II : halos, grain, losange). */
 function LanguageMorphHud({
   visible,
   midnight,
@@ -1084,7 +1116,7 @@ function LanguageMorphHud({
             aria-hidden
           />
 
-          {/* Fil de lumière type transition chapitre */}
+          {/* Fil de lumiÃ¨re type transition chapitre */}
           <motion.div
             aria-hidden
             className="absolute inset-y-0 left-0 w-[110vw] origin-left opacity-80"
@@ -1258,315 +1290,4 @@ function LanguageMorphHud({
       )}
     </AnimatePresence>
   );
-}
-
-function ChapterDaTransition() {
-  const rootRef = useRef<HTMLDivElement>(null);
-  const pathRefs = useRef<(SVGPathElement | null)[]>([]);
-
-  useLayoutEffect(() => {
-    const pathCount = 3;
-    const pointCount = 9;
-    const delayPointsMax = 0.24;
-    const delayPerPath = 0.14;
-    const coverDuration = 1.12;
-    const revealDuration = 0.94;
-    const revealStartAt = coverDuration + delayPointsMax + delayPerPath * (pathCount - 1) + 0.08;
-    const pathStates = Array.from({ length: pathCount }, () => Array(pointCount).fill(-18));
-    let mode: "cover" | "reveal" = "cover";
-
-    const render = () => {
-      for (let i = 0; i < pathCount; i += 1) {
-        const path = pathRefs.current[i];
-        if (!path) continue;
-        path.setAttribute("d", buildChapterWavePath(pathStates[i], mode));
-      }
-    };
-
-    const createPointDelays = () =>
-      Array.from({ length: pointCount }, () => Math.random() * delayPointsMax);
-
-    const ctx = gsap.context(() => {
-      render();
-
-      gsap
-        .timeline({ defaults: { ease: "power2.inOut" }, onUpdate: render })
-        .fromTo(
-          rootRef.current?.querySelector("[data-sand-base]"),
-          { opacity: 0.82, scale: 1.04, filter: "brightness(0.76) blur(12px)" },
-          { opacity: 1, scale: 1, filter: "brightness(1) blur(0px)", duration: 1.25, ease: "power2.out" },
-          0
-        )
-        .fromTo(
-          rootRef.current?.querySelector("[data-sand-glow]"),
-          { opacity: 0, scale: 0.92 },
-          { opacity: 1, scale: 1.08, duration: 1.05, ease: "sine.out" },
-          0
-        )
-        .fromTo(
-          rootRef.current?.querySelector("[data-sand-haze]"),
-          { opacity: 0 },
-          { opacity: 0.92, duration: 1.2, ease: "sine.out" },
-          0.08
-        )
-        .fromTo(
-          rootRef.current?.querySelector("[data-sand-sun]"),
-          { opacity: 0, scale: 0.74, yPercent: 16, filter: "blur(24px)" },
-          { opacity: 0.78, scale: 1, yPercent: 0, filter: "blur(0px)", duration: 1.28, ease: "sine.out" },
-          0.02
-        )
-        .fromTo(
-          rootRef.current?.querySelector("[data-sand-filament]"),
-          { opacity: 0, xPercent: -8 },
-          { opacity: 0.55, xPercent: 0, duration: 1.05, ease: "sine.out" },
-          0.16
-        )
-        .fromTo(
-          rootRef.current?.querySelector("[data-sand-dune-back]"),
-          { opacity: 0, yPercent: 22, scaleX: 1.06 },
-          { opacity: 0.9, yPercent: 0, scaleX: 1, duration: 1.16, ease: "power3.out" },
-          0.12
-        )
-        .fromTo(
-          rootRef.current?.querySelector("[data-sand-dune-front]"),
-          { opacity: 0, yPercent: 34, scaleX: 1.12 },
-          { opacity: 0.98, yPercent: 0, scaleX: 1, duration: 1.2, ease: "power4.out" },
-          0.22
-        )
-        .fromTo(
-          rootRef.current?.querySelector("[data-sand-veil]"),
-          { opacity: 0, xPercent: -4, scale: 1.03 },
-          { opacity: 0.38, xPercent: 0, scale: 1, duration: 1.35, ease: "power2.out" },
-          0
-        );
-
-      for (let i = 0; i < pathCount; i += 1) {
-        const pointDelays = createPointDelays();
-        const pathDelay = delayPerPath * i;
-        for (let j = 0; j < pointCount; j += 1) {
-          gsap.to(pathStates[i], {
-            [j]: 112,
-            duration: coverDuration,
-            ease: "power2.inOut",
-            delay: pointDelays[j] + pathDelay,
-            onUpdate: render,
-          });
-        }
-      }
-
-      gsap.delayedCall(revealStartAt, () => {
-        mode = "reveal";
-        for (let i = 0; i < pathCount; i += 1) {
-          pathStates[i].fill(0);
-        }
-        render();
-
-        for (let i = 0; i < pathCount; i += 1) {
-          const pointDelays = createPointDelays();
-          const pathDelay = delayPerPath * (pathCount - i - 1);
-          for (let j = 0; j < pointCount; j += 1) {
-            gsap.to(pathStates[i], {
-              [j]: 118,
-              duration: revealDuration,
-              ease: "power2.inOut",
-              delay: pointDelays[j] + pathDelay,
-              onUpdate: render,
-            });
-          }
-        }
-
-        gsap.to(rootRef.current?.querySelector("[data-sand-glow]"), {
-          opacity: 0,
-          scale: 1.28,
-          duration: 1.05,
-          ease: "sine.out",
-        });
-        gsap.to(rootRef.current?.querySelector("[data-sand-haze]"), {
-          opacity: 0.18,
-          duration: 0.95,
-          ease: "sine.out",
-        });
-        gsap.to(rootRef.current?.querySelector("[data-sand-sun]"), {
-          opacity: 0.14,
-          scale: 1.12,
-          yPercent: -8,
-          duration: 1.02,
-          ease: "sine.out",
-        });
-        gsap.to(rootRef.current?.querySelector("[data-sand-filament]"), {
-          opacity: 0.08,
-          xPercent: 6,
-          duration: 0.95,
-          ease: "sine.out",
-        });
-        gsap.to(rootRef.current?.querySelector("[data-sand-dune-back]"), {
-          opacity: 0.42,
-          duration: 0.9,
-          ease: "sine.out",
-        });
-        gsap.to(rootRef.current?.querySelector("[data-sand-dune-front]"), {
-          opacity: 0.66,
-          duration: 0.92,
-          ease: "sine.out",
-        });
-        gsap.to(rootRef.current?.querySelector("[data-sand-veil]"), {
-          opacity: 0.06,
-          duration: 0.95,
-          ease: "sine.out",
-        });
-      });
-    }, rootRef);
-
-    return () => ctx.revert();
-  }, []);
-
-  return (
-    <motion.div
-      aria-hidden="true"
-      ref={rootRef}
-      className="pointer-events-auto fixed inset-0 z-[205] overflow-hidden"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-    >
-      <div
-        data-sand-base
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 62% 42% at 50% 42%, rgba(104, 79, 54, 0.18) 0%, transparent 62%), linear-gradient(180deg, #120d09 0%, #1a120d 34%, #120d09 68%, #090706 100%)",
-        }}
-      />
-
-      <div
-        data-sand-glow
-        className="pointer-events-none absolute inset-[-10%] opacity-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 40% 24% at 50% 54%, rgba(178, 151, 107, 0.18) 0%, rgba(116, 83, 49, 0.1) 44%, transparent 76%)",
-          filter: "blur(28px)",
-        }}
-      />
-
-      <div
-        data-sand-sun
-        className="pointer-events-none absolute left-1/2 top-[41%] h-[min(34rem,54vw)] w-[min(34rem,54vw)] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-0"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(210, 188, 150, 0.26) 0%, rgba(162, 126, 83, 0.15) 32%, rgba(78, 53, 31, 0.06) 52%, transparent 72%)",
-          mixBlendMode: "screen",
-        }}
-      />
-
-      <div
-        data-sand-filament
-        className="pointer-events-none absolute left-1/2 top-[48%] h-px w-[min(74vw,52rem)] -translate-x-1/2 opacity-0"
-        style={{
-          background:
-            "linear-gradient(90deg, transparent 0%, rgba(196, 164, 117, 0.08) 18%, rgba(232, 216, 186, 0.34) 50%, rgba(196, 164, 117, 0.08) 82%, transparent 100%)",
-          boxShadow: "0 0 18px rgba(201, 173, 129, 0.12)",
-        }}
-      />
-
-      <div
-        data-sand-dune-back
-        className="pointer-events-none absolute inset-x-[-10%] bottom-[6%] h-[25vh] opacity-0"
-        style={{
-          background:
-            "radial-gradient(ellipse at 50% 100%, rgba(58, 40, 27, 0.72) 0%, rgba(58, 40, 27, 0.36) 44%, transparent 76%)",
-        }}
-      />
-
-      <div
-        data-sand-dune-front
-        className="pointer-events-none absolute inset-x-[-16%] bottom-[-10%] h-[33vh] opacity-0"
-        style={{
-          background:
-            "radial-gradient(ellipse at 50% 100%, rgba(20, 13, 9, 0.96) 0%, rgba(26, 17, 11, 0.7) 42%, transparent 76%)",
-        }}
-      />
-
-      <div
-        data-sand-haze
-        className="pointer-events-none absolute inset-0 opacity-0"
-        style={{
-          background:
-            "linear-gradient(180deg, rgba(9, 7, 5, 0.02) 0%, rgba(20, 16, 11, 0.12) 38%, rgba(9, 7, 5, 0.03) 100%)",
-        }}
-      />
-
-      <div
-        data-sand-veil
-        className="pointer-events-none absolute inset-0 opacity-0"
-        style={{
-          background:
-            "linear-gradient(122deg, rgba(255,255,255,0.02) 0%, rgba(214,192,155,0.04) 24%, transparent 48%), repeating-linear-gradient(112deg, transparent 0 24px, rgba(198,171,128,0.018) 24px 25px, transparent 25px 54px)",
-          mixBlendMode: "soft-light",
-        }}
-      />
-
-      <svg
-        className="absolute inset-0 h-full w-full"
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-      >
-        <defs>
-          <linearGradient id="chapter-sand-gradient-edge" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#efe4d0" />
-            <stop offset="44%" stopColor="#ceb48d" />
-            <stop offset="100%" stopColor="#8d6847" />
-          </linearGradient>
-          <linearGradient id="chapter-sand-gradient-back" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#d8c4a0" />
-            <stop offset="52%" stopColor="#a98861" />
-            <stop offset="100%" stopColor="#6b4b31" />
-          </linearGradient>
-          <linearGradient id="chapter-sand-gradient-front" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#e6d7bb" />
-            <stop offset="46%" stopColor="#bc9a70" />
-            <stop offset="100%" stopColor="#81593a" />
-          </linearGradient>
-        </defs>
-        <path
-          ref={(node) => {
-            pathRefs.current[0] = node;
-          }}
-          fill="url(#chapter-sand-gradient-edge)"
-          opacity="0.52"
-        />
-        <path
-          ref={(node) => {
-            pathRefs.current[1] = node;
-          }}
-          fill="url(#chapter-sand-gradient-back)"
-          opacity="0.88"
-        />
-        <path
-          ref={(node) => {
-            pathRefs.current[2] = node;
-          }}
-          fill="url(#chapter-sand-gradient-front)"
-        />
-      </svg>
-    </motion.div>
-  );
-}
-
-function buildChapterWavePath(points: number[], mode: "cover" | "reveal") {
-  const total = points.length;
-  const clampPoint = (value: number) => Math.max(-20, Math.min(120, value));
-  const firstPoint = clampPoint(points[0] ?? 0);
-  let d = mode === "cover" ? `M 0 0 V ${firstPoint} C` : `M 0 100 V ${firstPoint} C`;
-
-  for (let i = 0; i < total - 1; i += 1) {
-    const p = ((i + 1) / (total - 1)) * 100;
-    const cp = p - 50 / (total - 1);
-    const current = clampPoint(points[i] ?? 0);
-    const next = clampPoint(points[i + 1] ?? 0);
-    d += ` ${cp} ${current} ${cp} ${next} ${p} ${next}`;
-  }
-
-  d += mode === "cover" ? " L 100 0 Z" : " L 100 100 Z";
-  return d;
 }

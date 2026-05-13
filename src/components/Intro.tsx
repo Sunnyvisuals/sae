@@ -1302,10 +1302,10 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
               >
                 <div className="relative -mt-[3vh] flex flex-row flex-wrap items-baseline justify-center gap-x-5 gap-y-0 px-4">
                   <span className="font-bahlull text-[clamp(3.8rem,10vw,8rem)] italic leading-none tracking-tight text-transparent">
-                    Al-Rihla
+                    Al Rihla
                   </span>
                   <span className="text-[9px] uppercase leading-none tracking-[0.42em] text-transparent">
-                    Jean Senac
+                    AI plus experience stylé
                   </span>
                 </div>
               </motion.div>
@@ -1702,7 +1702,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                 ) : (
                   <AnimatedTitle
                     heroMotion
-                    text="Al-Rihla"
+                    text="Al Rihla"
                     className={
                       "font-bahlull text-white tracking-tighter italic drop-shadow-[0_0_22px_rgba(197,160,89,0.35)] " +
                       (compactDesktop ? "text-6xl md:text-8xl" : "text-7xl md:text-9xl")

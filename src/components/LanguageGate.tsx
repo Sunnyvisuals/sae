@@ -28,7 +28,10 @@ export default function LanguageGate({ onSelect }: LanguageGateProps) {
           id="language-gate-title"
           className="font-bahlull text-center text-3xl italic text-white md:text-4xl"
         >
-          Al-Rihla
+          Al Rihla
+        </p>
+        <p className="mt-2 text-center text-[11px] font-normal italic tracking-[0.06em] text-solar-gold/65 md:text-xs">
+          AI plus experience stylé
         </p>
         <p className="mt-3 text-center text-[9px] uppercase tracking-[0.45em] text-solar-gold/55">
           Choisir la langue · اختر اللغة

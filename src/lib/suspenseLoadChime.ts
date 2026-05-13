@@ -1,10 +1,38 @@
 /**
- * Carillon discret à la fin de la barre de chargement (prologue).
- * L’AudioContext doit être créé / repris dans le même geste utilisateur que « lancer »
- * (voir `primeSuspenseAudio`) sinon le navigateur reste muet.
+ * Whoosh discret à la fin de la barre de chargement (prologue).
+ * `primeSuspenseAudio` reprend l’AudioContext après le geste utilisateur (bouton lancer) ;
+ * le buffer est préchargé pour éviter un retard au 100 %.
  */
 
 let sharedCtx: AudioContext | null = null;
+let whooshBuffer: AudioBuffer | null = null;
+let whooshLoadPromise: Promise<void> | null = null;
+
+/** Niveau de sortie : volontairement très bas (≈1 % — whoosh audible à peine). */
+const WHOOSH_GAIN = 0.01;
+
+function whooshUrl(): string {
+  return `${import.meta.env.BASE_URL}sounds/whoosh-067.wav`;
+}
+
+function ensureWhooshLoaded(ctx: AudioContext): Promise<void> {
+  if (whooshBuffer) return Promise.resolve();
+  if (!whooshLoadPromise) {
+    whooshLoadPromise = fetch(whooshUrl())
+      .then((r) => {
+        if (!r.ok) throw new Error(String(r.status));
+        return r.arrayBuffer();
+      })
+      .then((ab) => ctx.decodeAudioData(ab.slice(0)))
+      .then((buf) => {
+        whooshBuffer = buf;
+      })
+      .catch(() => {
+        whooshLoadPromise = null;
+      });
+  }
+  return whooshLoadPromise;
+}
 
 export function primeSuspenseAudio(): void {
   if (typeof window === "undefined") return;
@@ -15,6 +43,7 @@ export function primeSuspenseAudio(): void {
     if (!AC) return;
     if (!sharedCtx) sharedCtx = new AC();
     void sharedCtx.resume();
+    void ensureWhooshLoaded(sharedCtx);
   } catch {
     /* ignore */
   }
@@ -28,23 +57,17 @@ export function playSuspenseLoadCompleteChime(): void {
     if (!c) return;
 
     const run = () => {
-      const t0 = c.currentTime;
-      const mk = (freq: number, start: number, dur: number) => {
-        const osc = c.createOscillator();
+      void ensureWhooshLoaded(c).then(() => {
+        if (!whooshBuffer) return;
+        const t0 = c.currentTime;
+        const src = c.createBufferSource();
         const gain = c.createGain();
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(freq, t0 + start);
-        gain.gain.setValueAtTime(0.0001, t0 + start);
-        gain.gain.exponentialRampToValueAtTime(0.11, t0 + start + 0.015);
-        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + start + dur);
-        osc.connect(gain);
+        src.buffer = whooshBuffer;
+        gain.gain.setValueAtTime(WHOOSH_GAIN, t0);
+        src.connect(gain);
         gain.connect(c.destination);
-        osc.start(t0 + start);
-        osc.stop(t0 + start + dur + 0.02);
-      };
-      /* deux notes courtes, ambiance or / clair */
-      mk(784, 0, 0.11);
-      mk(1046.5, 0.09, 0.14);
+        src.start(t0);
+      });
     };
 
     void c.resume().then(run);

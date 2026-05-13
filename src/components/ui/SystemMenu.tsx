@@ -439,16 +439,24 @@ function PauseLanguagePicker({ midnight }: { midnight: boolean }) {
 
 function PauseFullscreenPanel({ midnight }: { midnight: boolean }) {
   const copy = useAppCopy();
+  const panelId = useId();
+  const [fullscreenOpen, setFullscreenOpen] = useState(false);
   const fsActive = useDocumentFullscreenActive();
   const supported = typeof window !== 'undefined' && isFullscreenApiSupported();
 
-  const haloLine = midnight
-    ? 'from-[rgba(90,168,255,0.06)] via-[rgba(139,213,255,0.52)] to-[rgba(139,213,255,0.06)]'
-    : 'from-solar-gold/[0.04] via-solar-gold/45 to-solar-gold/[0.04]';
+  const togglePanel = () => setFullscreenOpen((o) => !o);
+
+  const notchBtn =
+    'flex h-7 w-7 shrink-0 items-center justify-center rounded-[2px] transition-[color,transform] duration-300 sm:h-8 sm:w-8 ' +
+    (midnight ? 'text-sky-300/70 hover:text-sky-100' : 'text-solar-gold/68 hover:text-solar-gold');
 
   const onToggleFs = () => {
     void (fsActive ? exitDocumentFullscreen() : requestDocumentFullscreen());
   };
+
+  const statusHint = fsActive
+    ? `${copy.menuFullscreenStateOn} · ${copy.menuFullscreenShortcutExit}`
+    : `${copy.menuFullscreenStateOff} · ${copy.menuFullscreenShortcutEnter}`;
 
   return (
     <motion.div variants={item} className="mt-4 w-full max-w-[min(100%,526px)] px-0 sm:mt-5">
@@ -458,49 +466,98 @@ function PauseFullscreenPanel({ midnight }: { midnight: boolean }) {
           (midnight ? 'bg-[rgba(4,10,22,0.22)]' : 'bg-black/12')
         }
       >
-        <p
+        <button
+          type="button"
+          id={panelId}
+          aria-expanded={fullscreenOpen}
+          aria-controls={`${panelId}-fullscreen`}
+          onClick={togglePanel}
+          aria-labelledby={`${panelId}-label`}
           className={
-            'mb-1.5 text-start text-[9px] uppercase tracking-[0.34em] sm:mb-2 sm:text-[10px] sm:tracking-[0.38em] ' +
-            (midnight ? 'text-sky-400/62' : 'text-solar-gold/55')
+            'group flex w-full min-w-0 items-center justify-between gap-3 py-1 text-start outline-none transition-[opacity,color] duration-300 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent sm:py-1.5 ' +
+            (midnight
+              ? 'focus-visible:ring-[rgba(90,168,255,0.38)]'
+              : 'focus-visible:ring-solar-gold/40')
           }
         >
-          {copy.menuFullscreenSection}
-        </p>
-        <div className={`pointer-events-none mb-2 h-px w-full bg-gradient-to-r sm:mb-2.5 ${haloLine}`} aria-hidden />
-        {supported ? (
-          <>
-            <MajesticButton
-              variant="gold"
-              midnight={midnight}
-              onClick={onToggleFs}
-              aria-pressed={fsActive}
-              aria-keyshortcuts={fsActive ? 'Escape F11' : 'F11'}
-            >
-              {fsActive ? copy.menuFullscreenExit : copy.menuFullscreenEnter}
-            </MajesticButton>
-            <p
-              className={
-                'mt-1.5 text-center text-[9px] uppercase tracking-[0.24em] sm:mt-2 sm:text-[10px] ' +
-                (midnight ? 'text-sky-200/46' : 'text-[rgba(253,248,238,0.42)]')
-              }
-            >
-              {fsActive ? copy.menuFullscreenStateOn : copy.menuFullscreenStateOff}
-              <span className="px-2 opacity-45" aria-hidden>
-                /
-              </span>
-              {fsActive ? copy.menuFullscreenShortcutExit : copy.menuFullscreenShortcutEnter}
-            </p>
-          </>
-        ) : (
+          <span className={notchBtn} aria-hidden>
+            <IconChevronDown
+              strokeWidth={1.35}
+              className={`h-3.5 w-3.5 shrink-0 transition-transform duration-300 ease-out sm:h-4 sm:w-4 ${fullscreenOpen ? 'rotate-0' : '-rotate-90'}`}
+            />
+          </span>
           <p
+            id={`${panelId}-label`}
             className={
-              'text-center text-[10px] leading-relaxed ' +
-              (midnight ? 'text-sky-300/45' : 'text-solar-gold/40')
+              'flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[9px] uppercase tracking-[0.24em] sm:text-[10px] sm:tracking-[0.3em] ' +
+              (midnight ? 'text-sky-400/62' : 'text-solar-gold/55')
             }
           >
-            {copy.menuFullscreenUnsupported}
+            <span className="shrink-0">{copy.menuFullscreenSection}</span>
+            {supported ? (
+              <span
+                className={
+                  'max-w-[min(100%,20ch)] text-end text-[9px] font-light normal-case tracking-[0.08em] sm:max-w-[min(100%,24ch)] sm:text-[10px] sm:tracking-[0.1em] ' +
+                  (midnight ? 'text-sky-200/58' : 'text-[rgba(253,248,238,0.55)]')
+                }
+              >
+                {statusHint}
+              </span>
+            ) : (
+              <span
+                className={
+                  'text-end text-[9px] font-light normal-case tracking-normal sm:text-[10px] ' +
+                  (midnight ? 'text-sky-300/45' : 'text-solar-gold/40')
+                }
+              >
+                —
+              </span>
+            )}
           </p>
-        )}
+        </button>
+
+        <div
+          id={`${panelId}-fullscreen`}
+          role="region"
+          aria-labelledby={panelId}
+          aria-hidden={!fullscreenOpen}
+          className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-out ${fullscreenOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+        >
+          <div className={`min-h-0 overflow-hidden ${!fullscreenOpen ? 'pointer-events-none' : ''}`}>
+            <div className="pt-2">
+              {supported ? (
+                <>
+                  <MajesticButton
+                    variant="gold"
+                    midnight={midnight}
+                    onClick={onToggleFs}
+                    aria-pressed={fsActive}
+                    aria-keyshortcuts={fsActive ? 'Escape F11' : 'F11'}
+                  >
+                    {fsActive ? copy.menuFullscreenExit : copy.menuFullscreenEnter}
+                  </MajesticButton>
+                  <p
+                    className={
+                      'mt-2 text-center text-[9px] leading-snug sm:mt-2.5 sm:text-[10px] ' +
+                      (midnight ? 'text-sky-300/44' : 'text-solar-gold/38')
+                    }
+                  >
+                    {fsActive ? copy.menuFullscreenHintExit : copy.menuFullscreenHintEnter}
+                  </p>
+                </>
+              ) : (
+                <p
+                  className={
+                    'px-0.5 text-center text-[10px] leading-relaxed ' +
+                    (midnight ? 'text-sky-300/45' : 'text-solar-gold/40')
+                  }
+                >
+                  {copy.menuFullscreenUnsupported}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </motion.div>
   );
@@ -585,8 +642,8 @@ export default function SystemMenu({
             dir={isArabic ? 'rtl' : 'ltr'}
             className={
               midnight
-                ? 'relative w-full max-w-[min(100%,40rem)] overflow-visible border border-[rgba(90,168,255,0.26)] bg-[#040a14]/85 p-4 text-center shadow-[0_0_0_1px_rgba(90,168,255,0.1),inset_0_0_60px_rgba(45,110,190,0.05)] backdrop-blur-md sm:p-7 md:p-9'
-                : 'relative w-full max-w-[min(100%,40rem)] overflow-visible border border-solar-gold/25 bg-[#050302]/85 p-4 text-center shadow-[0_0_0_1px_rgba(197,160,89,0.08),inset_0_0_60px_rgba(197,160,89,0.03)] backdrop-blur-md sm:p-7 md:p-9'
+                ? 'relative w-full max-w-[min(100%,40rem)] overflow-x-hidden border border-[rgba(90,168,255,0.26)] bg-[#040a14]/85 p-4 text-center shadow-[0_0_0_1px_rgba(90,168,255,0.1),inset_0_0_60px_rgba(45,110,190,0.05)] backdrop-blur-md sm:p-7 md:p-9'
+                : 'relative w-full max-w-[min(100%,40rem)] overflow-x-hidden border border-solar-gold/25 bg-[#050302]/85 p-4 text-center shadow-[0_0_0_1px_rgba(197,160,89,0.08),inset_0_0_60px_rgba(197,160,89,0.03)] backdrop-blur-md sm:p-7 md:p-9'
             }
           >
             <div
@@ -606,7 +663,7 @@ export default function SystemMenu({
               aria-hidden
             />
 
-            <motion.div variants={item} className="overflow-visible px-1 text-center">
+            <motion.div variants={item} className="overflow-hidden px-1 text-center">
               <p
                 id="system-menu-title"
                 className={
@@ -639,7 +696,7 @@ export default function SystemMenu({
                       }
                 }
               >
-                Al-Rihla
+                Al Rihla
               </h2>
             </motion.div>
 
@@ -724,7 +781,7 @@ export default function SystemMenu({
 
             <motion.nav
               variants={item}
-              className="mt-5 flex w-full flex-col gap-2.5 sm:mt-6 sm:gap-3"
+              className="mt-5 flex w-full max-w-[min(100%,526px)] flex-col gap-2.5 self-center sm:mt-6 sm:gap-3"
               aria-label={copy.menuNavAria}
             >
               <MajesticButton variant="gold" midnight={midnight} onClick={onClose}>
