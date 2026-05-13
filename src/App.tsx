@@ -36,7 +36,6 @@ import ChapterCompleteToast from "./components/ui/ChapterCompleteToast";
 import HintPanel from "./components/ui/HintPanel";
 import ScrollNudge from "./components/ui/ScrollNudge";
 import ScrollProgressBar from "./components/ui/ScrollProgressBar";
-import UxEdgeOpenControls from "./components/ui/UxEdgeOpenControls";
 import type { Act1QuestProgress, Act2QuestProgress } from "./components/ui/HintPanel";
 import type { Act1QuestStep } from "./components/Immersive/AlgeriaMap";
 import { useCursorStore } from "./hooks/useCursorContext";
@@ -885,27 +884,6 @@ export default function App() {
               <SettingsIcon className="h-5 w-5" aria-hidden />
             </motion.span>
           </motion.button>
-          {!systemMenuOpen &&
-            !introVideoOpen &&
-            !chapterToast &&
-            !chapterDaTransition &&
-            !isLanguageMorphing && (
-              <UxEdgeOpenControls
-                midnight={phase === "act2" && act2AmbientMidnight}
-                mdUp={mdUp}
-                parcoursOpen={parcoursOpen}
-                menuAriaLabel={copy.menuAria}
-                parcoursAriaLabel={copy.orientationOpenPanel}
-                onOpenMenu={() => {
-                  dismissMenuHint(true);
-                  setSystemMenuOpen(true);
-                }}
-                onOpenParcours={() => {
-                  dismissMenuHint(true);
-                  setParcoursOpen(true);
-                }}
-              />
-            )}
           <Suspense fallback={null}>
             <OrientationPanel
               phase={phase}

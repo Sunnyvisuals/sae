@@ -40,14 +40,6 @@ export function IconChevronLeft(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-export function IconChevronRight(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path d="M10 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
-    </svg>
-  );
-}
-
 export function IconVolume2(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
