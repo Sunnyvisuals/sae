@@ -232,7 +232,7 @@ export function ParcoursPanelInnerContent({
         variant: 'future' as const,
       },
     ];
-    if (phase === 'act2' && act2VoyageCreditsOpen) {
+    if ((phase === 'act2' || phase === 'act3') && act2VoyageCreditsOpen) {
       return [
         ...baseRows.map((row) =>
           row.phase !== null ? { ...row, variant: 'past' as const } : row
@@ -277,7 +277,8 @@ export function ParcoursPanelInnerContent({
         />
         {navRows.map(({ key, phase: rowPhase, label, variant, summary, forceReveal }) => {
           /** Quand les crédits sont ouverts, seule la ligne Crédits (forceReveal) est active. */
-          const creditsMode = phase === 'act2' && act2VoyageCreditsOpen;
+          const creditsMode =
+            (phase === 'act2' || phase === 'act3') && act2VoyageCreditsOpen;
           const active = !!forceReveal || (!creditsMode && rowPhase !== null && phase === rowPhase);
           const act2RowReachable =
             journeyReplayUnlocked || (rowPhase === 'act2' && act2UnlockedAfterBridge);

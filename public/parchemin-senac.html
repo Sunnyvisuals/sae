@@ -7,12 +7,12 @@
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
     <meta name="google" content="notranslate" />
-    <title>Al Rihla · Acte II — Frise Jean Sénac</title>
-    <meta name="description" content="Al Rihla, La traversée — Acte II : frise narrative Jean Sénac, entre archives et nuit saharienne. Choisis ton rythme et poursuis le parcours." />
+    <title>Al Rihla · Acte II - Frise Jean Sénac</title>
+    <meta name="description" content="Al Rihla, La traversée - Acte II : frise narrative Jean Sénac, entre archives et nuit saharienne. Choisis ton rythme et poursuis le parcours." />
     <meta name="robots" content="noindex" />
     <link rel="icon" type="image/png" href="/favicon-camel.png" />
-    <!-- v=37 : garder en phase avec src/lib/parcheminAssetVersion.ts (cache-bust) -->
-    <link rel="stylesheet" href="/parchemin-senac.css?v=37" />
+    <!-- v=50 : garder en phase avec src/lib/parcheminAssetVersion.ts (cache-bust) -->
+    <link rel="stylesheet" href="/parchemin-senac.css?v=50" />
   </head>
   <body class="senac-night">
     <!-- SVG filter : warp + chromatic aberration portrait (piloté par JS) -->
@@ -156,40 +156,88 @@
     <!-- Backdrop flou derrière le choix de mode -->
     <div id="smc-backdrop" class="smc-backdrop" aria-hidden="true"></div>
 
-    <!-- Choix de mode à l'arrivée -->
-    <div id="scroll-mode-choice" class="scroll-mode-choice" role="dialog" aria-modal="true" data-i18n-aria="smc_aria" aria-label="Choisir un mode de lecture" aria-describedby="smc-choose-caption">
-      <div class="smc-inner">
-        <div class="smc-da" aria-hidden="true">
-          <p class="smc-da-kicker" data-i18n="hero_kicker">Acte II - Nuits sahariennes</p>
-          <p class="smc-da-title" data-i18n="hero_title">Al Rihla</p>
-        </div>
-        <div class="smc-main">
-          <p class="smc-kicker" data-i18n="smc_kicker">La traversée</p>
-          <p id="smc-choose-caption" class="smc-choose-caption" data-i18n-html="smc_caption_html">
-            Deux rythmes pour la même <span class="smc-caption-em">traversée</span> avant d’entrer dans la nuit.
-          </p>
-          <div class="smc-buttons">
-            <button type="button" id="smc-cinema" class="smc-btn smc-btn--cinema">
-              <span class="smc-btn-icon" aria-hidden="true">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <polygon points="5,2 14,8 5,14" fill="currentColor" opacity="0.9"/>
-                  <line x1="1" y1="2" x2="1" y2="14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                </svg>
-              </span>
-              <span class="smc-btn-label" data-i18n="smc_cinema_label">Cinéma</span>
-              <span class="smc-btn-sub" data-i18n="smc_cinema_sub">défilement guidé</span>
-            </button>
-            <button type="button" id="smc-explore" class="smc-btn smc-btn--explore">
-              <span class="smc-btn-icon" aria-hidden="true">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <polygon points="8,1 15,8 8,15 1,8" fill="none" stroke="currentColor" stroke-width="1.35"/>
-                  <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
-                </svg>
-              </span>
-              <span class="smc-btn-label" data-i18n="smc_explore_label">Exploration</span>
-              <span class="smc-btn-sub" data-i18n="smc_explore_sub">à ton rythme</span>
-            </button>
+    <!-- Choix de mode à l'arrivée (plein écran, même DA que le volet langue Intro) -->
+    <div id="scroll-mode-choice" class="scroll-mode-choice" role="dialog" aria-modal="true" tabindex="-1" data-i18n-aria="smc_aria" aria-label="Choisir un mode de lecture">
+      <div class="smc-split-root">
+        <header class="smc-split-header">
+          <div class="smc-split-curtain">
+            <div class="smc-split-curtain-track">
+              <span class="smc-split-curtain-ar" data-i18n="smc_curtain_ar">اختر نمط القراءة</span>
+              <span class="smc-split-curtain-dot" aria-hidden="true"></span>
+              <span class="smc-split-curtain-fr" data-i18n="smc_curtain_fr">Choisissez votre mode de lecture</span>
+            </div>
           </div>
+          <p class="smc-da-kicker smc-split-act-kicker" data-i18n="hero_kicker">Acte II - Nuits sahariennes</p>
+        </header>
+
+        <div class="smc-split-panels">
+          <button type="button" id="smc-cinema" class="smc-split-side smc-split-side--cinema">
+            <span class="smc-split-side-bg" aria-hidden="true"></span>
+            <span class="smc-split-side-wash" aria-hidden="true"></span>
+            <span class="smc-split-side-bottom" aria-hidden="true"></span>
+            <span class="smc-split-side-edge smc-split-side-edge--right" aria-hidden="true"></span>
+            <!-- Démos survol : remplacer par de courts clips dédiés (ex. /videos/smc-cinema-demo.webm) ; ici transition en attendant. -->
+            <video
+              class="smc-split-demo-video"
+              muted
+              playsinline
+              loop
+              preload="metadata"
+              tabindex="-1"
+              aria-hidden="true"
+            >
+              <source src="/transitions/trans2-alpha.webm" type="video/webm" />
+            </video>
+            <span class="smc-split-stack">
+              <span class="smc-split-eyebrow" data-i18n="smc_mode_eyebrow">Mode</span>
+              <span class="smc-split-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+                  <polygon points="5,2 14,8 5,14" fill="currentColor" opacity="0.9" />
+                  <line x1="1" y1="2" x2="1" y2="14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
+              </span>
+              <span class="smc-split-title" data-i18n="smc_cinema_label">Cinéma</span>
+              <span class="smc-split-sub" data-i18n="smc_cinema_sub">défilement guidé</span>
+              <span class="smc-split-rule" aria-hidden="true"></span>
+            </span>
+          </button>
+
+          <div class="smc-split-center" aria-hidden="true">
+            <span class="smc-split-center-line smc-split-center-line--top"></span>
+            <span class="smc-split-diamond">✦</span>
+            <span class="smc-split-center-line smc-split-center-line--bottom"></span>
+          </div>
+
+          <button type="button" id="smc-explore" class="smc-split-side smc-split-side--explore">
+            <span class="smc-split-side-bg" aria-hidden="true"></span>
+            <span class="smc-split-side-wash" aria-hidden="true"></span>
+            <span class="smc-split-side-bottom" aria-hidden="true"></span>
+            <span class="smc-split-side-edge smc-split-side-edge--left" aria-hidden="true"></span>
+            <!-- Même logique que Cinéma : source dédiée conseillée (ex. /videos/smc-explore-demo.webm). -->
+            <video
+              class="smc-split-demo-video"
+              muted
+              playsinline
+              loop
+              preload="metadata"
+              tabindex="-1"
+              aria-hidden="true"
+            >
+              <source src="/transitions/trans2-alpha-act12.webm" type="video/webm" />
+            </video>
+            <span class="smc-split-stack">
+              <span class="smc-split-eyebrow" data-i18n="smc_mode_eyebrow">Mode</span>
+              <span class="smc-split-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+                  <polygon points="8,1 15,8 8,15 1,8" fill="none" stroke="currentColor" stroke-width="1.35" />
+                  <circle cx="8" cy="8" r="1.5" fill="currentColor" />
+                </svg>
+              </span>
+              <span class="smc-split-title" data-i18n="smc_explore_label">Exploration</span>
+              <span class="smc-split-sub" data-i18n="smc_explore_sub">à ton rythme</span>
+              <span class="smc-split-rule" aria-hidden="true"></span>
+            </span>
+          </button>
         </div>
       </div>
     </div>
@@ -218,7 +266,7 @@
         <h1 data-i18n="hero_title">Al Rihla</h1>
         <p class="hero-subtitle" data-i18n="hero_subtitle">La traversée</p>
         <p class="hero-copy" data-i18n="hero_copy">
-          Jean Sénac : une frise entre chronologie et archives — où les dates deviennent constellations
+          Jean Sénac : une frise entre chronologie et archives - où les dates deviennent constellations
           et chaque fragment allume un peu plus la nuit.
         </p>
         <div class="senac-cross-nav-wrap">
@@ -247,7 +295,6 @@
               decoding="async"
             />
           </div>
-          <figcaption data-i18n="hero_figcaption">Jean Sénac - portrait d'archive</figcaption>
         </figure>
         <a class="scroll-cue" href="#timeline-start" data-i18n-aria="scroll_cue_aria" aria-label="Faire défiler vers la frise narrative">
           <span class="scroll-cue-mouse" aria-hidden="true">
@@ -475,7 +522,7 @@
               et langue d'adoption.
             </p>
             <p class="senac-cross-nav senac-cross-nav--compact">
-              Acte&nbsp;III — réécrire le voyage&nbsp;:
+              Acte&nbsp;III - réécrire le voyage&nbsp;:
               <button type="button" class="senac-cross-nav__link" data-senac-navigate="act3-writing">
                 Poésie interactive
               </button>
@@ -491,8 +538,8 @@
       </section>
     </main>
 
-    <script src="/static-i18n.js?v=37"></script>
-    <script type="module" src="/parchemin-senac.js?v=37"></script>
+    <script src="/static-i18n.js?v=42"></script>
+    <script type="module" src="/parchemin-senac.js?v=50"></script>
   </body>
 </html>
 

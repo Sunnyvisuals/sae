@@ -86,7 +86,7 @@ export default function ScrollNudge() {
           exit={{ opacity: 0, y: 6 }}
           transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
         >
-          {/* Chevron vers le haut — invite au zoom sur la carte. */}
+          {/* Chevron vers le haut - invite au zoom sur la carte. */}
           <motion.svg
             width="44"
             height="44"

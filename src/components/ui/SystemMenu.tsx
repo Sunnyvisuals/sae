@@ -510,7 +510,7 @@ function PauseFullscreenPanel({ midnight }: { midnight: boolean }) {
                   (midnight ? 'text-sky-300/45' : 'text-solar-gold/40')
                 }
               >
-                —
+                -
               </span>
             )}
           </p>
@@ -642,8 +642,8 @@ export default function SystemMenu({
             dir={isArabic ? 'rtl' : 'ltr'}
             className={
               midnight
-                ? 'relative w-full max-w-[min(100%,40rem)] overflow-x-hidden border border-[rgba(90,168,255,0.26)] bg-[#040a14]/85 p-4 text-center shadow-[0_0_0_1px_rgba(90,168,255,0.1),inset_0_0_60px_rgba(45,110,190,0.05)] backdrop-blur-md sm:p-7 md:p-9'
-                : 'relative w-full max-w-[min(100%,40rem)] overflow-x-hidden border border-solar-gold/25 bg-[#050302]/85 p-4 text-center shadow-[0_0_0_1px_rgba(197,160,89,0.08),inset_0_0_60px_rgba(197,160,89,0.03)] backdrop-blur-md sm:p-7 md:p-9'
+                ? 'relative flex h-[800px] w-full max-w-[min(100%,40rem)] flex-col justify-center overflow-x-hidden overflow-y-auto border border-[rgba(90,168,255,0.26)] bg-[#040a14]/85 p-4 text-center shadow-[0_0_0_1px_rgba(90,168,255,0.1),inset_0_0_60px_rgba(45,110,190,0.05)] backdrop-blur-md sm:p-7 md:p-9'
+                : 'relative flex h-[800px] w-full max-w-[min(100%,40rem)] flex-col justify-center overflow-x-hidden overflow-y-auto border border-solar-gold/25 bg-[#050302]/85 p-4 text-center shadow-[0_0_0_1px_rgba(197,160,89,0.08),inset_0_0_60px_rgba(197,160,89,0.03)] backdrop-blur-md sm:p-7 md:p-9'
             }
           >
             <div
@@ -663,7 +663,10 @@ export default function SystemMenu({
               aria-hidden
             />
 
-            <motion.div variants={item} className="overflow-visible px-1 pt-0.5 text-center">
+            <motion.div
+              variants={item}
+              className="-mt-2 overflow-visible px-1 pt-0.5 text-center sm:-mt-3"
+            >
               <p
                 id="system-menu-title"
                 className={

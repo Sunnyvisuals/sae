@@ -433,7 +433,7 @@
     const canvas = document.getElementById("senac-arch-canvas");
     if (!(canvas instanceof HTMLCanvasElement)) return;
     senacArchInitScheduled = true;
-    import("./parchemin-arch-scene.mjs?v=37")
+    import("./parchemin-arch-scene.mjs?v=42")
       .then((mod) =>
         mod.initSenacArchScene({
           canvas,
@@ -2014,6 +2014,18 @@
     senacFreezeLenisForChoiceOverlay = freezeLenisIfOverlayBlocks;
     freezeLenisIfOverlayBlocks();
 
+    function postScrollModeChoiceOverlayToParent(open) {
+      if (window.parent === window) return;
+      try {
+        window.parent.postMessage(
+          { type: "senac-scroll-mode-choice-overlay", open },
+          window.location.origin,
+        );
+      } catch (_) {
+        /* ignore */
+      }
+    }
+
     function hideCinemaExploreCallout() {
       toggleEl.classList.remove("senac-highlight-explore");
       cinemaExploreCalloutEl = null;
@@ -2079,7 +2091,18 @@
     function showChoice() {
       if (backdropEl) backdropEl.classList.add("is-visible");
       choiceEl.classList.add("is-visible");
-      window.setTimeout(() => cinemaBtn.focus(), 50);
+      postScrollModeChoiceOverlayToParent(true);
+      window.setTimeout(() => {
+        try {
+          choiceEl.focus({ focusVisible: false });
+        } catch (_) {
+          try {
+            choiceEl.focus();
+          } catch (_) {
+            /* ignore */
+          }
+        }
+      }, 50);
     }
 
     function showScrollNudge() {
@@ -2157,7 +2180,61 @@
       window.addEventListener("touchmove", removeNudgeOnTouchMove, { passive: true });
     }
 
+    function pauseScrollModeDemoVideos() {
+      choiceEl.querySelectorAll("video.smc-split-demo-video").forEach((node) => {
+        if (!(node instanceof HTMLVideoElement)) return;
+        try {
+          node.pause();
+          node.currentTime = 0;
+        } catch (_) {
+          /* ignore */
+        }
+      });
+    }
+
+    /** Survol fin (desktop) : lecture muted ; le texte reste en calque translucide (CSS). */
+    function initScrollModeDemoHover() {
+      const reduce =
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const hoverFine =
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+      if (reduce || !hoverFine) return;
+
+      const vCin = cinemaBtn.querySelector("video.smc-split-demo-video");
+      const vExp = exploreBtn.querySelector("video.smc-split-demo-video");
+      if (!(vCin instanceof HTMLVideoElement) || !(vExp instanceof HTMLVideoElement)) return;
+
+      /** @param {HTMLButtonElement} btn @param {HTMLVideoElement} v */
+      function wire(btn, v) {
+        btn.addEventListener(
+          "pointerenter",
+          () => {
+            if (!choiceOverlayScrollLock) return;
+            void v.play().catch(() => {});
+          },
+          { passive: true },
+        );
+        btn.addEventListener(
+          "pointerleave",
+          () => {
+            try {
+              v.pause();
+              v.currentTime = 0;
+            } catch (_) {
+              /* ignore */
+            }
+          },
+          { passive: true },
+        );
+      }
+      wire(/** @type {HTMLButtonElement} */ (cinemaBtn), vCin);
+      wire(/** @type {HTMLButtonElement} */ (exploreBtn), vExp);
+    }
+
     function dismissChoice(chosen) {
+      pauseScrollModeDemoVideos();
       document.documentElement.setAttribute("data-senac-mode-chosen", "1");
       if (backdropEl) {
         backdropEl.classList.remove("is-visible");
@@ -2184,6 +2261,7 @@
         document.documentElement.classList.remove("senac-choice-pending");
         document.body.classList.remove("senac-choice-pending");
         toggleEl.removeAttribute("hidden");
+        postScrollModeChoiceOverlayToParent(false);
         requestAnimationFrame(() => {
           requestAnimationFrame(() => toggleEl.classList.add("is-visible"));
         });
@@ -2246,6 +2324,8 @@
       },
       false,
     );
+
+    initScrollModeDemoHover();
 
     cinemaBtn.addEventListener("click",  () => dismissChoice("cinema"));
     exploreBtn.addEventListener("click", () => dismissChoice("explore"));

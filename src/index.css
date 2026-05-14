@@ -9,7 +9,7 @@
 }
 
 /**
- * Direction artistique — une seule matrice pour tout le voyage :
+ * Direction artistique - une seule matrice pour tout le voyage :
  * ├─ Solo / jour : parchemin, ocre (solar-gold), grains chauds, profondeurs terre (#da-depth-intro, #da-depth-map)
  * └─ Nuit / constellation : bleu indigo profond (#da-depth-night), filets #da-starline (alignés curseur midnight)
  * Rayons UI : --radius-da (filets 1px, coins quasi carrés type rouleau / timbre).
@@ -23,13 +23,13 @@
   --color-solar-sand: #f5f0e6;
   --color-solar-gold: #c5a059;
   --color-solar-brown: #2d241e;
-  /** Sahara DA — même grille que l’écran langue : sable, parchemin, umber */
+  /** Sahara DA - même grille que l’écran langue : sable, parchemin, umber */
   --color-da-parchment: #d4c5b0;
   --color-da-parchment-bright: #f4ead2;
   --color-da-umber: #1a130f;
   /** Ombre chaude sur titre acte III (gradient typographique) */
   --color-da-oxide: #7a5c32;
-  /** Profondeurs plein écran (intro, carte, parchemin, écriture) — ne pas disperser d’hex ailleurs */
+  /** Profondeurs plein écran (intro, carte, parchemin, écriture) - ne pas disperser d’hex ailleurs */
   --color-da-depth-map: #080604;
   --color-da-depth-night: #05080f;
   --color-da-depth-intro: #0a0806;
@@ -242,7 +242,7 @@
   }
 
   /**
-   * DA minimal « sahara oriental poétique » — alignée sur l’écran choix de langue :
+   * DA minimal « sahara oriental poétique » - alignée sur l’écran choix de langue :
    * interlignage aéré, filets 1px, sable / parchemin sur fond profond.
    */
   .da-eyebrow {
@@ -287,20 +287,20 @@
     text-shadow: 0 0 10px rgba(0, 0, 0, 0.72);
   }
 
-  /** Hint fixe bas d’écran (molette) — micro-légende DA */
+  /** Hint fixe bas d’écran (molette) - micro-légende DA */
   .da-hint-micro {
     @apply max-w-[14rem] text-center font-sans text-[8px] font-medium uppercase text-da-parchment/72 sm:text-[9px];
     letter-spacing: 0.24em;
     text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
   }
 
-  /** Panneaux flottants type « rouleau sous verre » — solar (désert) */
+  /** Panneaux flottants type « rouleau sous verre » - solar (désert) */
   .da-glass-solar {
     border-radius: var(--radius-da);
     @apply border border-solar-gold/34 bg-black/48 backdrop-blur-sm shadow-[0_12px_40px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(253,248,238,0.05)];
   }
 
-  /** Panneaux flottants — midnight (constellation / parchemin immergé) */
+  /** Panneaux flottants - midnight (constellation / parchemin immergé) */
   .da-glass-moon {
     border-radius: var(--radius-da);
     @apply border border-[rgb(139_213_255/0.36)] bg-[rgba(4,14,38,0.55)] backdrop-blur-sm shadow-[0_12px_40px_rgba(0,0,0,0.58),inset_0_1px_0_rgba(180,218,255,0.06),0_0_32px_rgba(72,148,230,0.06)];

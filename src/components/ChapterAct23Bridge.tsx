@@ -141,7 +141,7 @@ export default function ChapterAct23Bridge({ open, onComplete }: Props) {
         <source src={ACT23_BRIDGE_FALLBACK_WEBM} type='video/webm; codecs="vp09.00.10.08"' />
       </video>
 
-      {/* Contrôle volume — masqué quand le lien « passer » est affiché (comme Intro). */}
+      {/* Contrôle volume - masqué quand le lien « passer » est affiché (comme Intro). */}
       <AnimatePresence>
         {!showSkip && (
         <motion.div

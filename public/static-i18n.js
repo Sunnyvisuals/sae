@@ -43,6 +43,9 @@
         '<p class="senac-cinema-explore-callout__text">Pour poursuivre la traversée, appuie sur <strong>Exploration</strong> en bas à gauche.</p><div class="senac-cinema-explore-callout__arrows" aria-hidden="true"><span class="senac-ce-arrow"></span><span class="senac-ce-arrow"></span><span class="senac-ce-arrow"></span></div>',
       js_scroll_nudge_label: "Scroll vers le bas",
       smc_aria: "Choisir un mode de lecture",
+      smc_curtain_ar: "اختر نمط القراءة",
+      smc_curtain_fr: "Choisissez votre mode de lecture",
+      smc_mode_eyebrow: "Mode",
       smc_kicker: "La traversée",
       smc_caption_html:
         'Deux rythmes pour la même <span class="smc-caption-em">traversée</span> avant d\'entrer dans la nuit.',
@@ -59,7 +62,7 @@
       hero_title: "Al Rihla",
       hero_subtitle: "La traversée",
       hero_copy:
-        "Jean Sénac : une frise entre chronologie et archives — où les dates deviennent constellations et chaque fragment allume un peu plus la nuit.",
+        "Jean Sénac : une frise entre chronologie et archives - où les dates deviennent constellations et chaque fragment allume un peu plus la nuit.",
       cross_nav_status_kicker: "Al Rihla · suite du parcours",
       cross_nav_group_aria: "Raccourcis facultatifs : prologue et carte-mémoire (Acte I déjà parcouru)",
       cross_nav_links_html:
@@ -69,7 +72,6 @@
       cross_nav_act1_poetry_html:
         'Carte-mémoire : <button type="button" class="senac-cross-nav__link" data-senac-navigate="act1-map">vers du désert (Acte I)</button>',
       hero_img_alt: "Jean Sénac assis sur des rochers, face à la mer.",
-      hero_figcaption: "Jean Sénac - portrait d'archive",
       scroll_cue_aria: "Faire défiler vers la frise narrative",
       scroll_cue_label: "Molette · vers le bas",
       timeline_aria: "Frise narrative Jean Sénac",
@@ -157,6 +159,9 @@
         '<p class="senac-cinema-explore-callout__text">باش تكمّل المسيرة، ضغط على <strong>استكشاف</strong> لتحت على اليسار.</p><div class="senac-cinema-explore-callout__arrows" aria-hidden="true"><span class="senac-ce-arrow"></span><span class="senac-ce-arrow"></span><span class="senac-ce-arrow"></span></div>',
       js_scroll_nudge_label: "لتحت · الحرّاف",
       smc_aria: "اختَر نمط القراءة",
+      smc_curtain_ar: "اختر نمط القراءة",
+      smc_curtain_fr: "Choisissez votre mode de lecture",
+      smc_mode_eyebrow: "الوضع",
       smc_kicker: "المسيرة",
       smc_caption_html:
         'إيقاعان لنفس <span class="smc-caption-em">المسيرة</span> قبل ما تدخل لليل.',
@@ -173,7 +178,7 @@
       hero_title: "الرحلة",
       hero_subtitle: "المسيرة",
       hero_copy:
-        "جان سنّاك: خط زمني بين الأعوام والأرشيف — حيث تتبدّل التواريخ نجومًا ويضيء كلّ شقّ الليلة قليلًا.",
+        "جان سنّاك: خط زمني بين الأعوام والأرشيف - حيث تتبدّل التواريخ نجومًا ويضيء كلّ شقّ الليلة قليلًا.",
       cross_nav_status_kicker: "الرحلة · تتمّة المسار",
       cross_nav_group_aria: "اختصارات اختيارية : المقدمة وخريطة الذاكرة (الجزء الأول تمّ مرّوه)",
       cross_nav_links_html:
@@ -183,7 +188,6 @@
       cross_nav_act1_poetry_html:
         'خريطة الذاكرة : <button type="button" class="senac-cross-nav__link" data-senac-navigate="act1-map">الشعر فالصحرا (الجزء الأول)</button>',
       hero_img_alt: "جان سنّاك قاعد على صخور، ورا البحر.",
-      hero_figcaption: "جان سنّاك - صورة من الأرشيف",
       scroll_cue_aria: "مرّر باش توصل للخط الزمني",
       scroll_cue_label: "زيد تنزّل",
       timeline_aria: "الخط الزمني - جان سنّاك",

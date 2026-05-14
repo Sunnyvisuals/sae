@@ -19,29 +19,38 @@ function rnd(min: number, max: number) {
   return min + Math.random() * (max - min);
 }
 
-function spawnStar(w: number, h: number): Star {
+function spawnStar(w: number, h: number, intense: boolean): Star {
   // Nait sur le bord haut ou gauche, traverse en diagonale bas-droite
   const fromTop = Math.random() > 0.35;
   const x = fromTop ? rnd(w * 0.05, w * 0.95) : rnd(-60, 0);
   const y = fromTop ? rnd(-60, 0) : rnd(h * 0.02, h * 0.65);
 
   const angle = rnd(28, 52) * (Math.PI / 180); // ~30-50° vers bas-droite
-  const speed = rnd(14, 26);
+  const speed = intense ? rnd(15, 30) : rnd(14, 26);
 
   return {
     x,
     y,
     vx: Math.cos(angle) * speed,
     vy: Math.sin(angle) * speed,
-    len: rnd(100, 260),
+    len: intense ? rnd(130, 300) : rnd(100, 260),
     life: 0,
-    maxLife: rnd(20, 40),
-    width: rnd(0.6, 1.6),
-    hue: rnd(-8, 8), // décalage autour de l'or
+    maxLife: intense ? rnd(22, 44) : rnd(20, 40),
+    width: intense ? rnd(0.65, 1.85) : rnd(0.6, 1.6),
+    hue: intense ? rnd(-14, 18) : rnd(-8, 8), // intense : un peu plus de variation or / cyan
   };
 }
 
-export default function ShootingStars() {
+type ShootingStarsProps = {
+  /** Gate finale acte III : étoiles plus fréquentes, traînées un peu plus longues. */
+  intense?: boolean;
+  className?: string;
+};
+
+export default function ShootingStars({
+  intense = false,
+  className = "pointer-events-none absolute inset-0 z-[3]",
+}: ShootingStarsProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const prefersReducedMotion = useReducedMotion();
 
@@ -62,8 +71,9 @@ export default function ShootingStars() {
     let rafId = 0;
     let idleTimer = 0;
 
-    // Cadence : première entre ~3 - 9 s, puis une nouvelle toutes les ~8 - 18 s
-    let nextSpawnAt = Date.now() + rnd(3000, 9000);
+    const firstDelay = intense ? rnd(800, 2800) : rnd(3000, 9000);
+    const betweenDelay = intense ? rnd(3200, 7800) : rnd(8000, 18000);
+    let nextSpawnAt = Date.now() + firstDelay;
 
     const scheduleFrame = () => {
       if (rafId !== 0) return;
@@ -77,8 +87,8 @@ export default function ShootingStars() {
       // Spawn
       const now = Date.now();
       if (now >= nextSpawnAt) {
-        stars.push(spawnStar(w, h));
-        nextSpawnAt = now + rnd(8000, 18000);
+        stars.push(spawnStar(w, h, intense));
+        nextSpawnAt = now + betweenDelay;
       }
 
       // Draw & update
@@ -152,7 +162,7 @@ export default function ShootingStars() {
       if (idleTimer) window.clearTimeout(idleTimer);
       window.removeEventListener('resize', resize);
     };
-  }, [prefersReducedMotion]);
+  }, [prefersReducedMotion, intense]);
 
   if (prefersReducedMotion) return null;
 
@@ -160,8 +170,8 @@ export default function ShootingStars() {
     <canvas
       ref={canvasRef}
       aria-hidden
-      className="pointer-events-none absolute inset-0 z-[3]"
-      style={{ mixBlendMode: 'screen', opacity: 0.82 }}
+      className={className}
+      style={{ mixBlendMode: "screen", opacity: intense ? 0.9 : 0.82 }}
     />
   );
 }

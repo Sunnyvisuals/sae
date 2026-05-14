@@ -38,9 +38,9 @@ import { useAppCopy } from "../hooks/useAppCopy";
 const ARABIC_TITLE_IMAGE_SRC = `${import.meta.env.BASE_URL}images/al-rihla-arabic-title.svg`;
 /** Transition WebM avant le panneau de choix de langue (piste transparente possible). */
 const LANGUAGE_GATE_TRANSITION_WEBM = `${import.meta.env.BASE_URL}transitions/trans2-alpha.webm`;
-/** Safari / iOS : WebM VP9 souvent indisponible — même clip en H.264 (générer via `npm run assets:lang-bridge-mp4`). */
+/** Safari / iOS : WebM VP9 souvent indisponible - même clip en H.264 (générer via `npm run assets:lang-bridge-mp4`). */
 const LANGUAGE_GATE_TRANSITION_MP4 = `${import.meta.env.BASE_URL}transitions/trans2-alpha.mp4`;
-/** `prefers-reduced-motion` : pas de fresque GSAP — délai avant le choix de langue. */
+/** `prefers-reduced-motion` : pas de fresque GSAP - délai avant le choix de langue. */
 const ARRIVAL_LANGUAGE_PRELUDE_MS = 6500;
 /** Sync avec le timeline GSAP du premier écran (`subtitleRevealRef` : start 2.45s, durée 1.75s). */
 const INTRO_GSAP_SUBTITLE_END_S = 2.45 + 1.75;
@@ -450,12 +450,18 @@ function GoldPlayIcon({ className }: { className?: string }) {
   );
 }
 
-type DevChapterJumps = {
+export type DevChapterJumps = {
   goChapter1: () => void;
   goChapter2: () => void;
   goChapter3: () => void;
   /** Ouvre le parchemin sur Ch. III avec générique façon cinéma (`-previewCredits=1`). */
   previewCredits: () => void;
+  /** Dev : ms en plus avant le pont acte I→II (après carte mémoire complétée). */
+  devAct12AddPrefaceMs?: (deltaMs: number) => void;
+  devAct12ResetPrefaceExtra?: () => void;
+  devAct12ExtraPrefaceMs?: number;
+  /** Dev : ms de base (constante `ACT12_POST_MAP_COMPLETE_DELAY_MS`) pour l’affichage. */
+  devAct12BasePrefaceDelayMs?: number;
 };
 
 interface IntroProps {
@@ -468,7 +474,6 @@ interface IntroProps {
 
 export default function Intro({ onComplete, isExploring, onVideoStart, devChapterJumps }: IntroProps) {
   const language = useLanguageStore((s) => s.language);
-  const hasConfirmedChoice = useLanguageStore((s) => s.hasConfirmedChoice);
   const confirmLanguage = useLanguageStore((s) => s.confirmLanguage);
   const offerFullscreenOnArrival = useFullscreenPrefsStore((s) => s.offerFullscreenOnArrival);
   const isArabic = language === "ar-dz";
@@ -522,7 +527,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
   const [launchCtaVisible, setLaunchCtaVisible] = useState(Boolean(isExploring));
   const [launchCtaRevealToken, setLaunchCtaRevealToken] = useState(0);
   const [fullscreenIntroOpen, setFullscreenIntroOpen] = useState(false);
-  /** Coupure synchrone avant Zustand / flush — garantit disparition immédiate du losange sous-titre lors du clic langue */
+  /** Coupure synchrone au clic langue - disparition immédiate du losange (voir `showLandingDiamond`). */
   const [landingOrnamentAllowed, setLandingOrnamentAllowed] = useState(true);
   const initialStageRef = useRef<HTMLDivElement>(null);
   const backgroundRevealRef = useRef<HTMLDivElement>(null);
@@ -565,7 +570,6 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
   }, []);
 
   const openArrivalLanguageGate = useCallback(() => {
-    setLandingOrnamentAllowed(false);
     setArrivalLanguageGateVisible(true);
     setArrivalLanguageBridgeCrossfading(false);
     setLanguageGateBridgeForceMp4(false);
@@ -665,7 +669,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
     };
     v.addEventListener("timeupdate", tick);
     v.addEventListener("loadedmetadata", tick);
-    /* Chrome : autoplay sans geste utilisateur — lecture refusée si volume > 0 */
+    /* Chrome : autoplay sans geste utilisateur - lecture refusée si volume > 0 */
     v.muted = true;
     v.volume = 0;
     v.currentTime = 0;
@@ -712,19 +716,25 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
   }, [arrivalLanguageBridgeVideoActive, endArrivalLanguageBridgeVideo]);
-  /** Losange d’intro uniquement avant le pont / volet langue (`openArrivalLanguageGate` coupe aussi `landingOrnamentAllowed`). */
+  /**
+   * Losange sous le sous-titre : visible jusqu’au volet langue « statique », mais conservé pendant
+   * le pont WebM (révélation) pour qu’on le voie encore avant les libellés FR/AR.
+   */
   const showLandingDiamond =
     landingOrnamentAllowed &&
     showInitialTitle &&
     !videoStarted &&
     !isStarting &&
     !isExploring &&
-    !hasConfirmedChoice &&
     !arrivalLanguageConfirmed &&
-    !showArrivalLanguageOverlay &&
-    !arrivalLanguageGateVisible &&
     !fullscreenIntroOpen &&
-    !launchCtaVisible;
+    !launchCtaVisible &&
+    !(
+      showArrivalLanguageOverlay &&
+      (!arrivalLanguageBridgeVideoActive ||
+        arrivalLanguageBridgeCrossfading ||
+        languageBridgeReveal01 >= 0.72)
+    );
 
   const triggerLaunchCtaReveal = useCallback(() => {
     setLaunchCtaVisible(true);
@@ -868,10 +878,11 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
         .to({}, { duration: gateOverlap });
     }, initialStageRef);
 
+    /* `arrivalLanguageGateVisible` omis des deps : sinon à l’ouverture du volet langue le cleanup
+     * revert le timeline terminé - effets visuels indésirables sur la pile titre / losange. */
     return () => ctx.revert();
   }, [
     arrivalLanguageConfirmed,
-    arrivalLanguageGateVisible,
     isExploring,
     openArrivalLanguageGate,
     prefersReducedMotion,
@@ -1169,6 +1180,45 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
               Crédits
             </button>
           </div>
+          {devChapterJumps.devAct12AddPrefaceMs != null && (
+            <>
+              <p className="m-0 mt-1.5 text-[8px] font-medium uppercase tracking-[0.35em] text-solar-gold/50">
+                Pont I→II
+              </p>
+              <p className="m-0 text-[9px] tabular-nums text-solar-gold/75">
+                +{((devChapterJumps.devAct12ExtraPrefaceMs ?? 0) / 1000).toFixed(1)}s — total{" "}
+                {(
+                  ((devChapterJumps.devAct12BasePrefaceDelayMs ?? 0) +
+                    (devChapterJumps.devAct12ExtraPrefaceMs ?? 0)) /
+                  1000
+                ).toFixed(1)}
+                s avant transi
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => devChapterJumps.devAct12AddPrefaceMs?.(1_000)}
+                  className="rounded-sm border border-solar-gold/30 bg-black/40 px-2.5 py-1.5 text-[9px] uppercase tracking-[0.18em] text-solar-gold/90 transition-colors hover:border-solar-gold/50 hover:bg-solar-gold/10"
+                >
+                  +1 s
+                </button>
+                <button
+                  type="button"
+                  onClick={() => devChapterJumps.devAct12AddPrefaceMs?.(2_000)}
+                  className="rounded-sm border border-solar-gold/30 bg-black/40 px-2.5 py-1.5 text-[9px] uppercase tracking-[0.18em] text-solar-gold/90 transition-colors hover:border-solar-gold/50 hover:bg-solar-gold/10"
+                >
+                  +2 s
+                </button>
+                <button
+                  type="button"
+                  onClick={() => devChapterJumps.devAct12ResetPrefaceExtra?.()}
+                  className="rounded-sm border border-solar-gold/30 bg-black/40 px-2.5 py-1.5 text-[9px] uppercase tracking-[0.18em] text-solar-gold/90 transition-colors hover:border-solar-gold/50 hover:bg-solar-gold/10"
+                >
+                  Reset
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -1233,7 +1283,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
       </motion.div>
       )}
 
-      <div className="relative h-full w-full overflow-hidden flex items-center justify-center">
+      <div className="relative flex h-full w-full items-center justify-center overflow-x-hidden overflow-y-visible">
       <AnimatePresence>
         {showInitialTitle && (
           <motion.div
@@ -1243,7 +1293,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, scale: 1.08 }}
             transition={{ duration: 2, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute inset-0 z-20 flex flex-col items-center justify-center overflow-hidden"
+            className="absolute inset-0 z-20 flex flex-col items-center justify-center overflow-x-hidden overflow-y-visible"
           >
           <AnimatePresence>
           {showArrivalLanguageOverlay && (
@@ -1341,7 +1391,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.34, duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-                className="absolute left-1/2 top-[max(1.5rem,calc(env(safe-area-inset-top)+0.85rem))] z-20 flex w-full -translate-x-1/2 flex-row justify-center px-4 text-center pointer-events-none"
+                className="absolute left-1/2 top-[max(2.65rem,calc(env(safe-area-inset-top)+1.35rem))] z-20 flex w-full -translate-x-1/2 flex-row justify-center px-4 text-center pointer-events-none"
               >
                 <motion.div
                   className="mx-auto flex max-w-[min(96vw,52rem)] flex-row flex-wrap items-center justify-center gap-x-2 gap-y-1 sm:gap-x-4"
@@ -1577,7 +1627,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                   />
                   {/*
                     WebM (Chrome, Firefox) puis MP4 H.264 (Safari / iOS).
-                    MP4 : pas d’alpha — le dégradé z-0 sous la vidéo reste visible.
+                    MP4 : pas d’alpha - le dégradé z-0 sous la vidéo reste visible.
                   */}
                   <video
                     ref={arrivalLangBridgeVideoRef}

@@ -35,7 +35,7 @@ function BlankOrWord({
         animate={{ opacity: 1 }}
         transition={{ duration: 0.85, ease: VERSE_EASE_IN }}
         className="font-bahlull text-[1.35rem] not-italic text-white sm:text-[1.45rem] md:text-[1.55rem]"
-        style={{ textShadow: '0 0 24px rgba(0,0,0,0.85), 0 0 18px rgba(197,160,89,0.35)' }}
+        style={{ textShadow: "0 1px 2px rgba(0,0,0,0.42), 0 0 14px rgba(197,160,89,0.28)" }}
       >
         {surface}
       </motion.span>
@@ -43,7 +43,7 @@ function BlankOrWord({
   }
   return (
     <span
-      className="inline-block min-w-[4.25rem] border-b-2 border-dashed border-white/35 pb-1 font-mono text-base tracking-[0.1em] text-white/45 sm:min-w-[4.75rem] sm:text-lg [text-shadow:0_0_14px_rgba(0,0,0,0.95)]"
+      className="inline-block min-w-[4.25rem] border-b-2 border-dashed border-white/35 pb-1 font-mono text-base tracking-[0.1em] text-white/45 sm:min-w-[4.75rem] sm:text-lg [text-shadow:0_1px_2px_rgba(0,0,0,0.45)]"
       aria-label={aria}
     >
       ·····
@@ -79,8 +79,7 @@ export default function ActOnePhraseStrip({ revelationFound, chapterComplete, ha
               transition={{ duration: 2.1, ease: VERSE_EASE_IN }}
               className="text-center font-serif text-[17px] italic leading-relaxed text-white sm:text-[18px] md:text-[19px]"
               style={{
-                textShadow:
-                  '0 0 28px rgba(0,0,0,0.95), 0 2px 14px rgba(0,0,0,0.88), 0 0 20px rgba(197,160,89,0.15)',
+                textShadow: "0 1px 2px rgba(0,0,0,0.38), 0 0 18px rgba(197,160,89,0.14)",
               }}
             >
               {copy.phraseStripComplete}
@@ -113,8 +112,7 @@ export default function ActOnePhraseStrip({ revelationFound, chapterComplete, ha
                     exit="exit"
                     className="text-center font-serif text-[18px] italic leading-[1.75] text-white sm:text-[20px] sm:leading-[1.85] md:text-[22px] md:leading-[1.9]"
                     style={{
-                      textShadow:
-                        '0 0 32px rgba(0,0,0,0.95), 0 3px 18px rgba(0,0,0,0.92), 0 0 28px rgba(197,160,89,0.12)',
+                      textShadow: "0 1px 2px rgba(0,0,0,0.4), 0 0 20px rgba(197,160,89,0.12)",
                     }}
                   >
                     {step.before}

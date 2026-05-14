@@ -210,7 +210,7 @@ html.senac-in-iframe {
   overscroll-behavior-y: none;
 }
 
-/** Iframe Acte II (SPA) : curseur système — le losange custom est masqué, `cursor: none` casserait l’UX. */
+/** Iframe Acte II (SPA) : curseur système - le losange custom est masqué, `cursor: none` casserait l’UX. */
 html.senac-in-iframe body.senac-night {
   min-height: 100%;
   overscroll-behavior: none;
@@ -225,7 +225,7 @@ html.senac-in-iframe body.senac-night {
 
 /**
  * Iframe (Acte II dans la SPA) : masque les « traits Totem » de `body.senac-night::after`
- * (fils 1px + halos droite ~88 % / 92 % + bande `right center`) — doublon avec le rail Parcours
+ * (fils 1px + halos droite ~88 % / 92 % + bande `right center`) - doublon avec le rail Parcours
  * parent et bandes très visibles au scroll / en pied de page.
  */
 html.senac-in-iframe body.senac-night::after,
@@ -244,7 +244,7 @@ html.senac-in-iframe #senac-pointer-aura {
   display: none !important;
 }
 
-/** Lanternes atténuées pendant le choix — moins de « décor » concurrent au texte. */
+/** Lanternes atténuées pendant le choix - moins de « décor » concurrent au texte. */
 html.senac-choice-pending .senac-lantern {
   opacity: 0.16;
   filter: saturate(0.7);
@@ -316,7 +316,7 @@ body.senac-night::after {
 }
 
 /**
- * Brume / fumée + poussière — sous l’arche WebGL pour que le modèle reste lisible,
+ * Brume / fumée + poussière - sous l’arche WebGL pour que le modèle reste lisible,
  * toujours sous le texte (.chapter z-8).
  */
 #fog-canvas {
@@ -759,8 +759,8 @@ body.senac-smoke-fallback #fog-canvas {
   animation: celestial-rotate 80s linear infinite;
 }
 
-/* Profondeur : larges fades radiaux uniquement — pas de repeating-linear (Traits verticaux
-   très visibles derrière backdrop-filter blur sur scroll-mode-choice — bug GPU / composite). */
+/* Profondeur : larges fades radiaux uniquement - pas de repeating-linear (Traits verticaux
+   très visibles derrière backdrop-filter blur sur scroll-mode-choice - bug GPU / composite). */
 .depth-lines {
   z-index: 2;
   opacity: calc(0.08 + var(--frise-t, 0) * 0.035);
@@ -949,7 +949,7 @@ body.senac-smoke-fallback #fog-canvas {
   margin: 0 auto;
   padding-top: max(env(safe-area-inset-top, 0px), clamp(3.25rem, 8vmin, 5.75rem));
   padding-right: clamp(1.25rem, 4vw, 3rem);
-  /* Scroll libre sous la frise (fonds fixed inchangés) — zone vide pour futurs visuels */
+  /* Scroll libre sous la frise (fonds fixed inchangés) - zone vide pour futurs visuels */
   padding-bottom: calc(clamp(4.5rem, 11vh, 8.5rem) + clamp(45vh, 65vmin, 95vh));
   padding-left: clamp(1.25rem, 4vw, 3rem);
   position: relative;
@@ -3052,26 +3052,40 @@ figure.archive-window[data-reveal]:not(.is-visible) {
    ═══════════════════════════════════════════════ */
 .scroll-mode-choice {
   position: fixed;
+  /* Plein cadre iframe / viewport (Intro : fixed inset-0 + overflow-hidden). */
   inset: 0;
   z-index: 7000;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding-top: max(8vh, calc(env(safe-area-inset-top, 0px) + 1.75rem));
-  padding-bottom: max(8vh, calc(env(safe-area-inset-bottom, 0px) + 1.35rem));
-  padding-left: max(1rem, env(safe-area-inset-left, 0px));
-  padding-right: max(1rem, env(safe-area-inset-right, 0px));
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding-top: max(1rem, calc(env(safe-area-inset-top, 0px) + 0.55rem));
+  padding-bottom: max(0.35rem, env(safe-area-inset-bottom, 0px));
+  padding-left: max(0, env(safe-area-inset-left, 0px));
+  padding-right: max(0, env(safe-area-inset-right, 0px));
+  /* Même base que le backdrop : aucune fente vers le fond parent #05080f. */
+  background-color: #050508;
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.4s var(--ease);
-  overflow-y: auto;
-  overscroll-behavior-y: contain;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
-/* Backdrop : neutre, aligné body phase-act2 (#05080f) — pas de radial bleu. */
+/** Iframe Acte II : hauteur = cadre parent (évite léger décalage 100% / dvh). */
+html.senac-in-iframe .scroll-mode-choice {
+  min-height: 100%;
+  height: 100%;
+}
+
+/* Backdrop : neutre, aligné body phase-act2 (#05080f) - pas de radial bleu. */
 .smc-backdrop {
   position: fixed;
-  inset: 0;
+  inset: -8px;
   z-index: 6999;
   background:
     radial-gradient(ellipse 82% 58% at 50% 32%, rgba(197, 160, 89, 0.04) 0%, transparent 54%),
@@ -3081,6 +3095,7 @@ figure.archive-window[data-reveal]:not(.is-visible) {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.4s var(--ease);
+  transform: translateZ(0);
 }
 
 .smc-backdrop.is-visible {
@@ -3091,6 +3106,11 @@ figure.archive-window[data-reveal]:not(.is-visible) {
 .scroll-mode-choice.is-visible {
   opacity: 1;
   pointer-events: auto;
+}
+
+/** Focus initial sur le dialogue (pas sur Cinéma) : évite l’anneau :focus-visible sur tout le panneau gauche. */
+.scroll-mode-choice:focus {
+  outline: none;
 }
 
 .scroll-mode-choice.is-leaving {
@@ -3125,36 +3145,61 @@ figure.archive-window[data-reveal]:not(.is-visible) {
   }
 }
 
-.scroll-mode-choice .smc-da,
-.scroll-mode-choice .smc-kicker,
-.scroll-mode-choice .smc-choose-caption,
-.scroll-mode-choice .smc-buttons {
+.scroll-mode-choice .smc-split-curtain {
+  opacity: 0;
+  transform: translateY(14px);
+  filter: blur(8px);
+  margin-top: clamp(0.2rem, 0.85vh, 0.65rem);
+  margin-right: auto;
+  margin-bottom: clamp(0.6rem, 1.85vh, 1.2rem);
+  margin-left: auto;
+  padding-top: clamp(0.2rem, 0.7vh, 0.55rem);
+  padding-bottom: clamp(0.2rem, 0.7vh, 0.55rem);
+}
+
+.scroll-mode-choice .smc-split-act-kicker,
+.scroll-mode-choice .smc-split-side {
   opacity: 0;
   transform: translateY(14px);
   filter: blur(8px);
 }
 
-.scroll-mode-choice.is-visible .smc-da {
+.scroll-mode-choice.is-visible .smc-split-curtain {
   animation: smc-reveal-line 0.72s var(--ease) forwards;
 }
 
-.scroll-mode-choice.is-visible .smc-kicker {
-  animation: smc-reveal-line 0.72s var(--ease) 0.12s forwards;
+/** Même respiration que le bandeau langue (`Intro.tsx`) : opacité 1 → 0 → 1. */
+@keyframes smc-curtain-breathe-opacity {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  52% {
+    opacity: 0;
+  }
 }
 
-.scroll-mode-choice.is-visible .smc-choose-caption {
-  animation: smc-reveal-line 0.72s var(--ease) 0.26s forwards;
+.scroll-mode-choice.is-visible .smc-split-curtain-track {
+  animation: smc-curtain-breathe-opacity 3.4s cubic-bezier(0.45, 0, 0.55, 1) calc(0.72s + 1.35s) infinite;
 }
 
-.scroll-mode-choice.is-visible .smc-buttons {
-  animation: smc-reveal-actions 1.2s cubic-bezier(0.16, 1, 0.32, 1) 0.5s forwards;
+.scroll-mode-choice.is-visible .smc-split-act-kicker {
+  animation: smc-reveal-line 0.72s var(--ease) 0.1s forwards;
+}
+
+.scroll-mode-choice.is-visible .smc-split-side--cinema {
+  animation: smc-reveal-actions 1.05s cubic-bezier(0.16, 1, 0.32, 1) 0.28s forwards;
+}
+
+.scroll-mode-choice.is-visible .smc-split-side--explore {
+  animation: smc-reveal-actions 1.05s cubic-bezier(0.16, 1, 0.32, 1) 0.42s forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .scroll-mode-choice .smc-da,
-  .scroll-mode-choice .smc-kicker,
-  .scroll-mode-choice .smc-choose-caption,
-  .scroll-mode-choice .smc-buttons {
+  .scroll-mode-choice .smc-split-curtain,
+  .scroll-mode-choice .smc-split-curtain-track,
+  .scroll-mode-choice .smc-split-act-kicker,
+  .scroll-mode-choice .smc-split-side {
     animation: none !important;
     opacity: 1;
     transform: none;
@@ -3162,53 +3207,99 @@ figure.archive-window[data-reveal]:not(.is-visible) {
   }
 }
 
-/** Panneau central : sobre — pas de « verre » lourd ni ombres colorées. */
-.smc-inner {
+/** Remplit le cadre overlay : le bloc header + panneaux occupe toute la hauteur (comme Intro `h-full`). */
+.smc-split-root {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0;
-  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: 100%;
+  width: 100%;
+  max-width: 100%;
   isolation: isolate;
-  flex-shrink: 0;
-  width: min(100%, 640px);
-  height: 700px;
-  max-height: min(90dvh, calc(100svh - 2.5rem));
-  padding: clamp(2rem, 6vh, 3.15rem) clamp(1.55rem, 5.5vw, 2.85rem);
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-  border-radius: 0;
-  border: 1px solid rgba(255, 252, 245, 0.07);
-  background: rgba(5, 5, 6, 0.72);
-  box-shadow: 0 1px 0 rgba(255, 252, 245, 0.04) inset;
+  background: linear-gradient(180deg, rgba(7, 5, 3, 0.985) 0%, rgba(5, 3, 2, 0.996) 42%, rgba(2, 1, 0, 1) 100%);
+  overflow: hidden;
 }
 
-/** Contenu sous le bloc DA : centré dans l’espace restant du panneau (Acte II reste en tête). */
-.smc-main {
-  flex: 1 1 auto;
+.smc-split-header {
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  align-self: stretch;
-  width: 100%;
-  min-height: 0;
+  text-align: center;
+  padding: clamp(1.5rem, 4.25vh, 3rem) clamp(1rem, 4vw, 2rem) clamp(1.75rem, 4.5vh, 3.25rem);
+}
+
+/** Volet choix mode : aération verticale autour du bandeau + kicker. */
+.scroll-mode-choice .smc-split-header {
+  padding-top: clamp(1.15rem, 3.35vh, 2.2rem);
+  padding-right: clamp(1rem, 4vw, 2rem);
+  padding-bottom: clamp(1.2rem, 3.4vh, 2.1rem);
+  padding-left: clamp(1rem, 4vw, 2rem);
+}
+
+.scroll-mode-choice .smc-split-header .smc-split-act-kicker {
+  margin-top: clamp(0.35rem, 1.15vh, 0.85rem);
+  margin-right: auto;
+  margin-bottom: clamp(0.75rem, 2.35vh, 1.45rem);
+  margin-left: auto;
+  padding-top: clamp(0.25rem, 0.85vh, 0.55rem);
+  padding-right: clamp(1rem, 3vw, 1.5rem);
+  padding-bottom: clamp(0.55rem, 1.5vh, 0.95rem);
+  padding-left: clamp(1rem, 3vw, 1.5rem);
+}
+
+/** Bandeau bilingue : enveloppe (entrée) + piste (respiration opacité, comme Intro). */
+.smc-split-curtain {
+  display: block;
+  margin: 0 auto clamp(1rem, 2.8vh, 1.65rem);
+  max-width: min(96vw, 52rem);
+}
+
+.smc-split-curtain-track {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.35rem 0.75rem;
+}
+
+.smc-split-curtain-ar {
+  font-family: "Noto Naskh Arabic", Georgia, serif;
+  font-size: clamp(0.82rem, 1.02vw, 0.96rem);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  line-height: 1.45;
+  color: rgba(244, 234, 210, 0.78);
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.72);
+}
+
+.smc-split-curtain-dot {
+  display: inline-block;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(197, 160, 89, 0.42);
+  box-shadow: 0 0 8px rgba(197, 160, 89, 0.16);
+  transform: translateY(-2px);
+}
+
+.smc-split-curtain-fr {
+  font-family: "Inter", sans-serif;
+  font-size: clamp(0.68rem, 0.84vw, 0.88rem);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: var(--da-curtain-track);
+  line-height: 1.35;
+  color: rgba(212, 197, 176, 0.72);
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.72);
 }
 
 /**
- * Bloc titre : mêmes familles / hiérarchie que `.hero` (frise ch. II).
+ * Kicker « Acte II » seul sous le bandeau (sans logo Al Rihla ni légende).
  */
-.smc-da {
-  position: relative;
-  flex-shrink: 0;
-  margin: 0 0 clamp(1.55rem, 4vh, 2.35rem);
-  padding: 0 clamp(1.15rem, 3.5vw, 1.65rem);
-  max-width: min(94vw, 39rem);
-  text-align: center;
-}
-
 .smc-da-kicker {
   position: relative;
   margin: 0 0 clamp(1.65rem, 4.2vh, 2.35rem);
@@ -3221,6 +3312,13 @@ figure.archive-window[data-reveal]:not(.is-visible) {
   text-transform: uppercase;
   color: rgba(197, 160, 89, 0.52);
   text-shadow: 0 1px 12px rgba(0, 0, 0, 0.75);
+}
+
+.smc-split-header .smc-split-act-kicker {
+  margin: 0 auto clamp(1.1rem, 3vh, 2rem);
+  padding: 0 clamp(1rem, 3vw, 1.5rem) clamp(0.55rem, 1.35vh, 0.85rem);
+  max-width: min(94vw, 39rem);
+  text-align: center;
 }
 
 .smc-da-kicker::after {
@@ -3242,16 +3340,14 @@ figure.archive-window[data-reveal]:not(.is-visible) {
   pointer-events: none;
 }
 
-.smc-da-title {
-  margin: 0;
-  font-family: "Bahlull", "Playfair Display", serif;
-  font-size: clamp(2.75rem, 7.8vw, 4.5rem);
-  font-weight: 400;
-  font-style: italic;
-  line-height: 0.98;
-  letter-spacing: -0.02em;
-  color: rgba(255, 252, 245, 0.98);
-  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.88);
+html[dir="rtl"] .smc-split-act-kicker,
+html[lang="ar-DZ"] .smc-split-act-kicker {
+  font-family: "Noto Naskh Arabic", Georgia, serif;
+  font-style: normal;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  line-height: 1.65;
+  text-transform: none;
 }
 
 /** Pendant le choix de mode : pas de doublon flouté du hero sous le voile. */
@@ -3262,211 +3358,361 @@ html.senac-choice-pending .hero > .hero-subtitle {
   visibility: hidden !important;
 }
 
-.smc-kicker {
-  margin: 0 0 clamp(1.15rem, 2.9vh, 1.65rem);
-  max-width: min(36rem, 94vw);
-  padding: 0 clamp(1.1rem, 3.5vw, 1.55rem);
-  font-family: "Inter", sans-serif;
-  font-size: clamp(0.78rem, 1.85vw, 0.88rem);
-  font-weight: 400;
-  font-style: normal;
-  letter-spacing: var(--da-display-track);
-  line-height: 1.55;
-  text-transform: uppercase;
-  color: rgba(253, 250, 246, 0.78);
-  text-align: center;
-  text-shadow: 0 1px 14px rgba(0, 0, 0, 0.72);
-}
-
-html[dir="rtl"] .smc-kicker,
-html[lang="ar-DZ"] .smc-kicker {
-  font-family: "Noto Naskh Arabic", Georgia, serif;
-  font-style: normal;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  line-height: 1.65;
-  text-transform: none;
-}
-
-/** Instruction : même registre que `.hero-copy` / `--da-body`. */
-.smc-choose-caption {
-  margin: 0 0 clamp(2.35rem, 5.8vh, 3.35rem);
-  max-width: min(94vw, 31rem);
-  padding: 0 clamp(1.1rem, 3.5vw, 1.55rem);
-  font-family: "Inter", sans-serif;
-  font-size: clamp(0.72rem, 1.85vw, 0.8rem);
-  font-weight: 400;
-  line-height: 1.68;
-  letter-spacing: 0.02em;
-  text-transform: none;
-  text-align: center;
-  color: rgba(253, 250, 246, 0.58);
-  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.65);
-}
-
-.smc-caption-em {
-  color: rgba(197, 160, 89, 0.82);
-  font-weight: 500;
-}
-
-.smc-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 78px;
-  height: 118px;
-  align-items: stretch;
-}
-
-@media (min-width: 520px) {
-  .smc-buttons {
-    flex-wrap: nowrap;
-  }
-}
-
-/** Trait vertical net (sans halo flou) - optionnel : légère pulsation d'opacité seulement. */
-.smc-choice-nudge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  align-self: stretch;
-  padding: 0.35rem 0;
-  width: 0.85rem;
-  user-select: none;
-  pointer-events: none;
-}
-
-.smc-choice-nudge-line {
-  display: block;
-  width: 1px;
-  flex: 1;
-  min-height: 4.25rem;
-  max-height: 100%;
-  border-radius: 0;
-  background: linear-gradient(
-    180deg,
-    transparent 0%,
-    rgba(197, 160, 89, 0.22) 22%,
-    rgba(234, 215, 164, 0.55) 50%,
-    rgba(197, 160, 89, 0.22) 78%,
-    transparent 100%
-  );
-  animation: smc-nudge-line-soft 6.5s ease-in-out infinite;
-  box-shadow: 0 0 12px rgba(234, 215, 164, 0.1);
-}
-
-@keyframes smc-nudge-line-soft {
-  0%,
-  100% {
-    opacity: 0.42;
-    filter: brightness(0.92);
-    transform: scaleY(0.98);
-  }
-  50% {
-    opacity: 0.92;
-    filter: brightness(1.06);
-    transform: scaleY(1);
-  }
-}
-
-/**
- * Cartes Cinéma / Exploration : bordure sobre, pas d’anneau animé.
- */
-.scroll-mode-choice .smc-btn::before {
-  display: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .scroll-mode-choice .smc-choice-nudge-line {
-    animation: none !important;
-  }
-}
-
-.smc-btn {
+/* ── Deux moitiés plein écran + losange central (comme choix langue) ── */
+.smc-split-panels {
   position: relative;
-  isolation: isolate;
-  overflow: hidden;
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  direction: ltr;
+  min-height: 0;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .smc-split-panels {
+    flex-direction: row;
+  }
+}
+
+.smc-split-side {
+  position: relative;
+  flex: 1 1 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.62rem;
-  padding: 1.55rem 1.9rem 1.65rem;
-  border-radius: 0;
-  border: 1px solid rgba(255, 252, 245, 0.1);
-  background: rgba(8, 8, 9, 0.65);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  justify-content: center;
+  min-height: 0;
+  margin: 0;
+  padding: clamp(1.5rem, 4vh, 2.75rem) clamp(1rem, 4vw, 2.5rem);
+  border: none;
+  background: transparent;
   cursor: pointer;
-  transition:
-    border-color 0.28s var(--ease),
-    background 0.28s var(--ease),
-    transform 0.28s var(--ease);
-  min-width: 172px;
+  overflow: hidden;
   outline: none;
+  box-shadow: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.28s var(--ease);
 }
 
-.smc-btn--cinema,
-.smc-btn--explore {
-  border-color: rgba(255, 252, 245, 0.1);
+.smc-split-side:hover,
+.smc-split-side:focus {
+  outline: none;
+  border: none;
   box-shadow: none;
 }
 
-.smc-btn > * {
-  position: relative;
+@media (min-width: 640px) {
+  .smc-split-side {
+    min-height: 0;
+  }
+}
+
+.smc-split-side-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(180deg, rgba(197, 160, 89, 0.04), rgba(197, 160, 89, 0.015));
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.smc-split-side--cinema .smc-split-side-bg {
+  background: linear-gradient(180deg, rgba(197, 160, 89, 0.04), rgba(197, 160, 89, 0.015));
+}
+
+.smc-split-side--explore .smc-split-side-bg {
+  background: linear-gradient(180deg, rgba(197, 160, 89, 0.04), rgba(197, 160, 89, 0.015));
+}
+
+.smc-split-side--cinema .smc-split-side-bg::after,
+.smc-split-side--explore .smc-split-side-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.smc-split-side--cinema .smc-split-side-bg::after {
+  background: radial-gradient(ellipse 76% 82% at 24% 50%, rgba(197, 160, 89, 0.08) 0%, transparent 68%);
+}
+
+.smc-split-side--explore .smc-split-side-bg::after {
+  background: radial-gradient(ellipse 76% 82% at 76% 50%, rgba(197, 160, 89, 0.08) 0%, transparent 68%);
+}
+
+.smc-split-side-wash {
+  position: absolute;
+  inset: 0;
   z-index: 1;
+  background: #c5a059;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.7s ease;
 }
 
-.smc-btn:hover {
-  border-color: rgba(197, 160, 89, 0.38);
-  background: rgba(12, 11, 9, 0.82);
-  box-shadow: none;
-  transform: none;
+.smc-split-side:hover .smc-split-side-wash {
+  opacity: 0.1;
 }
 
-.smc-btn--cinema:hover {
-  box-shadow: none;
+.smc-split-side-bottom {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  height: 66%;
+  top: auto;
+  background: linear-gradient(to top, rgba(197, 160, 89, 0.18), transparent);
+  transform: translateY(100%);
+  pointer-events: none;
+  transition: transform 0.7s ease-out;
 }
 
-.smc-btn:active {
-  transform: scale(0.985);
-  border-color: rgba(197, 160, 89, 0.48);
-  background: rgba(10, 9, 7, 0.88);
-  box-shadow: none;
-  transition:
-    transform 0.1s ease,
-    border-color 0.1s ease,
-    background 0.1s ease;
-  animation: none;
+.smc-split-side:hover .smc-split-side-bottom {
+  transform: translateY(0);
 }
 
-.smc-btn-icon {
-  color: rgba(197, 160, 89, 0.72);
+.smc-split-side-edge {
+  position: absolute;
+  top: 15%;
+  bottom: 15%;
+  width: 1px;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, rgba(197, 160, 89, 0.32), transparent);
+}
+
+.smc-split-side-edge--right {
+  right: 0;
+  display: none;
+}
+
+.smc-split-side-edge--left {
+  left: 0;
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .smc-split-side-edge--right,
+  .smc-split-side-edge--left {
+    display: block;
+  }
+}
+
+.smc-split-stack {
+  position: relative;
+  z-index: 3;
   display: flex;
-  opacity: 0.95;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.85rem, 2.2vh, 1.35rem);
+  transition: opacity 0.42s var(--ease);
 }
 
-.smc-btn-label {
+/** Démo courte au survol (desktop) : vidéo sous le texte, stack translucide. */
+.smc-split-demo-video {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.42s var(--ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .scroll-mode-choice.is-visible .smc-split-side:hover .smc-split-demo-video {
+    opacity: 1;
+  }
+
+  .scroll-mode-choice.is-visible .smc-split-side:hover .smc-split-stack {
+    opacity: 0.22;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .smc-split-demo-video,
+  .smc-split-stack {
+    transition-duration: 0.12s;
+  }
+
+  .scroll-mode-choice.is-visible .smc-split-side:hover .smc-split-demo-video {
+    opacity: 0 !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .scroll-mode-choice.is-visible .smc-split-side:hover .smc-split-stack {
+      opacity: 0.45;
+    }
+  }
+}
+
+html[dir="rtl"] .smc-split-stack {
+  direction: rtl;
+}
+
+.smc-split-eyebrow {
   font-family: "Inter", sans-serif;
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.26em;
+  font-size: 10px;
+  font-weight: 400;
   text-transform: uppercase;
-  color: rgba(255, 252, 245, 0.92);
+  letter-spacing: var(--da-eyebrow-track);
+  line-height: 1.4;
+  color: rgba(197, 160, 89, 0.55);
+  text-shadow: 0 0 12px rgba(0, 0, 0, 0.82);
 }
 
-.smc-btn-sub {
+html[dir="rtl"] .smc-split-eyebrow,
+html[lang="ar-DZ"] .smc-split-eyebrow {
+  font-family: "Noto Naskh Arabic", Georgia, serif;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: none;
+}
+
+.smc-split-icon {
+  display: flex;
+  color: rgba(197, 160, 89, 0.72);
+  filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.55));
+}
+
+.smc-split-title {
   font-family: "Inter", sans-serif;
-  font-size: 0.65rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: clamp(1.8rem, 4.6vw, 2.85rem);
+  letter-spacing: var(--da-display-track);
+  line-height: 1.1;
+  color: rgba(244, 234, 210, 0.92);
+  text-shadow: 0 0 18px rgba(0, 0, 0, 0.78);
+  transition: color 0.3s ease;
+}
+
+html[dir="rtl"] .smc-split-title,
+html[lang="ar-DZ"] .smc-split-title {
+  font-family: "Noto Naskh Arabic", Georgia, serif;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+.smc-split-side:hover .smc-split-title {
+  color: rgba(255, 244, 220, 0.98);
+}
+
+.smc-split-sub {
+  font-family: "Inter", sans-serif;
+  font-size: clamp(0.62rem, 1.65vw, 0.72rem);
   font-weight: 400;
   letter-spacing: 0.06em;
-  color: rgba(253, 250, 246, 0.48);
   line-height: 1.45;
+  color: rgba(253, 250, 246, 0.48);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.65);
+  max-width: min(14rem, 78vw);
+  text-align: center;
 }
 
-.smc-btn:focus-visible {
-  outline: 1px solid rgba(197, 160, 89, 0.4);
-  outline-offset: 3px;
+html[dir="rtl"] .smc-split-sub,
+html[lang="ar-DZ"] .smc-split-sub {
+  font-family: "Noto Naskh Arabic", Georgia, serif;
+  letter-spacing: 0.04em;
+}
+
+.smc-split-rule {
+  display: block;
+  height: 1px;
+  width: 3rem;
+  background: rgba(197, 160, 89, 0.38);
+  transform-origin: center;
+  transition:
+    width 0.5s ease,
+    background 0.5s ease;
+}
+
+.smc-split-side:hover .smc-split-rule {
+  width: 5rem;
+  background: rgba(197, 160, 89, 0.72);
+}
+
+.smc-split-side:active {
+  transform: scale(0.985);
+}
+
+.smc-split-side:focus-visible {
+  outline: none;
+  /* Pas de cadre extérieur : léger filet intérieur seulement au clavier */
+  box-shadow: inset 0 0 0 1px rgba(197, 160, 89, 0.38);
+}
+
+/** Séparateur central : filets + ✦ (Intro langue). */
+.smc-split-center {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0;
+  pointer-events: none;
+  z-index: 4;
+}
+
+@media (min-width: 640px) {
+  .smc-split-center {
+    position: absolute;
+    inset: 0;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0;
+    transform: translateX(-50%);
+  }
+}
+
+.smc-split-center-line {
+  display: block;
+  width: min(6rem, 42vw);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(197, 160, 89, 0.48), transparent);
+}
+
+@media (min-width: 640px) {
+  .smc-split-center-line {
+    width: 1px;
+    height: auto;
+    flex: 1 1 auto;
+    min-height: 3.5rem;
+    max-height: 7rem;
+    background: linear-gradient(to bottom, transparent, rgba(197, 160, 89, 0.4), transparent);
+  }
+}
+
+.smc-split-diamond {
+  font-size: 1.15rem;
+  line-height: 1;
+  color: rgba(197, 160, 89, 0.72);
+  text-shadow: 0 0 14px rgba(0, 0, 0, 0.8);
+  user-select: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .smc-split-side-bottom,
+  .smc-split-side-wash {
+    transition: none !important;
+  }
+
+  .smc-split-side:hover .smc-split-side-bottom {
+    transform: translateY(100%);
+  }
+
+  .smc-split-side:hover .smc-split-side-wash {
+    opacity: 0;
+  }
 }
 
 /* ═══════════════════════════════════════════════
@@ -3692,6 +3938,11 @@ html.senac-choice-pending body {
   overflow: hidden !important;
   overscroll-behavior: none;
   touch-action: none;
+}
+
+/** Même neutre que `.smc-backdrop` : scelle toute fente sous les calques fixed. */
+html.senac-choice-pending {
+  background-color: #050508;
 }
 
 /* Mode Cinéma : pas de rubber-band hors du document */

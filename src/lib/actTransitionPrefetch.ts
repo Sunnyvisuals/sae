@@ -16,7 +16,7 @@ export function runWhenIdle(task: () => void, timeoutMs = 2800): () => void {
   return () => window.clearTimeout(tid);
 }
 
-/** Chunk lazy `AlgeriaMap` — à précharger pendant l’intro pour un passage acte I sans attente. */
+/** Chunk lazy `AlgeriaMap` - à précharger pendant l’intro pour un passage acte I sans attente. */
 export function prefetchAct1MapChunk(): Promise<unknown> {
   return import("../components/Immersive/AlgeriaMap");
 }
@@ -78,7 +78,7 @@ export function scheduleIdleAct1MapPrefetchAfterLoad(): () => void {
   };
 }
 
-/** Chunk lazy `Act2` — à précharger pendant la carte pour un iframe qui s’ouvre plus vite. */
+/** Chunk lazy `Act2` - à précharger pendant la carte pour un iframe qui s’ouvre plus vite. */
 function prefetchAct2ShellChunk(): Promise<unknown> {
   return import("../components/Immersive/Act2");
 }

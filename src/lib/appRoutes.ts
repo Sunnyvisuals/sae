@@ -44,7 +44,7 @@ function pathnameIsActIII(): boolean {
 /**
  * Réécrit `/…/act3` vers la même racine SPA que le reste du voyage.
  * Une fois préparé (`legacyActIIIUrlRewritePending`), l’entrée doit aller à la phase « acte III »
- * jusqu’à consommation (reset au montage de l’app) — évite le double-invoke StrictMode qui perdrait l’entrée après `replaceState`.
+ * jusqu’à consommation (reset au montage de l’app) - évite le double-invoke StrictMode qui perdrait l’entrée après `replaceState`.
  */
 let legacyActIIIUrlRewritePending = false;
 

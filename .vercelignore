@@ -1,4 +1,4 @@
-# Exclusions pour `vercel deploy` (CLI) — le build distant Git ignore ces fichiers côté machine locale.
+# Exclusions pour `vercel deploy` (CLI) - le build distant Git ignore ces fichiers côté machine locale.
 .cursor/
 .netlify/
 coverage/

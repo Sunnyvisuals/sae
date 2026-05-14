@@ -1,9 +1,9 @@
 /**
  * Arche 3D pilotée par le scroll (Acte II, iframe parchemin).
- * Modèle : public/models/model.glb — ratio = scrollY / scrollMax.
+ * Modèle : public/models/model.glb - ratio = scrollY / scrollMax.
  *
  * Le canvas couvre tout le viewport (CSS fixed inset 0, 100% × 100%).
- * Le modèle descend puis, en phase zoom final (fin du scroll), slerp quaternion + petite caméra pour cadrer l'entrée d'arche — à tuner : _scratchEulerB (0.28…) et camera.lookAt Y.
+ * Le modèle descend puis, en phase zoom final (fin du scroll), slerp quaternion + petite caméra pour cadrer l'entrée d'arche - à tuner : _scratchEulerB (0.28…) et camera.lookAt Y.
  */
 
 const THREE_VER = "0.170.0";
@@ -20,7 +20,7 @@ const ARCH_ZOOM_BEGIN = 0.86;
  * @param {HTMLCanvasElement} opts.canvas
  * @param {boolean} opts.reducedMotion
  * @param {string} opts.modelUrl
- * @param {() => number} opts.getScrollRatio 0–1
+ * @param {() => number} opts.getScrollRatio 0-1
  * @returns {Promise<{ dispose: () => void; sync: () => void }>}
  */
 export async function initSenacArchScene(opts) {

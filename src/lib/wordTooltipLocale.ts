@@ -1,6 +1,6 @@
 import { metaForWord } from "../components/Immersive/mapWordData";
 
-const SAH = "صحراء — شفيف";
+const SAH = "صحراء - شفيف";
 
 const AR_LINES: Record<string, { verse: string; poem: string }> = {
   soleil: { verse: "رفّانة كانها بشرة حضّناها الشمس طويلًا", poem: SAH },

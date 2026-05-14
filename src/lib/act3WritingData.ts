@@ -1,5 +1,5 @@
 /**
- * Fragments Acte III — uniquement des textes déjà présents dans le projet
+ * Fragments Acte III - uniquement des textes déjà présents dans le projet
  * (vidéo / bande carte, vers du pool carte, ligne pont acte II, toast chapitre).
  */
 import type { AppLanguage } from "../stores/languageStore";

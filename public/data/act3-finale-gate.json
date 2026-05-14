@@ -1,16 +1,18 @@
 {
   "fr": {
     "prompt": "Complétez le mot manquant du vers, puis validez avec Entrée.",
-    "before": "Là où la carte devient constellation, ton ",
-    "after": " referme la nuit comme un rouleau, et la phrase tient encore le désert suspendu dans le bleu.",
+    "before": "Là où la carte devient constellation, ton",
+    "after": "referme la nuit comme un rouleau, et la phrase tient encore le désert suspendu dans le bleu.",
     "answers": ["souffle"],
-    "inputAria": "Mot manquant à compléter au clavier"
+    "inputAria": "Mot manquant à compléter au clavier",
+    "timedHint": "Pense au souffle du vivant : ce qui anime le corps et porte aussi la voix du vers (un seul mot)."
   },
   "ar": {
     "prompt": "كمّل الكلمة الناقصة من البيت، ثم اضغط مفتاح الإدخال (Enter) للتثبيت.",
-    "before": "حيث تولّد الخريطة كواكب، ",
-    "after": " تقفَل الليل حال واحد مخطوف؛ والبيت بعدو يعلق الصحراء فالزرقة.",
+    "before": "حيث تولّد الخريطة كواكب،",
+    "after": "تقفَل الليل حال واحد مخطوف؛ والبيت بعدو يعلق الصحراء فالزرقة.",
     "answers": ["نفسك"],
-    "inputAria": "الكلمة الناقصة تُكمَل من لوحة المفاتيح"
+    "inputAria": "الكلمة الناقصة تُكمَل من لوحة المفاتيح",
+    "timedHint": "كلمة واحدة قريبة من النَفَس والحياة، كما يقول البيت عن الليل والجسد."
   }
 }

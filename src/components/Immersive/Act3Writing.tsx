@@ -10,17 +10,15 @@ import { buildAct3Fragments } from "../../lib/act3WritingData";
 import Act3FinaleKeywordGate from "./Act3FinaleKeywordGate";
 import ShootingStars from "../ShootingStars";
 import { IconCheck, IconSparkles } from "../ui/icons";
+import {
+  ACT3_FIXED_STARFIELD_BG,
+  ACT3_SKY_RADIAL_CSS,
+  ACT3_SKY_CONIC_CSS,
+  ACT3_DUST_GRAIN_CSS,
+  ACT3_DUST_GRAIN_SIZE,
+} from "../../lib/act3NightSky";
 
 const ACT3_WORDMARK_AR_SRC = `${import.meta.env.BASE_URL}images/al-rihla-arabic-title.svg`;
-
-const ACT3_FIXED_STARFIELD_BG = Array.from({ length: 44 }, (_, i) => {
-  const x = 5 + (((i * 53) >>> 1) % 90);
-  const y = 4 + (((i * 97 + 19) >>> 1) % 88);
-  const warm = i % 5 === 0;
-  const op = warm ? 0.2 + (i % 3) * 0.07 : 0.26 + (i % 5) * 0.05;
-  const c = warm ? `rgba(232,212,164,${op})` : `rgba(139,213,255,${op})`;
-  return `radial-gradient(${1.2}px circle at ${x}% ${y}%, ${c}, transparent)`;
-}).join(",");
 
 /** Même ombre de vers que {@link ActOnePhraseStrip}. */
 const ACT3_VERSE_TEXT_SHADOW =
@@ -49,7 +47,6 @@ function Act3ChromeCorners() {
 
 type Props = {
   onContinueToCredits: () => void;
-  onBackToParchemin: () => void;
   onKeywordGateChange?: (open: boolean) => void;
 };
 
@@ -62,7 +59,7 @@ function shuffleFragments<T>(arr: readonly T[]): T[] {
   return out;
 }
 
-export default function Act3Writing({ onContinueToCredits, onBackToParchemin, onKeywordGateChange }: Props) {
+export default function Act3Writing({ onContinueToCredits, onKeywordGateChange }: Props) {
   const copy = useAppCopy();
   const lang = useLanguageStore((s) => s.language);
   const reduceMotion = useReducedMotion();
@@ -174,8 +171,7 @@ export default function Act3Writing({ onContinueToCredits, onBackToParchemin, on
         className="pointer-events-none absolute inset-0 z-[2]"
         aria-hidden
         style={{
-          background:
-            "radial-gradient(ellipse 88% 65% at 18% 12%, rgba(90,168,255,0.14), transparent 52%), radial-gradient(ellipse 70% 50% at 88% 28%, rgba(197,160,89,0.08), transparent 58%), radial-gradient(ellipse 75% 55% at 50% 110%, rgba(6,14,38,0.55), transparent 62%), radial-gradient(ellipse 80% 60% at 50% 18%, rgba(6,14,38,0.72), transparent 68%)",
+          background: ACT3_SKY_RADIAL_CSS,
         }}
       />
 
@@ -183,14 +179,22 @@ export default function Act3Writing({ onContinueToCredits, onBackToParchemin, on
         className="pointer-events-none absolute inset-0 z-[3] opacity-[0.14] mix-blend-soft-light"
         aria-hidden
         style={{
-          background:
-            "repeating-conic-gradient(from 0deg at 68% 42%, transparent 0deg, rgba(139,213,255,0.06) 2deg, transparent 5deg)",
+          background: ACT3_SKY_CONIC_CSS,
         }}
       />
 
       <div className="pointer-events-none absolute inset-0 z-[4] overflow-hidden" aria-hidden>
         <ShootingStars />
       </div>
+
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-[5] opacity-[0.2] mix-blend-soft-light"
+        style={{
+          backgroundImage: ACT3_DUST_GRAIN_CSS,
+          backgroundSize: ACT3_DUST_GRAIN_SIZE,
+        }}
+      />
 
       {/* ── Fil de progression : même métaphore que AlgeriaMap ── */}
       <header className="relative z-[10] shrink-0 px-[max(1.25rem,env(safe-area-inset-left))] pt-[max(1rem,env(safe-area-inset-top))] pr-[max(1.25rem,env(safe-area-inset-right))]">
@@ -259,7 +263,7 @@ export default function Act3Writing({ onContinueToCredits, onBackToParchemin, on
       </header>
 
       <div className="relative z-[10] mx-auto mt-6 flex min-h-0 w-full max-w-[min(72rem,calc(100vw-2rem))] flex-1 flex-col gap-4 px-[max(1.25rem,env(safe-area-inset-left))] pb-[max(1rem,env(safe-area-inset-bottom))] pr-[max(1.25rem,env(safe-area-inset-right))] md:mt-8 md:flex-row md:items-stretch md:gap-6">
-        {/* Panneau fragments — chrome identique HintPanel « nuit » */}
+        {/* Panneau fragments - chrome identique HintPanel « nuit » */}
         <div className={`${act3NightPanelClass} md:min-h-0 md:w-[min(24rem,40%)]`}>
           <Act3ChromeCorners />
           <div className={act3PanelHeadClass}>
@@ -404,15 +408,13 @@ export default function Act3Writing({ onContinueToCredits, onBackToParchemin, on
         <Act3FinaleKeywordGate
           language={lang}
           onSolved={() => {
-            onKeywordGateChange?.(false);
             onContinueToCredits();
+            onKeywordGateChange?.(false);
           }}
-          onBackToParchemin={onBackToParchemin}
           wrongLabel={copy.act3FinaleWrong}
           enterHint={copy.act3FinaleEnterHint}
           loadingLabel={copy.act3FinaleLoading}
-          redirectingLabel={copy.act3FinaleRedirecting}
-          backLabel={copy.act3BackScroll}
+          timedHintKicker={copy.act3FinaleTimedHintKicker}
         />
       ) : null}
     </section>

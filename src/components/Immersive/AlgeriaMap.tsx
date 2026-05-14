@@ -1046,7 +1046,7 @@ export default function AlgeriaMap({
         )}
       </AnimatePresence>
 
-      {/* ── Consignes tutoriel : bas-gauche (anciennement + bandeau Acte / Sahara — retiré) ── */}
+      {/* ── Consignes tutoriel : bas-gauche (anciennement + bandeau Acte / Sahara - retiré) ── */}
       {tutorialActive && (
         <div
           className="pointer-events-none absolute bottom-0 left-0 z-[45] flex w-full max-w-[min(calc(100vw-1.25rem),380px)] flex-col items-start pb-[max(1.75rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-4 pt-3 select-none sm:pr-6 md:pb-[max(2.5rem,env(safe-area-inset-bottom))] md:pl-8 md:pr-8"

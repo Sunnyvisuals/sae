@@ -8,7 +8,7 @@ let sharedCtx: AudioContext | null = null;
 let whooshBuffer: AudioBuffer | null = null;
 let whooshLoadPromise: Promise<void> | null = null;
 
-/** Niveau de sortie : volontairement très bas (≈1 % — whoosh audible à peine). */
+/** Niveau de sortie : volontairement très bas (≈1 % - whoosh audible à peine). */
 const WHOOSH_GAIN = 0.01;
 
 function whooshUrl(): string {

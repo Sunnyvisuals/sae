@@ -159,12 +159,12 @@ type Copy = {
   act3Aria: string;
   act3Kicker: string;
   act3Hint: string;
-  /** En-tête panneau liste (acte III) — typo consignes / HintPanel */
+  /** En-tête panneau liste (acte III) - typo consignes / HintPanel */
   act3FragmentsPanelTitle: string;
   act3FragmentsPanelSub: string;
   act3CompositionPanelTitle: string;
   act3CompositionPanelSub: string;
-  /** Zone vide — composition encore sans ligne */
+  /** Zone vide - composition encore sans ligne */
   act3CompositionEmptyBody: string;
   act3ContinueCredits: string;
   act3BackScroll: string;
@@ -172,6 +172,8 @@ type Copy = {
   act3FinaleEnterHint: string;
   act3FinaleLoading: string;
   act3FinaleRedirecting: string;
+  /** Libellé court au-dessus de l’indice différé (gate finale acte III). */
+  act3FinaleTimedHintKicker: string;
 };
 
 const FR: Copy = {
@@ -187,10 +189,10 @@ const FR: Copy = {
   act1HeaderLine: "Acte I - L'algérie",
   act1BottomTitle: "Acte I - L'algérie",
   act1BottomChapter: "Sahara",
-  act1AriaHud: "Acte I — L’Algérie, Sahara",
+  act1AriaHud: "Acte I - L’Algérie, Sahara",
   act1AriaStripWord: "Mot à trouver :",
   phraseStripComplete:
-    "Sous cette calligraphie de sable, les cinq vers se rejoignent — le vent vous retient encore un instant.",
+    "Sous cette calligraphie de sable, les cinq vers se rejoignent - le vent vous retient encore un instant.",
   phraseStripSteps: [...ACT1_PHRASE_STRIP_STEPS_FR],
   revelationWordAria: {
     désert: "Mot à trouver : désert",
@@ -209,17 +211,17 @@ const FR: Copy = {
   daTitle: "La nuit s'ouvre",
   daSubtitle: "Le désert quitte l'or chaud. Le fil devient constellation.",
   act2IframeTitle: "Jean Sénac - frise narrative",
-  act2NavigateActIII: "Acte III — L’écriture",
+  act2NavigateActIII: "Acte III - L’écriture",
   act2NavigateActIIIAria:
     "Ouvre la poésie interactive sur une page dédiée ; vous pouvez ensuite revenir au rouleau d’ici.",
   lazySuspenseAct1: "Préparation de la carte-mémoire…",
-  lazySuspenseAct2: "Ouverture du rouleau — chargement du parchemin…",
-  lazySuspenseAct3: "Ouverture de l’écriture — souffle et fragments…",
+  lazySuspenseAct2: "Ouverture du rouleau - chargement du parchemin…",
+  lazySuspenseAct3: "Ouverture de l’écriture - souffle et fragments…",
   orientationBreadcrumbAria: "Fil d'Ariane",
   orientationCreditsLabel: "Crédits",
   orientationCreditsSummary: "Générique de fin, remerciements et fermeture de ce voyage.",
   orientationFutureAct3: "Acte III - -",
-  orientationFutureAct4: "--- — ---",
+  orientationFutureAct4: "--- - ---",
   orientationFutureAct4Summary: "---- ---- ---- ----",
   orientationLockedIntro: "Intro - -",
   orientationLockedAct1: "Acte I - -",
@@ -272,7 +274,7 @@ const FR: Copy = {
   fullscreenPromptBody: "",
   fullscreenPromptAria:
     "Proposition d’affichage en plein écran pour masquer les barres du navigateur. Vous pourrez quitter ce mode avec la touche Échap ou depuis le menu pause.",
-  fullscreenPromptAccept: "Activer",
+  fullscreenPromptAccept: "Activer (F11)",
   fullscreenPromptLater: "Plus tard",
   fullscreenPromptNever: "Ne plus proposer",
   menuFullscreenSection: "Plein écran",
@@ -346,14 +348,14 @@ const FR: Copy = {
   introVideoMuteOff: "Activer le son",
   introVideoVolumeRange: "Volume",
   act23BridgeVideoSkip: "Passer cette transition",
-  act2FinaleAria: "Clôture du voyage — complétez la phrase pour accéder aux crédits",
+  act2FinaleAria: "Clôture du voyage - complétez la phrase pour accéder aux crédits",
   act2FinaleStem: "Une traversée existe vraiment quand",
   act2FinalePlaceholder: "… quelques mots suffisent",
   act2FinaleHint:
-    "Écrivez votre fin de phrase ci-dessous. Ce n’est ni un test ni une notation — seulement votre trace.",
+    "Écrivez votre fin de phrase ci-dessous. Ce n’est ni un test ni une notation - seulement votre trace.",
   act2FinaleSubmit: "Voir les crédits",
   voyageCreditsTitle: "Al Rihla",
-  voyageCreditsSubtitle: "Médiation culturelle — Jean Sénac",
+  voyageCreditsSubtitle: "Médiation culturelle - Jean Sénac",
   voyageCreditsClose: "Fermer (Échap)",
   voyageCreditsFin: "Merci d’avoir traversé cette nuit.",
   voyageCreditsBlocks: [
@@ -367,7 +369,7 @@ const FR: Copy = {
     {
       heading: "Textes & citations",
       lines: [
-        "Fragments et citations : Jean Sénac — références et droits à compléter dans le dossier du projet.",
+        "Fragments et citations : Jean Sénac - références et droits à compléter dans le dossier du projet.",
       ],
     },
     {
@@ -377,7 +379,7 @@ const FR: Copy = {
     {
       heading: "Vidéo · musique",
       lines: [
-        "Médias du projet — auteurs image, son et musique à mentionner dans les crédits finaux.",
+        "Médias du projet - auteurs image, son et musique à mentionner dans les crédits finaux.",
       ],
     },
     {
@@ -385,10 +387,10 @@ const FR: Copy = {
       lines: ["React, Vite, Motion. Parchemin : Lenis, canvas & effets ambiants.", "Merci aux librairies open source utilisées dans la chaîne de production."],
     },
   ],
-  act3Aria: "Acte III — poésie interactive, recomposition des fragments du voyage",
+  act3Aria: "Acte III - poésie interactive, recomposition des fragments du voyage",
   act3Kicker: "écriture",
   act3Hint:
-    "Touchez les fragments retrouvés sur votre route — intro, carte, parchemin — pour les aligner ici, à la façon du bandeau du premier acte. L’ordre est libre : rassemblez-les tous pour que le dernier vers apparaisse.",
+    "Touchez les fragments retrouvés sur votre route (intro, carte, parchemin) pour les aligner ici, à la façon du bandeau du premier acte. L’ordre est libre : rassemblez-les tous pour que le dernier vers apparaisse.",
   act3FragmentsPanelTitle: "Souvenirs du parcours",
   act3FragmentsPanelSub:
     "Introduction, lignes carte-mémoire et passages du rouleau : tout ce qui vous est déjà apparu dans le voyage.",
@@ -403,6 +405,7 @@ const FR: Copy = {
   act3FinaleEnterHint: "Entrée : valider le mot, le bon mot ouvre les crédits du voyage.",
   act3FinaleLoading: "Préparation du dernier vers…",
   act3FinaleRedirecting: "Ouverture des crédits…",
+  act3FinaleTimedHintKicker: "Indice",
 };
 
 const AR: Copy = {
@@ -440,16 +443,16 @@ const AR: Copy = {
   daTitle: "الليل تنفتح",
   daSubtitle: "الصحراء تخلّي الذهب الحار الخيط يولّي كواكب.",
   act2IframeTitle: "جان السنّاك - الزمن السردي",
-  act2NavigateActIII: "المشهد الثالث — الكتابة",
+  act2NavigateActIII: "المشهد الثالث - الكتابة",
   act2NavigateActIIIAria: "صفحة خاصّة لتجميع الشقوف كقصيدة؛ ترجع للرّقّ من هنا وقت ما تحب.",
   lazySuspenseAct1: "تجهيز خريطة الذاكرة…",
   lazySuspenseAct2: "فتح المخطوف وتحميل الرّقّ…",
-  lazySuspenseAct3: "فتح الكتابة — نَفَس وشقوف…",
+  lazySuspenseAct3: "فتح الكتابة - نَفَس وشقوف…",
   orientationBreadcrumbAria: "مسار الرحلة",
   orientationCreditsLabel: "التذييل",
   orientationCreditsSummary: "التذييل النهائي، شكر وهدايا، وكتامة الدرب.",
   orientationFutureAct3: "المشهد الثالث - ؟",
-  orientationFutureAct4: "؟؟؟ — ؟؟؟",
+  orientationFutureAct4: "؟؟؟ - ؟؟؟",
   orientationFutureAct4Summary: "؟؟؟ - ؟؟؟ - ؟؟؟ - ؟؟؟",
   orientationLockedIntro: "المقدمة - ؟",
   orientationLockedAct1: "المشهد الأول - ؟",
@@ -576,14 +579,14 @@ const AR: Copy = {
   introVideoMuteOff: "فعّل الصوت",
   introVideoVolumeRange: "مستوى الصوت",
   act23BridgeVideoSkip: "تخطّى الانتقال",
-  act2FinaleAria: "ختام الرحلة — أكمّل الجملة باش توصل لتذييل الفريق",
+  act2FinaleAria: "ختام الرحلة - أكمّل الجملة باش توصل لتذييل الفريق",
   act2FinaleStem: "المسيرة تكون حقيقية كي",
   act2FinalePlaceholder: "… بكلمات قلّال يكفي",
   act2FinaleHint:
-    "كتب خواتيس الجملة. ماكاش تقييم — غير أثر تنخلّيه وأنت تنقرا.",
+    "كتب خواتيس الجملة. ماكاش تقييم - غير أثر تنخلّيه وأنت تنقرا.",
   act2FinaleSubmit: "شوف التذييل",
   voyageCreditsTitle: "الرحلة",
-  voyageCreditsSubtitle: "وساطة ثقافية — جان سنّاك",
+  voyageCreditsSubtitle: "وساطة ثقافية - جان سنّاك",
   voyageCreditsClose: "سكر (Esc)",
   voyageCreditsFin: "شكرًا على اجتياز هاد الليل.",
   voyageCreditsBlocks: [
@@ -597,16 +600,16 @@ const AR: Copy = {
     {
       heading: "النصوص والاقتباسات",
       lines: [
-        "قطع واقتباسات جان سنّاك — ثبّت المراجع والحقوق في ملفّ المشروع.",
+        "قطع واقتباسات جان سنّاك - ثبّت المراجع والحقوق في ملفّ المشروع.",
       ],
     },
     {
       heading: "الصور والأرشيف",
-      lines: ["صور ومستندات في الرّقّ — الإسناد كي يتكمّل (مؤسسات، تواريخ)."],
+      lines: ["صور ومستندات في الرّقّ - الإسناد كي يتكمّل (مؤسسات، تواريخ)."],
     },
     {
       heading: "الفيديو والموسيقى",
-      lines: ["وسائط المشروع — صورة وصوت وموسيقى تذكر في التذييل النهائي."],
+      lines: ["وسائط المشروع - صورة وصوت وموسيقى تذكر في التذييل النهائي."],
     },
     {
       heading: "الأدوات",
@@ -616,7 +619,7 @@ const AR: Copy = {
       ],
     },
   ],
-  act3Aria: "المشهد الثالث — قصيدة تفاعلية، إعادة تجميع الشقوف",
+  act3Aria: "المشهد الثالث - قصيدة تفاعلية، إعادة تجميع الشقوف",
   act3Kicker: "الكتابة",
   act3Hint:
     "قطع وأبيات كانوا معاك في الطريق تظهرو كلهم كقطع مختارة؛ نقرة على وحدة وباش تطبّقها وسط الواجهة مثل خطّ البيت في الدخول الأول. الترتيب حر، لازم تجمع كلّ الشقايح قبل آخر لفظة الدرب.",
@@ -634,6 +637,7 @@ const AR: Copy = {
   act3FinaleEnterHint: "Entrée (الدخول) يثبّت الكلمة، الكلمة الصحيحة تفتح تذييل الرحلة.",
   act3FinaleLoading: "تجهيز البيت الأخير…",
   act3FinaleRedirecting: "فتح التذييل…",
+  act3FinaleTimedHintKicker: "تلميح",
 };
 
 export function copyFor(language: AppLanguage): Copy {
