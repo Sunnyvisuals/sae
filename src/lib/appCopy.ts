@@ -143,6 +143,8 @@ type Copy = {
   introVideoMuteOn: string;
   introVideoMuteOff: string;
   introVideoVolumeRange: string;
+  /** Vidéo pont avant l’Acte III (même commande « passer » que l’introduction, phrase distincte). */
+  act23BridgeVideoSkip: string;
   /** Clôture Acte II · phrase à compléter avant crédits */
   act2FinaleAria: string;
   act2FinaleStem: string;
@@ -343,6 +345,7 @@ const FR: Copy = {
   introVideoMuteOn: "Couper le son",
   introVideoMuteOff: "Activer le son",
   introVideoVolumeRange: "Volume",
+  act23BridgeVideoSkip: "Passer cette transition",
   act2FinaleAria: "Clôture du voyage — complétez la phrase pour accéder aux crédits",
   act2FinaleStem: "Une traversée existe vraiment quand",
   act2FinalePlaceholder: "… quelques mots suffisent",
@@ -572,6 +575,7 @@ const AR: Copy = {
   introVideoMuteOn: "كمّ الصوت",
   introVideoMuteOff: "فعّل الصوت",
   introVideoVolumeRange: "مستوى الصوت",
+  act23BridgeVideoSkip: "تخطّى الانتقال",
   act2FinaleAria: "ختام الرحلة — أكمّل الجملة باش توصل لتذييل الفريق",
   act2FinaleStem: "المسيرة تكون حقيقية كي",
   act2FinalePlaceholder: "… بكلمات قلّال يكفي",

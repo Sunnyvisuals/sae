@@ -77,8 +77,8 @@ export default function VoyageCreditsOverlay({ open, onClose, midnight }: Props)
   if (!open) return null;
 
   const skipBtn =
-    'pointer-events-auto cursor-pointer fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-[12] ' +
-    'border border-solar-gold/35 bg-da-depth-night/70 px-6 py-2.5 font-sans text-[10px] font-medium uppercase ' +
+    'pointer-events-auto cursor-pointer fixed left-1/2 top-[50%] z-[70] max-w-[min(calc(100vw-2rem),24rem)] -translate-x-1/2 -translate-y-1/2 ' +
+    'border border-solar-gold/35 bg-da-depth-night/85 px-6 py-2.5 font-sans text-[10px] font-medium uppercase ' +
     'tracking-[0.32em] text-solar-gold/72 backdrop-blur-sm transition-colors hover:border-solar-gold/65 hover:text-solar-gold ' +
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-solar-gold/30';
 
@@ -122,23 +122,6 @@ export default function VoyageCreditsOverlay({ open, onClose, midnight }: Props)
         }}
       />
 
-      {/* Logo MMI IUT — fixé (reste lisible tout le générique ; au-dessus du fondu bas) */}
-      <div
-        className="pointer-events-none absolute bottom-[max(5rem,calc(env(safe-area-inset-bottom)+4.25rem))] left-[max(1rem,env(safe-area-inset-left))] z-[8] md:bottom-[max(5.5rem,calc(env(safe-area-inset-bottom)+4.75rem))] md:left-[max(1.5rem,env(safe-area-inset-left))]"
-      >
-        <img
-          src={MMI_LOGO_SRC}
-          alt="MMI — IUT de Toulon"
-          className="block h-[clamp(52px,9vw,72px)] w-auto opacity-[0.88] brightness-105 contrast-105 md:h-[clamp(56px,7vw,80px)]"
-          loading="lazy"
-          decoding="async"
-          draggable={false}
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).style.display = "none";
-          }}
-        />
-      </div>
-
       {/* Piste de défilement */}
       <div
         ref={trackRef}
@@ -179,8 +162,25 @@ export default function VoyageCreditsOverlay({ open, onClose, midnight }: Props)
           {copy.voyageCreditsFin}
         </p>
 
-        {/* Espace bas pour que la dernière ligne monte bien hors écran */}
-        <div className="h-[50vh]" aria-hidden />
+        <div className="mx-auto mt-14 h-px w-24 bg-solar-gold/20" aria-hidden />
+
+        {/* Logo institutionnel : fin du défilement (avec le générique), pas fixe */}
+        <div className="pointer-events-none mt-12 flex flex-col items-center pb-8 md:mt-14 md:pb-10">
+          <img
+            src={MMI_LOGO_SRC}
+            alt="MMI — IUT de Toulon"
+            className="block h-[clamp(52px,10vw,80px)] w-auto opacity-90 brightness-105 contrast-105 md:h-[clamp(60px,8vw,88px)]"
+            loading="lazy"
+            decoding="async"
+            draggable={false}
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = "none";
+            }}
+          />
+        </div>
+
+        {/* Espace bas pour que le logo et la dernière ligne montent bien hors écran */}
+        <div className="h-[55vh]" aria-hidden />
       </div>
 
       {/* Bouton Fermer — visible uniquement quand les crédits sont terminés */}
@@ -189,8 +189,8 @@ export default function VoyageCreditsOverlay({ open, onClose, midnight }: Props)
           type="button"
           onClick={onClose}
           className={skipBtn}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         >
           {copy.voyageCreditsClose}

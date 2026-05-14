@@ -82,6 +82,7 @@ import {
   SESSION_OPEN_VOYAGE_CREDITS,
   SESSION_RESUME_ACT2,
 } from "./lib/appRoutes";
+import { ACT12_BRIDGE_PREFACE_DELAY_MS } from "./lib/transitionBridgeReveal";
 
 /** Page statique parchemin (ch. II / III) ; respecte `import.meta.env.BASE_URL` (d?ploiement sous sous-chemin). */
 function parcheminSenacHref(hash: string, options?: { previewCredits?: boolean }) {
@@ -213,6 +214,8 @@ export default function App() {
   const [act3KeywordGateOpen, setAct3KeywordGateOpen] = useState(false);
   const [chapterToast, setChapterToast] = useState(false);
   const [chapterDaTransition, setChapterDaTransition] = useState(false);
+  /** Rï¿½vï¿½lation du toast chapitre I?II comme le volet langue (voir `transitionBridgeRevealFromTimeRatio`). */
+  const [act12BridgeReveal01, setAct12BridgeReveal01] = useState(1);
   const [revelationCount, setRevelationCount] = useState(() => {
     const s = getHydratedActSave();
     if (readJourneyReplayUnlocked() || s.act1.completed) return 5;
@@ -266,7 +269,7 @@ export default function App() {
   const act2AmbientMidnight =
     (phase === "act2" && (act2ParcheminTone ?? "solar") === "midnight") || phase === "act3";
 
-  /** Hydrate SplashCursor après 2 cadres paint : évite de rivaliser avec FCP/LCP (rendu inchangé par la suite). */
+  /** Hydrate SplashCursor aprï¿½s 2 cadres paint : ï¿½vite de rivaliser avec FCP/LCP (rendu inchangï¿½ par la suite). */
   const [splashWebglReady, setSplashWebglReady] = useState(false);
   const splashWebglMountedRef = useRef(false);
 
@@ -604,10 +607,11 @@ export default function App() {
     return () => window.removeEventListener("message", onMsg);
   }, [phase]);
 
-  /** D?lai avant le toast : laisser voir la carte + fond ? c?l?bration ? sans masque plein ?cran. */
-  const CHAPTER_TOAST_DELAY_MS = 3200;
-  /** Dur?e lecture toast + sortie avant pont WebM Acte I ? II */
-  const CHAPTER_TOAST_VISIBLE_MS = 5200;
+
+
+  const dismissAct12ChapterToast = useCallback(() => {
+    setChapterToast(false);
+  }, []);
 
   const handleAct12BridgeSwapPhase = useCallback(() => {
     if (!pendingAct2.current) return;
@@ -617,6 +621,7 @@ export default function App() {
   const handleAct12BridgeFinish = useCallback(() => {
     pendingAct2.current = false;
     setChapterDaTransition(false);
+    setAct12BridgeReveal01(1);
   }, []);
 
   /** S?curit? : d?bloquer si la WebM ne se termine jamais (erreur rare). */
@@ -625,6 +630,8 @@ export default function App() {
     const t = window.setTimeout(() => {
       pendingAct2.current = false;
       setChapterDaTransition(false);
+      setChapterToast(false);
+      setAct12BridgeReveal01(1);
       setPhase((p) => (p === "act1" ? "act2" : p));
     }, 30000);
     return () => window.clearTimeout(t);
@@ -647,12 +654,10 @@ export default function App() {
     /** Renforce le pr?chargement (idempotent) : pont WebM + chunk Act2 + page parchemin. */
     prefetchAct2TransitionAssets();
     window.setTimeout(() => {
+      setAct12BridgeReveal01(0);
       setChapterToast(true);
       setChapterDaTransition(true);
-    }, CHAPTER_TOAST_DELAY_MS);
-    window.setTimeout(() => {
-      setChapterToast(false);
-    }, CHAPTER_TOAST_DELAY_MS + CHAPTER_TOAST_VISIBLE_MS);
+    }, ACT12_BRIDGE_PREFACE_DELAY_MS);
   }, []);
 
   /** Surcouche vid?o uniquement : ne change pas la phase, ne recharge pas, garde carte / acte. */
@@ -1153,22 +1158,24 @@ export default function App() {
       <Soundscape enabled={phase !== "act2"} />
 
       <AnimatePresence mode="sync">
-        {chapterDaTransition && (
-          <ChapterAct12Bridge
-            key="act12-bridge"
-            chapterToast={chapterToast}
-            onSwapPhase={handleAct12BridgeSwapPhase}
-            onFinish={handleAct12BridgeFinish}
-          />
-        )}
         {chapterToast && (
           <Fragment key="ch1-toast">
             <ChapterCompleteToast
               chapterTitle={copy.chapterToastTitle}
               subtitle={copy.chapterToastSubtitle}
+              bridgeReveal01={act12BridgeReveal01}
               blendBridgeBackdrop
             />
           </Fragment>
+        )}
+        {chapterDaTransition && (
+          <ChapterAct12Bridge
+            key="act12-bridge"
+            onBridgeRevealChange={setAct12BridgeReveal01}
+            onDismissChapterToast={dismissAct12ChapterToast}
+            onSwapPhase={handleAct12BridgeSwapPhase}
+            onFinish={handleAct12BridgeFinish}
+          />
         )}
       </AnimatePresence>
 
