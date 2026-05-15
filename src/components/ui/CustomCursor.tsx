@@ -2,6 +2,7 @@ import { useEffect, useState, useLayoutEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, useMotionValue, useSpring } from 'motion/react';
 import { useCursorStore } from '../../hooks/useCursorContext';
+import { useCursorPrefsStore } from '../../stores/cursorPrefsStore';
 
 /**
  * Au-dessus du fluide WebGL, intro, menu pause (z~560), overlays.
@@ -29,21 +30,31 @@ export default function CustomCursor({
   const [mounted, setMounted] = useState(false);
   /** Après 5 s sans mouvement/clic : halo + losange invisibles ; tout mouvement rouvre. */
   const [idleHidden, setIdleHidden] = useState(false);
+  /** Mode basique : retour visuel au clic (scale). */
+  const [basicPressed, setBasicPressed] = useState(false);
   const [portalHost, setPortalHost] = useState<HTMLElement | null>(null);
   const mode = useCursorStore((s) => s.mode);
   const label = useCursorStore((s) => s.label);
   const ambient = useCursorStore((s) => s.ambient);
+  const isBasicExperience = useCursorPrefsStore((s) => s.experience === 'basic');
   const night = ambient === 'midnight';
   const mx = useMotionValue(-100);
   const my = useMotionValue(-100);
 
+  /** Mode basique : ressort très sec (sinon suivi direct mx/my). */
+  const basicLeadSpring = useMemo(
+    () => ({ damping: 44, stiffness: 920, mass: 0.2 }),
+    []
+  );
   /** Overlays modaux + générique crédits (iframe GPU) : ressorts un peu plus secs → moins de « gel » / jitter. */
   const leadSpring = useMemo(
     () =>
-      overlayOpen
-        ? { damping: 40, stiffness: 420, mass: 0.45 }
-        : { damping: 28, stiffness: 300, mass: 0.5 },
-    [overlayOpen]
+      isBasicExperience
+        ? basicLeadSpring
+        : overlayOpen
+          ? { damping: 40, stiffness: 420, mass: 0.45 }
+          : { damping: 28, stiffness: 300, mass: 0.5 },
+    [overlayOpen, isBasicExperience, basicLeadSpring]
   );
   const haloSpring = useMemo(
     () =>
@@ -119,16 +130,26 @@ export default function CustomCursor({
       move(e);
       poke();
     };
-    const onPointerDown = () => poke();
+    const onPointerDown = (e: PointerEvent) => {
+      move(e);
+      setBasicPressed(true);
+      poke();
+    };
+    const onPointerUp = () => setBasicPressed(false);
+    const onPointerCancel = () => setBasicPressed(false);
 
     window.addEventListener('pointermove', onPointerMove, { passive: true, capture: true });
     window.addEventListener('pointerdown', onPointerDown, { passive: true, capture: true });
+    window.addEventListener('pointerup', onPointerUp, { passive: true, capture: true });
+    window.addEventListener('pointercancel', onPointerCancel, { passive: true, capture: true });
 
     return () => {
       window.clearTimeout(timer);
       html.classList.remove(HTML_CURSOR_IDLE_CLASS);
       window.removeEventListener('pointermove', onPointerMove, { capture: true });
       window.removeEventListener('pointerdown', onPointerDown, { capture: true });
+      window.removeEventListener('pointerup', onPointerUp, { capture: true });
+      window.removeEventListener('pointercancel', onPointerCancel, { capture: true });
     };
   }, [mx, my, overlayOpen]);
 
@@ -154,6 +175,11 @@ export default function CustomCursor({
   const isHalo = mode === 'halo';
   const isFeather = mode === 'feather';
   const isDrag = mode === 'drag';
+  const isStylus = mode === 'stylus' || isBasicExperience;
+  const showDiamond = !isBasicExperience && !isStylus && !isFeather && !isDrag;
+  /** Cercle basique : suivi direct (zéro inertie) ; fluide/losange garde le ressort. */
+  const circleX = isBasicExperience && isStylus && !isFeather && !isDrag ? mx : sx;
+  const circleY = isBasicExperience && isStylus && !isFeather && !isDrag ? my : sy;
 
   const tree = (
     <motion.div
@@ -163,6 +189,7 @@ export default function CustomCursor({
       animate={{ opacity: idleHidden ? 0 : 1 }}
       transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
     >
+      {!isStylus && !isBasicExperience && (
       <motion.div
         className="pointer-events-none fixed rounded-full will-change-transform"
         style={{
@@ -190,9 +217,68 @@ export default function CustomCursor({
         }}
         transition={{ duration: 0.52, ease: [0.22, 1, 0.36, 1] }}
       />
+      )}
 
-      {/* Losange + « queue » - alignés sur index.css ; indispensables dès que `cursor-none` (iframe Acte II, Intro…). */}
-      {!isFeather && !isDrag && (
+      {/* Mode « basique » : un seul cercle (pas de halo fluide, pas de losange). */}
+      {isStylus && !isFeather && !isDrag && (
+        <motion.div
+          className="pointer-events-none fixed will-change-transform"
+          style={{
+            x: circleX,
+            y: circleY,
+            translateX: '-50%',
+            translateY: '-50%',
+            zIndex: 4,
+          }}
+          initial={false}
+          animate={{
+            scale: isBasicExperience && basicPressed ? 0.84 : 1,
+            opacity: isBasicExperience && basicPressed ? 0.92 : 1,
+          }}
+          transition={{
+            scale: {
+              duration: isBasicExperience && basicPressed ? 0.07 : 0.16,
+              ease: [0.22, 1, 0.36, 1],
+            },
+            opacity: { duration: 0.12 },
+          }}
+          aria-hidden
+        >
+          <svg
+            width="44"
+            height="44"
+            viewBox="0 0 44 44"
+            fill="none"
+            style={{
+              filter: night
+                ? isBasicExperience && basicPressed
+                  ? 'drop-shadow(0 0 14px rgba(90,168,255,0.48))'
+                  : 'drop-shadow(0 0 10px rgba(90,168,255,0.36))'
+                : isBasicExperience && basicPressed
+                  ? 'drop-shadow(0 0 14px rgba(197,160,89,0.42))'
+                  : 'drop-shadow(0 0 10px rgba(197,160,89,0.3))',
+            }}
+          >
+            <circle
+              cx="22"
+              cy="22"
+              r="15"
+              stroke={night ? 'rgba(200,232,255,0.88)' : 'rgba(240,224,180,0.9)'}
+              strokeWidth={isBasicExperience && basicPressed ? 2.1 : 1.65}
+              fill={
+                isBasicExperience && basicPressed
+                  ? night
+                    ? 'rgba(90,168,255,0.12)'
+                    : 'rgba(197,160,89,0.1)'
+                  : 'transparent'
+              }
+            />
+          </svg>
+        </motion.div>
+      )}
+
+      {/* Losange + « queue » — mode fluide uniquement (pas en basique). */}
+      {showDiamond && (
         <motion.div
           className="pointer-events-none fixed will-change-transform"
           style={{

@@ -42,6 +42,7 @@ import VoyageCreditsOverlay from "./components/ui/VoyageCreditsOverlay";
 import type { Act1QuestProgress, Act2QuestProgress } from "./components/ui/HintPanel";
 import type { Act1QuestStep } from "./components/Immersive/AlgeriaMap";
 import { useCursorStore } from "./hooks/useCursorContext";
+import { useCursorPrefsStore } from "./stores/cursorPrefsStore";
 import { useMediaQuery } from "./hooks/useMediaQuery";
 import {
   useLanguageStore,
@@ -261,6 +262,9 @@ export default function App() {
   const devAct12ExtraPrefaceMsRef = useRef(0);
   devAct12ExtraPrefaceMsRef.current = showDevChapterJumps ? devAct12ExtraPrefaceMs : 0;
   const setCursorAmbient = useCursorStore((s) => s.setAmbient);
+  const cursorExperience = useCursorPrefsStore((s) => s.experience);
+  const useFluidCursorExperience = cursorExperience === "fluid";
+  const setCursorMode = useCursorStore((s) => s.setMode);
   const masterVolume = useMasterVolumeStore((s) => s.volume);
   const playbackUnlocked = useMasterVolumeStore((s) => s.playbackUnlocked);
   const unlockPlayback = useMasterVolumeStore((s) => s.unlockPlayback);
@@ -299,6 +303,18 @@ export default function App() {
   useEffect(() => {
     clearLegacyActIIIRewriteBootstrap();
   }, []);
+
+  useEffect(() => {
+    setCursorMode(cursorExperience === "fluid" ? "default" : "stylus");
+  }, [cursorExperience, setCursorMode]);
+
+  /** Mode basique : masquer le losange CSS global — seul le cercle React reste visible. */
+  useEffect(() => {
+    const html = document.documentElement;
+    const basic = finePointer && cursorExperience === "basic";
+    html.classList.toggle("al-rihla-cursor-basic", basic);
+    return () => html.classList.remove("al-rihla-cursor-basic");
+  }, [finePointer, cursorExperience]);
 
   /** Historique navigateur : une entr?e par transition de phase (sans changer l?URL). */
   const historyPhaseBootRef = useRef(false);
@@ -1584,7 +1600,7 @@ export default function App() {
       </main>
 
       {/* Fluide WebGL : toutes les phases (pointer-events: none, ne bloque pas l'iframe). */}
-      {finePointer && splashWebglReady && (
+      {finePointer && splashWebglReady && useFluidCursorExperience && (
         <div
           style={{
             pointerEvents: "none",

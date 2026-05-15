@@ -204,6 +204,8 @@ html.senac-choice-pending body.senac-night::after {
  */
 html.senac-in-iframe {
   height: 100%;
+  max-height: 100%;
+  overflow: clip;
   background-color: #05080f;
   /* Évite le « rubber band » au scroll (bande claire / fond parent qui transparaît). */
   overscroll-behavior: none;
@@ -211,8 +213,10 @@ html.senac-in-iframe {
 }
 
 /** Iframe Acte II (SPA) : curseur système - le losange custom est masqué, `cursor: none` casserait l’UX. */
+html.senac-in-iframe body,
 html.senac-in-iframe body.senac-night {
   min-height: 100%;
+  overflow-x: clip;
   overscroll-behavior: none;
   overscroll-behavior-y: none;
 }
@@ -242,6 +246,21 @@ html.senac-in-iframe body.senac-night::before {
 html.senac-in-iframe #senac-sandstorm,
 html.senac-in-iframe #senac-pointer-aura {
   display: none !important;
+}
+
+/**
+ * Hero (arche + Cinéma / Exploration) : dunes fixes en bas (`top: auto`, ~30–38vh),
+ * animées avec --hero-t / --frise-t → bande(s) horizontale(s) au pied qui s’élargissent au scroll.
+ */
+html.senac-in-iframe .dune-back,
+html.senac-in-iframe .dune-front {
+  display: none !important;
+}
+
+/** Atténue le renfort sombre bas de `.night-gradient` (radial à ~86 %), sans retirer tout le ciel. */
+html.senac-in-iframe .night-gradient {
+  mask-image: linear-gradient(to bottom, #000 0%, #000 72%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 72%, transparent 100%);
 }
 
 /** Lanternes atténuées pendant le choix - moins de « décor » concurrent au texte. */
@@ -357,15 +376,28 @@ body.senac-night::after {
   min-height: min(142vh, calc(165svh - 80px));
 }
 
-/** Fondu blanc plein écran : zoom arche → transition Acte III. Piloté en JS (opacity 0→1). */
+/** Voile blanc plein écran → Acte III. Opacité 0→1 liée au scroll (JS, pas de transition CSS). */
 #senac-arch-whiteout {
   position: fixed;
   inset: 0;
+  width: 100%;
+  height: 100%;
   z-index: 9998;
   pointer-events: none;
   background: #fff;
   opacity: 0;
-  transition: opacity 0.15s ease-out;
+  margin: 0;
+}
+
+/* Si le nœud est encore dans la frise : ne pas hériter de `position:relative` du grid. */
+#timeline-start.timeline > #senac-arch-whiteout {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9998;
+  margin: 0;
+  grid-column: unset;
 }
 
 /** Aura curseur chapitre II (halo doux + cœur), pilotée par --mx/--my en JS. */

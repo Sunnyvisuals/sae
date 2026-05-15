@@ -81,6 +81,14 @@ type Copy = {
   menuAmbientMuteOn: string;
   menuAmbientMuteOff: string;
   menuAmbientVolume: string;
+  /** Pause / intro : mode curseur (fluide vs basique). */
+  cursorSectionHeading: string;
+  cursorOptionFluid: string;
+  cursorOptionFluidHint: string;
+  cursorOptionBasic: string;
+  cursorOptionBasicHint: string;
+  cursorOnboardingCurtainFr: string;
+  cursorOnboardingCurtainAr: string;
   languageSectionHeading: string;
   languageFrenchBtn: string;
   languageArabicBtn: string;
@@ -143,6 +151,12 @@ type Copy = {
   introVideoMuteOn: string;
   introVideoMuteOff: string;
   introVideoVolumeRange: string;
+  /** Bande lumineuse à droite du prologue : volume à la molette (lecteur d’écran). */
+  introPrologueVolumeAuraAria: string;
+  /** Suspense intro vidéo — même typo que l’écran langue (sourcil + titre + filet). */
+  introSuspenseEyebrow: string;
+  introSuspenseTitle: string;
+  introSuspenseProgressAria: string;
   /** Vidéo pont avant l’Acte III (même commande « passer » que l’introduction, phrase distincte). */
   act23BridgeVideoSkip: string;
   /** Clôture Acte II · phrase à compléter avant crédits */
@@ -255,6 +269,13 @@ const FR: Copy = {
   menuAmbientMuteOn: "Réactiver le son ambiant",
   menuAmbientMuteOff: "Couper le son ambiant",
   menuAmbientVolume: "Volume du son",
+  cursorSectionHeading: "Curseur",
+  cursorOptionFluid: "Fluide",
+  cursorOptionFluidHint: "Simulation WebGL qui suit le geste et curseur du voyage (losange, halos).",
+  cursorOptionBasic: "Basique",
+  cursorOptionBasicHint: "Cercle simple à la place du fluide WebGL — plus léger pour la machine.",
+  cursorOnboardingCurtainFr: "Choisissez votre curseur",
+  cursorOnboardingCurtainAr: "اختر مؤشّرك",
   languageSectionHeading: "Langue",
   languageFrenchBtn: "Français",
   languageArabicBtn: "العربية الجزائرية",
@@ -347,6 +368,11 @@ const FR: Copy = {
   introVideoMuteOn: "Couper le son",
   introVideoMuteOff: "Activer le son",
   introVideoVolumeRange: "Volume",
+  introPrologueVolumeAuraAria:
+    "Volume du prologue : molette sur la bande lumineuse à droite — vers le haut augmente, vers le bas diminue. Flèches haut et bas quand la zone est sélectionnée.",
+  introSuspenseEyebrow: "Prologue",
+  introSuspenseTitle: "Le voyage va commencer",
+  introSuspenseProgressAria: "Progression du chargement",
   act23BridgeVideoSkip: "Passer cette transition",
   act2FinaleAria: "Clôture du voyage - complétez la phrase pour accéder aux crédits",
   act2FinaleStem: "Une traversée existe vraiment quand",
@@ -486,6 +512,13 @@ const AR: Copy = {
   menuAmbientMuteOn: "رجّع الصوت المحيطي",
   menuAmbientMuteOff: "كمّ الصوت المحيطي",
   menuAmbientVolume: "قوة الصوت المحيطي",
+  cursorSectionHeading: "المؤشّر",
+  cursorOptionFluid: "سائل",
+  cursorOptionFluidHint: "محاكاة WebGL تتبع الحركة والمؤشّر المرسوم (مع الهالات).",
+  cursorOptionBasic: "بسيط",
+  cursorOptionBasicHint: "دائرة بسيطة بدل السائل WebGL — أخف على الجهاز.",
+  cursorOnboardingCurtainFr: "Choisissez votre curseur",
+  cursorOnboardingCurtainAr: "اختر مؤشّرك",
   languageSectionHeading: "اللغة",
   languageFrenchBtn: "فرنساوي",
   languageArabicBtn: "العربية الجزائرية",
@@ -578,6 +611,11 @@ const AR: Copy = {
   introVideoMuteOn: "كمّ الصوت",
   introVideoMuteOff: "فعّل الصوت",
   introVideoVolumeRange: "مستوى الصوت",
+  introPrologueVolumeAuraAria:
+    "صوت المقدّمة: عجلة الفأرة على الشريط المضيء يمين الشاشة — لفّة للأعلى ترفع، للأسفل تخفّض. أسهم للأعلى والأسفل عند التركيز على المنطقة.",
+  introSuspenseEyebrow: "مقدّمة",
+  introSuspenseTitle: "الرحلة غادي تبدا",
+  introSuspenseProgressAria: "تقدّم التحميل",
   act23BridgeVideoSkip: "تخطّى الانتقال",
   act2FinaleAria: "ختام الرحلة - أكمّل الجملة باش توصل لتذييل الفريق",
   act2FinaleStem: "المسيرة تكون حقيقية كي",

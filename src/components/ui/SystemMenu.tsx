@@ -1,6 +1,7 @@
 import { useId, useState, type ChangeEvent, type ReactNode, type SVGProps } from 'react';
 import { motion } from 'motion/react';
 import { useCursorStore } from '../../hooks/useCursorContext';
+import { useCursorPrefsStore, type CursorExperienceMode } from '../../stores/cursorPrefsStore';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useLanguageStore } from '../../stores/languageStore';
 import { useAppCopy } from '../../hooks/useAppCopy';
@@ -24,6 +25,12 @@ type Props = {
 };
 
 const easeMajestic = [0.22, 1, 0.36, 1] as const;
+
+/** Largeur commune : panneaux réglages + boutons d’action (Continuer, etc.). */
+const PAUSE_MENU_STACK_CLASS = 'mx-auto w-full max-w-[min(100%,526px)] shrink-0';
+
+const PAUSE_MENU_PANEL_SHELL_CLASS =
+  'w-full rounded-[2px] px-3 py-1.5 sm:px-4 sm:py-2';
 
 function IconChevronDown(props: SVGProps<SVGSVGElement>) {
   return (
@@ -113,6 +120,152 @@ function MajesticButton({
   );
 }
 
+/** Curseur — souris fine uniquement ; placé avant le son dans le menu pause. */
+function PauseCursorPicker({ midnight }: { midnight: boolean }) {
+  const copy = useAppCopy();
+  const panelId = useId();
+  const finePointer = useMediaQuery('(any-pointer: fine)');
+  const [cursorOpen, setCursorOpen] = useState(true);
+  const language = useLanguageStore((s) => s.language);
+  const isArabic = language === 'ar-dz';
+
+  const experience = useCursorPrefsStore((s) => s.experience);
+  const setExperience = useCursorPrefsStore((s) => s.setExperience);
+  const setMode = useCursorStore((s) => s.setMode);
+
+  if (!finePointer) return null;
+
+  const togglePanel = () => setCursorOpen((o) => !o);
+
+  const currentLabel = experience === 'fluid' ? copy.cursorOptionFluid : copy.cursorOptionBasic;
+
+  const applyExperience = (mode: CursorExperienceMode) => {
+    setExperience(mode);
+    if (mode === 'fluid') setMode('default');
+    else setMode('stylus');
+  };
+
+  const notchBtn =
+    'flex h-7 w-7 shrink-0 items-center justify-center rounded-[2px] transition-[color,transform] duration-300 sm:h-8 sm:w-8 ' +
+    (midnight ? 'text-sky-300/70 hover:text-sky-100' : 'text-solar-gold/68 hover:text-solar-gold');
+
+  const haloLine = midnight
+    ? 'from-[rgba(90,168,255,0.06)] via-[rgba(139,213,255,0.52)] to-[rgba(139,213,255,0.06)]'
+    : 'from-solar-gold/[0.04] via-solar-gold/45 to-solar-gold/[0.04]';
+
+  const optBase =
+    'rounded-[2px] border px-3 py-2.5 text-start text-[10px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent sm:py-3 ';
+
+  const optIdle = midnight
+    ? 'border-sky-400/25 text-sky-300/75 hover:border-sky-300/45 focus-visible:ring-[rgba(90,168,255,0.38)]'
+    : 'border-solar-gold/30 text-solar-gold/75 hover:border-solar-gold/55 focus-visible:ring-solar-gold/40';
+
+  const optActive = (active: boolean) =>
+    active
+      ? midnight
+        ? 'border-sky-300/60 bg-sky-500/10 text-sky-100 focus-visible:ring-[rgba(90,168,255,0.38)]'
+        : 'border-solar-gold/70 bg-solar-gold/10 text-solar-gold focus-visible:ring-solar-gold/40'
+      : optIdle;
+
+  return (
+    <motion.div variants={item} className="mt-0 w-full px-0 sm:mt-0">
+      <div
+        className={
+          PAUSE_MENU_PANEL_SHELL_CLASS + ' ' +
+          (midnight ? 'bg-[rgba(4,10,22,0.22)]' : 'bg-black/12')
+        }
+      >
+        <button
+          type="button"
+          id={panelId}
+          aria-expanded={cursorOpen}
+          aria-controls={`${panelId}-cursor`}
+          onClick={togglePanel}
+          aria-labelledby={`${panelId}-label`}
+          className={
+            'group flex w-full min-w-0 items-center justify-between gap-3 py-0 text-start outline-none transition-[opacity,color] duration-300 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ' +
+            (midnight
+              ? 'focus-visible:ring-[rgba(90,168,255,0.38)]'
+              : 'focus-visible:ring-solar-gold/40')
+          }
+        >
+          <span className={notchBtn} aria-hidden>
+            <IconChevronDown
+              strokeWidth={1.35}
+              className={`h-3.5 w-3.5 shrink-0 transition-transform duration-300 ease-out sm:h-4 sm:w-4 ${cursorOpen ? 'rotate-0' : '-rotate-90'}`}
+            />
+          </span>
+          <p
+            id={`${panelId}-label`}
+            className={
+              'flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[9px] uppercase tracking-[0.24em] sm:text-[10px] sm:tracking-[0.3em] ' +
+              (midnight ? 'text-sky-400/62' : 'text-solar-gold/55')
+            }
+          >
+            <span className={`min-w-0 ${isArabic ? 'text-right tracking-[0.08em] sm:tracking-[0.12em]' : 'shrink-0'}`}>
+              {copy.cursorSectionHeading}
+            </span>
+            <span
+              className={
+                'min-w-0 max-w-full text-end text-[9px] font-light tracking-[0.12em] sm:max-w-[min(100%,18ch)] sm:truncate sm:text-[10px] sm:tracking-[0.18em] ' +
+                (midnight ? 'text-sky-200/70' : 'text-[rgba(253,248,238,0.65)]')
+              }
+              title={currentLabel}
+            >
+              {currentLabel}
+            </span>
+          </p>
+        </button>
+        <div
+          id={`${panelId}-cursor`}
+          role="region"
+          aria-labelledby={panelId}
+          aria-hidden={!cursorOpen}
+          className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-out ${cursorOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+        >
+          <div className={`min-h-0 overflow-hidden ${!cursorOpen ? 'pointer-events-none' : ''}`}>
+            <div className="pt-2">
+              <div className={`pointer-events-none mb-2.5 h-px w-full bg-gradient-to-r sm:mb-3 ${haloLine}`} aria-hidden />
+              <div className={`grid grid-cols-1 gap-2 sm:grid-cols-2 ${isArabic ? 'text-right' : ''}`} dir={isArabic ? 'rtl' : 'ltr'}>
+                <button
+                  type="button"
+                  onClick={() => applyExperience('fluid')}
+                  tabIndex={cursorOpen ? 0 : -1}
+                  className={
+                    optBase +
+                    (!cursorOpen ? 'pointer-events-none opacity-40 ' : 'pointer-events-auto ') +
+                    optActive(experience === 'fluid')
+                  }
+                >
+                  <span className="block text-[9px] font-medium uppercase tracking-[0.22em]">{copy.cursorOptionFluid}</span>
+                  <span className="mt-1 block text-[9px] font-serif italic leading-snug opacity-80 sm:text-[10px]">
+                    {copy.cursorOptionFluidHint}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyExperience('basic')}
+                  tabIndex={cursorOpen ? 0 : -1}
+                  className={
+                    optBase +
+                    (!cursorOpen ? 'pointer-events-none opacity-40 ' : 'pointer-events-auto ') +
+                    optActive(experience === 'basic')
+                  }
+                >
+                  <span className="block text-[9px] font-medium uppercase tracking-[0.22em]">{copy.cursorOptionBasic}</span>
+                  <span className="mt-1 block text-[9px] font-serif italic leading-snug opacity-80 sm:text-[10px]">
+                    {copy.cursorOptionBasicHint}
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 /** Barre de volume - filet léger + remplissage (comme l’ornement au-dessus), icône fantôme sans cadre. */
 function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
   const copy = useAppCopy();
@@ -166,10 +319,10 @@ function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
     (midnight ? 'text-sky-300/70 hover:text-sky-100' : 'text-solar-gold/68 hover:text-solar-gold');
 
   return (
-    <motion.div variants={item} className="mt-3 w-full max-w-[min(100%,526px)] px-0 sm:mt-4">
+    <motion.div variants={item} className="mt-3 w-full px-0 sm:mt-4">
       <div
         className={
-          'rounded-[2px] px-3 py-1.5 sm:px-4 sm:py-2 ' +
+          PAUSE_MENU_PANEL_SHELL_CLASS + ' ' +
           (midnight
             ? 'bg-[rgba(4,10,22,0.22)]'
             : 'bg-black/12')
@@ -225,10 +378,6 @@ function PauseVolumeSlider({ midnight }: { midnight: boolean }) {
         >
           <div className={`min-h-0 overflow-hidden ${!soundOpen ? 'pointer-events-none' : ''}`}>
             <div className="pt-2">
-            <div
-                className={`pointer-events-none mb-2.5 h-px w-full bg-gradient-to-r sm:mb-3 ${haloLine}`}
-              aria-hidden
-            />
               <div className="flex items-center gap-2.5 sm:gap-3.5">
               <button
                 type="button"
@@ -331,10 +480,10 @@ function PauseLanguagePicker({ midnight }: { midnight: boolean }) {
     : 'from-solar-gold/[0.04] via-solar-gold/45 to-solar-gold/[0.04]';
 
   return (
-    <motion.div variants={item} className="mt-2 w-full max-w-[min(100%,526px)] px-0 sm:mt-2.5">
+    <motion.div variants={item} className="mt-2 w-full px-0 sm:mt-2.5">
       <div
         className={
-          'rounded-[2px] px-3 py-1.5 sm:px-4 sm:py-2 ' +
+          PAUSE_MENU_PANEL_SHELL_CLASS + ' ' +
           (midnight
             ? 'bg-[rgba(4,10,22,0.22)]'
             : 'bg-black/12')
@@ -459,10 +608,10 @@ function PauseFullscreenPanel({ midnight }: { midnight: boolean }) {
     : `${copy.menuFullscreenStateOff} · ${copy.menuFullscreenShortcutEnter}`;
 
   return (
-    <motion.div variants={item} className="mt-2 w-full max-w-[min(100%,526px)] px-0 sm:mt-2.5">
+    <motion.div variants={item} className="mt-2 w-full px-0 sm:mt-2.5">
       <div
         className={
-          'rounded-[2px] px-3 py-1.5 sm:px-4 sm:py-2 ' +
+          PAUSE_MENU_PANEL_SHELL_CLASS + ' ' +
           (midnight ? 'bg-[rgba(4,10,22,0.22)]' : 'bg-black/12')
         }
       >
@@ -578,6 +727,7 @@ export default function SystemMenu({
   const language = useLanguageStore((s) => s.language);
   const isArabic = language === 'ar-dz';
 
+  /** Curseur personnalisé (fluide ou « basique ») : masque le pointeur OS dans le menu. */
   const shellCursor = finePointer ? 'cursor-none' : 'cursor-auto';
 
   return (
@@ -628,22 +778,22 @@ export default function SystemMenu({
         <IconX className="h-5 w-5 sm:h-[22px] sm:w-[22px]" aria-hidden />
       </motion.button>
 
-      {/* Plein viewport + centrage réel (flex) ; zone scroll limitée si trop haut */}
-      <div className="relative z-10 flex min-h-0 w-full flex-1 flex-col items-center justify-start px-4 py-4 sm:justify-center sm:px-6 sm:py-6">
-      <div className="flex min-h-0 max-h-[calc(100dvh-4.25rem)] w-full max-w-2xl flex-col items-center justify-start overflow-y-auto overflow-x-visible overscroll-contain px-1 py-4 sm:max-h-[min(90dvh,920px)] sm:max-w-[42rem] sm:justify-center sm:px-2 sm:py-5">
+      {/* Zone centrale : carte centrée ; scroll si le contenu dépasse. */}
+      <motion.div className="relative z-10 flex min-h-0 w-full flex-1 flex-col items-center justify-center overflow-hidden px-3 py-3 sm:px-5 sm:py-4">
+        <motion.div className="mx-auto flex w-full max-w-[min(100%,42rem)] min-h-0 max-h-full flex-1 flex-col items-center justify-center overflow-y-auto overflow-x-hidden overscroll-y-contain px-1 py-3 sm:px-2 sm:py-4">
         <motion.div
-          className="flex w-full min-w-0 flex-col items-center"
+          className="flex w-full min-h-0 min-w-0 shrink-0 flex-col items-center justify-center"
           variants={container}
           initial="hidden"
           animate="show"
         >
-          {/* Bloc encadré */}
+          {/* Bloc encadré — centré viewport ; scroll sur le parent si contenu haut. */}
           <div
             dir={isArabic ? 'rtl' : 'ltr'}
             className={
               midnight
-                ? 'relative flex h-[800px] w-full max-w-[min(100%,40rem)] flex-col justify-center overflow-x-hidden overflow-y-auto border border-[rgba(90,168,255,0.26)] bg-[#040a14]/85 p-4 text-center shadow-[0_0_0_1px_rgba(90,168,255,0.1),inset_0_0_60px_rgba(45,110,190,0.05)] backdrop-blur-md sm:p-7 md:p-9'
-                : 'relative flex h-[800px] w-full max-w-[min(100%,40rem)] flex-col justify-center overflow-x-hidden overflow-y-auto border border-solar-gold/25 bg-[#050302]/85 p-4 text-center shadow-[0_0_0_1px_rgba(197,160,89,0.08),inset_0_0_60px_rgba(197,160,89,0.03)] backdrop-blur-md sm:p-7 md:p-9'
+                ? 'relative mx-auto my-auto flex w-full max-w-[min(100%,40rem)] shrink-0 flex-col overflow-x-hidden border border-[rgba(90,168,255,0.26)] bg-[#040a14]/85 px-4 pb-12 pt-4 text-center shadow-[0_0_0_1px_rgba(90,168,255,0.1),inset_0_0_60px_rgba(45,110,190,0.05)] backdrop-blur-md sm:px-7 sm:pb-14 sm:pt-7 md:px-9 md:pb-16 md:pt-9'
+                : 'relative mx-auto my-auto flex w-full max-w-[min(100%,40rem)] shrink-0 flex-col overflow-x-hidden border border-solar-gold/25 bg-[#050302]/85 px-4 pb-12 pt-4 text-center shadow-[0_0_0_1px_rgba(197,160,89,0.08),inset_0_0_60px_rgba(197,160,89,0.03)] backdrop-blur-md sm:px-7 sm:pb-14 sm:pt-7 md:px-9 md:pb-16 md:pt-9'
             }
           >
             <div
@@ -716,6 +866,9 @@ export default function SystemMenu({
               <span className={midnight ? 'text-sky-300/42' : 'text-solar-gold/35'}>»</span>
             </motion.p>
 
+            <motion.div variants={item} className={`${PAUSE_MENU_STACK_CLASS} flex flex-col items-stretch`}>
+            <PauseCursorPicker midnight={midnight} />
+
             <PauseVolumeSlider midnight={midnight} />
 
             <PauseLanguagePicker midnight={midnight} />
@@ -723,10 +876,12 @@ export default function SystemMenu({
             <PauseFullscreenPanel midnight={midnight} />
 
             {embeddedParcours && (
-              <motion.div variants={item} className="mt-2 w-full max-w-[min(100%,526px)] sm:mt-2.5">
+              <motion.div variants={item} className="mt-2 w-full sm:mt-2.5">
                 <details
                   className={
-                    'group rounded-none px-3 py-1.5 sm:px-4 sm:py-2 ' +
+                    'group w-full ' +
+                    PAUSE_MENU_PANEL_SHELL_CLASS +
+                    ' ' +
                     (midnight ? 'bg-[rgba(4,10,22,0.22)]' : 'bg-black/12')
                   }
                 >
@@ -756,7 +911,7 @@ export default function SystemMenu({
 
             <motion.nav
               variants={item}
-              className="mt-5 flex w-full max-w-[min(100%,526px)] flex-col gap-5 self-center sm:mt-6"
+              className="mt-5 flex w-full flex-col gap-5 sm:mt-6"
               aria-label={copy.menuNavAria}
             >
               <MajesticButton variant="gold" midnight={midnight} onClick={onClose}>
@@ -793,10 +948,11 @@ export default function SystemMenu({
                 {copy.menuRestart}
               </MajesticButton>
             </motion.nav>
+            </motion.div>
           </div>
         </motion.div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* Crédits - hors du cadre, bas d’écran */}
       <div className="pointer-events-none relative z-10 flex w-full shrink-0 flex-col items-center gap-1.5 px-4 pb-[max(1.35rem,env(safe-area-inset-bottom))] pt-4 text-center">

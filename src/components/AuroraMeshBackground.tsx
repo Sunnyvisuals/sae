@@ -3,6 +3,7 @@
 import { useEffect, useRef, type CSSProperties } from 'react';
 import SplashCursor from './SplashCursor';
 import DesertDustParticles from './DesertDustParticles';
+import { useCursorPrefsStore } from '../stores/cursorPrefsStore';
 import ShootingStars from './ShootingStars';
 /**
  * Fond mesh interactif - désert / Maghreb / oriental (sable, ocre, or chaud).
@@ -24,6 +25,7 @@ export default function AuroraMeshBackground({
   hideShootingStars = false,
   compactDust = false,
 }: AuroraProps) {
+  const fluidCursor = useCursorPrefsStore((s) => s.experience === 'fluid');
   const rootRef = useRef<HTMLDivElement>(null);
   const target = useRef({ x: 0.5, y: 0.5 });
   const current = useRef({ x: 0.5, y: 0.5 });
@@ -99,6 +101,7 @@ export default function AuroraMeshBackground({
       <div className="absolute inset-0 bg-[#120e0a]" />
 
       {/* WebGL smoke : même simulation que le fluide curseur, calé sur le scroll Lenis · visible sous les halos. */}
+      {fluidCursor && (
       <SplashCursor
         layer="background"
         fillContainer
@@ -115,6 +118,7 @@ export default function AuroraMeshBackground({
         COLOR_UPDATE_SPEED={6}
         ambientOpacity={0.53}
       />
+      )}
 
       {/* Halo « soleil bas » / sable doré qui suit le curseur */}
       <div

@@ -23,7 +23,7 @@ export default function Act2({ onOpenActIII }: Props) {
       <iframe
         title={copy.act2IframeTitle}
         src={parcheminSrc}
-        className="absolute inset-[-3px] z-0 block h-[calc(100%+6px)] min-h-0 w-[calc(100%+6px)] border-0 outline-none ring-0 [transform:translateZ(0)]"
+        className="absolute inset-0 z-0 block h-full min-h-0 w-full border-0 bg-[#05080f] outline-none ring-0 [transform:translateZ(0)]"
         loading="eager"
       />
     </div>

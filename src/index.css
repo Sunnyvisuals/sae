@@ -241,6 +241,11 @@
     cursor: none !important;
   }
 
+  /** Préférence « curseur système » : rétablit le pointeur sur les zones `cursor-none`. */
+  html.al-rihla-use-system-cursor .cursor-none {
+    cursor: auto !important;
+  }
+
   /**
    * DA minimal « sahara oriental poétique » - alignée sur l’écran choix de langue :
    * interlignage aéré, filets 1px, sable / parchemin sur fond profond.
@@ -492,6 +497,16 @@
   html.al-rihla-cursor-idle #root *,
   html.al-rihla-cursor-idle #root *::before,
   html.al-rihla-cursor-idle #root *::after {
+    cursor: none !important;
+  }
+
+  /** Curseur « basique » : pas de losange OS — uniquement le cercle du portail React. */
+  html.al-rihla-cursor-basic,
+  html.al-rihla-cursor-basic body,
+  html.al-rihla-cursor-basic #root,
+  html.al-rihla-cursor-basic #root *,
+  html.al-rihla-cursor-basic #root *::before,
+  html.al-rihla-cursor-basic #root *::after {
     cursor: none !important;
   }
 }

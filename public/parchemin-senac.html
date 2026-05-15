@@ -11,8 +11,8 @@
     <meta name="description" content="Al Rihla, La traversée - Acte II : frise narrative Jean Sénac, entre archives et nuit saharienne. Choisis ton rythme et poursuis le parcours." />
     <meta name="robots" content="noindex" />
     <link rel="icon" type="image/png" href="/favicon-camel.png" />
-    <!-- v=50 : garder en phase avec src/lib/parcheminAssetVersion.ts (cache-bust) -->
-    <link rel="stylesheet" href="/parchemin-senac.css?v=50" />
+    <!-- v=54 : garder en phase avec src/lib/parcheminAssetVersion.ts (cache-bust) -->
+    <link rel="stylesheet" href="/parchemin-senac.css?v=54" />
   </head>
   <body class="senac-night">
     <!-- SVG filter : warp + chromatic aberration portrait (piloté par JS) -->
@@ -63,6 +63,8 @@
     <canvas id="sky-canvas" aria-hidden="true"></canvas>
     <canvas id="fog-canvas" aria-hidden="true"></canvas>
     <canvas id="senac-arch-canvas" aria-hidden="true"></canvas>
+    <!-- Plein viewport : hors #timeline-start (`> * { position:relative }` annulait fixed). -->
+    <div id="senac-arch-whiteout" aria-hidden="true"></div>
     <div id="senac-pointer-aura" aria-hidden="true"></div>
     <div id="senac-sandstorm" aria-hidden="true"></div>
     <div id="senac-crescent-moon" aria-hidden="true"></div>
@@ -532,14 +534,11 @@
 
         <!-- Dernière plage de scroll : zoom arche + fondu blanc → Acte III. -->
         <div class="senac-arch-scroll-tail" aria-hidden="true"></div>
-
-    <!-- Voile blanc plein écran : opacity pilotée par JS quand ratio > 0.82 -->
-    <div id="senac-arch-whiteout" aria-hidden="true"></div>
       </section>
     </main>
 
     <script src="/static-i18n.js?v=42"></script>
-    <script type="module" src="/parchemin-senac.js?v=50"></script>
+    <script type="module" src="/parchemin-senac.js?v=54"></script>
   </body>
 </html>
 

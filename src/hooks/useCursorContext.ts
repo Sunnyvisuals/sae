@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-type CursorMode = 'default' | 'halo' | 'feather' | 'pointer' | 'drag';
+type CursorMode = 'default' | 'halo' | 'feather' | 'pointer' | 'drag' | 'stylus';
 
 type CursorAmbient = 'solar' | 'midnight';
 

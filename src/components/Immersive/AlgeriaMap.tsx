@@ -18,6 +18,7 @@ import {
 } from 'motion/react';
 import gsap from 'gsap';
 import { useCursorStore } from '../../hooks/useCursorContext';
+import { useCursorPrefsStore } from '../../stores/cursorPrefsStore';
 import { useAppCopy } from '../../hooks/useAppCopy';
 import { revelationWordUISurface } from '../../lib/appCopy';
 import { arabicPoemWordLabel } from '../../lib/mapWordArabicDisplay';
@@ -296,6 +297,7 @@ export default function AlgeriaMap({
   }, [revelationFound, onRevelationWordsChange]);
 
   const { setMode } = useCursorStore();
+  const cursorIdle = useCursorPrefsStore((s) => (s.experience === 'basic' ? 'stylus' : 'default'));
 
   const ZOOM_MIN = 1;
   const ZOOM_MAX = 6;
@@ -786,7 +788,7 @@ export default function AlgeriaMap({
     if (blockOtherWords) {
       hoveredIdx.current = -1;
       queueTooltip(null);
-      setMode(z > 1.05 ? 'drag' : 'default');
+      setMode(z > 1.05 ? 'drag' : cursorIdle);
       return;
     }
 
@@ -798,7 +800,7 @@ export default function AlgeriaMap({
       setMode('feather', hit.p.word);
     } else {
       queueTooltip(null);
-      setMode(z > 1.05 ? 'drag' : 'default');
+      setMode(z > 1.05 ? 'drag' : cursorIdle);
     }
   }, [
     setMode,
@@ -813,6 +815,7 @@ export default function AlgeriaMap({
     applyMapParallax,
     queueTooltip,
     arabicUi,
+    cursorIdle,
   ]);
 
   // ── Wheel zoom centré curseur ─────────────────────────────────────────────
@@ -911,9 +914,9 @@ export default function AlgeriaMap({
           }
         }
       }
-      setMode('default');
+      setMode(cursorIdle);
     },
-    [setMode, tryRevealWordFromClick]
+    [setMode, tryRevealWordFromClick, cursorIdle]
   );
 
   const memoryAwake = revelationFound.length >= 5;
@@ -985,7 +988,7 @@ export default function AlgeriaMap({
                 tooltipRafRef.current = null;
               }
               setTooltip(null);
-              setMode('default');
+              setMode(cursorIdle);
               isDragging.current = false;
               hoveredIdx.current = -1;
               mouse.current = { x: -9999, y: -9999 };

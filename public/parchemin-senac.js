@@ -458,45 +458,41 @@
       });
   }
 
-  /**
-   * Zoom arche : même repère que `ARCH_ZOOM_BEGIN` (`parchemin-arch-scene.mjs`).
-   * Le fondu démarrait historiquement +0.02 après le vieux seuil zoom (0.82 vs 0.8).
-   */
-  const ARCH_ZOOM_START_RATIO = 0.86;
-  const ARCH_WHITEOUT_BEGIN_RATIO = ARCH_ZOOM_START_RATIO + 0.02;
-  /** Équivalent de l’ancien 0.92 quand le ramp allait [0.82 → 1] : fraction du dernier intervalle. */
+  /** Voile blanc : après le cadrage zoom arche (`ARCH_ZOOM_BEGIN` 0.86), léger retard. */
+  const ARCH_WHITEOUT_BEGIN_RATIO = 0.905;
+  /** Courbe ease-out + plafond : voile un peu plus léger qu’un blanc plein. */
+  const ARCH_WHITEOUT_EASE_OUT = 2.15;
+  const ARCH_WHITEOUT_MAX_OPACITY = 0.88;
+  /** Navigation Acte III un peu avant le bas absolu du scroll. */
   const ARCH_WHITEOUT_TO_ACT3_RATIO =
     ARCH_WHITEOUT_BEGIN_RATIO +
-    ((0.92 - 0.82) / (1 - 0.82)) * (1 - ARCH_WHITEOUT_BEGIN_RATIO);
+    ((0.9 - 0.82) / (1 - 0.82)) * (1 - ARCH_WHITEOUT_BEGIN_RATIO);
 
-  /** Fondu blanc → Acte III quand le scroll atteint le fond (arche zoom). */
-  let archWhiteoutTriggered = false;
+  /** Navigation Acte III déjà envoyée (le voile blanc reste piloté par le scroll). */
+  let archWhiteoutNavTriggered = false;
   const archWhiteoutEl = document.getElementById("senac-arch-whiteout");
 
   function updateArchWhiteout(scrollY) {
-    if (!archWhiteoutEl || archWhiteoutTriggered) return;
+    if (!archWhiteoutEl) return;
     const ratio = senacScrollRatio(scrollY);
-
     const denom = Math.max(1e-6, 1 - ARCH_WHITEOUT_BEGIN_RATIO);
 
-    const archCanvas = document.getElementById("senac-arch-canvas");
     if (ratio < ARCH_WHITEOUT_BEGIN_RATIO) {
       archWhiteoutEl.style.opacity = "0";
-      if (archCanvas) archCanvas.style.opacity = "0.55";
       return;
     }
 
-    if (archCanvas) {
-      const opT = (ratio - ARCH_WHITEOUT_BEGIN_RATIO) / denom;
-      archCanvas.style.opacity = String(Math.min(1, 0.55 + opT * 0.45));
-    }
+    const fadeT = Math.min(1, (ratio - ARCH_WHITEOUT_BEGIN_RATIO) / denom);
+    const eased = 1 - (1 - fadeT) ** ARCH_WHITEOUT_EASE_OUT;
+    archWhiteoutEl.style.opacity = String(
+      Math.min(ARCH_WHITEOUT_MAX_OPACITY, eased * ARCH_WHITEOUT_MAX_OPACITY),
+    );
 
-    const fadeT = (ratio - ARCH_WHITEOUT_BEGIN_RATIO) / denom;
-    const eased = fadeT * fadeT;
-    archWhiteoutEl.style.opacity = String(Math.min(1, eased));
-
-    if (ratio >= ARCH_WHITEOUT_TO_ACT3_RATIO && !archWhiteoutTriggered) {
-      archWhiteoutTriggered = true;
+    if (
+      ratio >= ARCH_WHITEOUT_TO_ACT3_RATIO &&
+      !archWhiteoutNavTriggered
+    ) {
+      archWhiteoutNavTriggered = true;
       window.setTimeout(() => {
         const origin = window.location.origin;
         if (window.parent !== window) {
@@ -2279,7 +2275,7 @@
       const p = payload || {};
       /** Retour SPA depuis l’acte III vers crédits : scroll ~1 sinon relance `senac-navigate act3-writing`. */
       if (p.suppressArchToAct3 === true) {
-        archWhiteoutTriggered = true;
+        archWhiteoutNavTriggered = true;
       }
       const em =
         p.entryMode === "cinema" || p.entryMode === "explore" ? p.entryMode : "explore";

@@ -29,8 +29,11 @@ import { playSuspenseLoadCompleteChime, primeSuspenseAudio } from "../lib/suspen
 import { INTRO_VIDEO_SRC } from "../lib/act1IntroBridge";
 import { useLanguageStore } from "../stores/languageStore";
 import { useFullscreenPrefsStore } from "../stores/fullscreenPrefsStore";
+import { useCursorPrefsStore, type CursorExperienceMode } from "../stores/cursorPrefsStore";
+import { useCursorStore } from "../hooks/useCursorContext";
 import { isFullscreenApiSupported } from "../lib/fullscreenDocument";
 import IntroFullscreenOverlay from "./IntroFullscreenOverlay";
+import CursorOnboardingGate from "./CursorOnboardingGate";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { useAppCopy } from "../hooks/useAppCopy";
 
@@ -231,6 +234,8 @@ function VolumeXIcon(props: React.SVGProps<SVGSVGElement>) {
 }
 
 function SuspenseOverlay({ prefersReducedMotion }: { prefersReducedMotion: boolean | null }) {
+  const copy = useAppCopy();
+  const isArabic = useLanguageStore((s) => s.language === "ar-dz");
   const [phase, setPhase] = useState<"idle" | "building" | "climax">("idle");
   const loadProgress = useMotionValue(0);
   const [loadPct, setLoadPct] = useState(0);
@@ -337,97 +342,81 @@ function SuspenseOverlay({ prefersReducedMotion }: { prefersReducedMotion: boole
         style={{ background: "radial-gradient(ellipse 80% 80% at 50% 50%, rgba(197,160,89,0.12) 0%, transparent 70%), linear-gradient(to bottom, transparent 60%, rgba(197,100,20,0.08) 100%)" }}
       />
 
-      {/* contenu centré */}
-      <div className="relative z-[2] flex flex-col items-center gap-8">
-
-        {/* ornement haut */}
-        <motion.div
-          aria-hidden
-          className="flex items-center gap-3"
-          initial={{ opacity: 0, scaleX: 0 }}
-          animate={{ opacity: 1, scaleX: 1 }}
-          transition={{ duration: 1.1, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}
+      {/* contenu centré — même DA que l'écran langue (sourcil, titre caps, filet) */}
+      <motion.div
+        dir={isArabic ? "rtl" : "ltr"}
+        className="relative z-[2] flex flex-col items-center gap-6 px-4 text-center"
+      >
+        <motion.span
+          className={isArabic ? "da-eyebrow-ar" : "da-eyebrow"}
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.9, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}
         >
-          <div className="h-px w-16 bg-gradient-to-r from-transparent to-solar-gold/50" />
-          <div className="h-1 w-1 rotate-45 bg-solar-gold/60" />
-          <div className="h-px w-16 bg-gradient-to-l from-transparent to-solar-gold/50" />
-        </motion.div>
+          {copy.introSuspenseEyebrow}
+        </motion.span>
 
-        {/* phrase principale - tremble légèrement au climax */}
-        <motion.p
-          className="font-bahlull text-[clamp(2.2rem,7.5vw,4.2rem)] italic leading-[1.1] tracking-tight text-white"
-          style={{ textShadow: isClimax ? "0 0 120px rgba(197,160,89,0.55), 0 8px 48px rgba(0,0,0,0.9)" : "0 0 80px rgba(197,160,89,0.25), 0 8px 48px rgba(0,0,0,0.9)" }}
-          initial={{ opacity: 0, y: 32 }}
+        <motion.span
+          className={
+            (isArabic
+              ? "da-display-title-ar max-w-[min(92vw,22ch)]"
+              : "da-display-title max-w-[96vw] whitespace-nowrap text-[clamp(0.82rem,2.85vw,3rem)]") +
+            (isClimax ? " text-[#fff4dc]" : "")
+          }
+          initial={{ opacity: 0, y: 14 }}
           animate={
             isClimax && !prefersReducedMotion
-              ? { opacity: 1, y: [0, -1.5, 1, -0.8, 0], scale: [1, 1.012, 1] }
-              : { opacity: 1, y: 0 }
+              ? { opacity: 1, y: [0, -1, 0.6, 0], scale: [1, 1.008, 1] }
+              : { opacity: 1, y: 0, scale: 1 }
           }
           transition={
             isClimax
-              ? { y: { duration: 0.38, repeat: Infinity, ease: "easeInOut" }, scale: { duration: 0.38, repeat: Infinity }, opacity: { duration: 0 } }
-              : { duration: 1.3, delay: 0.9, ease: [0.22, 1, 0.36, 1] }
+              ? {
+                  y: { duration: 0.38, repeat: Infinity, ease: "easeInOut" },
+                  scale: { duration: 0.38, repeat: Infinity },
+                  opacity: { duration: 0 },
+                }
+              : { duration: 1, delay: 0.9, ease: [0.22, 1, 0.36, 1] }
           }
         >
-          Le voyage va commencer
-        </motion.p>
+          {copy.introSuspenseTitle}
+        </motion.span>
 
-        {/* sous-titre */}
-        <motion.p
-          className="text-[9px] font-light uppercase tracking-[0.58em] text-solar-gold/55 md:text-[10px]"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.1, delay: 1.7, ease: [0.22, 1, 0.36, 1] }}
-        >
-          Prologue
-        </motion.p>
-
-        {/* barre de chargement - sobre, même logique que « Passer l&apos;introduction » */}
         <motion.div
-          className="relative mt-3 flex w-full max-w-[17.5rem] flex-col items-center gap-2 md:max-w-[20rem]"
+          className="da-title-rule"
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ duration: 0.7, delay: 1.15, ease: [0.22, 1, 0.36, 1] }}
+          aria-hidden
+        />
+
+        <motion.div
+          className="relative flex w-full max-w-[17.5rem] flex-col items-center gap-2 md:max-w-[20rem]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 2.0 }}
         >
-          <div
-            className="relative h-[2px] w-full overflow-hidden rounded-full bg-solar-gold/15"
+          <motion.div
+            className="relative h-px w-full overflow-hidden bg-solar-gold/18"
             role="progressbar"
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={loadPct}
-            aria-label="Progression du chargement"
+            aria-label={copy.introSuspenseProgressAria}
           >
             <motion.div
-              className="absolute inset-y-0 left-0 h-full rounded-full bg-solar-gold/50"
+              className="absolute inset-y-0 left-0 h-full bg-solar-gold/52"
               style={{ width: loadWidth }}
             />
-          </div>
-          <span
-            className="text-[10px] tabular-nums tracking-[0.45em] text-solar-gold/55 md:text-[11px]"
-            aria-hidden
-          >
+          </motion.div>
+          <span className="da-eyebrow tabular-nums text-solar-gold/48" aria-hidden>
             {loadPct}%
           </span>
         </motion.div>
-
-        {/* ornement bas */}
-        <motion.div
-          aria-hidden
-          className="flex items-center gap-3"
-          initial={{ opacity: 0, scaleX: 0 }}
-          animate={{ opacity: 1, scaleX: 1 }}
-          transition={{ duration: 1.1, delay: 1.4, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <div className="h-px w-8 bg-gradient-to-r from-transparent to-solar-gold/30" />
-          <div className="h-[3px] w-[3px] rotate-45 bg-solar-gold/40" />
-          <div className="h-px w-8 bg-gradient-to-l from-transparent to-solar-gold/30" />
-        </motion.div>
-
-      </div>
+      </motion.div>
     </div>
   );
 }
-
 
 function GoldPlayIcon({ className }: { className?: string }) {
   const gid = useId().replace(/:/g, "");
@@ -505,10 +494,13 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
 
   const prefersReducedMotion = useReducedMotion();
   const compactDesktop = useMediaQuery("(min-width: 1600px) and (max-height: 1100px)");
+  const finePointer = useMediaQuery("(any-pointer: fine)");
   const [videoStarted, setVideoStarted] = useState(false);
   const [showInitialTitle, setShowInitialTitle] = useState(true);
   const [volume, setVolume] = useState(0.1);
   const [isMuted, setIsMuted] = useState(false);
+  /** Prologue vidéo : indicateur 0–100 affiché à la molette, puis masqué. */
+  const [prologueVolumeHudVisible, setPrologueVolumeHudVisible] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [showSkip, setShowSkip] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
@@ -527,6 +519,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
   const [launchCtaVisible, setLaunchCtaVisible] = useState(Boolean(isExploring));
   const [launchCtaRevealToken, setLaunchCtaRevealToken] = useState(0);
   const [fullscreenIntroOpen, setFullscreenIntroOpen] = useState(false);
+  const [cursorOnboardingOpen, setCursorOnboardingOpen] = useState(false);
   /** Coupure synchrone au clic langue - disparition immédiate du losange (voir `showLandingDiamond`). */
   const [landingOrnamentAllowed, setLandingOrnamentAllowed] = useState(true);
   const initialStageRef = useRef<HTMLDivElement>(null);
@@ -541,6 +534,9 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
   const launchPromptRef = useRef<HTMLParagraphElement>(null);
   const launchAuraRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const volumeScrollRef = useRef(volume);
+  const prologueVolumeHudHideRef = useRef<number | null>(null);
+  const mutedScrollRef = useRef(isMuted);
   const arrivalLangBridgeVideoRef = useRef<HTMLVideoElement>(null);
   const languageGateSmokeSfxRef = useRef<import("howler").Howl | null>(null);
   const bridgeCrossfadeTimeoutRef = useRef<number | null>(null);
@@ -550,6 +546,8 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
   const isMutedRef = useRef(isMuted);
   volumeRef.current = volume;
   isMutedRef.current = isMuted;
+  volumeScrollRef.current = volume;
+  mutedScrollRef.current = isMuted;
 
   const shouldOfferFullscreenNow =
     offerFullscreenOnArrival &&
@@ -581,6 +579,10 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
     setLanguageBridgeReveal01(0);
     setArrivalLanguageBridgeVideoActive(true);
   }, [prefersReducedMotion]);
+
+  const openFirstIntroGate = useCallback(() => {
+    openArrivalLanguageGate();
+  }, [openArrivalLanguageGate]);
 
   const finishBridgeVideoPlayback = useCallback(() => {
     stopLanguageGateSmokeSfx();
@@ -729,6 +731,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
     !arrivalLanguageConfirmed &&
     !fullscreenIntroOpen &&
     !launchCtaVisible &&
+    !cursorOnboardingOpen &&
     !(
       showArrivalLanguageOverlay &&
       (!arrivalLanguageBridgeVideoActive ||
@@ -741,17 +744,41 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
     setLaunchCtaRevealToken((token) => token + 1);
   }, []);
 
+  const proceedAfterIntroGates = useCallback(() => {
+    if (shouldOfferFullscreenNow) {
+      setLaunchCtaVisible(false);
+      setFullscreenIntroOpen(true);
+      return;
+    }
+    triggerLaunchCtaReveal();
+  }, [shouldOfferFullscreenNow, triggerLaunchCtaReveal]);
+
+  const confirmCursorOnboarding = useCallback(
+    (experience: CursorExperienceMode) => {
+      useCursorPrefsStore.getState().setExperience(experience);
+      if (experience === "fluid") {
+        useCursorStore.getState().setMode("default");
+      } else {
+        useCursorStore.getState().setMode("stylus");
+      }
+      setCursorOnboardingOpen(false);
+      proceedAfterIntroGates();
+    },
+    [proceedAfterIntroGates]
+  );
+
   const handleArrivalLanguageChoice = (nextLanguage: "fr" | "ar-dz") => {
     setLandingOrnamentAllowed(false);
     confirmLanguage(nextLanguage);
     flushSync(() => {
       setArrivalLanguageConfirmed(true);
-      if (shouldOfferFullscreenNow) {
+      const needsCursorOnboarding = finePointer;
+      if (needsCursorOnboarding) {
         setLaunchCtaVisible(false);
-        setFullscreenIntroOpen(true);
+        setCursorOnboardingOpen(true);
         return;
       }
-      triggerLaunchCtaReveal();
+      proceedAfterIntroGates();
     });
   };
 
@@ -783,7 +810,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
     }
     if (prefersReducedMotion) {
       const timer = window.setTimeout(() => {
-        openArrivalLanguageGate();
+        openFirstIntroGate();
       }, ARRIVAL_LANGUAGE_PRELUDE_MS);
       return () => window.clearTimeout(timer);
     }
@@ -873,7 +900,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
         .to({}, { duration: 0.95 })
         .to({}, { duration: holdBeforeGate })
         .call(() => {
-          openArrivalLanguageGate();
+          openFirstIntroGate();
         })
         .to({}, { duration: gateOverlap });
     }, initialStageRef);
@@ -884,7 +911,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
   }, [
     arrivalLanguageConfirmed,
     isExploring,
-    openArrivalLanguageGate,
+    openFirstIntroGate,
     prefersReducedMotion,
     videoStarted,
     isStarting,
@@ -1038,7 +1065,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
 
   const startExperience = () => {
     if (!arrivalLanguageConfirmed) {
-      openArrivalLanguageGate();
+      openFirstIntroGate();
       return;
     }
     if (isStarting || videoStarted) return;
@@ -1094,6 +1121,56 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
     if (!videoRef.current) return;
     videoRef.current.volume = isMuted ? 0 : volume;
   }, [volume, isMuted, videoStarted]);
+
+  useEffect(() => {
+    if (!videoStarted) {
+      setPrologueVolumeHudVisible(false);
+      return;
+    }
+    const scheduleHudHide = () => {
+      if (prologueVolumeHudHideRef.current != null) {
+        window.clearTimeout(prologueVolumeHudHideRef.current);
+      }
+      prologueVolumeHudHideRef.current = window.setTimeout(() => {
+        setPrologueVolumeHudVisible(false);
+        prologueVolumeHudHideRef.current = null;
+      }, 1100);
+    };
+    const onWheel = (e: WheelEvent) => {
+      const t = e.target;
+      if (
+        t instanceof HTMLInputElement ||
+        t instanceof HTMLTextAreaElement ||
+        t instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+      e.preventDefault();
+      const currentPct = Math.round(
+        (mutedScrollRef.current ? 0 : volumeScrollRef.current) * 100
+      );
+      const dy = e.deltaY;
+      /** Pas entiers 0–100 : ~1 % par cran de molette, max 2 % par événement. */
+      const deltaPct =
+        -Math.sign(dy) * Math.max(1, Math.min(2, Math.round(Math.abs(dy) / 48)));
+      const nextPct = Math.min(100, Math.max(0, currentPct + deltaPct));
+      const next = nextPct / 100;
+      volumeScrollRef.current = next;
+      mutedScrollRef.current = next === 0;
+      setVolume(next);
+      setIsMuted(next === 0);
+      setPrologueVolumeHudVisible(true);
+      scheduleHudHide();
+    };
+    window.addEventListener("wheel", onWheel, { passive: false, capture: true });
+    return () => {
+      window.removeEventListener("wheel", onWheel, { capture: true });
+      if (prologueVolumeHudHideRef.current != null) {
+        window.clearTimeout(prologueVolumeHudHideRef.current);
+        prologueVolumeHudHideRef.current = null;
+      }
+    };
+  }, [videoStarted]);
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newVolume = parseFloat(e.target.value);
@@ -1222,7 +1299,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
         </div>
       )}
 
-      {!videoStarted && arrivalLanguageConfirmed && (
+      {!videoStarted && arrivalLanguageConfirmed && !cursorOnboardingOpen && (
       <motion.div 
         className="fixed z-[60] flex items-center gap-4 group"
         style={{ 
@@ -1295,6 +1372,14 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
             transition={{ duration: 2, ease: [0.22, 1, 0.36, 1] }}
             className="absolute inset-0 z-20 flex flex-col items-center justify-center overflow-x-hidden overflow-y-visible"
           >
+          <AnimatePresence>
+            {cursorOnboardingOpen && (
+              <CursorOnboardingGate
+                prefersReducedMotion={prefersReducedMotion}
+                onChoose={confirmCursorOnboarding}
+              />
+            )}
+          </AnimatePresence>
           <AnimatePresence>
           {showArrivalLanguageOverlay && (
             <motion.div
@@ -2002,9 +2087,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
           transition={{ duration: 3.1, delay: 0.12, ease: "easeInOut" }}
           className="absolute inset-0 w-full h-full z-10"
         >
-          <motion.div
-            className="w-full h-full"
-          >
+          <motion.div className="relative h-full w-full overflow-hidden">
             <video
               ref={videoRef}
               onEnded={handleVideoEnd}
@@ -2015,6 +2098,32 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
               autoPlay
               src={INTRO_VIDEO_SRC}
             />
+            <AnimatePresence>
+              {prologueVolumeHudVisible && (
+                <motion.div
+                  key="prologue-volume-hud"
+                  role="status"
+                  aria-live="polite"
+                  aria-label={copy.introPrologueVolumeAuraAria}
+                  initial={{ opacity: 0, scale: 0.94, y: 8, filter: "blur(5px)" }}
+                  animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
+                  exit={{ opacity: 0, scale: 0.97, y: 4, filter: "blur(3px)" }}
+                  transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                  className="pointer-events-none absolute right-[max(2.75rem,calc(env(safe-area-inset-right)+1.35rem))] top-1/2 z-[22] -translate-y-1/2 text-right"
+                >
+                  <motion.span
+                    key={Math.round((isMuted ? 0 : volume) * 100)}
+                    initial={{ opacity: 0.65, y: 3 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                    className="font-sans text-[clamp(1.65rem,3.6vw,2.35rem)] font-medium tabular-nums leading-none tracking-[0.06em] text-[#f4ead2]/88"
+                    style={{ textShadow: "0 0 20px rgba(0,0,0,0.78)" }}
+                  >
+                    {Math.round((isMuted ? 0 : volume) * 100)}
+                  </motion.span>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
 
           {/* Volume - toujours visible pendant la vidéo (indépendant du bouton « Passer ») */}
@@ -2025,7 +2134,10 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
               transition={{ delay: 1, duration: 1 }}
-              className="absolute top-16 right-16 z-50 flex items-center gap-4 group"
+              className="absolute top-16 z-50 flex items-center gap-4 group"
+              style={{
+                right: "max(2.75rem, calc(env(safe-area-inset-right, 0px) + 1.35rem))",
+              }}
             >
                 <div
                   onClick={toggleMute}
@@ -2057,7 +2169,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
                 transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-                className="absolute bottom-16 right-16 z-50 pointer-events-auto"
+                className="absolute bottom-16 right-[max(2.5rem,calc(env(safe-area-inset-right)+1.25rem))] z-50 pointer-events-auto"
               >
                 <motion.button
                   whileTap={{ scale: 0.98 }}
