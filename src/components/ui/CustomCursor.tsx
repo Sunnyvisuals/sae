@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, useMotionValue, useSpring } from 'motion/react';
 import { useCursorStore } from '../../hooks/useCursorContext';
 import { useCursorPrefsStore } from '../../stores/cursorPrefsStore';
+import { useLanguageStore } from '../../stores/languageStore';
 
 /**
  * Au-dessus du fluide WebGL, intro, menu pause (z~560), overlays.
@@ -37,6 +38,7 @@ export default function CustomCursor({
   const label = useCursorStore((s) => s.label);
   const ambient = useCursorStore((s) => s.ambient);
   const isBasicExperience = useCursorPrefsStore((s) => s.experience === 'basic');
+  const language = useLanguageStore((s) => s.language);
   const night = ambient === 'midnight';
   const mx = useMotionValue(-100);
   const my = useMotionValue(-100);
@@ -85,6 +87,8 @@ export default function CustomCursor({
       el = document.createElement('div');
       el.id = id;
       el.setAttribute('aria-hidden', 'true');
+      /** Coordonnées viewport : ne pas hériter du `dir="rtl"` document (choix langue arabe). */
+      el.setAttribute('dir', 'ltr');
       document.body.appendChild(el);
     }
     el.style.setProperty('position', 'fixed');
@@ -171,6 +175,11 @@ export default function CustomCursor({
       window.clearTimeout(to);
     };
   }, [portalHost, overlayOpen]);
+
+  /** Passage FR → AR (`html[dir=rtl]`) : réancrer le portail au-dessus des volets intro. */
+  useLayoutEffect(() => {
+    reparentCursorPortalToBodyEnd();
+  }, [portalHost, language]);
 
   const isHalo = mode === 'halo';
   const isFeather = mode === 'feather';
@@ -272,6 +281,12 @@ export default function CustomCursor({
                     : 'rgba(197,160,89,0.1)'
                   : 'transparent'
               }
+            />
+            <circle
+              cx="22"
+              cy="22"
+              r={isBasicExperience && basicPressed ? 2.6 : 2.15}
+              fill={night ? 'rgba(226,246,255,0.95)' : 'rgba(253,248,238,0.92)'}
             />
           </svg>
         </motion.div>

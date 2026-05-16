@@ -1,0 +1,257 @@
+/**
+ * Acte II — traits décoratifs (colonnes intérieures, horizontales, obliques).
+ * Complète senac-scroll-pillars + senac-scroll-glyphs.
+ */
+
+.senac-scroll-traits {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+  overflow: hidden;
+}
+
+.senac-scroll-trait {
+  position: fixed;
+  display: block;
+  pointer-events: none;
+  will-change: transform, opacity;
+  filter: blur(0.35px);
+  opacity: calc(
+    (0.14 + var(--senac-pillar-glow, 0.35) * 0.22) * (0.25 + var(--senac-presence-gate, 1) * 0.75)
+  );
+}
+
+/* Verticaux fins (entre piliers principaux et centre) */
+.senac-scroll-trait--v {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  transform: translate3d(calc(var(--senac-glyph-y, 0px) * -0.018), 0, 0);
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(197, 160, 89, calc(0.08 + var(--hero-t, 0) * 0.06)) 6%,
+    rgba(255, 252, 248, 0.38) 18%,
+    rgba(139, 213, 255, calc(0.22 + var(--frise-t, 0) * 0.28)) 50%,
+    rgba(255, 252, 248, 0.32) 82%,
+    rgba(197, 160, 89, calc(0.06 + var(--hero-t, 0) * 0.05)) 94%,
+    transparent 100%
+  );
+  box-shadow: 0 0 10px rgba(139, 213, 255, calc(0.04 + var(--frise-t, 0) * 0.08));
+  animation: senac-trait-shimmer 22s ease-in-out infinite;
+}
+
+.senac-scroll-trait--v1 {
+  left: 26%;
+  animation-delay: -3s;
+}
+
+.senac-scroll-trait--v2 {
+  left: 36%;
+  animation-delay: -11s;
+}
+
+.senac-scroll-trait--v3 {
+  right: 36%;
+  animation-delay: -7s;
+}
+
+.senac-scroll-trait--v4 {
+  right: 26%;
+  animation-delay: -15s;
+}
+
+.senac-scroll-trait--v5 {
+  left: 44%;
+  opacity: calc(
+    (0.1 + var(--senac-pillar-glow, 0.35) * 0.16) * (0.2 + var(--senac-presence-gate, 1) * 0.65)
+  );
+  animation-delay: -19s;
+}
+
+.senac-scroll-trait--v6 {
+  right: 44%;
+  opacity: calc(
+    (0.1 + var(--senac-pillar-glow, 0.35) * 0.16) * (0.2 + var(--senac-presence-gate, 1) * 0.65)
+  );
+  animation-delay: -5s;
+}
+
+/* Horizontaux — filets de constellation */
+.senac-scroll-trait--h {
+  left: 8%;
+  right: 8%;
+  width: auto;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(197, 160, 89, calc(0.12 + var(--hero-t, 0) * 0.1)) 12%,
+    rgba(139, 213, 255, calc(0.18 + var(--frise-t, 0) * 0.22)) 50%,
+    rgba(197, 160, 89, calc(0.1 + var(--hero-t, 0) * 0.08)) 88%,
+    transparent 100%
+  );
+  transform: translate3d(calc(var(--senac-glyph-y, 0px) * 0.008), 0, 0);
+  animation: senac-trait-h-pulse 28s ease-in-out infinite;
+}
+
+.senac-scroll-trait--h1 {
+  top: 18%;
+}
+
+.senac-scroll-trait--h2 {
+  top: 42%;
+  animation-delay: -9s;
+}
+
+.senac-scroll-trait--h3 {
+  top: 66%;
+  animation-delay: -17s;
+}
+
+.senac-scroll-trait--h4 {
+  top: 84%;
+  animation-delay: -4s;
+  opacity: calc(
+    (0.1 + var(--senac-pillar-glow, 0.35) * 0.18) * (0.22 + var(--senac-presence-gate, 1) * 0.68)
+  );
+}
+
+/* Obliques — traits traversants */
+.senac-scroll-trait--d {
+  left: 50%;
+  top: 50%;
+  width: min(135vh, 155vw);
+  height: 1px;
+  margin-left: calc(min(135vh, 155vw) * -0.5);
+  margin-top: -0.5px;
+  transform-origin: center center;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(212, 195, 161, 0.14) 20%,
+    rgba(139, 213, 255, calc(0.16 + var(--frise-t, 0) * 0.2)) 50%,
+    rgba(212, 195, 161, 0.12) 80%,
+    transparent 100%
+  );
+  animation: senac-trait-drift 32s ease-in-out infinite alternate;
+}
+
+.senac-scroll-trait--d1 {
+  transform: translate3d(calc(var(--senac-glyph-y, 0px) * -0.012), calc(var(--senac-glyph-y, 0px) * 0.02), 0)
+    rotate(-28deg);
+}
+
+.senac-scroll-trait--d2 {
+  transform: translate3d(calc(var(--senac-glyph-y, 0px) * 0.01), calc(var(--senac-glyph-y, 0px) * -0.015), 0)
+    rotate(24deg);
+  animation-delay: -12s;
+}
+
+.senac-scroll-trait--d3 {
+  width: min(95vh, 110vw);
+  margin-left: calc(min(95vh, 110vw) * -0.5);
+  transform: translate3d(0, calc(var(--senac-glyph-y, 0px) * -0.025), 0) rotate(-12deg);
+  opacity: calc(
+    (0.08 + var(--senac-pillar-glow, 0.35) * 0.14) * (0.2 + var(--senac-presence-gate, 1) * 0.62)
+  );
+  animation-delay: -20s;
+}
+
+.senac-scroll-trait--d4 {
+  width: min(88vh, 100vw);
+  margin-left: calc(min(88vh, 100vw) * -0.5);
+  transform: translate3d(calc(var(--senac-glyph-y, 0px) * 0.014), 0, 0) rotate(38deg);
+  opacity: calc(
+    (0.08 + var(--senac-pillar-glow, 0.35) * 0.14) * (0.2 + var(--senac-presence-gate, 1) * 0.62)
+  );
+  animation-delay: -6s;
+}
+
+@keyframes senac-trait-shimmer {
+  0%,
+  100% {
+    filter: blur(0.35px) brightness(0.92);
+  }
+  50% {
+    filter: blur(0.45px) brightness(1.06);
+  }
+}
+
+@keyframes senac-trait-h-pulse {
+  0%,
+  100% {
+    opacity: calc(
+      (0.1 + var(--senac-pillar-glow, 0.35) * 0.16) * (0.2 + var(--senac-presence-gate, 1) * 0.55)
+    );
+  }
+  50% {
+    opacity: calc(
+      (0.16 + var(--senac-pillar-glow, 0.35) * 0.26) * (0.35 + var(--senac-presence-gate, 1) * 0.85)
+    );
+  }
+}
+
+@keyframes senac-trait-drift {
+  0% {
+    filter: blur(0.4px);
+    opacity: calc(
+      (0.08 + var(--senac-pillar-glow, 0.35) * 0.12) * (0.18 + var(--senac-presence-gate, 1) * 0.5)
+    );
+  }
+  100% {
+    filter: blur(0.55px);
+    opacity: calc(
+      (0.14 + var(--senac-pillar-glow, 0.35) * 0.2) * (0.32 + var(--senac-presence-gate, 1) * 0.78)
+    );
+  }
+}
+
+html.senac-choice-pending .senac-scroll-traits {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+body.senac-temporal-rest .senac-scroll-trait--d,
+body.senac-temporal-rest .senac-scroll-trait--h {
+  animation-play-state: paused;
+}
+
+@media (max-width: 840px) {
+  .senac-scroll-trait--v1 {
+    left: 18%;
+  }
+
+  .senac-scroll-trait--v2 {
+    left: 30%;
+  }
+
+  .senac-scroll-trait--v3 {
+    right: 30%;
+  }
+
+  .senac-scroll-trait--v4 {
+    right: 18%;
+  }
+
+  .senac-scroll-trait--v5,
+  .senac-scroll-trait--v6 {
+    display: none;
+  }
+
+  .senac-scroll-trait--h {
+    left: 4%;
+    right: 4%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .senac-scroll-trait {
+    animation: none !important;
+  }
+}

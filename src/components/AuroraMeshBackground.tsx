@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useRef, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import SplashCursor from './SplashCursor';
 import DesertDustParticles from './DesertDustParticles';
 import { useCursorPrefsStore } from '../stores/cursorPrefsStore';
 import ShootingStars from './ShootingStars';
+import { runWhenIdle } from '../lib/actTransitionPrefetch';
 /**
  * Fond mesh interactif - désert / Maghreb / oriental (sable, ocre, or chaud).
  * CSS variables + RAF à la demande (pas de boucle tant que la cible n'évolue pas).
@@ -17,6 +18,8 @@ type AuroraProps = {
   hideShootingStars?: boolean;
   /** Moins de grains DOM (DesertDust) - carte acte I ; intro inchangée si omis */
   compactDust?: boolean;
+  /** Acte I : le SplashCursor principal (App) suffit — évite une 2ᵉ sim WebGL en fond. */
+  suppressBackgroundFluid?: boolean;
 };
 
 export default function AuroraMeshBackground({
@@ -24,9 +27,15 @@ export default function AuroraMeshBackground({
   fillContainer = false,
   hideShootingStars = false,
   compactDust = false,
+  suppressBackgroundFluid = false,
 }: AuroraProps) {
   const fluidCursor = useCursorPrefsStore((s) => s.experience === 'fluid');
+  const [dustReady, setDustReady] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    return runWhenIdle(() => setDustReady(true), 4500);
+  }, []);
   const target = useRef({ x: 0.5, y: 0.5 });
   const current = useRef({ x: 0.5, y: 0.5 });
   const rafId = useRef(0);
@@ -101,7 +110,7 @@ export default function AuroraMeshBackground({
       <div className="absolute inset-0 bg-[#120e0a]" />
 
       {/* WebGL smoke : même simulation que le fluide curseur, calé sur le scroll Lenis · visible sous les halos. */}
-      {fluidCursor && (
+      {fluidCursor && !suppressBackgroundFluid && (
       <SplashCursor
         layer="background"
         fillContainer
@@ -163,7 +172,7 @@ export default function AuroraMeshBackground({
         }}
       />
 
-      <DesertDustParticles compact={compactDust} />
+      {dustReady ? <DesertDustParticles compact={compactDust} /> : null}
       {!hideShootingStars && <ShootingStars />}
     </div>
   );

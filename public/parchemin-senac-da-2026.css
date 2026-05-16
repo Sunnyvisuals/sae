@@ -1,0 +1,103 @@
+/**
+ * Al Rihla · Acte II — DA Sahara (choix Cinéma / Exploration)
+ * Tokens globaux + compléments. Typo / cartes / frise : fin de parchemin-senac.css (.chapter-two).
+ * Canvas 3D, ciel, fumée : inchangés.
+ */
+
+:root {
+  --da-eyebrow-track: 0.42em;
+  --da-display-track: 0.04em;
+  --da-curtain-track: 0.48em;
+  --da-card-surface: linear-gradient(
+    180deg,
+    rgba(12, 9, 6, 0.94) 0%,
+    rgba(7, 5, 3, 0.97) 46%,
+    rgba(5, 4, 3, 0.98) 100%
+  );
+  --da-card-border: rgba(197, 160, 89, 0.14);
+  --da-card-border-soft: rgba(197, 160, 89, 0.1);
+  --da-card-glow:
+    0 18px 48px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(197, 160, 89, 0.05) inset,
+    0 0 28px rgba(197, 160, 89, 0.04);
+  --da-gold: #c5a059;
+  --da-gold-text: #d4c3a1;
+  --da-gold-soft: rgba(197, 160, 89, 0.55);
+  --da-label: rgba(212, 195, 161, 0.72);
+  --da-body: rgba(212, 195, 161, 0.84);
+  --da-title: rgba(253, 248, 238, 0.96);
+  --da-radius: 0;
+  --da-ui: "Inter", system-ui, sans-serif;
+  --da-display: "Bahlull", "Playfair Display", Georgia, serif;
+  --da-serif: "Playfair Display", Georgia, serif;
+  --da-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Fond document : même chaleur que le volet mode (moins de bleu en bas de page). */
+html.senac-in-iframe.senac-choice-entered body.senac-night {
+  background:
+    radial-gradient(ellipse 92% 72% at 50% -5%, rgba(197, 160, 89, 0.06) 0%, transparent 55%),
+    radial-gradient(ellipse 80% 55% at 50% 100%, rgba(10, 8, 5, 0.9) 0%, transparent 62%),
+    linear-gradient(180deg, #0a0805 0%, #050508 55%, #070605 100%);
+  background-color: #050508;
+}
+
+html.senac-in-iframe {
+  background-color: #050508;
+}
+
+/* Toggle bas d’écran : mêmes lettres que .smc-split-eyebrow */
+.scroll-mode-toggle .smt-btn,
+.scroll-mode-toggle--legacy-layout .smt-btn {
+  font-family: var(--da-ui);
+  font-size: clamp(0.56rem, 0.7vw, 0.6rem);
+  font-weight: 400;
+  letter-spacing: var(--da-eyebrow-track);
+  text-transform: uppercase;
+  color: rgba(197, 160, 89, 0.55);
+  border-radius: 0;
+  border-color: rgba(197, 160, 89, 0.2);
+  background: rgba(8, 6, 4, 0.55);
+}
+
+.scroll-mode-toggle .smt-btn.is-active,
+.scroll-mode-toggle--legacy-layout .smt-btn.is-active {
+  color: rgba(244, 234, 210, 0.94);
+  border-color: rgba(197, 160, 89, 0.42);
+  box-shadow: 0 0 24px rgba(197, 160, 89, 0.1);
+}
+
+/* Révélations GSAP */
+html.senac-gsap-reveal [data-reveal],
+html.senac-gsap-reveal .sq-word {
+  transition: none !important;
+}
+
+html.senac-gsap-reveal [data-reveal]:not(.is-visible):not(.quote-break) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+html.senac-gsap-reveal .quote-break[data-reveal] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+html.senac-gsap-reveal .sq-word {
+  opacity: 0;
+}
+
+html.senac-observatory-motion [data-reveal].senac-scene--chamber {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chapter-two .story-panel:hover {
+    transform: none;
+  }
+
+  .chapter-two .story-card.is-visible .date-ghost {
+    transform: none;
+  }
+}

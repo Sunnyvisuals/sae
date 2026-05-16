@@ -98,6 +98,18 @@
   }
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function markSenacBootReady() {
+    root.classList.remove("senac-booting");
+    root.classList.add("senac-boot-ready");
+    if (window.parent !== window) {
+      try {
+        window.parent.postMessage({ type: "senac-parchemin-ready" }, window.location.origin);
+      } catch (_) {
+        /* ignore */
+      }
+    }
+  }
   /** Ambiance locale chapitre II (copiée dans /public). */
   const SENAC_AMBIENCE_SRC_PUBLIC = "/Emotional%20Arabian%20Oud.mp3";
   /** `a.scroll-cue` hero - évite flash avant GSAP (entrée puis disparition au scroll). */
@@ -136,7 +148,16 @@
   /** Lenis (scroll lissé) ; null si indisponible (reduced-motion ou échec import). */
   let yearGaugeLenis = null;
   let senacLenisWheelSnapTimer = 0;
+  /** @type {((time: number) => void) | null} */
+  let senacLenisGsapTickerFn = null;
+  /** @type {(() => void) | null} */
+  let senacLenisFallbackRafCancel = null;
   let yearGaugeGsap = null;
+
+  /** Scrub ScrollTrigger (s) : plus bas = molette plus réactive (exploration). */
+  const SENAC_SCRUB_PIN_CARD = 0.4;
+  const SENAC_SCRUB_PIN_CHAMBER = 0.46;
+  const SENAC_SCRUB_PIN_RELIC = 0.4;
   /** Ré-appel depuis initLenis : figer scroll si le overlay de choix est encore là. */
   let senacFreezeLenisForChoiceOverlay = /** @type {(() => void) | null} */ (null);
 
@@ -184,7 +205,7 @@
       typeof lx.limit === "number" && Number.isFinite(lx.limit) ? lx.limit : domMax;
     const target = Math.max(domMax, lim);
     const gap = target - lx.scroll;
-    if (gap > 0.25 && gap <= 72) {
+    if (gap > 0.35 && gap <= 40) {
       lx.scrollTo(target, { immediate: true });
       applyScrollDerivedState(lx.scroll);
     }
@@ -195,15 +216,45 @@
     window.clearTimeout(senacLenisWheelSnapTimer);
     senacLenisWheelSnapTimer = window.setTimeout(() => {
       senacLenisWheelSnapTimer = 0;
+      const lx = yearGaugeLenis;
+      if (lx && typeof lx.isScrolling === "boolean" && lx.isScrolling) return;
       snapLenisNearBottomAfterIdle();
-    }, 140);
+    }, 260);
   }
 
   /**
-   * Lenis peut rester quelques px sous le max du document : le ratio reste alors sous 1 et zoom / fondu arche
-   * ne se terminent pas. On assimile le bas de page dans un petit epsilon (px).
+   * Un seul moteur RAF : GSAP ticker si dispo (sync ScrollTrigger), sinon requestAnimationFrame.
+   * @param {import('lenis').default} lenis
    */
-  const SENAC_SCROLL_RATIO_BOTTOM_EPS_PX = 14;
+  function attachSenacLenisRaf(lenis) {
+    if (senacLenisGsapTickerFn || senacLenisFallbackRafCancel) return;
+    let rafId = 0;
+    const loop = (/** @type {number} */ time) => {
+      lenis.raf(time);
+      rafId = requestAnimationFrame(loop);
+    };
+    rafId = requestAnimationFrame(loop);
+    senacLenisFallbackRafCancel = () => {
+      cancelAnimationFrame(rafId);
+      senacLenisFallbackRafCancel = null;
+    };
+  }
+
+  /**
+   * Ratio strict scrollY / max — aligné sur la barre native et la barre de progression (0 en haut, 1 en bas).
+   * @param {number} scrollY
+   */
+  function senacScrollRatioVisual(scrollY) {
+    const max = getScrollMax();
+    if (max <= 0) return 1;
+    const y = Math.min(max, Math.max(0, scrollY));
+    return y / max;
+  }
+
+  /**
+   * Epsilon bas de page : fin de parcours (navigation) si Lenis s’arrête à quelques px du max.
+   */
+  const SENAC_SCROLL_RATIO_BOTTOM_EPS_PX = 6;
 
   /** @param {number} scrollY */
   function senacScrollRatio(scrollY) {
@@ -376,19 +427,42 @@
     return { bg, shadow };
   }
 
+  let lastPostedScrollProgressRatio = -1;
+
   function updateSenacScrollProgressFill() {
     let y = getScrollY();
     if (yearGaugeLenis && typeof yearGaugeLenis.scroll === "number") {
       y = yearGaugeLenis.scroll;
     }
-    const ratio = senacScrollRatio(y);
+    const ratioVisual = senacScrollRatioVisual(y);
+
+    const ht = parseFloat(root.style.getPropertyValue("--hero-t").trim() || "0");
+    const ft = parseFloat(root.style.getPropertyValue("--frise-t").trim() || "0");
+    const shift = Math.min(1, Math.max(0, ht + ft * 0.42));
+    const nightBlendTarget = scrollBarNightBlendFromShift(shift);
+    const kk = reducedMotion ? 1 : 0.28;
+    if (senacBarNightBlendSmooth === null || senacBarRatioSmooth === null) {
+      senacBarNightBlendSmooth = nightBlendTarget;
+      senacBarRatioSmooth = ratioVisual;
+    } else {
+      senacBarNightBlendSmooth += (nightBlendTarget - senacBarNightBlendSmooth) * kk;
+      senacBarRatioSmooth += (ratioVisual - senacBarRatioSmooth) * kk;
+    }
+
+    const displayRatio = senacBarRatioSmooth;
 
     /** SPA : barre du haut = `ScrollProgressBar` parent (iframe ne rend plus #senac-scroll-progress). */
     if (window.parent !== window) {
-      try {
-        window.parent.postMessage({ type: "senac-scroll-progress", ratio }, window.location.origin);
-      } catch {
-        /* ignore */
+      if (Math.abs(displayRatio - lastPostedScrollProgressRatio) > 0.0025) {
+        lastPostedScrollProgressRatio = displayRatio;
+        try {
+          window.parent.postMessage(
+            { type: "senac-scroll-progress", ratio: displayRatio },
+            window.location.origin,
+          );
+        } catch {
+          /* ignore */
+        }
       }
     }
 
@@ -401,25 +475,11 @@
     }
     if (!senacScrollFillEl) return;
 
-    const ht = parseFloat(root.style.getPropertyValue("--hero-t").trim() || "0");
-    const ft = parseFloat(root.style.getPropertyValue("--frise-t").trim() || "0");
-    const shift = Math.min(1, Math.max(0, ht + ft * 0.42));
-
-    const nightBlendTarget = scrollBarNightBlendFromShift(shift);
-    const kk = reducedMotion ? 1 : 0.28;
-    if (senacBarNightBlendSmooth === null || senacBarRatioSmooth === null) {
-      senacBarNightBlendSmooth = nightBlendTarget;
-      senacBarRatioSmooth = ratio;
-    } else {
-      senacBarNightBlendSmooth += (nightBlendTarget - senacBarNightBlendSmooth) * kk;
-      senacBarRatioSmooth += (ratio - senacBarRatioSmooth) * kk;
-    }
-
     const uColor = senacBarRatioSmooth;
     const nb = senacBarNightBlendSmooth ?? 0;
-    const { bg, shadow } = scrollBarSpectrum(uColor, nb, ratio);
+    const { bg, shadow } = scrollBarSpectrum(uColor, nb, ratioVisual);
 
-    senacScrollFillEl.style.width = `${ratio * 100}%`;
+    senacScrollFillEl.style.width = `${displayRatio * 100}%`;
     senacScrollFillEl.style.background = bg;
     senacScrollFillEl.style.boxShadow = shadow;
   }
@@ -444,7 +504,7 @@
             if (yearGaugeLenis && typeof yearGaugeLenis.scroll === "number") {
               y = yearGaugeLenis.scroll;
             }
-            return senacScrollRatio(y);
+            return senacScrollRatioVisual(y);
           },
         }),
       )
@@ -458,39 +518,120 @@
       });
   }
 
-  /** Voile blanc : après le cadrage zoom arche (`ARCH_ZOOM_BEGIN` 0.86), léger retard. */
-  const ARCH_WHITEOUT_BEGIN_RATIO = 0.905;
-  /** Courbe ease-out + plafond : voile un peu plus léger qu’un blanc plein. */
-  const ARCH_WHITEOUT_EASE_OUT = 2.15;
-  const ARCH_WHITEOUT_MAX_OPACITY = 0.88;
-  /** Navigation Acte III un peu avant le bas absolu du scroll. */
-  const ARCH_WHITEOUT_TO_ACT3_RATIO =
-    ARCH_WHITEOUT_BEGIN_RATIO +
-    ((0.9 - 0.82) / (1 - 0.82)) * (1 - ARCH_WHITEOUT_BEGIN_RATIO);
+  /**
+   * Voile blanc : uniquement dans `.senac-arch-scroll-tail` (évite le « white bug » sur la frise).
+   * 1er écran arche → début du fondu ; 2e écran brumeux → fondu terminé.
+   */
+  const ARCH_WHITEOUT_BEGIN_TAIL = 0.18;
+  const ARCH_WHITEOUT_FULL_TAIL = 0.95;
+  const ARCH_WHITEOUT_MAX_OPACITY = 0.86;
+  /** Aucun voile avant la plage arche (fin de parchemin). */
+  const ARCH_WHITEOUT_MIN_PAGE_RATIO = 0.87;
+  /** Navigation Acte III : fin de la plage arche + bas de page. */
+  const ARCH_WHITEOUT_NAV_TAIL = 0.94;
+  const ARCH_WHITEOUT_TO_ACT3_RATIO = 0.992;
 
   /** Navigation Acte III déjà envoyée (le voile blanc reste piloté par le scroll). */
   let archWhiteoutNavTriggered = false;
+  /** Parent SPA (crédits par-dessus acte III) : ne pas réappliquer le voile après hydrate scroll≈1. */
+  let archWhiteoutSuppressed = false;
   const archWhiteoutEl = document.getElementById("senac-arch-whiteout");
+  let archScrollTailEl = /** @type {HTMLElement | null} */ (null);
+  if (archWhiteoutEl) {
+    archWhiteoutEl.classList.remove("is-active");
+    archWhiteoutEl.style.opacity = "0";
+    archWhiteoutEl.style.visibility = "hidden";
+  }
+
+  function getArchScrollTailEl() {
+    if (!archScrollTailEl || !archScrollTailEl.isConnected) {
+      archScrollTailEl = document.querySelector(".senac-arch-scroll-tail");
+    }
+    return archScrollTailEl;
+  }
+
+  /**
+   * Progression 0→1 dans la plage arche (viewport + ratio page).
+   * Ne pas utiliser offsetTop (grille CSS) ni rect.bottom seul (faux positifs au chargement).
+   */
+  function senacArchTailProgress01(scrollY) {
+    const tail = getArchScrollTailEl();
+    if (!tail) return 0;
+    const vh = window.innerHeight || 1;
+    const max = getScrollMax();
+    const y = Math.min(max, Math.max(0, Number.isFinite(scrollY) ? scrollY : getScrollY()));
+    const pageRatio = max > 0 ? y / max : 0;
+    if (pageRatio < ARCH_WHITEOUT_MIN_PAGE_RATIO) return 0;
+
+    const rect = tail.getBoundingClientRect();
+    if (!rect.height || rect.height < 48) return 0;
+    /** Tail encore sous le viewport. */
+    if (rect.top > vh * 0.97) return 0;
+    /** Fin de séquence : tail passée, seulement si scroll page dans la zone arche. */
+    if (rect.bottom <= 0 && pageRatio >= ARCH_WHITEOUT_MIN_PAGE_RATIO + 0.04) return 1;
+    /** Pas encore dans la zone arche visible. */
+    if (rect.top > vh * 0.86) return 0;
+
+    const enterLine = vh * 0.76;
+    const fullLine = vh * 0.06;
+    const span = Math.max(1, enterLine - fullLine);
+    return Math.min(1, Math.max(0, (enterLine - rect.top) / span));
+  }
+
+  function archWhiteoutOpacityFromTailProgress(tail01) {
+    const p = Math.min(1, Math.max(0, tail01));
+    if (p < ARCH_WHITEOUT_BEGIN_TAIL) return 0;
+    if (p >= ARCH_WHITEOUT_FULL_TAIL) return ARCH_WHITEOUT_MAX_OPACITY;
+    const span = Math.max(1e-6, ARCH_WHITEOUT_FULL_TAIL - ARCH_WHITEOUT_BEGIN_TAIL);
+    const t = (p - ARCH_WHITEOUT_BEGIN_TAIL) / span;
+    /** Montée douce : moins de « flash » blanc en début de zone arche. */
+    const eased = Math.pow(t, 1.88);
+    return eased * ARCH_WHITEOUT_MAX_OPACITY;
+  }
+
+  function setArchWhiteoutOpacity(opacity) {
+    if (!archWhiteoutEl) return;
+    const op = Math.min(1, Math.max(0, opacity));
+    const on = op > 0.002;
+    archWhiteoutEl.style.opacity = String(op);
+    archWhiteoutEl.style.visibility = on ? "visible" : "hidden";
+    archWhiteoutEl.classList.toggle("is-active", on);
+  }
 
   function updateArchWhiteout(scrollY) {
     if (!archWhiteoutEl) return;
-    const ratio = senacScrollRatio(scrollY);
-    const denom = Math.max(1e-6, 1 - ARCH_WHITEOUT_BEGIN_RATIO);
-
-    if (ratio < ARCH_WHITEOUT_BEGIN_RATIO) {
-      archWhiteoutEl.style.opacity = "0";
+    if (archWhiteoutSuppressed) {
+      setArchWhiteoutOpacity(0);
       return;
     }
-
-    const fadeT = Math.min(1, (ratio - ARCH_WHITEOUT_BEGIN_RATIO) / denom);
-    const eased = 1 - (1 - fadeT) ** ARCH_WHITEOUT_EASE_OUT;
-    archWhiteoutEl.style.opacity = String(
-      Math.min(ARCH_WHITEOUT_MAX_OPACITY, eased * ARCH_WHITEOUT_MAX_OPACITY),
-    );
-
+    /** Pas de voile tant que l’utilisateur n’a pas passé le choix Cinéma / Exploration. */
     if (
-      ratio >= ARCH_WHITEOUT_TO_ACT3_RATIO &&
-      !archWhiteoutNavTriggered
+      document.documentElement.classList.contains("senac-choice-pending") ||
+      !document.documentElement.classList.contains("senac-choice-entered")
+    ) {
+      setArchWhiteoutOpacity(0);
+      return;
+    }
+    const pageP = senacScrollRatioVisual(scrollY);
+    if (pageP < ARCH_WHITEOUT_MIN_PAGE_RATIO) {
+      setArchWhiteoutOpacity(0);
+      return;
+    }
+    const tailP = senacArchTailProgress01(scrollY);
+    if (!getArchScrollTailEl()) {
+      setArchWhiteoutOpacity(0);
+      return;
+    }
+    setArchWhiteoutOpacity(archWhiteoutOpacityFromTailProgress(tailP));
+
+    const ratioComplete = senacScrollRatio(scrollY);
+    const progress = senacScrollRatioVisual(scrollY);
+    if (
+      tailP >= ARCH_WHITEOUT_NAV_TAIL &&
+      (ratioComplete >= ARCH_WHITEOUT_TO_ACT3_RATIO ||
+        progress >= ARCH_WHITEOUT_TO_ACT3_RATIO) &&
+      !archWhiteoutNavTriggered &&
+      !archWhiteoutSuppressed
     ) {
       archWhiteoutNavTriggered = true;
       window.setTimeout(() => {
@@ -509,14 +650,38 @@
     }
   }
 
-  function applyScrollDerivedState(scrollY) {
+  let senacScrollApplyPending = false;
+  let senacScrollApplyLastY = 0;
+
+  function updateSenacArchAmbient(scrollY) {
+    const pageP = senacScrollRatioVisual(scrollY);
+    const ft = Number.parseFloat(root.style.getPropertyValue("--frise-t").trim() || "0");
+    const fn = Number.isFinite(ft) ? Math.min(1, Math.max(0, ft)) : 0;
+    const vis = Math.min(1, Math.max(0, ((pageP - 0.04) / 0.52) * (0.35 + fn * 0.65)));
+    root.style.setProperty("--senac-arch-visibility", vis.toFixed(3));
+  }
+
+  function applyScrollDerivedStateNow(scrollY) {
+    senacScrollApplyLastY = scrollY;
     computeImmersion(scrollY);
+    updateSenacArchAmbient(scrollY);
     updateSenacScrollProgressFill();
+    updateArchWhiteout(scrollY);
+    updateSenacStellarFocus(scrollY);
     scheduleSenacArchScene();
     if (senacArchApi && typeof senacArchApi.sync === "function") {
       senacArchApi.sync();
     }
-    updateArchWhiteout(scrollY);
+  }
+
+  function applyScrollDerivedState(scrollY) {
+    senacScrollApplyLastY = scrollY;
+    if (senacScrollApplyPending) return;
+    senacScrollApplyPending = true;
+    requestAnimationFrame(() => {
+      senacScrollApplyPending = false;
+      applyScrollDerivedStateNow(senacScrollApplyLastY);
+    });
   }
 
   let yearGaugeScrollTriggerInitScheduled = false;
@@ -525,71 +690,43 @@
   /** Réf. ScrollTrigger (refresh resize). */
   let yearGaugeScrollTriggerPlugin =
     /** @type {{ refresh: (...a: unknown[]) => void } | null} */ (null);
+  let senacRevealScrollTriggers = [];
+  let senacAct2MotionInitScheduled = false;
+  let senacAct2MotionReady = false;
+  /** Stations frise (scroll cible mode Cinéma + repères constellation). */
+  let senacObservatoryScenes = /** @type {{ el: HTMLElement, kind: string, holdMs: number, scrollY: number }[]} */ (
+    []
+  );
+  let senacCinemaChainTimer = 0;
 
   function tryScheduleSenacScrollTriggerEffects() {
-    if (!senacPostLenisReady || yearGaugeGsap === null) return;
+    if (!senacPostLenisReady) return;
     scheduleSenacScrollTriggerEffects();
   }
 
-  /** ScrollTrigger : proxy Lenis uniquement (repère années retiré). */
+  /** Resize Lenis + waypoints cinéma (sans ScrollTrigger — trop lourd sur l’iframe). */
   function scheduleSenacScrollTriggerEffects() {
-    if (yearGaugeScrollTriggerInitScheduled || yearGaugeGsap === null) {
+    if (yearGaugeScrollTriggerInitScheduled) {
       return;
     }
     yearGaugeScrollTriggerInitScheduled = true;
 
-    (async () => {
-      const gsapRef = yearGaugeGsap;
-      let ScrollTrigger;
-      try {
-        ({ ScrollTrigger } = await import("https://esm.sh/gsap@3.12.5/ScrollTrigger"));
-      } catch {
-        yearGaugeScrollTriggerInitScheduled = false;
-        return;
-      }
+    window.addEventListener(
+      "resize",
+      () => {
+        if (yearGaugeLenis && typeof yearGaugeLenis.resize === "function") {
+          yearGaugeLenis.resize();
+        }
+        applyScrollDerivedState(yearGaugeLenis ? yearGaugeLenis.scroll : getScrollY());
+        if (senacAct2MotionReady) {
+          refreshSenacStellarScenes();
+          recordObservatorySceneMeta();
+        }
+      },
+      { passive: true },
+    );
 
-      gsapRef.registerPlugin(ScrollTrigger);
-      yearGaugeScrollTriggerPlugin = ScrollTrigger;
-
-      if (yearGaugeLenis && typeof yearGaugeLenis.scrollTo === "function") {
-        ScrollTrigger.scrollerProxy(document.documentElement, {
-          scrollTop(value) {
-            if (arguments.length) {
-              yearGaugeLenis.scrollTo(value, { immediate: true });
-            }
-            return yearGaugeLenis.scroll;
-          },
-          getBoundingClientRect() {
-            return {
-              top: 0,
-              left: 0,
-              width: window.innerWidth,
-              height: window.innerHeight,
-            };
-          },
-        });
-        yearGaugeLenis.on("scroll", () => {
-          ScrollTrigger.update(false);
-        });
-      }
-
-      window.addEventListener(
-        "resize",
-        () => {
-          if (yearGaugeLenis && typeof yearGaugeLenis.resize === "function") {
-            yearGaugeLenis.resize();
-          }
-          yearGaugeScrollTriggerPlugin?.refresh(true);
-          applyScrollDerivedState(yearGaugeLenis ? yearGaugeLenis.scroll : getScrollY());
-        },
-        { passive: true }
-      );
-
-      ScrollTrigger.refresh();
-    })().catch(() => {
-      yearGaugeScrollTriggerInitScheduled = false;
-      yearGaugeScrollTriggerPlugin = null;
-    });
+    scheduleSenacAct2ScrollMotion();
   }
 
 
@@ -608,6 +745,10 @@
     }
     const hs = heroT.toFixed(4);
     const fs = friseT.toFixed(4);
+    const gy = `${Math.round(y)}px`;
+    root.style.setProperty("--senac-glyph-y", gy);
+    root.style.setProperty("--senac-pillar-drift", `${((y / vh) * 5).toFixed(2)}px`);
+    root.style.setProperty("--senac-pillar-glow", Math.min(1, heroT * 0.32 + friseT * 0.78).toFixed(3));
     if (root.style.getPropertyValue("--hero-t") === hs && root.style.getPropertyValue("--frise-t") === fs) {
       return;
     }
@@ -635,6 +776,90 @@
     window.addEventListener("scroll", onScroll, { passive: true });
     tick();
     if (!reducedMotion) root.classList.add("senac-parallax-live");
+  }
+
+  /** Vagues temporelles : présence (visible) et mouvement (dérive) découplés. */
+  function initSenacTemporalAmbience() {
+    root.style.setProperty("--senac-time-phase", "0");
+    root.style.setProperty("--senac-motion-gate", "1");
+    root.style.setProperty("--senac-presence-gate", "1");
+    if (reducedMotion) return;
+
+    const cyclePresence = 26;
+    const cycleMotion = 18;
+    let raf = 0;
+    const t0 = performance.now();
+
+    function smooth01(x) {
+      const c = Math.min(1, Math.max(0, x));
+      return c * c * (3 - 2 * c);
+    }
+
+    function tick(now) {
+      const t = (now - t0) * 0.001;
+      const phaseP = (t / cyclePresence) % 1;
+      const phaseM = (t / cycleMotion) % 1;
+      const waveP = 0.5 + 0.5 * Math.sin(phaseP * Math.PI * 2);
+      const waveM = 0.5 + 0.5 * Math.sin(phaseM * Math.PI * 2 + 0.55);
+
+      const presence = smooth01((waveP - 0.18) / 0.52);
+      let motion = smooth01((waveM - 0.34) / 0.38);
+      motion *= smooth01(1 - Math.max(0, (waveM - 0.78) / 0.22));
+
+      root.style.setProperty("--senac-time-phase", phaseP.toFixed(4));
+      root.style.setProperty("--senac-presence-gate", presence.toFixed(4));
+      root.style.setProperty("--senac-motion-gate", motion.toFixed(4));
+      document.body.classList.toggle("senac-temporal-rest", motion < 0.14);
+
+      raf = requestAnimationFrame(tick);
+    }
+
+    raf = requestAnimationFrame(tick);
+    document.body.classList.add("senac-temporal-live");
+  }
+
+  function readSenacPresenceGate() {
+    if (reducedMotion) return 1;
+    const n = Number.parseFloat(root.style.getPropertyValue("--senac-presence-gate").trim());
+    return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 1;
+  }
+
+  function readSenacMotionGate() {
+    if (reducedMotion) return 1;
+    const n = Number.parseFloat(root.style.getPropertyValue("--senac-motion-gate").trim());
+    return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 1;
+  }
+
+  /** Fenêtre locale par particule (slot 0–1) : chaque élément n’est actif qu’un court instant du cycle. */
+  function senacParticleTemporalGate(slot) {
+    const presence = readSenacPresenceGate();
+    const motion = readSenacMotionGate();
+    const phase = Number.parseFloat(root.style.getPropertyValue("--senac-time-phase").trim());
+    const p = ((Number.isFinite(phase) ? phase : 0) + (slot % 1)) % 1;
+    const band = 0.28;
+    let local = 0;
+    if (p < band) local = p / band;
+    else if (p > 1 - band * 0.45) local = (1 - p) / (band * 0.45);
+    const c = Math.min(1, Math.max(0, local));
+    const localSmooth = c * c * (3 - 2 * c);
+    return presence * motion * localSmooth;
+  }
+
+  /** Budget étoiles / brume selon surface écran (mobile plafonné). */
+  function computeSenacParticleCounts(width, height) {
+    const area = width * height;
+    const compact = width < 768 || area < 480000;
+    return {
+      stars: Math.round(
+        Math.min(compact ? 340 : 520, Math.max(compact ? 210 : 320, area / 4000)),
+      ),
+      motes: Math.round(
+        Math.min(compact ? 300 : 460, Math.max(compact ? 165 : 250, area / 1650)),
+      ),
+      puffs: Math.round(
+        Math.min(compact ? 62 : 92, Math.max(compact ? 38 : 52, area / 17000)),
+      ),
+    };
   }
 
   function initSky() {
@@ -690,7 +915,6 @@
     }
 
     const rand = (min, max) => min + Math.random() * (max - min);
-
     function resize() {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       width = window.innerWidth;
@@ -702,27 +926,29 @@
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       stars.length = 0;
-      const count = Math.round(Math.min(260, Math.max(140, width * height / 7600)));
+      const { stars: count } = computeSenacParticleCounts(width, height);
       for (let i = 0; i < count; i += 1) {
+        const micro = Math.random() > 0.55;
         stars.push({
           x: Math.random() * width,
           y: Math.random() * height,
-          r: rand(0.32, 1.75),
-          a: rand(0.16, 0.92),
-          tw: rand(0.007, 0.026),
+          r: micro ? rand(0.22, 0.95) : rand(0.45, 2.05),
+          a: rand(0.2, 0.96),
+          tw: rand(0.008, 0.03),
           phase: rand(0, Math.PI * 2),
-          drift: rand(0.025, 0.16),
-          gold: Math.random() > 0.76,
-          connect: Math.random() > 0.76,
+          drift: rand(0.03, 0.2),
+          gold: Math.random() > 0.68,
+          connect: Math.random() > 0.58,
           /** Profondeur parallax scroll (loin → près). */
           pz: rand(0, 1),
+          temporalSlot: Math.random(),
         });
       }
       scrollParallaxSmooth = getScrollY();
     }
 
     function spawnComet() {
-      if (comets.length > 3 || Math.random() > 0.026) return;
+      if (readSenacMotionGate() < 0.42 || comets.length > 4 || Math.random() > 0.012) return;
       comets.push({
         x: rand(width * 0.2, width * 0.95),
         y: rand(-height * 0.1, height * 0.35),
@@ -746,7 +972,8 @@
 
       ctx.save();
       ctx.globalCompositeOperation = "lighter";
-      for (let i = 0; i < stars.length; i += 1) {
+      const drawStarLinks = window.parent === window;
+      if (drawStarLinks) for (let i = 0; i < stars.length; i += 1) {
         const a = stars[i];
         if (!a.connect || a.y > height * 0.72) continue;
         const pa = skyParallaxFor(a.pz ?? 0.4, sp);
@@ -762,7 +989,10 @@
           const dy = ay - by;
           const dist = Math.hypot(dx, dy);
           if (dist > 115) continue;
-          const alpha = (1 - dist / 115) * 0.12;
+          const linkGate =
+            senacParticleTemporalGate(a.temporalSlot ?? 0) * senacParticleTemporalGate(b.temporalSlot ?? 0);
+          if (linkGate < 0.06) continue;
+          const alpha = (1 - dist / 115) * 0.12 * linkGate;
           ctx.strokeStyle = `rgba(139, 213, 255, ${alpha})`;
           ctx.lineWidth = 0.7;
           ctx.beginPath();
@@ -774,8 +1004,12 @@
       ctx.restore();
 
       for (const star of stars) {
-        const twinkle = star.a + Math.sin(time * star.tw + star.phase) * 0.18;
-        star.y -= star.drift * 0.08;
+        const gate = senacParticleTemporalGate(star.temporalSlot ?? 0);
+        if (gate < 0.04) continue;
+
+        const twinkle =
+          star.a * (0.35 + gate * 0.65) + Math.sin(time * star.tw + star.phase) * 0.14 * gate;
+        star.y -= star.drift * 0.08 * gate;
         if (star.y < -4) star.y = height + 4;
 
         const pp = skyParallaxFor(star.pz ?? 0.4, sp);
@@ -785,8 +1019,8 @@
         ctx.beginPath();
         ctx.arc(sx, sy, star.r, 0, Math.PI * 2);
         ctx.fillStyle = star.gold
-          ? `rgba(234, 215, 164, ${Math.max(0.08, twinkle)})`
-          : `rgba(165, 215, 255, ${Math.max(0.08, twinkle)})`;
+          ? `rgba(234, 215, 164, ${Math.max(0.04, twinkle)})`
+          : `rgba(165, 215, 255, ${Math.max(0.04, twinkle)})`;
         ctx.fill();
       }
 
@@ -865,7 +1099,6 @@
     function rand(a, b) {
       return a + Math.random() * (b - a);
     }
-
     function resize() {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       width = window.innerWidth;
@@ -877,7 +1110,7 @@
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       puffs = [];
-      const np = Math.round(Math.min(48, Math.max(26, (width * height) / 38000)));
+      const { puffs: np, motes: nm } = computeSenacParticleCounts(width, height);
       for (let i = 0; i < np; i += 1) {
         puffs.push({
           x: rand(-width * 0.18, width * 1.15),
@@ -895,18 +1128,19 @@
       }
 
       motes = [];
-      const nm = Math.round(Math.min(200, Math.max(85, (width * height) / 3400)));
       for (let i = 0; i < nm; i += 1) {
+        const fine = Math.random() > 0.48;
         motes.push({
           x: Math.random() * width,
           y: Math.random() * height,
-          r: rand(0.35, 2.25),
+          r: fine ? rand(0.28, 1.15) : rand(0.55, 2.45),
           vx: rand(-0.28, 0.28),
           vy: rand(-0.52, -0.06),
           tw: rand(0.007, 0.023),
           phase: rand(0, Math.PI * 2),
           gold: Math.random() > 0.58,
           pz: Math.random(),
+          temporalSlot: Math.random(),
         });
       }
       scrollSmooth = getScrollY();
@@ -917,6 +1151,8 @@
       scrollSmooth += (scrollTarget - scrollSmooth) * 0.118;
       const sp = scrollSmooth;
       const imm = fogImmersion01();
+      const motionG = readSenacMotionGate();
+      const presenceG = readSenacPresenceGate();
 
       ctx.clearRect(0, 0, width, height);
 
@@ -930,8 +1166,8 @@
       for (let i = 0; i < puffs.length; i += 1) {
         const p = puffs[i];
         p.rot += p.vr;
-        p.x += p.vx + Math.sin(time * 0.00032 + p.phase) * 0.26;
-        p.y += p.vy + Math.cos(time * 0.00026 + p.phase * 1.2) * 0.18;
+        p.x += (p.vx + Math.sin(time * 0.00032 + p.phase) * 0.26) * motionG;
+        p.y += (p.vy + Math.cos(time * 0.00026 + p.phase * 1.2) * 0.18) * motionG;
         if (p.x < -p.rx * 2.2) p.x += width + p.rx * 3;
         if (p.x > width + p.rx * 2.2) p.x -= width + p.rx * 3;
         if (p.y < -p.ry * 2) p.y += height + p.ry * 2.5;
@@ -942,8 +1178,8 @@
         const cx = p.x + ox;
         const cy = p.y + oy;
 
-        const a0 = p.baseA * (0.82 + imm * 0.35);
-        ctx.globalAlpha = 0.92;
+        const a0 = p.baseA * (0.82 + imm * 0.35) * (0.25 + presenceG * 0.75);
+        ctx.globalAlpha = 0.92 * presenceG;
         ctx.save();
         ctx.translate(cx, cy);
         ctx.rotate(p.rot);
@@ -962,18 +1198,21 @@
       ctx.globalCompositeOperation = "lighter";
       for (let i = 0; i < motes.length; i += 1) {
         const m = motes[i];
-        const twinkle = 0.62 + Math.sin(time * m.tw + m.phase) * 0.24;
+        const gate = senacParticleTemporalGate(m.temporalSlot ?? 0);
+        if (gate < 0.05) continue;
+
+        const twinkle = 0.62 + Math.sin(time * m.tw + m.phase) * 0.24 * gate;
         const pa = sp * (-0.011 - m.pz * 0.048);
         const pb = sp * (-0.038 - m.pz * 0.09);
-        m.x += m.vx * 0.09 + Math.sin(time * 0.0004 + m.phase) * 0.06;
-        m.y += m.vy * 0.07;
+        m.x += (m.vx * 0.09 + Math.sin(time * 0.0004 + m.phase) * 0.06) * gate;
+        m.y += m.vy * 0.07 * gate;
         if (m.y < -6) m.y = height + 6;
         if (m.x < -4) m.x = width + 4;
         if (m.x > width + 4) m.x = -4;
 
         const sx = m.x + pa;
         const sy = m.y + pb;
-        const alpha = Math.max(0.06, Math.min(0.72, twinkle * (0.52 + imm * 0.38)));
+        const alpha = Math.max(0.04, Math.min(0.72, twinkle * (0.52 + imm * 0.38) * gate));
         ctx.globalAlpha = 1;
         if (m.gold) {
           ctx.fillStyle = `rgba(236, 212, 168, ${alpha})`;
@@ -994,8 +1233,82 @@
     requestAnimationFrame(drawFog);
   }
 
+  /** Points lumineux CSS (complément #sky-canvas / #fog-canvas). */
+  function initSenacGlyphDust() {
+    if (reducedMotion) return;
+    const host = document.querySelector(".senac-scroll-glyphs");
+    if (!(host instanceof HTMLElement) || host.querySelector(".senac-scroll-glyphs__layer--dust")) return;
+
+    const layer = document.createElement("di" + "v");
+    layer.className = "senac-scroll-glyphs__layer senac-scroll-glyphs__layer--dust";
+    layer.setAttribute("aria-hidden", "true");
+
+    const compact = window.innerWidth < 768;
+    const inIframe = window.parent !== window;
+    const count = inIframe ? (compact ? 48 : 72) : compact ? 64 : 104;
+
+    for (let i = 0; i < count; i += 1) {
+      const mote = document.createElement("span");
+      mote.className = "senac-scroll-glyphs__dust-mote";
+      const gold = Math.random() > 0.42;
+      const size = gold ? 1.5 + Math.random() * 1.8 : 1 + Math.random() * 1.4;
+      mote.style.left = `${(Math.random() * 100).toFixed(2)}%`;
+      mote.style.top = `${(Math.random() * 100).toFixed(2)}%`;
+      mote.style.setProperty("--senac-dust-size", `${size.toFixed(2)}px`);
+      mote.style.setProperty(
+        "--senac-dust-color",
+        gold ? "rgba(236, 212, 168, 0.62)" : "rgba(165, 215, 255, 0.5)",
+      );
+      mote.style.setProperty(
+        "--senac-dust-glow",
+        gold ? "rgba(197, 160, 89, 0.42)" : "rgba(121, 183, 255, 0.32)",
+      );
+      mote.style.setProperty("--senac-dust-dur", `${(14 + Math.random() * 16).toFixed(1)}s`);
+      mote.style.setProperty("--senac-dust-delay", `${(-Math.random() * 18).toFixed(2)}s`);
+      mote.style.setProperty("--senac-dust-dx", `${((Math.random() - 0.5) * 18).toFixed(1)}px`);
+      mote.style.setProperty("--senac-dust-dy", `${((Math.random() - 0.5) * 22).toFixed(1)}px`);
+      mote.style.setProperty("--senac-dust-a0", (0.25 + Math.random() * 0.25).toFixed(2));
+      mote.style.setProperty("--senac-dust-a1", (0.55 + Math.random() * 0.35).toFixed(2));
+      layer.appendChild(mote);
+    }
+
+    host.appendChild(layer);
+  }
+
+  /** Fluide coloré WebGL (or → bleu nuit) — calque sous la brume. */
+  async function initSenacColorFluid() {
+    if (reducedMotion) return;
+    const mount = document.getElementById("senac-color-fluid");
+    if (!(mount instanceof HTMLElement)) return;
+
+    function readCss01(prop) {
+      const raw = root.style.getPropertyValue(prop).trim();
+      const n = Number.parseFloat(raw);
+      return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 0;
+    }
+
+    function readScroll01() {
+      return senacScrollRatioVisual(getScrollY());
+    }
+
+    try {
+      const { attachSenacColorFluid } = await import("./parchemin-senac-color-fluid.mjs");
+      await attachSenacColorFluid(mount, {
+        reducedMotion,
+        getHeroT: () => readCss01("--hero-t"),
+        getFriseT: () => readCss01("--frise-t"),
+        getScroll01: readScroll01,
+        getPresenceGate: readSenacPresenceGate,
+        getMotionGate: readSenacMotionGate,
+      });
+      document.body.classList.add("senac-color-fluid-active");
+    } catch (_) {
+      /* WebGL / import indisponible */
+    }
+  }
+
   async function initSmokeShader() {
-    if (reducedMotion) return false;
+    if (reducedMotion || window.parent !== window) return false;
 
     let THREE;
     try {
@@ -1126,7 +1439,7 @@
           vec3 cool = vec3(0.40, 0.55, 0.72);
           vec3 tint = mix(warm, cool, shift * 0.72);
 
-          float alpha = smoke * (0.19 + sEase * 0.11);
+          float alpha = smoke * (0.24 + sEase * 0.13);
           alpha *= smoothstep(0.0, 0.2, smoke) * (1.0 - smoothstep(0.75, 1.0, smoke));
 
           gl_FragColor = vec4(tint, alpha);
@@ -1146,7 +1459,7 @@
       uniforms.uHero.value = Number.isFinite(h) ? Math.min(1, Math.max(0, h)) : 0;
       uniforms.uFrise.value = Number.isFinite(f) ? Math.min(1, Math.max(0, f)) : 0;
       const y = yearGaugeLenis && typeof yearGaugeLenis.scroll === "number" ? yearGaugeLenis.scroll : getScrollY();
-      uniforms.uScroll01.value = senacScrollRatio(y);
+      uniforms.uScroll01.value = senacScrollRatioVisual(y);
     };
 
     const onResize = () => {
@@ -1245,12 +1558,6 @@
     cursorEl.appendChild(shapeEl);
     if (finePointer) {
       document.body.appendChild(cursorEl);
-    }
-
-    /* Dans l'iframe React (act2) : le curseur parent s'occupe du rendu -
-       on masque le nôtre pour éviter le doublon (pointeur précis uniquement). */
-    if (finePointer && window.parent !== window) {
-      cursorEl.style.display = "none";
     }
 
     /* Couleurs : or désert ↔ bleu constellation selon --immersive-shift */
@@ -1377,11 +1684,14 @@
     try {
       const { default: Lenis } = await import("https://esm.sh/lenis@1.1.18");
       const lenis = new Lenis({
-        lerp: 0.14,
+        /** Inertie douce mais réactive à la molette classique (évite le « surf » à 1.4×). */
+        lerp: 0.095,
         smoothWheel: true,
-        wheelMultiplier: 1.4,
+        wheelMultiplier: 0.82,
+        touchMultiplier: 1.12,
         syncTouch: false,
         smoothTouch: false,
+        autoRaf: false,
       });
 
       lenis.on("scroll", () => {
@@ -1399,12 +1709,7 @@
         { once: true },
       );
 
-      const raf = (time) => {
-        lenis.raf(time);
-        requestAnimationFrame(raf);
-      };
-
-      requestAnimationFrame(raf);
+      attachSenacLenisRaf(lenis);
 
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
@@ -1587,7 +1892,33 @@
     );
   }
 
-  function initReveal() {
+  function killSenacAct2ScrollMotion() {
+    senacRevealScrollTriggers.forEach((st) => {
+      try {
+        st.kill();
+      } catch (_) {
+        /* ignore */
+      }
+    });
+    senacRevealScrollTriggers = [];
+    senacObservatoryScenes = [];
+    senacAct2MotionReady = false;
+    document.documentElement.classList.remove("senac-observatory-motion");
+  }
+
+  function trackSenacScrollTrigger(/** @type {import('gsap/ScrollTrigger').ScrollTrigger | undefined} */ st) {
+    if (st) senacRevealScrollTriggers.push(st);
+  }
+
+  /**
+   * @param {gsap.core.Tween} tween
+   */
+  function trackTweenScrollTrigger(tween) {
+    if (tween && tween.scrollTrigger) trackSenacScrollTrigger(tween.scrollTrigger);
+  }
+
+  /** Fallback sans GSAP : apparition immédiate au scroll (depuis le haut en CSS). */
+  function initRevealFallback() {
     const elements = document.querySelectorAll("[data-reveal]");
     if (!elements.length) return;
 
@@ -1599,10 +1930,442 @@
           observer.unobserve(entry.target);
         }
       },
-      { threshold: 0.09, rootMargin: "0px 0px -12% 0px" }
+      { threshold: 0.09, rootMargin: "0px 0px -14% 0px" }
     );
 
     elements.forEach((el) => observer.observe(el));
+  }
+
+  function prepareSenacObservatoryDom() {
+    const timeline = document.getElementById("timeline-start");
+    const hero = document.querySelector("header.hero");
+    document.body.classList.add("senac-reading-flow");
+    if (hero) hero.classList.add("senac-hero-portal");
+    if (!timeline) return [];
+
+    timeline.classList.add("senac-constellation-track");
+    const scenes = /** @type {HTMLElement[]} */ ([]);
+    timeline.querySelectorAll(":scope > .story-card, :scope > .quote-break, :scope > figure.archive-window").forEach(
+      (node, index) => {
+        if (!(node instanceof HTMLElement)) return;
+        node.classList.add("senac-scene");
+        node.dataset.sceneIndex = String(index);
+        if (node.classList.contains("story-card")) node.classList.add("senac-scene--card");
+        else if (node.classList.contains("quote-break")) node.classList.add("senac-scene--chamber");
+        else if (node.matches("figure.archive-window")) node.classList.add("senac-scene--reliquary");
+        scenes.push(node);
+      },
+    );
+    return scenes;
+  }
+
+  /**
+   * @param {HTMLElement} card
+   * @param {import('gsap').GSAP} gsapRef
+   * @param {boolean} usePin
+   */
+  function bindObservatoryStoryCard(card, gsapRef, usePin) {
+    const centered = document.body.classList.contains("senac-reading-flow");
+    const isRight = card.classList.contains("story-card--right");
+    const isLeft = card.classList.contains("story-card--left");
+    const xFrom = centered ? 0 : isRight ? 52 : isLeft ? -52 : 0;
+    const rotFrom = centered ? 0 : isRight ? -1.15 : isLeft ? 1.15 : 0;
+    const ghost = card.querySelector(".date-ghost");
+    const pinEl = card.querySelector(".pin");
+    const panel = card.querySelector(".story-panel");
+    const words = panel ? panel.querySelectorAll(".sq-word") : [];
+
+    const onActive = (/** @type {boolean} */ active) => {
+      card.classList.toggle("senac-scene--active", active);
+      if (active) card.classList.add("is-visible");
+    };
+
+    if (!usePin) {
+      const beatStart = centered ? "top 62%" : "top 82%";
+      const beatEnd = centered ? "bottom 38%" : "bottom 18%";
+
+      const parts = [ghost, pinEl].filter(Boolean);
+      gsapRef.set(parts, { opacity: 0, y: -40, filter: "blur(12px)" });
+      if (panel) gsapRef.set(panel, { opacity: 0, x: xFrom, y: -40, rotate: rotFrom * 0.65, filter: "blur(12px)" });
+      if (words.length) gsapRef.set(words, { opacity: 0, y: -14, filter: "blur(8px)" });
+      const tl = gsapRef.timeline({
+        scrollTrigger: {
+          trigger: card,
+          start: beatStart,
+          end: beatEnd,
+          toggleActions: "play reverse play reverse",
+          onEnter: () => onActive(true),
+          onLeave: () => onActive(false),
+          onEnterBack: () => onActive(true),
+          onLeaveBack: () => onActive(false),
+        },
+      });
+      if (ghost) tl.to(ghost, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.85, ease: "power3.out" }, 0);
+      if (pinEl) tl.to(pinEl, { opacity: 1, duration: 0.35, ease: "power2.out" }, 0.12);
+      if (panel) {
+        tl.to(
+          panel,
+          { opacity: 1, x: 0, rotate: 0, y: 0, filter: "blur(0px)", duration: 1, ease: "power3.out" },
+          0.18,
+        );
+      }
+      if (words.length) {
+        tl.to(
+          words,
+          { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.65, stagger: 0.028, ease: "power2.out" },
+          0.38,
+        );
+      }
+      trackTweenScrollTrigger(/** @type {import('gsap').core.Tween} */ (tl));
+      return;
+    }
+
+    if (ghost) gsapRef.set(ghost, { opacity: 0, scale: 0.9, filter: "blur(10px)" });
+    if (pinEl) gsapRef.set(pinEl, { opacity: 0, scale: 0.4 });
+    if (panel) gsapRef.set(panel, { opacity: 0, x: xFrom, rotate: rotFrom, filter: "blur(14px)" });
+    if (words.length) gsapRef.set(words, { opacity: 0, y: -14, filter: "blur(7px)" });
+
+    const tl = gsapRef.timeline({
+      scrollTrigger: {
+        trigger: card,
+        start: "top top",
+        end: "+=92%",
+        pin: true,
+        pinSpacing: true,
+        scrub: SENAC_SCRUB_PIN_CARD,
+        anticipatePin: 1,
+        invalidateOnRefresh: true,
+        onEnter: () => onActive(true),
+        onLeave: () => onActive(false),
+        onEnterBack: () => onActive(true),
+        onLeaveBack: () => onActive(false),
+      },
+    });
+
+    if (ghost) tl.to(ghost, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.2, ease: "power2.out" }, 0);
+    if (pinEl) tl.to(pinEl, { opacity: 1, scale: 1, duration: 0.14, ease: "back.out(2)" }, 0.1);
+    if (panel) {
+      tl.to(
+        panel,
+        { opacity: 1, x: 0, rotate: 0, filter: "blur(0px)", duration: 0.3, ease: "power3.out" },
+        0.16,
+      );
+    }
+    if (words.length) {
+      tl.to(
+        words,
+        { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.26, stagger: 0.022, ease: "power2.out" },
+        0.34,
+      );
+    }
+    tl.to({}, { duration: 0.26 }, 0.58);
+    if (panel) {
+      tl.to(
+        panel,
+        { opacity: 0.2, y: -28, filter: "blur(10px)", duration: 0.22, ease: "power2.in" },
+        0.78,
+      );
+    }
+    if (ghost) tl.to(ghost, { opacity: 0.15, y: -20, filter: "blur(8px)", duration: 0.2, ease: "power2.in" }, 0.8);
+    if (pinEl) tl.to(pinEl, { opacity: 0.25, scale: 0.75, duration: 0.16 }, 0.84);
+
+    trackTweenScrollTrigger(/** @type {import('gsap').core.Tween} */ (tl));
+  }
+
+  /**
+   * @param {HTMLElement} chamber
+   * @param {import('gsap').GSAP} gsapRef
+   * @param {boolean} usePin
+   */
+  function bindObservatoryChamber(chamber, gsapRef, usePin) {
+    const readingFlow = document.body.classList.contains("senac-reading-flow");
+    const words = chamber.querySelectorAll(".sq-word");
+    const cite = chamber.querySelector("cite");
+    const glyph = chamber.querySelector(".quote-break--title > span");
+
+    const onActive = (/** @type {boolean} */ active) => {
+      chamber.classList.toggle("senac-scene--active", active);
+      if (active) chamber.classList.add("is-visible");
+    };
+
+    gsapRef.set(chamber, { opacity: 1, filter: "none" });
+    if (words.length) {
+      gsapRef.set(words, { opacity: 0, y: -36, filter: "blur(16px)" });
+    }
+    if (cite) gsapRef.set(cite, { opacity: 0, y: -20 });
+    if (glyph) gsapRef.set(glyph, { opacity: 0, scale: 0.88 });
+
+    const stVars = usePin
+      ? {
+          trigger: chamber,
+          start: "top top",
+          end: "+=115%",
+          pin: true,
+          pinSpacing: true,
+          scrub: SENAC_SCRUB_PIN_CHAMBER,
+          anticipatePin: 1,
+        }
+      : {
+          trigger: chamber,
+          start: document.body.classList.contains("senac-reading-flow") ? "top 58%" : "top 78%",
+          end: document.body.classList.contains("senac-reading-flow") ? "bottom 42%" : "bottom 22%",
+          toggleActions: "play reverse play reverse",
+        };
+
+    const tl = gsapRef.timeline({
+      scrollTrigger: {
+        ...stVars,
+        invalidateOnRefresh: true,
+        onEnter: () => onActive(true),
+        onLeave: () => onActive(false),
+        onEnterBack: () => onActive(true),
+        onLeaveBack: () => onActive(false),
+      },
+    });
+
+    if (glyph) tl.to(glyph, { opacity: 1, scale: 1, duration: 0.2, ease: "power2.out" }, 0);
+    if (words.length) {
+      tl.to(
+        words,
+        { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.55, stagger: 0.04, ease: "power2.out" },
+        glyph ? 0.08 : 0,
+      );
+    }
+    if (cite) tl.to(cite, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, readingFlow ? 0.38 : 0.42);
+    if (usePin) {
+      tl.to({}, { duration: 0.35 }, 0.55);
+      if (words.length) {
+        tl.to(
+          words,
+          {
+            opacity: readingFlow ? 0 : 0.12,
+            y: readingFlow ? 10 : -24,
+            filter: readingFlow ? "none" : "blur(10px)",
+            duration: 0.28,
+            stagger: 0.02,
+            ease: "power2.in",
+          },
+          0.82,
+        );
+      }
+      if (cite) tl.to(cite, { opacity: 0, y: -16, duration: 0.22, ease: "power2.in" }, 0.86);
+    }
+
+    trackTweenScrollTrigger(/** @type {import('gsap').core.Tween} */ (tl));
+  }
+
+  /**
+   * @param {HTMLElement} reliquary
+   * @param {import('gsap').GSAP} gsapRef
+   * @param {boolean} usePin
+   */
+  function bindObservatoryReliquary(reliquary, gsapRef, usePin) {
+    const media = reliquary.querySelector(".archive-media");
+    const cap = reliquary.querySelector("figcaption");
+    const img = reliquary.querySelector("img");
+
+    const onActive = (/** @type {boolean} */ active) => {
+      reliquary.classList.toggle("senac-scene--active", active);
+      if (active) reliquary.classList.add("is-visible");
+    };
+
+    gsapRef.set(reliquary, { opacity: 0, scale: 0.94, filter: "blur(14px)" });
+    if (media) gsapRef.set(media, { scale: 1.08 });
+    if (cap) gsapRef.set(cap, { opacity: 0, y: 16 });
+
+    const stVars = usePin
+      ? {
+          trigger: reliquary,
+          start: "top top",
+          end: "+=78%",
+          pin: true,
+          pinSpacing: true,
+          scrub: SENAC_SCRUB_PIN_RELIC,
+          anticipatePin: 1,
+        }
+      : {
+          trigger: reliquary,
+          start: document.body.classList.contains("senac-reading-flow") ? "top 60%" : "top 80%",
+          end: document.body.classList.contains("senac-reading-flow") ? "bottom 40%" : "bottom 20%",
+          toggleActions: "play reverse play reverse",
+        };
+
+    const tl = gsapRef.timeline({
+      scrollTrigger: {
+        ...stVars,
+        invalidateOnRefresh: true,
+        onEnter: () => onActive(true),
+        onLeave: () => onActive(false),
+        onEnterBack: () => onActive(true),
+        onLeaveBack: () => onActive(false),
+      },
+    });
+
+    tl.to(reliquary, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.32, ease: "power3.out" }, 0);
+    if (media) tl.to(media, { scale: 1, duration: 0.38, ease: "power2.out" }, 0.1);
+    if (img) tl.fromTo(img, { y: -18 }, { y: 12, duration: 0.45, ease: "none" }, 0.12);
+    if (cap) tl.to(cap, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }, 0.22);
+    if (usePin) {
+      tl.to({}, { duration: 0.22 }, 0.52);
+      tl.to(reliquary, { opacity: 0.15, scale: 0.96, filter: "blur(10px)", duration: 0.24, ease: "power2.in" }, 0.76);
+    }
+
+    trackTweenScrollTrigger(/** @type {import('gsap').core.Tween} */ (tl));
+  }
+
+  /** @type {HTMLElement[]} */
+  let senacStellarScenes = [];
+
+  function refreshSenacStellarScenes() {
+    senacStellarScenes = Array.from(
+      document.querySelectorAll("#timeline-start.timeline > .senac-scene"),
+    ).filter((n) => n instanceof HTMLElement);
+  }
+
+  /** Nœud actif sur la frise (lecture stellaire, sans GSAP). */
+  function updateSenacStellarFocus(scrollY) {
+    const timeline = document.getElementById("timeline-start");
+    if (!timeline || !senacStellarScenes.length) return;
+
+    const vh = window.innerHeight || 1;
+    const focusY = scrollY + vh * 0.44;
+    let best = /** @type {HTMLElement | null} */ (null);
+    let bestDist = Infinity;
+
+    for (const el of senacStellarScenes) {
+      const mid = el.offsetTop + el.offsetHeight * 0.48;
+      const d = Math.abs(mid - focusY);
+      if (d < bestDist) {
+        bestDist = d;
+        best = el;
+      }
+    }
+
+    const max = getScrollMax();
+    const progress = max > 0 ? Math.min(1, Math.max(0, scrollY / max)) : 0;
+    timeline.style.setProperty("--senac-stellar-progress", progress.toFixed(4));
+
+    if (!best) return;
+    const idx = senacStellarScenes.indexOf(best);
+    timeline.style.setProperty("--senac-stellar-active", String(Math.max(0, idx)));
+    for (const el of senacStellarScenes) {
+      el.classList.toggle("senac-scene--active", el === best);
+    }
+  }
+
+  function recordObservatorySceneMeta() {
+    senacObservatoryScenes = [];
+    const timeline = document.getElementById("timeline-start");
+    if (!timeline) return;
+
+    timeline.querySelectorAll(":scope > .senac-scene").forEach((node) => {
+      if (!(node instanceof HTMLElement)) return;
+      let kind = "card";
+      let holdMs = 950;
+      if (node.classList.contains("senac-scene--chamber")) {
+        kind = "chamber";
+        holdMs = 2600;
+      } else if (node.classList.contains("senac-scene--reliquary")) {
+        kind = "reliquary";
+        holdMs = 1300;
+      }
+
+      senacObservatoryScenes.push({ el: node, kind, holdMs, scrollY: node.offsetTop });
+    });
+
+    senacObservatoryScenes.sort((a, b) => a.scrollY - b.scrollY);
+  }
+
+  /** Waypoints mode Cinéma : hero puis chaque station de la frise. */
+  function getSenacCinemaWaypoints() {
+    const points = /** @type {{ y: number, holdMs: number }[]} */ ([]);
+    const hero = document.querySelector("header.hero");
+    if (hero instanceof HTMLElement) {
+      points.push({ y: Math.max(0, hero.offsetTop), holdMs: 1400 });
+    }
+    senacObservatoryScenes.forEach((s) => {
+      points.push({ y: Math.max(0, s.scrollY), holdMs: s.holdMs });
+    });
+    const maxY = getScrollMax();
+    if (!points.length || points[points.length - 1].y < maxY - 24) {
+      points.push({ y: maxY, holdMs: 600 });
+    }
+    return points;
+  }
+
+  /**
+   * Acte II : DOM observatoire + révélations CSS (IntersectionObserver).
+   * Pas de ScrollTrigger par scène (blur/stagger = lag en iframe).
+   */
+  function initSenacAct2ScrollMotion() {
+    if (senacAct2MotionReady) return;
+
+    killSenacAct2ScrollMotion();
+    document.documentElement.classList.remove("senac-gsap-reveal");
+    prepareSenacObservatoryDom();
+
+    if (!reducedMotion) {
+      document.documentElement.classList.add("senac-observatory-motion");
+    }
+
+    initRevealFallback();
+    refreshSenacStellarScenes();
+    recordObservatorySceneMeta();
+    updateSenacStellarFocus(getScrollY());
+    senacAct2MotionReady = true;
+  }
+
+  function scheduleSenacAct2ScrollMotion() {
+    if (senacAct2MotionInitScheduled) return;
+    senacAct2MotionInitScheduled = true;
+    void initSenacAct2ScrollMotion();
+  }
+
+  const SENAC_NAV_PICTO_BY_TARGET = {
+    "intro-video": "video",
+    "act1-map": "map",
+    "act3-writing": "quill",
+  };
+
+  /** Pictogrammes ludiques sur les liens d’étape (`data-nav-picto` ou cible). */
+  function senacNavPictoSvg(/** @type {string} */ kind) {
+    const k = kind || "compass";
+    const svgOpen =
+      '<svg class="senac-nav-picto" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" xmlns="http://www.w3.org/2000/svg">';
+    const icons = {
+      video: `${svgOpen}<rect x="3.5" y="7" width="17" height="11" rx="3" stroke="currentColor" stroke-width="1.35" fill="rgba(197,160,89,0.12)"/><path d="M10.2 10.2v3.6l4.8-1.8-4.8-1.8z" fill="currentColor"/><circle cx="18" cy="8.5" r="1.1" fill="currentColor" opacity="0.7"/></svg>`,
+      map: `${svgOpen}<path d="M5 8.5c2.5-1.2 4.5-1.2 7 0s4.5 1.2 7 0v9c-2.5 1.2-4.5 1.2-7 0s-4.5-1.2-7 0v-9z" stroke="currentColor" stroke-width="1.25" fill="rgba(197,160,89,0.1)"/><circle cx="12" cy="11" r="1.6" fill="currentColor"/><path d="M12 6.5l.9 1.7 1.9.3-1.4 1.3.3 1.9-1.7-.9-1.7.9.3-1.9-1.4-1.3 1.9-.3.9-1.7z" fill="currentColor" opacity="0.55"/></svg>`,
+      quill: `${svgOpen}<path d="M6 18c4-6 8-9 13-11-.5 5-3 9-8 12l-1 2-4-3z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" fill="rgba(197,160,89,0.15)"/><path d="M14 7l3 3" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/><circle cx="7.5" cy="17" r="1.2" fill="currentColor"/></svg>`,
+      star: `${svgOpen}<path d="M12 4.5l1.2 3.6h3.8l-3.1 2.3 1.2 3.6L12 12.2 8.9 14l1.2-3.6-3.1-2.3h3.8L12 4.5z" fill="currentColor"/><circle cx="18.5" cy="6" r="1" fill="currentColor" opacity="0.5"/></svg>`,
+      dune: `${svgOpen}<path d="M4 16c3-2 6-2.5 8-1.5s5 .5 8-1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="17" cy="7.5" r="2.2" stroke="currentColor" stroke-width="1.1" fill="rgba(197,160,89,0.2)"/><path d="M6 19h12" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.5"/></svg>`,
+      compass: `${svgOpen}<circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.2" fill="rgba(197,160,89,0.08)"/><path d="M12 6.5l1.2 3.2 3.3.4-2.5 2 1 3.2-2.9-1.6-2.9 1.6 1-3.2-2.5-2 3.3-.4L12 6.5z" fill="currentColor"/></svg>`,
+    };
+    return icons[k] || icons.compass;
+  }
+
+  function enhanceSenacNavPictos() {
+    document.querySelectorAll("[data-senac-navigate]").forEach((node) => {
+      if (!(node instanceof HTMLButtonElement)) return;
+      const inHeroNav = Boolean(node.closest(".senac-cross-nav-wrap--hero"));
+      if (!inHeroNav) node.classList.add("senac-cross-nav__chip");
+      if (!node.querySelector(".senac-nav-picto")) {
+        const target = node.getAttribute("data-senac-navigate") || "";
+        const kind =
+          node.getAttribute("data-nav-picto") ||
+          SENAC_NAV_PICTO_BY_TARGET[/** @type {keyof typeof SENAC_NAV_PICTO_BY_TARGET} */ (target)] ||
+          "compass";
+        node.insertAdjacentHTML("afterbegin", senacNavPictoSvg(kind));
+      }
+      if (!node.querySelector(".senac-nav-label")) {
+        const picto = node.querySelector(".senac-nav-picto");
+        const label = document.createElement("span");
+        label.className = "senac-nav-label";
+        Array.from(node.childNodes).forEach((child) => {
+          if (child !== picto) label.appendChild(child);
+        });
+        if (label.childNodes.length) node.appendChild(label);
+      }
+    });
   }
 
   /** Acte II ↔ SPA parent : boutons `[data-senac-navigate]` (intro-video, act1-map, act3-writing). */
@@ -1914,38 +2677,84 @@
       "Spacebar",
     ]);
 
-    /* ── Auto-scroll via Lenis natif (durée calculée, pas de RAF custom) ── */
+    /* ── Cinéma : visite guidée station par station (observatoire) ── */
+    let cinemaWaypointIndex = 0;
+
     function startAutoScroll() {
-      if (retryTimer) { window.clearTimeout(retryTimer); retryTimer = 0; }
+      if (retryTimer) {
+        window.clearTimeout(retryTimer);
+        retryTimer = 0;
+      }
+      if (senacCinemaChainTimer) {
+        window.clearTimeout(senacCinemaChainTimer);
+        senacCinemaChainTimer = 0;
+      }
 
       const lenis = yearGaugeLenis;
       if (!lenis || typeof lenis.scrollTo !== "function") {
-        /* Lenis pas encore prêt - réessaye dans 150 ms */
         retryTimer = window.setTimeout(startAutoScroll, 150);
         return;
       }
 
-      const curY  = lenis.scroll;
-      const maxY  = getScrollMax();
-      const remaining = maxY - curY;
-      if (remaining < 2) {
+      const waypoints = getSenacCinemaWaypoints();
+      if (!waypoints.length) {
         showCinemaExploreCallout();
         return;
       }
 
-      const duration = remaining / SPEED_PX_S;   /* secondes */
-      lenis.scrollTo(maxY, {
-        duration,
-        easing: (t) => t,                         /* vitesse constante */
-        onComplete: () => {
-          if (mode === "cinema") showCinemaExploreCallout();
-        },
-      });
+      cinemaWaypointIndex = 0;
+      while (cinemaWaypointIndex < waypoints.length && waypoints[cinemaWaypointIndex].y < lenis.scroll - 8) {
+        cinemaWaypointIndex += 1;
+      }
+
+      function visitNextStation() {
+        if (mode !== "cinema") return;
+
+        if (cinemaWaypointIndex >= waypoints.length) {
+          showCinemaExploreCallout();
+          return;
+        }
+
+        const wp = waypoints[cinemaWaypointIndex];
+        const curY = lenis.scroll;
+        const dist = Math.abs(wp.y - curY);
+
+        if (dist < 6) {
+          senacCinemaChainTimer = window.setTimeout(() => {
+            senacCinemaChainTimer = 0;
+            cinemaWaypointIndex += 1;
+            visitNextStation();
+          }, wp.holdMs);
+          return;
+        }
+
+        const duration = Math.max(1.15, Math.min(5.2, dist / SPEED_PX_S));
+        lenis.scrollTo(wp.y, {
+          duration,
+          easing: (t) => t,
+          onComplete: () => {
+            if (mode !== "cinema") return;
+            senacCinemaChainTimer = window.setTimeout(() => {
+              senacCinemaChainTimer = 0;
+              cinemaWaypointIndex += 1;
+              visitNextStation();
+            }, wp.holdMs);
+          },
+        });
+      }
+
+      visitNextStation();
     }
 
     function stopAutoScroll() {
-      if (retryTimer) { window.clearTimeout(retryTimer); retryTimer = 0; }
-      /* Annule le scroll Lenis en cours en ciblant la position actuelle */
+      if (retryTimer) {
+        window.clearTimeout(retryTimer);
+        retryTimer = 0;
+      }
+      if (senacCinemaChainTimer) {
+        window.clearTimeout(senacCinemaChainTimer);
+        senacCinemaChainTimer = 0;
+      }
       const lenis = yearGaugeLenis;
       if (lenis && typeof lenis.scrollTo === "function") {
         lenis.scrollTo(lenis.scroll, { immediate: true });
@@ -2051,10 +2860,20 @@
       });
     }
 
+    /** Durée sortie overlay choix (alignée CSS `.is-leaving`). */
+    function scrollModeChoiceLeaveMs() {
+      return typeof window.matchMedia === "function" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? 280
+        : 1480;
+    }
+
     /* ── Applique un mode ── */
-    function setMode(newMode, fromChoice) {
+    function setMode(newMode, fromChoice, opts) {
       const wasCinema = mode === "cinema";
       mode = newMode;
+      const deferAutoScrollMs =
+        opts && typeof opts.deferAutoScrollMs === "number" ? opts.deferAutoScrollMs : 0;
 
       hideCinemaExploreCallout();
 
@@ -2065,7 +2884,11 @@
       tmtExplore.classList.toggle("is-active", mode === "explore");
 
       if (mode === "cinema") {
-        startAutoScroll();
+        if (deferAutoScrollMs > 0) {
+          window.setTimeout(startAutoScroll, deferAutoScrollMs);
+        } else {
+          startAutoScroll();
+        }
       } else {
         stopAutoScroll();
       }
@@ -2083,10 +2906,15 @@
       }
     }
 
-    /* ── Overlay de choix ── */
+    let skipChoiceOverlayShow = false;
+    let choiceShowRaf = 0;
+
+    /** ── Overlay de choix ── */
     function showChoice() {
+      if (skipChoiceOverlayShow) return;
       if (backdropEl) backdropEl.classList.add("is-visible");
       choiceEl.classList.add("is-visible");
+      markSenacBootReady();
       postScrollModeChoiceOverlayToParent(true);
       window.setTimeout(() => {
         try {
@@ -2229,42 +3057,163 @@
       wire(/** @type {HTMLButtonElement} */ (exploreBtn), vExp);
     }
 
-    function dismissChoice(chosen) {
+    /** Une seule frame d’entrée : hero + portrait depuis le haut (GSAP ou fallback). */
+    function revealActTwoEntryNow() {
+      const heroTargets = document.querySelectorAll(
+        "header.hero [data-reveal], header.hero[data-reveal], header.hero .hero-portrait",
+      );
+      heroTargets.forEach((el) => {
+        el.style.setProperty("--stagger", "0");
+      });
+      toggleEl.removeAttribute("hidden");
+      toggleEl.classList.add("is-visible");
+
+      if (reducedMotion) {
+        heroTargets.forEach((el) => el.classList.add("is-visible"));
+        return;
+      }
+
+      const gsapRef = yearGaugeGsap;
+      if (gsapRef) {
+        gsapRef.killTweensOf(heroTargets);
+        gsapRef.fromTo(
+          heroTargets,
+          { opacity: 0, y: -56, filter: "blur(14px)" },
+          {
+            opacity: 1,
+            y: 0,
+            filter: "blur(0px)",
+            duration: 1.15,
+            stagger: 0.08,
+            ease: "power3.out",
+            overwrite: "auto",
+            onComplete: () => {
+              heroTargets.forEach((el) => el.classList.add("is-visible"));
+            },
+          },
+        );
+      } else {
+        heroTargets.forEach((el) => el.classList.add("is-visible"));
+      }
+    }
+
+    /** Hero + atmosphère : révélés en chevauchement du fondu du volet (évite l’écran vide). */
+    function revealActTwoChromeEarly() {
+      if (document.documentElement.classList.contains("senac-choice-entered")) return;
+      document.documentElement.classList.add("senac-choice-entered");
+      requestAnimationFrame(() => {
+        revealActTwoEntryNow();
+      });
+    }
+
+    /**
+     * Retour SPA (hydrate) : pas d’overlay Cinéma/Exploration ni fondu 1,4 s
+     * (évite le flash d’une frame « choix » puis hero).
+     */
+    function completeEntryWithoutOverlay(chosen, scrollRatio) {
+      skipChoiceOverlayShow = true;
+      if (choiceShowRaf) {
+        cancelAnimationFrame(choiceShowRaf);
+        choiceShowRaf = 0;
+      }
       pauseScrollModeDemoVideos();
       document.documentElement.setAttribute("data-senac-mode-chosen", "1");
+      choiceOverlayScrollLock = false;
       if (backdropEl) {
-        backdropEl.classList.remove("is-visible");
+        backdropEl.classList.remove("is-visible", "is-leaving");
+        backdropEl.style.display = "none";
       }
-      choiceEl.classList.add("is-leaving");
+      choiceEl.classList.remove("is-visible", "is-leaving");
+      choiceEl.style.display = "none";
+      document.documentElement.classList.add("senac-choice-entered");
+      document.documentElement.classList.remove("senac-choice-pending", "senac-choice-leaving");
+      document.body.classList.remove("senac-choice-pending");
+      archWhiteoutNavTriggered = false;
+      archWhiteoutSuppressed = false;
+      setArchWhiteoutOpacity(0);
+      markSenacBootReady();
+      postScrollModeChoiceOverlayToParent(false);
 
       if (yearGaugeLenis && typeof yearGaugeLenis.start === "function") {
         yearGaugeLenis.start();
       }
-      setMode(chosen, true);
+      setMode(chosen, true, { deferAutoScrollMs: 0 });
 
-      const unlockMs =
-        typeof window.matchMedia === "function" &&
-        window.matchMedia("(prefers-reduced-motion: reduce)").matches
-          ? 120
-          : 420;
+      requestAnimationFrame(() => {
+        revealActTwoEntryNow();
+        if (senacAct2MotionReady) recordObservatorySceneMeta();
+        applyScrollDerivedState(
+          yearGaugeLenis && typeof yearGaugeLenis.scroll === "number"
+            ? yearGaugeLenis.scroll
+            : getScrollY(),
+        );
+        if (scrollRatio == null) return;
+        const maxY = getScrollMax();
+        const lenis = yearGaugeLenis;
+        if (lenis && typeof lenis.scrollTo === "function") {
+          lenis.scrollTo(scrollRatio * maxY, { immediate: true });
+          applyScrollDerivedState(lenis.scroll);
+        } else {
+          window.scrollTo(0, scrollRatio * maxY);
+          applyScrollDerivedState(getScrollY());
+        }
+      });
+    }
+
+    function dismissChoice(chosen) {
+      pauseScrollModeDemoVideos();
+      document.documentElement.setAttribute("data-senac-mode-chosen", "1");
+      document.documentElement.classList.add("senac-choice-leaving");
+      if (backdropEl) {
+        backdropEl.classList.add("is-leaving");
+      }
+      choiceEl.classList.add("is-leaving");
+
+      const unlockMs = scrollModeChoiceLeaveMs();
+      const heroRevealMs = Math.max(
+        220,
+        Math.min(Math.round(unlockMs * 0.34), unlockMs - 72),
+      );
+      const cinemaScrollDelay = Math.round(unlockMs * 0.72);
+
+      if (yearGaugeLenis && typeof yearGaugeLenis.start === "function") {
+        yearGaugeLenis.start();
+      }
+      setMode(chosen, true, {
+        deferAutoScrollMs: chosen === "cinema" ? cinemaScrollDelay : 0,
+      });
+
+      window.setTimeout(revealActTwoChromeEarly, heroRevealMs);
 
       window.setTimeout(() => {
         choiceOverlayScrollLock = false;
         if (backdropEl) {
+          backdropEl.classList.remove("is-visible", "is-leaving");
           backdropEl.style.display = "none";
         }
+        choiceEl.classList.remove("is-visible", "is-leaving");
         choiceEl.style.display = "none";
-        document.documentElement.classList.remove("senac-choice-pending");
+        revealActTwoChromeEarly();
+        document.documentElement.classList.remove("senac-choice-pending", "senac-choice-leaving");
         document.body.classList.remove("senac-choice-pending");
-        toggleEl.removeAttribute("hidden");
-        postScrollModeChoiceOverlayToParent(false);
+        archWhiteoutNavTriggered = false;
+        archWhiteoutSuppressed = false;
+        setArchWhiteoutOpacity(0);
         requestAnimationFrame(() => {
-          requestAnimationFrame(() => toggleEl.classList.add("is-visible"));
+          revealActTwoEntryNow();
+          postScrollModeChoiceOverlayToParent(false);
+          markSenacBootReady();
+          if (senacAct2MotionReady) recordObservatorySceneMeta();
+          applyScrollDerivedState(
+            yearGaugeLenis && typeof yearGaugeLenis.scroll === "number"
+              ? yearGaugeLenis.scroll
+              : getScrollY(),
+          );
         });
       }, unlockMs);
 
       if (chosen === "explore") {
-        window.setTimeout(showScrollNudge, Math.max(unlockMs, 260));
+        window.setTimeout(showScrollNudge, Math.round(unlockMs * 0.88));
       }
     }
 
@@ -2273,9 +3222,11 @@
     /** Parent SPA : restaurer mode d’entrée + ratio de scroll (après premier choix utilisateur, cf. `entryChosen`). */
     function applyParentHydrate(payload) {
       const p = payload || {};
-      /** Retour SPA depuis l’acte III vers crédits : scroll ~1 sinon relance `senac-navigate act3-writing`. */
+      /** Retour SPA depuis l’acte III vers crédits : pas de voile blanc ni re-navigation arche. */
       if (p.suppressArchToAct3 === true) {
+        archWhiteoutSuppressed = true;
         archWhiteoutNavTriggered = true;
+        setArchWhiteoutOpacity(0);
       }
       const em =
         p.entryMode === "cinema" || p.entryMode === "explore" ? p.entryMode : "explore";
@@ -2284,28 +3235,8 @@
           ? Math.min(1, Math.max(0, p.scrollRatio))
           : null;
 
-      dismissChoice(em);
-
-      const unlockMs =
-        typeof window.matchMedia === "function" &&
-        window.matchMedia("(prefers-reduced-motion: reduce)").matches
-          ? 120
-          : 420;
-
-      window.setTimeout(() => {
-        stopAutoScroll();
-        if (sr == null) return;
-        const lenis = yearGaugeLenis;
-        if (lenis && typeof lenis.scrollTo === "function") {
-          const maxY = getScrollMax();
-          lenis.scrollTo(sr * maxY, { immediate: true });
-          applyScrollDerivedState(lenis.scroll);
-        } else {
-          const maxY = getScrollMax();
-          window.scrollTo(0, sr * maxY);
-          applyScrollDerivedState(getScrollY());
-        }
-      }, unlockMs + 120);
+      stopAutoScroll();
+      completeEntryWithoutOverlay(em, sr);
     }
 
     window.addEventListener(
@@ -2313,7 +3244,14 @@
       (event) => {
         if (event.origin !== window.location.origin) return;
         const d = event.data;
-        if (!d || d.type !== "senac-hydrate") return;
+        if (!d || typeof d.type !== "string") return;
+        if (d.type === "senac-reset-whiteout") {
+          archWhiteoutSuppressed = false;
+          archWhiteoutNavTriggered = false;
+          setArchWhiteoutOpacity(0);
+          return;
+        }
+        if (d.type !== "senac-hydrate") return;
         if (parentHydrateApplied) return;
         parentHydrateApplied = true;
         applyParentHydrate(d.payload);
@@ -2336,25 +3274,38 @@
     tmtExplore.addEventListener("click", () => { if (mode !== "explore") setMode("explore", false); });
 
     /* Bloque tout de suite ; l'overlay s'affiche au prochain frame (Lenis ignore overflow:hidden tant qu'il n'est pas stoppé). */
-    document.documentElement.classList.add("senac-choice-pending");
-    document.body.classList.add("senac-choice-pending");
+    if (!document.documentElement.classList.contains("senac-choice-pending")) {
+      document.documentElement.classList.add("senac-choice-pending");
+    }
+    if (!document.body.classList.contains("senac-choice-pending")) {
+      document.body.classList.add("senac-choice-pending");
+    }
 
-    requestAnimationFrame(() => {
-      requestAnimationFrame(showChoice);
+    choiceShowRaf = requestAnimationFrame(() => {
+      choiceShowRaf = requestAnimationFrame(() => {
+        choiceShowRaf = 0;
+        showChoice();
+      });
     });
   }
 
   setRevealStagger();
+  scheduleSenacArchScene();
+  root.style.setProperty("--senac-arch-visibility", "0");
+  initSenacTemporalAmbience();
   initPointerGlow();
   initSky();
+  initSenacGlyphDust();
+  initSenacColorFluid();
   initSmokeShader().then((ok) => {
     if (!ok) {
       document.body.classList.remove("senac-smoke-shader-active");
       document.body.classList.add("senac-smoke-fallback");
-      initFog();
     }
+    initFog();
   });
   initSenacParentNavigateBridge();
+  enhanceSenacNavPictos();
   initAct2QuestBridge();
   initScrollModeChoice();
   initChapterTwoAmbience();
@@ -2362,12 +3313,14 @@
   import("https://esm.sh/gsap")
     .then((m) => {
       yearGaugeGsap = m.default;
+      if (yearGaugeLenis) attachSenacLenisRaf(yearGaugeLenis);
       initScrollCue(yearGaugeGsap);
       applyScrollDerivedState(yearGaugeLenis ? yearGaugeLenis.scroll : getScrollY());
       tryScheduleSenacScrollTriggerEffects();
     })
     .catch(() => {
       initScrollCue(null);
+      tryScheduleSenacScrollTriggerEffects();
     });
 
   /**
@@ -2375,7 +3328,8 @@
    * Doit tourner avant initReveal() - les mots doivent etre en place quand is-visible est ajoute.
    */
   function initWordSplits() {
-    if (reducedMotion) return;
+    /** Désactivé : centaines de .sq-word + timelines GSAP = saccades ; [data-reveal] + CSS suffisent. */
+    return;
 
     /** Scinde un noeud texte en spans, en preservant les <br> */
     function splitNode(parent) {
@@ -2483,15 +3437,56 @@
     }
   }
 
+  /** Après bascule FR ↔ AR (parent ou `storage`) : textes + découpe mot-par-mot. */
+  function refreshSenacI18nDom() {
+    if (typeof window.AL_RIHLA_APPLY_STATIC_I18N === "function") {
+      window.AL_RIHLA_APPLY_STATIC_I18N();
+    }
+    initWordSplits();
+    senacAct2MotionReady = false;
+    senacAct2MotionInitScheduled = false;
+    refreshSenacStellarScenes();
+    scheduleSenacAct2ScrollMotion();
+    document.querySelectorAll(".senac-cinema-explore-callout").forEach((node) => {
+      if (!(node instanceof HTMLElement)) return;
+      const html =
+        typeof window.SENAC_T === "function"
+          ? window.SENAC_T("js_cinema_callout_html")
+          : "";
+      if (html) node.innerHTML = html;
+    });
+    document.querySelectorAll(".senac-scroll-nudge-label").forEach((node) => {
+      const label =
+        typeof window.SENAC_T === "function"
+          ? window.SENAC_T("js_scroll_nudge_label")
+          : "";
+      if (label) node.textContent = label;
+    });
+    enhanceSenacNavPictos();
+  }
+
+  window.AL_RIHLA_REFRESH_SENAC_DOM = refreshSenacI18nDom;
+
+  window.addEventListener(
+    "message",
+    (event) => {
+      if (event.origin !== window.location.origin) return;
+      const d = event.data;
+      if (d && d.type === "senac-language") {
+        refreshSenacI18nDom();
+      }
+    },
+    false,
+  );
+
   initLenis().then((lenisOk) => {
     if (!lenisOk) {
       if (!reducedMotion) initImmersionFromWindowScroll();
       else applyScrollDerivedState(getScrollY());
     }
     senacPostLenisReady = true;
-    tryScheduleSenacScrollTriggerEffects();
     initWordSplits();
-    initReveal();
+    tryScheduleSenacScrollTriggerEffects();
 
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {

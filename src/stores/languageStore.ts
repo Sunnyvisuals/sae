@@ -9,18 +9,14 @@ export const LANGUAGE_MORPH_IN_MS = 440;
 
 type LanguageState = {
   language: AppLanguage;
-  hasConfirmedChoice: boolean;
   /** True pendant le fondu / pastille (changement depuis le menu pause). */
   isLanguageMorphing: boolean;
-  setLanguage: (language: AppLanguage) => void;
-  /** Même effet que setLanguage, sans animation - retour arrière accessibilité ou init. */
   setLanguageInstant: (language: AppLanguage) => void;
   setLanguageWithTransition: (language: AppLanguage) => void;
   confirmLanguage: (language: AppLanguage) => void;
 };
 
 const STORAGE_KEY = "al-rihla-language";
-const CHOICE_KEY = "al-rihla-language-choice";
 
 let morphT1: ReturnType<typeof setTimeout> | null = null;
 let morphT2: ReturnType<typeof setTimeout> | null = null;
@@ -51,34 +47,19 @@ function readInitialLanguage(): AppLanguage {
   return raw === "ar-dz" ? "ar-dz" : "fr";
 }
 
-function readChoiceConfirmed(): boolean {
-  if (typeof window === "undefined") return false;
-  return window.localStorage.getItem(CHOICE_KEY) === "1";
-}
-
 function persistLanguage(language: AppLanguage) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(STORAGE_KEY, language);
 }
 
-function persistChoiceConfirmed() {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(CHOICE_KEY, "1");
-}
-
 export const useLanguageStore = create<LanguageState>((set, get) => ({
   language: readInitialLanguage(),
-  hasConfirmedChoice: readChoiceConfirmed(),
   isLanguageMorphing: false,
 
   setLanguageInstant: (language) => {
     clearMorphTimers();
     persistLanguage(language);
     set({ language, isLanguageMorphing: false });
-  },
-
-  setLanguage: (language) => {
-    get().setLanguageInstant(language);
   },
 
   setLanguageWithTransition: (language) => {
@@ -103,7 +84,6 @@ export const useLanguageStore = create<LanguageState>((set, get) => ({
   confirmLanguage: (language) => {
     clearMorphTimers();
     persistLanguage(language);
-    persistChoiceConfirmed();
-    set({ language, hasConfirmedChoice: true, isLanguageMorphing: false });
+    set({ language, isLanguageMorphing: false });
   },
 }));

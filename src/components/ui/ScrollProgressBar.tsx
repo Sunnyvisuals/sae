@@ -166,8 +166,8 @@ type Props = {
   aboveChrome?: boolean;
 };
 
-/** Acte II : le ratio iframe arrive par postMessage (irrégulier). Lissage rAF + pas de transition CSS (évite les conflits). */
-const IFRAME_BAR_LERP = 0.04;
+/** Acte II : ratio iframe — lissage léger, proche du scroll natif (aligné voile blanc). */
+const IFRAME_BAR_LERP = 0.2;
 
 export default function ScrollProgressBar({ tone, iframeFillRatio, aboveChrome }: Props) {
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);

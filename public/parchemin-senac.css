@@ -72,6 +72,7 @@ html::-webkit-scrollbar {
 html.lenis,
 html.lenis body {
   height: auto;
+  scroll-behavior: auto !important;
 }
 
 .lenis.lenis-smooth {
@@ -198,6 +199,33 @@ html.senac-choice-pending body.senac-night::after {
   }
 }
 
+/** Voile de boot : masque la 1re frame WebGL / hero avant init JS (évite flash). */
+#senac-boot-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  background: #05080f;
+  pointer-events: none;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0.55s step-end;
+}
+
+html.senac-boot-ready #senac-boot-veil {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 0.55s;
+}
+
+html.senac-booting #senac-arch-canvas:not(.senac-arch-live) {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
 /**
  * Iframe Acte II (SPA) : hauteur % = cadre iframe (évite fente 100vh vs conteneur).
  * #05080f = dernier stop du dégradé `body.senac-night`.
@@ -212,7 +240,7 @@ html.senac-in-iframe {
   overscroll-behavior-y: none;
 }
 
-/** Iframe Acte II (SPA) : curseur système - le losange custom est masqué, `cursor: none` casserait l’UX. */
+/** Iframe Acte II (SPA) : losange #senac-diamond-cursor ; curseur OS masqué sur le body. */
 html.senac-in-iframe body,
 html.senac-in-iframe body.senac-night {
   min-height: 100%;
@@ -222,6 +250,7 @@ html.senac-in-iframe body.senac-night {
 }
 
 @media (hover: hover) and (pointer: fine) {
+  html.senac-in-iframe body,
   html.senac-in-iframe body.senac-night {
     cursor: none;
   }
@@ -347,7 +376,7 @@ body.senac-night::after {
   z-index: 4;
   pointer-events: none;
   mix-blend-mode: soft-light;
-  opacity: 0.94;
+  opacity: calc(0.38 + var(--hero-t, 0) * 0.32 + var(--frise-t, 0) * 0.24);
 }
 
 /** Modèle arche (Three.js) : au-dessus de la brume, sous l’aura curseur (#senac-pointer-aura z-5). */
@@ -357,9 +386,9 @@ body.senac-night::after {
   width: 100%;
   height: 100%;
   display: block;
-  z-index: 2;
+  z-index: 7;
   pointer-events: none;
-  opacity: 0.55;
+  opacity: calc(0.14 + var(--senac-arch-visibility, 0) * 0.88);
 }
 
 /** Espace de scroll final sans contenu lisible ; le ratio scroll atteint 1 quand l’arche se pose au sol (cf. DA JS). */
@@ -376,7 +405,7 @@ body.senac-night::after {
   min-height: min(142vh, calc(165svh - 80px));
 }
 
-/** Voile blanc plein écran → Acte III. Opacité 0→1 liée au scroll (JS, pas de transition CSS). */
+/** Voile blanc plein écran → Acte III. Masqué par défaut (évite écran blanc au chargement). */
 #senac-arch-whiteout {
   position: fixed;
   inset: 0;
@@ -384,9 +413,17 @@ body.senac-night::after {
   height: 100%;
   z-index: 9998;
   pointer-events: none;
-  background: #fff;
+  background:
+    radial-gradient(ellipse 88% 72% at 50% 42%, #fff 0%, #f6f2ea 52%, #ebe6dc 100%);
   opacity: 0;
+  visibility: hidden;
+  display: none;
   margin: 0;
+  will-change: opacity;
+}
+
+#senac-arch-whiteout.is-active {
+  display: block;
 }
 
 /* Si le nœud est encore dans la frise : ne pas hériter de `position:relative` du grid. */
@@ -691,6 +728,13 @@ body.senac-smoke-shader-active #senac-smoke-webgl {
   opacity: 1;
 }
 
+/** Poussière canvas en complément du shader (pas seulement en fallback). */
+body.senac-smoke-shader-active #fog-canvas {
+  mix-blend-mode: screen;
+  opacity: calc(0.32 + var(--hero-t, 0) * 0.22 + var(--frise-t, 0) * 0.18);
+  z-index: 5;
+}
+
 /* Fallback explicite si Three/WebGL échoue : rendre la brume canvas clairement visible. */
 body.senac-smoke-fallback #fog-canvas {
   mix-blend-mode: screen;
@@ -782,13 +826,30 @@ body.senac-smoke-fallback #fog-canvas {
 
 .celestial-rings {
   z-index: 2;
-  opacity: calc(0.2 + var(--frise-t, 0) * 0.32);
+  background: none;
+  transform-origin: 50% 50%;
+  will-change: transform, opacity;
+  /* Repli sans GSAP : suit --hero-t (Lenis / scroll natif). */
+  opacity: calc((0.08 + var(--frise-t, 0) * 0.22) * (1 - min(1, var(--hero-t, 0) * 1.12)));
+  transform: translate3d(0, calc(var(--hero-t, 0) * -36vh), 0);
+}
+
+.celestial-rings::before {
+  content: "";
+  position: absolute;
+  inset: 0;
   background:
-    radial-gradient(circle at 50% 22%, transparent 0 11rem, rgba(139, 213, 255, calc(0.05 + var(--frise-t) * 0.12)) 11.05rem 11.12rem, transparent 11.2rem),
-    radial-gradient(circle at 50% 22%, transparent 0 18rem, rgba(230, 165, 95, calc(0.06 + (1 - var(--frise-t)) * 0.12)) 18.05rem 18.11rem, transparent 18.2rem),
-    radial-gradient(circle at 50% 22%, transparent 0 27rem, rgba(70, 120, 220, calc(0.06 + var(--frise-t) * 0.1)) 27.05rem 27.1rem, transparent 27.2rem);
-  transform-origin: 50% 22%;
+    radial-gradient(circle at 50% 50%, transparent 0 11rem, rgba(197, 160, 89, calc(0.06 + var(--frise-t) * 0.1)) 11.05rem 11.12rem, transparent 11.2rem),
+    radial-gradient(circle at 50% 50%, transparent 0 18rem, rgba(232, 212, 164, calc(0.07 + (1 - var(--frise-t)) * 0.1)) 18.05rem 18.11rem, transparent 18.2rem),
+    radial-gradient(circle at 50% 50%, transparent 0 27rem, rgba(197, 160, 89, calc(0.05 + var(--frise-t) * 0.08)) 27.05rem 27.1rem, transparent 27.2rem);
+  transform-origin: 50% 50%;
   animation: celestial-rotate 80s linear infinite;
+  pointer-events: none;
+}
+
+html.senac-observatory-motion .celestial-rings {
+  opacity: 1;
+  transform: none;
 }
 
 /* Profondeur : larges fades radiaux uniquement - pas de repeating-linear (Traits verticaux
@@ -808,6 +869,12 @@ body.senac-smoke-fallback #fog-canvas {
 @keyframes celestial-rotate {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .celestial-rings::before {
+    animation: none;
   }
 }
 
@@ -1345,12 +1412,7 @@ html[dir="rtl"] .senac-cross-nav--compact {
   /* Leger deplacement inverse pour effet de profondeur */
   transform: translate(var(--portrait-tx, 0px), var(--portrait-ty, 0px));
   will-change: transform;
-  filter:
-    grayscale(0.06)
-    contrast(1.05)
-    brightness(1.03)
-    drop-shadow(0 16px 40px rgba(0, 0, 0, 0.42))
-    drop-shadow(0 0 42px hsla(calc(215deg + var(--immersive-shift, 0) * -20deg), 70%, 72%, 0.1));
+  filter: grayscale(0.06) contrast(1.05) brightness(1.03);
 }
 
 .hero-portrait figcaption {
@@ -1542,9 +1604,9 @@ html[dir="rtl"] .senac-cross-nav--compact {
 .story-panel {
   position: relative;
   z-index: 4;
-  width: min(100%, 520px);
+  width: min(100%, 580px);
   overflow: hidden;
-  padding: clamp(1.55rem, 3.2vw, 2.15rem);
+  padding: clamp(1.85rem, 3.6vw, 2.5rem);
   border: 1px solid var(--da-card-border);
   border-radius: 2px;
   background:
@@ -1724,7 +1786,7 @@ html[dir="rtl"] .senac-cross-nav--compact {
   margin: 0 0 1rem;
   padding-bottom: 0.75rem;
   font-family: "Inter", sans-serif;
-  font-size: 0.65rem;
+  font-size: clamp(0.68rem, 1.5vw, 0.76rem);
   font-weight: 600;
   letter-spacing: 0.32em;
   text-transform: uppercase;
@@ -1735,7 +1797,7 @@ html[dir="rtl"] .senac-cross-nav--compact {
 .story-panel h2 {
   margin: 0 0 1.1rem;
   font-family: "Bahlull", "Playfair Display", serif;
-  font-size: clamp(1.72rem, 3.6vw, 2.35rem);
+  font-size: clamp(1.85rem, 4vw, 2.55rem);
   font-style: italic;
   font-weight: 400;
   line-height: 1.08;
@@ -1749,7 +1811,7 @@ html[dir="rtl"] .senac-cross-nav--compact {
 .story-panel p:not(.story-date) {
   margin: 0 0 0.95rem;
   font-family: "Inter", sans-serif;
-  font-size: clamp(0.98rem, 1.5vw, 1.07rem);
+  font-size: clamp(1.02rem, 1.65vw, 1.14rem);
   font-weight: 400;
   line-height: 1.84;
   letter-spacing: 0.015em;
@@ -2116,7 +2178,7 @@ html[dir="rtl"] .senac-cross-nav--compact {
 .sq-word {
   display: inline-block;
   opacity: 0;
-  transform: translateY(20px) skewY(1.5deg);
+  transform: translateY(-18px) skewY(-0.8deg);
   filter: blur(9px);
   transition:
     opacity  0.72s cubic-bezier(0.16, 1, 0.3, 1) calc(120ms + var(--wi, 0) * 75ms),
@@ -2137,7 +2199,7 @@ html[dir="rtl"] .senac-cross-nav--compact {
     opacity  0.9s cubic-bezier(0.16, 1, 0.3, 1) calc(200ms + var(--wi, 0) * 110ms),
     transform 1.1s cubic-bezier(0.16, 1, 0.3, 1) calc(200ms + var(--wi, 0) * 110ms),
     filter   0.8s cubic-bezier(0.16, 1, 0.3, 1) calc(200ms + var(--wi, 0) * 110ms);
-  transform: translateY(32px) scale(0.94);
+  transform: translateY(-28px) scale(0.96);
   filter: blur(14px);
   font-style: italic;
 }
@@ -2149,7 +2211,7 @@ html[dir="rtl"] .senac-cross-nav--compact {
 
 [data-reveal] {
   opacity: 0;
-  transform: translate3d(0, 42px, 0) scale(0.986);
+  transform: translate3d(0, -44px, 0) scale(0.986);
   filter: blur(14px);
   transition:
     opacity 1.25s cubic-bezier(0.16, 1, 0.3, 1) calc(var(--stagger, 0) * 1ms),
@@ -2158,22 +2220,22 @@ html[dir="rtl"] .senac-cross-nav--compact {
 }
 
 header.hero[data-reveal]:not(.is-visible) {
-  transform: translate3d(0, 48px, 0) scale(0.992);
+  transform: translate3d(0, -52px, 0) scale(0.992);
 }
 
 .story-card--right[data-reveal]:not(.is-visible) {
-  transform: translate3d(72px, 52px, 0) rotate(0.6deg) scale(0.97);
-  filter: blur(18px);
+  transform: translate3d(28px, -56px, 0) rotate(-0.45deg) scale(0.98);
+  filter: blur(14px);
 }
 
 .story-card--left[data-reveal]:not(.is-visible) {
-  transform: translate3d(-72px, 52px, 0) rotate(-0.6deg) scale(0.97);
-  filter: blur(18px);
+  transform: translate3d(-28px, -56px, 0) rotate(0.45deg) scale(0.98);
+  filter: blur(14px);
 }
 
 figure.archive-window[data-reveal]:not(.is-visible) {
-  transform: translate3d(0, 80px, 0) scale(0.9) rotate(-0.5deg);
-  filter: blur(22px);
+  transform: translate3d(0, -72px, 0) scale(0.94) rotate(-0.35deg);
+  filter: blur(16px);
 }
 
 /* Quote-break: le conteneur devient visible immediatement, les sq-word font l'animation */
@@ -2462,7 +2524,7 @@ figure.archive-window[data-reveal]:not(.is-visible) {
     drop-shadow(0 0 16px rgba(197, 160, 89, 0.16));
 }
 
-/** ─── Générique fin de voyage (section inline, intégrée au parchemin) ─── */
+/** ─── Générique fin de voyage — DA alignée choix mode lecture (scroll-mode-choice) ─── */
 .voyage-credits {
   --credits-mx: 0.5;
   --credits-my: 0.5;
@@ -2480,9 +2542,9 @@ figure.archive-window[data-reveal]:not(.is-visible) {
   overflow: clip;
   isolation: isolate;
   background:
-    radial-gradient(ellipse 72% 58% at 50% 18%, rgba(121, 183, 255, 0.12), transparent 58%),
-    linear-gradient(180deg, rgba(1, 2, 8, 0.94) 0%, #030308 22%, #010208 100%);
-  color: rgba(240, 244, 252, 0.92);
+    radial-gradient(ellipse 82% 58% at 50% 32%, rgba(197, 160, 89, 0.04) 0%, transparent 54%),
+    linear-gradient(180deg, rgba(7, 5, 3, 0.985) 0%, rgba(5, 3, 2, 0.996) 42%, rgba(2, 1, 0, 1) 100%);
+  color: rgba(244, 234, 210, 0.92);
   scroll-margin-top: max(72px, env(safe-area-inset-top, 0px));
 }
 
@@ -2575,7 +2637,7 @@ figure.archive-window[data-reveal]:not(.is-visible) {
   z-index: 2;
   background:
     radial-gradient(ellipse 72% 55% at 50% 50%, transparent 30%, rgba(0, 0, 0, 0.55) 100%),
-    radial-gradient(circle at 50% 100%, rgba(10, 12, 24, 0.85), transparent 52%);
+    radial-gradient(circle at 50% 100%, rgba(8, 5, 2, 0.82), transparent 52%);
 }
 
 .voyage-credits-roll-clip {
@@ -2598,51 +2660,80 @@ figure.archive-window[data-reveal]:not(.is-visible) {
     clamp(4rem, 8vh, 6rem)
     clamp(0.65rem, 4vw, 1.25rem)
     clamp(1.75rem, 5vh, 3rem);
-  border: 1px solid rgba(121, 183, 255, 0.1);
+  border: 1px solid rgba(197, 160, 89, 0.12);
   background:
     linear-gradient(180deg, rgba(255, 252, 248, 0.03) 0, rgba(255, 252, 248, 0) 12rem),
-    rgba(3, 8, 20, 0.28);
+    rgba(12, 8, 4, 0.32);
   box-shadow:
     0 22px 64px rgba(0, 0, 0, 0.38),
-    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    inset 0 1px 0 rgba(255, 252, 245, 0.04);
   backdrop-filter: blur(10px);
   font-family: "Inter", system-ui, sans-serif;
   text-align: center;
-  font-size: clamp(0.8rem, 0.35rem + 1.55vw, 1.12rem);
-  line-height: 1.65;
-  letter-spacing: clamp(0.045em, calc(0.04em + 0.12vw), 0.06em);
+  font-size: clamp(0.88rem, 0.4rem + 1.7vw, 1.22rem);
+  line-height: 1.68;
+  letter-spacing: 0.02em;
   text-shadow:
-    0 0 20px rgba(0, 4, 16, 0.92),
-    0 2px 24px rgba(0, 2, 10, 0.65);
+    0 0 20px rgba(0, 0, 0, 0.88),
+    0 2px 24px rgba(0, 0, 0, 0.55);
   transform: none;
   will-change: auto;
 }
 
 .voyage-credits-main-title {
   margin: 0 0 0.35rem;
+  padding: 0.15rem 0 0.2rem;
   font-family: "Bahlull", "Playfair Display", serif;
-  font-size: clamp(1.65rem, 0.95rem + 3.75vw, 3.35rem);
+  font-size: clamp(2.5rem, 7.8vw, 5rem);
   font-weight: 400;
   font-style: italic;
-  letter-spacing: clamp(0.015em, calc(0.01em + 0.06vw), 0.02em);
-  color: rgba(255, 252, 242, 0.98);
+  text-transform: none;
+  letter-spacing: -0.02em;
+  line-height: 0.95;
+  color: transparent;
+  background: linear-gradient(165deg, #fdf8ee 0%, #e8d4a4 42%, #c5a059 92%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 22px rgba(197, 160, 89, 0.32));
+}
+
+html[dir="rtl"] .voyage-credits-main-title,
+html[lang="ar-DZ"] .voyage-credits-main-title {
+  font-family: "Noto Naskh Arabic", Georgia, serif;
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 1.08;
+  color: rgba(244, 234, 210, 0.92);
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  filter: none;
+  text-shadow: 0 0 22px rgba(197, 160, 89, 0.22);
 }
 
 .voyage-credits-subtitle {
   margin: 0 0 clamp(1.35rem, 5vw, 2rem);
-  font-size: clamp(0.68rem, 0.56rem + 0.55vw, 0.8rem);
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: clamp(0.68rem, 1.8vw, 0.78rem);
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: clamp(0.18em, calc(0.12em + 0.85vw), 0.28em);
-  color: rgba(197, 160, 89, 0.82);
+  letter-spacing: var(--da-eyebrow-track, 0.48em);
+  line-height: 1.5;
+  color: rgba(197, 160, 89, 0.52);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.75);
 }
 
 .voyage-credits-heading {
   margin: clamp(1.5rem, 5vw, 2.25rem) 0 0.85rem;
-  font-size: clamp(0.62rem, 0.52rem + 0.42vw, 0.74rem);
-  font-weight: 600;
-  letter-spacing: clamp(0.22em, calc(0.14em + 1.1vw), 0.42em);
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: clamp(0.68rem, 1.8vw, 0.78rem);
+  font-weight: 500;
+  letter-spacing: var(--da-eyebrow-track, 0.48em);
+  line-height: 1.5;
   text-transform: uppercase;
-  color: rgba(121, 183, 255, 0.55);
+  color: rgba(197, 160, 89, 0.52);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.75);
 }
 
 .voyage-credits-list {
@@ -2650,7 +2741,10 @@ figure.archive-window[data-reveal]:not(.is-visible) {
   padding: 0;
   max-width: min(28rem, 100%);
   list-style: none;
-  color: rgba(232, 236, 248, 0.72);
+  color: rgba(253, 250, 246, 0.48);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 1.68;
 }
 
 .voyage-credits-list--narrow {
@@ -2668,10 +2762,13 @@ figure.archive-window[data-reveal]:not(.is-visible) {
 
 .voyage-credits-fin {
   margin: clamp(1.35rem, 4vw, 2rem) 0 0;
-  font-family: "Bahlull", "Playfair Display", serif;
-  font-style: italic;
-  font-size: clamp(0.95rem, 0.82rem + 1.15vw, 1.38rem);
-  color: rgba(255, 252, 242, 0.88);
+  font-family: "Inter", system-ui, sans-serif;
+  font-style: normal;
+  font-size: clamp(1.05rem, 0.9rem + 1.25vw, 1.5rem);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: rgba(212, 197, 176, 0.72);
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.72);
 }
 
 .voyage-credits-logos {
@@ -2690,7 +2787,7 @@ figure.archive-window[data-reveal]:not(.is-visible) {
 .voyage-credits-logo-img {
   display: block;
   width: auto;
-  height: clamp(36px, 9vw, 52px);
+  height: clamp(40px, 9.8vw, 58px);
   object-fit: contain;
 }
 
@@ -2708,7 +2805,7 @@ figure.archive-window[data-reveal]:not(.is-visible) {
 /** Logo MMI avec fond transparent. */
 .voyage-credits-logo-img--mmi {
   display: block;
-  height: clamp(52px, 13vw, 72px);
+  height: clamp(58px, 14vw, 80px);
   width: auto;
   object-fit: contain;
   opacity: 1;
@@ -2780,7 +2877,7 @@ figure.archive-window[data-reveal]:not(.is-visible) {
   );
   color: var(--gold-bright);
   font-family: "Inter", sans-serif;
-  font-size: clamp(0.62rem, 0.54rem + 0.42vw, 0.72rem);
+  font-size: clamp(0.68rem, 0.58rem + 0.45vw, 0.78rem);
   font-weight: 600;
   letter-spacing: clamp(0.14em, calc(0.1em + 0.55vw), 0.24em);
   text-transform: uppercase;
@@ -2802,12 +2899,11 @@ figure.archive-window[data-reveal]:not(.is-visible) {
   background: linear-gradient(
     168deg,
     rgba(36, 30, 22, 0.88) 0%,
-    rgba(14, 18, 32, 0.96) 50%,
-    rgba(8, 10, 22, 0.99) 100%
+    rgba(18, 12, 8, 0.96) 50%,
+    rgba(8, 5, 2, 0.99) 100%
   );
   box-shadow:
     inset 0 1px 0 rgba(255, 252, 245, 0.1),
-    0 0 36px rgba(121, 183, 255, 0.12),
     0 0 28px rgba(197, 160, 89, 0.18);
   transform: translateY(-2px);
 }
@@ -2864,12 +2960,12 @@ figure.archive-window[data-reveal]:not(.is-visible) {
     margin-bottom: clamp(2.25rem, 5vmin, 3.65rem);
   }
 
-  .hero h1 {
-    font-size: clamp(3.75rem, 7vmin, 5.85rem);
+  .chapter-two .hero h1 {
+    font-size: clamp(3.5rem, 7.5vmin, 6.25rem);
   }
 
-  .hero-subtitle {
-    font-size: clamp(1.5rem, 3.15vmin, 2.65rem);
+  .chapter-two .hero-subtitle {
+    font-size: clamp(1.1rem, 2.2vmin, 1.5rem);
   }
 
   .scroll-cue {
@@ -3114,6 +3210,38 @@ html.senac-in-iframe .scroll-mode-choice {
   height: 100%;
 }
 
+/**
+ * Choix Cinéma / Exploration (iframe SPA) : plein cadre + DA sahara (dégradés body / backdrop).
+ * Pas de `backdrop-filter` ici : traits verticaux GPU derrière le volet (cf. depth-lines).
+ */
+html.senac-in-iframe.senac-choice-pending {
+  min-height: 100%;
+  height: 100%;
+}
+
+html.senac-in-iframe.senac-choice-pending body.senac-night {
+  min-height: 100%;
+  height: 100%;
+}
+
+html.senac-in-iframe.senac-choice-pending .depth-lines {
+  display: none !important;
+}
+
+html.senac-in-iframe.senac-choice-pending .smc-backdrop {
+  inset: -12px;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html.senac-in-iframe.senac-choice-pending .scroll-mode-choice {
+  inset: -2px;
+  width: auto;
+  height: auto;
+  min-height: calc(100% + 4px);
+  box-shadow: none;
+}
+
 /* Backdrop : neutre, aligné body phase-act2 (#05080f) - pas de radial bleu. */
 .smc-backdrop {
   position: fixed;
@@ -3145,10 +3273,44 @@ html.senac-in-iframe .scroll-mode-choice {
   outline: none;
 }
 
-.scroll-mode-choice.is-leaving {
+/** Sortie volet Cinéma / Exploration : fondu lent pour laisser le hero se charger derrière. */
+.smc-backdrop.is-visible.is-leaving {
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.36s ease;
+  backdrop-filter: blur(0px) saturate(1);
+  -webkit-backdrop-filter: blur(0px) saturate(1);
+  transition:
+    opacity 1.45s cubic-bezier(0.22, 1, 0.36, 1),
+    backdrop-filter 1.35s cubic-bezier(0.22, 1, 0.36, 1),
+    -webkit-backdrop-filter 1.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.scroll-mode-choice.is-visible.is-leaving {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1.15s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.scroll-mode-choice.is-visible.is-leaving .smc-split-root {
+  opacity: 0;
+  transform: scale(0.992);
+  filter: blur(5px);
+  transition:
+    opacity 1.05s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 1.2s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .smc-backdrop.is-visible.is-leaving {
+    transition-duration: 0.28s;
+  }
+  .scroll-mode-choice.is-visible.is-leaving,
+  .scroll-mode-choice.is-visible.is-leaving .smc-split-root {
+    transition-duration: 0.24s;
+    filter: none;
+    transform: none;
+  }
 }
 
 @keyframes smc-reveal-line {
@@ -3382,12 +3544,104 @@ html[lang="ar-DZ"] .smc-split-act-kicker {
   text-transform: none;
 }
 
-/** Pendant le choix de mode : pas de doublon flouté du hero sous le voile. */
-html.senac-choice-pending .hero > .kicker,
-html.senac-choice-pending .hero > h1,
-html.senac-choice-pending .hero > .hero-subtitle {
+/**
+ * Choix Cinéma / Exploration : le hero reste masqué tant que le volet est là
+ * (évite le flash texte + portrait sur fond plat avant le ciel WebGL).
+ */
+html.senac-choice-pending:not(.senac-choice-entered) header.hero,
+html.senac-choice-pending:not(.senac-choice-entered) header.hero [data-reveal] {
   opacity: 0 !important;
   visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+html.senac-choice-pending:not(.senac-choice-entered) .scroll-mode-toggle {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/** Sortie du volet : atmosphère d’abord ; hero en chevauchement dès `.senac-choice-entered` (cf. JS ~34 % du fondu). */
+html.senac-in-iframe.senac-choice-pending.senac-choice-leaving:not(.senac-choice-entered) #sky-canvas,
+html.senac-in-iframe.senac-choice-pending.senac-choice-leaving:not(.senac-choice-entered) #fog-canvas,
+html.senac-in-iframe.senac-choice-pending.senac-choice-leaving:not(.senac-choice-entered) .night-gradient,
+html.senac-in-iframe.senac-choice-pending.senac-choice-leaving:not(.senac-choice-entered) .celestial-rings,
+html.senac-in-iframe.senac-choice-pending.senac-choice-leaving:not(.senac-choice-entered) .depth-lines,
+html.senac-in-iframe.senac-choice-pending.senac-choice-leaving:not(.senac-choice-entered) .aurora,
+html.senac-in-iframe.senac-choice-pending.senac-choice-leaving:not(.senac-choice-entered) .aurora-a,
+html.senac-in-iframe.senac-choice-pending.senac-choice-leaving:not(.senac-choice-entered) .aurora-b {
+  display: block !important;
+  opacity: 0;
+  animation: senac-atmosphere-reveal 1.15s cubic-bezier(0.22, 1, 0.36, 1) 0.06s forwards;
+}
+
+html.senac-in-iframe.senac-choice-entered #sky-canvas,
+html.senac-in-iframe.senac-choice-entered #fog-canvas,
+html.senac-in-iframe.senac-choice-entered .night-gradient,
+html.senac-in-iframe.senac-choice-entered .celestial-rings,
+html.senac-in-iframe.senac-choice-entered .depth-lines,
+html.senac-in-iframe.senac-choice-entered .aurora,
+html.senac-in-iframe.senac-choice-entered .aurora-a,
+html.senac-in-iframe.senac-choice-entered .aurora-b {
+  display: block !important;
+  opacity: 1 !important;
+}
+
+html.senac-in-iframe.senac-choice-entered header.hero {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/** Entrée acte II : tout le hero (texte + portrait) en un seul fondu, sans décalage reveal. */
+html.senac-in-iframe.senac-choice-entered header.hero[data-reveal],
+html.senac-in-iframe.senac-choice-entered header.hero [data-reveal] {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translate3d(0, 0, 0) scale(1) !important;
+  filter: none !important;
+  transition:
+    opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.45s cubic-bezier(0.22, 1, 0.36, 1) !important;
+  transition-delay: 0ms !important;
+}
+
+html.senac-in-iframe.senac-choice-entered .scroll-mode-toggle.is-visible {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translateY(0) !important;
+  pointer-events: auto !important;
+  transition:
+    opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.08s,
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.08s !important;
+}
+
+@keyframes senac-atmosphere-reveal {
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.senac-in-iframe.senac-choice-pending.senac-choice-leaving:not(.senac-choice-entered) #sky-canvas,
+  html.senac-in-iframe.senac-choice-pending.senac-choice-leaving:not(.senac-choice-entered) #fog-canvas,
+  html.senac-in-iframe.senac-choice-pending.senac-choice-leaving:not(.senac-choice-entered) .night-gradient,
+  html.senac-in-iframe.senac-choice-pending.senac-choice-leaving:not(.senac-choice-entered) .celestial-rings,
+  html.senac-in-iframe.senac-choice-pending.senac-choice-leaving:not(.senac-choice-entered) .depth-lines,
+  html.senac-in-iframe.senac-choice-pending.senac-choice-leaving:not(.senac-choice-entered) .aurora,
+  html.senac-in-iframe.senac-choice-pending.senac-choice-leaving:not(.senac-choice-entered) .aurora-a,
+  html.senac-in-iframe.senac-choice-pending.senac-choice-leaving:not(.senac-choice-entered) .aurora-b {
+    animation-duration: 0.28s;
+    animation-delay: 0s;
+  }
+
+  html.senac-in-iframe.senac-choice-entered header.hero[data-reveal],
+  html.senac-in-iframe.senac-choice-entered header.hero [data-reveal],
+  html.senac-in-iframe.senac-choice-entered .scroll-mode-toggle.is-visible {
+    transition-duration: 0.2s !important;
+    transition-delay: 0ms !important;
+  }
 }
 
 /* ── Deux moitiés plein écran + losange central (comme choix langue) ── */
@@ -3761,13 +4015,13 @@ html[lang="ar-DZ"] .smc-split-sub {
   display: flex;
   align-items: stretch;
   gap: 0.42rem;
-  padding: 0.45rem 0.55rem 0.5rem;
-  border-radius: 4px;
-  border: 1px solid rgba(197, 160, 89, 0.18);
-  background: rgba(6, 5, 3, 0.52);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 12px 38px rgba(0, 0, 0, 0.44);
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
   opacity: 0;
   transform: translateY(8px);
   transition: opacity 0.6s var(--ease), transform 0.6s var(--ease);
@@ -3776,9 +4030,8 @@ html[lang="ar-DZ"] .smc-split-sub {
 
 body.senac-night .scroll-mode-toggle,
 body.senac-night .scroll-mode-toggle--legacy-layout {
-  border-color: rgba(139, 213, 255, 0.22);
-  background: rgba(3, 12, 28, 0.58);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.52);
+  background: transparent;
+  box-shadow: none;
 }
 
 .scroll-mode-toggle.is-visible,
@@ -4116,4 +4369,491 @@ body.senac-night .scroll-mode-toggle.senac-highlight-explore .smt-btn--explore {
     transform: rotate(0deg);
     align-items: center;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DA « minimal sahara » — contenu textuel + graphismes (aligné choix Cinéma/Exploration)
+   Calques 3D inchangés : ciel, fumée WebGL, dunes, arche, parallax ch. III.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.chapter-two,
+.chapter-three-inner {
+  --da-card-surface: linear-gradient(
+    180deg,
+    rgba(12, 9, 6, 0.94) 0%,
+    rgba(7, 5, 3, 0.97) 46%,
+    rgba(5, 4, 3, 0.98) 100%
+  );
+  --da-card-border: rgba(197, 160, 89, 0.14);
+  --da-card-border-soft: rgba(197, 160, 89, 0.1);
+  --da-card-glow:
+    0 18px 48px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(197, 160, 89, 0.05) inset,
+    0 0 28px rgba(197, 160, 89, 0.04);
+  --da-label: rgba(197, 160, 89, 0.55);
+  --da-body: rgba(244, 234, 210, 0.72);
+  --da-title: rgba(244, 234, 210, 0.94);
+  --da-ghost-year: rgba(197, 160, 89, 0.09);
+}
+
+.chapter-two::before {
+  background: radial-gradient(ellipse 55% 45% at 50% 35%, rgba(197, 160, 89, 0.045), transparent 62%);
+  opacity: 0.75;
+}
+
+/* ── Hero : même grille que .smc-split-title / .smc-da-kicker ── */
+.chapter-two .kicker {
+  color: rgba(197, 160, 89, 0.52);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.75);
+  transition: color 0.45s var(--ease);
+}
+
+.chapter-two .kicker::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(197, 160, 89, 0.28) 22%,
+    rgba(255, 252, 245, 0.18) 50%,
+    rgba(197, 160, 89, 0.28) 78%,
+    transparent
+  );
+}
+
+/** Bloc titre + accroche : lisible sur le ciel animé (pas de backdrop-filter → pas de traits verticaux GPU). */
+.chapter-two .hero-intro-block {
+  position: relative;
+  z-index: 2;
+  width: min(640px, 100%);
+  margin: 0 auto clamp(1.5rem, 4vh, 2.25rem);
+  padding: clamp(1.65rem, 4.2vh, 2.35rem) clamp(1.35rem, 4.5vw, 2rem);
+  text-align: center;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(10, 7, 4, 0.9) 0%,
+      rgba(10, 7, 4, 0.78) 55%,
+      rgba(10, 7, 4, 0.62) 100%
+    );
+  border: 1px solid rgba(197, 160, 89, 0.16);
+  box-shadow: none;
+}
+
+.chapter-two .hero-intro-header {
+  margin-bottom: clamp(0.35rem, 1vh, 0.65rem);
+}
+
+.chapter-two .hero-intro-block .smc-split-curtain {
+  margin-bottom: clamp(0.9rem, 2.4vh, 1.4rem);
+}
+
+.chapter-two .hero-intro-block .hero-intro-kicker {
+  margin: 0 auto clamp(1.15rem, 2.8vmin, 1.65rem);
+  padding: 0 clamp(0.75rem, 3vw, 1.25rem) clamp(0.55rem, 1.35vh, 0.85rem);
+  max-width: min(94vw, 39rem);
+  text-align: center;
+}
+
+.chapter-two .hero-intro-block .senac-cross-nav-wrap {
+  margin-top: clamp(1.35rem, 3.2vmin, 1.85rem);
+  padding-top: clamp(1rem, 2.5vmin, 1.35rem);
+  border-top: 1px solid rgba(197, 160, 89, 0.14);
+}
+
+/** Titre accueil : Bahlull italique + dégradé or (comme Intro.tsx). */
+.chapter-two .hero h1 {
+  font-family: "Bahlull", "Playfair Display", serif;
+  font-style: italic;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: -0.02em;
+  font-size: clamp(3.15rem, 9.5vw, 6.75rem);
+  line-height: 0.92;
+  color: transparent;
+  background: linear-gradient(165deg, #fdf8ee 0%, #e8d4a4 42%, #c5a059 92%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 22px rgba(197, 160, 89, 0.32));
+  transition: filter 0.45s var(--ease);
+}
+
+.chapter-two .hero-subtitle {
+  margin-top: clamp(0.45rem, 1.2vmin, 0.65rem);
+  font-family: "Bahlull", "Playfair Display", serif;
+  font-style: italic;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0.04em;
+  font-size: clamp(1.05rem, 2.6vw, 1.55rem);
+  line-height: 1.35;
+  color: rgba(232, 212, 164, 0.78);
+  text-shadow: 0 1px 16px rgba(0, 0, 0, 0.82);
+  transition: color 0.45s var(--ease);
+}
+
+html[dir="rtl"] .chapter-two .hero h1,
+html[lang="ar-DZ"] .chapter-two .hero h1 {
+  font-family: "Noto Naskh Arabic", Georgia, serif;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+html[dir="rtl"] .chapter-two .hero-subtitle,
+html[lang="ar-DZ"] .chapter-two .hero-subtitle {
+  font-family: "Noto Naskh Arabic", Georgia, serif;
+  text-transform: none;
+  letter-spacing: 0.06em;
+}
+
+.chapter-two .hero-copy,
+.chapter-two .senac-cross-nav__links,
+.chapter-two .senac-cross-nav--compact {
+  color: rgba(253, 250, 246, 0.86);
+  text-shadow: 0 1px 14px rgba(0, 0, 0, 0.88);
+}
+
+.chapter-two .hero-copy {
+  margin-top: clamp(1rem, 2.8vmin, 1.45rem);
+  line-height: 1.72;
+}
+
+.chapter-two .senac-cross-nav__status {
+  color: rgba(197, 160, 89, 0.88);
+  letter-spacing: var(--da-eyebrow-track);
+  font-weight: 500;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.85);
+}
+
+.chapter-two .senac-cross-nav__links {
+  color: rgba(253, 250, 246, 0.8);
+}
+
+.chapter-two .hero-portrait figcaption,
+.chapter-two .archive-window figcaption {
+  color: rgba(197, 160, 89, 0.55);
+  letter-spacing: var(--da-eyebrow-track);
+  font-weight: 400;
+  opacity: 1;
+}
+
+.chapter-two .hero-portrait-frame img {
+  filter: grayscale(0.06) contrast(1.05) brightness(1.03);
+}
+
+.chapter-two .hero-portrait-frame {
+  box-shadow: none;
+  filter: url(#portrait-chroma);
+}
+
+/* Invite scroll : or sahara (pas de teinte --ui-hue bleue) */
+.chapter-two .scroll-cue {
+  color: rgba(197, 160, 89, 0.72);
+  font-weight: 400;
+  letter-spacing: var(--da-eyebrow-track);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.82);
+  transition: color 0.45s var(--ease);
+}
+
+.chapter-two .scroll-cue-mouse {
+  filter: drop-shadow(0 0 14px rgba(197, 160, 89, 0.28)) drop-shadow(0 0 22px rgba(0, 0, 0, 0.55));
+}
+
+.chapter-two .scroll-cue-mouse svg,
+.chapter-two .scroll-cue-chevrons-wrap {
+  color: rgba(197, 160, 89, 0.78);
+}
+
+.chapter-two .scroll-cue-mouse svg > rect {
+  stroke: rgba(197, 160, 89, 0.42) !important;
+}
+
+.chapter-two .scroll-cue-mouse svg .scroll-cue-chevrons-wrap path:nth-of-type(1) {
+  stroke: rgba(232, 212, 164, 0.92) !important;
+}
+
+.chapter-two .scroll-cue-mouse svg .scroll-cue-chevrons-wrap path:nth-of-type(2) {
+  stroke: rgba(197, 160, 89, 0.72) !important;
+}
+
+.chapter-two .scroll-cue-mouse svg .scroll-cue-chevrons-wrap path:nth-of-type(3) {
+  stroke: rgba(197, 160, 89, 0.5) !important;
+}
+
+.chapter-two .scroll-cue-label::after {
+  background: linear-gradient(90deg, transparent, rgba(197, 160, 89, 0.42), transparent);
+}
+
+.chapter-two .senac-scroll-nudge-label {
+  font-family: "Inter", sans-serif;
+  font-size: 0.62rem;
+  font-weight: 400;
+  letter-spacing: var(--da-eyebrow-track);
+  text-transform: uppercase;
+  color: rgba(197, 160, 89, 0.68);
+}
+
+.chapter-two .senac-scroll-nudge .scroll-cue-chevrons-wrap {
+  stroke: rgba(197, 160, 89, 0.68);
+}
+
+/* ── Frise : cartes & typo ── */
+#timeline-start.timeline::before {
+  background: linear-gradient(
+    180deg,
+    transparent 0,
+    rgba(197, 160, 89, 0.34) 18%,
+    rgba(197, 160, 89, 0.22) 50%,
+    rgba(197, 160, 89, 0.3) 82%,
+    transparent 100%
+  );
+  box-shadow: 0 0 22px rgba(197, 160, 89, 0.14);
+}
+
+.chapter-two .story-panel {
+  background:
+    linear-gradient(180deg, rgba(197, 160, 89, 0.04) 0, rgba(197, 160, 89, 0) 1.2rem),
+    var(--da-card-surface);
+  backdrop-filter: blur(10px);
+}
+
+.chapter-two .story-panel::after {
+  background:
+    radial-gradient(circle at 14% 12%, rgba(197, 160, 89, 0.07), transparent 28%),
+    radial-gradient(circle at 86% 88%, rgba(197, 160, 89, 0.06), transparent 34%);
+  opacity: 0.65;
+}
+
+.chapter-two .story-panel::before {
+  background: linear-gradient(105deg, transparent 42%, rgba(197, 160, 89, 0.14) 50%, transparent 58%);
+}
+
+.chapter-two .story-panel:hover {
+  border-color: rgba(197, 160, 89, 0.24);
+  box-shadow:
+    0 22px 52px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(197, 160, 89, 0.06),
+    0 0 36px rgba(197, 160, 89, 0.08);
+}
+
+.chapter-two .story-date {
+  color: rgba(197, 160, 89, 0.55);
+  letter-spacing: var(--da-eyebrow-track);
+  font-weight: 400;
+  border-bottom-color: rgba(197, 160, 89, 0.14);
+}
+
+.chapter-two .story-panel h2 {
+  font-family: "Inter", sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--da-display-track);
+  font-size: clamp(1.5rem, 3.6vw, 2.05rem);
+  line-height: 1.12;
+  color: rgba(244, 234, 210, 0.94);
+  text-shadow: 0 0 14px rgba(0, 0, 0, 0.72);
+}
+
+html[dir="rtl"] .chapter-two .story-panel h2,
+html[lang="ar-DZ"] .chapter-two .story-panel h2 {
+  font-family: "Noto Naskh Arabic", Georgia, serif;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+.chapter-two .story-panel p:not(.story-date) {
+  color: rgba(244, 234, 210, 0.72);
+  letter-spacing: 0.02em;
+}
+
+.chapter-two .story-panel em {
+  color: rgba(232, 212, 164, 0.88);
+}
+
+.chapter-two .date-ghost {
+  color: rgba(197, 160, 89, 0.08);
+  text-shadow: none;
+}
+
+.chapter-two .story-card.is-visible .date-ghost {
+  color: rgba(197, 160, 89, 0.14);
+  text-shadow: 0 0 72px rgba(197, 160, 89, 0.14);
+}
+
+.chapter-two .date-ghost--word {
+  color: rgba(197, 160, 89, 0.11);
+  text-shadow: 0 0 64px rgba(197, 160, 89, 0.12);
+}
+
+.chapter-two .pin {
+  box-shadow:
+    0 0 14px rgba(234, 215, 164, 0.55),
+    0 0 28px rgba(197, 160, 89, 0.18),
+    0 0 0 1px rgba(8, 6, 4, 0.65);
+}
+
+.chapter-two .pin::after {
+  border-color: rgba(197, 160, 89, 0.28);
+}
+
+.chapter-two .archive-media {
+  border-color: var(--da-card-border);
+  background:
+    radial-gradient(circle at 35% 28%, rgba(197, 160, 89, 0.1), transparent 52%),
+    var(--da-card-surface);
+  box-shadow:
+    inset 0 0 55px rgba(0, 0, 0, 0.52),
+    0 0 28px rgba(197, 160, 89, 0.06),
+    0 22px 52px rgba(0, 0, 0, 0.45),
+    0 0 0 1px var(--da-card-border-soft) inset;
+}
+
+.chapter-two .senac-fragment:focus-visible {
+  outline-color: rgba(197, 160, 89, 0.45);
+}
+
+.chapter-two .senac-fragment:focus-visible .archive-media {
+  border-color: rgba(197, 160, 89, 0.32);
+}
+
+/* Citations plein écran : or + crème (halo bleu retiré du texte) */
+.chapter-two .quote-break::before {
+  background: radial-gradient(
+    ellipse 70% 60% at 50% 50%,
+    rgba(197, 160, 89, 0.07) 0%,
+    rgba(197, 160, 89, 0.03) 42%,
+    transparent 70%
+  );
+}
+
+.chapter-two .quote-break::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(197, 160, 89, 0.65) 30%,
+    rgba(232, 212, 164, 0.45) 70%,
+    transparent
+  );
+}
+
+.chapter-two .quote-break:not(.quote-break--title) blockquote::before,
+.chapter-two .quote-break:not(.quote-break--title) blockquote::after {
+  color: rgba(197, 160, 89, 0.62);
+  text-shadow: 0 0 14px rgba(197, 160, 89, 0.16);
+}
+
+.chapter-two .quote-break--title > span {
+  font-family: "Inter", sans-serif;
+  font-weight: 400;
+  letter-spacing: var(--da-eyebrow-track);
+  text-transform: uppercase;
+  font-size: clamp(0.62rem, 1.65vw, 0.72rem);
+  color: rgba(197, 160, 89, 0.55);
+  text-shadow: none;
+}
+
+.chapter-two .quote-break blockquote {
+  font-family: "Inter", sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: clamp(1.65rem, 4.8vw, 3.35rem);
+  line-height: 1.22;
+  color: rgba(244, 234, 210, 0.94);
+  text-shadow: 0 0 18px rgba(0, 0, 0, 0.78);
+}
+
+html[dir="rtl"] .chapter-two .quote-break blockquote,
+html[lang="ar-DZ"] .chapter-two .quote-break blockquote {
+  font-family: "Noto Naskh Arabic", Georgia, serif;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+.chapter-two .quote-break--title blockquote {
+  letter-spacing: var(--da-display-track);
+  font-size: clamp(1.85rem, 5.5vw, 3.65rem);
+}
+
+.chapter-two .quote-break cite {
+  color: rgba(197, 160, 89, 0.55);
+  letter-spacing: var(--da-eyebrow-track);
+  font-weight: 400;
+}
+
+.chapter-two .sq-word--quote {
+  font-style: normal;
+}
+
+/* Pont ch. III : typo alignée (fonds parallax .ch3-layer inchangés) */
+.chapter-three-inner .kicker,
+.chapter-three .kicker {
+  color: rgba(197, 160, 89, 0.52);
+  letter-spacing: var(--da-eyebrow-track);
+  font-weight: 400;
+}
+
+.chapter-three h2 {
+  font-family: "Inter", sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--da-display-track);
+  font-size: clamp(2rem, 6vw, 3.65rem);
+  line-height: 1.1;
+  color: rgba(244, 234, 210, 0.94);
+  text-shadow: 0 0 18px rgba(0, 0, 0, 0.78);
+}
+
+html[dir="rtl"] .chapter-three h2,
+html[lang="ar-DZ"] .chapter-three h2 {
+  font-family: "Noto Naskh Arabic", Georgia, serif;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+.chapter-three p:not(.kicker) {
+  font-family: "Inter", sans-serif;
+  color: rgba(244, 234, 210, 0.72);
+  letter-spacing: 0.02em;
+}
+
+.chapter-three-actions a,
+.chapter-three-actions .chapter-three-actions-secondary {
+  border-color: rgba(197, 160, 89, 0.28);
+  background: rgba(8, 6, 3, 0.62);
+  color: rgba(232, 212, 164, 0.9);
+  letter-spacing: var(--da-eyebrow-track);
+  font-weight: 500;
+}
+
+.chapter-three-actions .chapter-three-actions-secondary {
+  color: rgba(253, 250, 246, 0.52);
+  border-color: rgba(197, 160, 89, 0.16);
+}
+
+.chapter-three-actions a:hover,
+.chapter-three-actions .chapter-three-actions-secondary:hover {
+  border-color: rgba(197, 160, 89, 0.48);
+  box-shadow: 0 0 28px rgba(197, 160, 89, 0.12);
+}
+
+/* Callout cinéma → exploration */
+.chapter-two .senac-cinema-explore-callout__text {
+  font-family: "Inter", sans-serif;
+  color: rgba(244, 234, 210, 0.78);
+  letter-spacing: 0.02em;
+}
+
+.chapter-two .senac-cinema-explore-callout__text strong {
+  color: rgba(232, 212, 164, 0.95);
+  font-weight: 500;
+}
+
+.chapter-two .senac-ce-arrow {
+  border-color: rgba(197, 160, 89, 0.55);
 }

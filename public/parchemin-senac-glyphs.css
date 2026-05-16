@@ -1,0 +1,449 @@
+/**
+ * Acte II — voile graphique : traits fins, aurores dorées / bleu nuit, déesse / constellation.
+ */
+
+.chapter-two {
+  --senac-glyph-y: 0px;
+}
+
+.chapter-two > .senac-scroll-glyphs {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.senac-scroll-glyphs {
+  pointer-events: none;
+  overflow: hidden;
+  mix-blend-mode: screen;
+  opacity: 0.92;
+}
+
+.senac-scroll-glyphs__layer {
+  position: absolute;
+  inset: -12% -8%;
+  will-change: transform;
+}
+
+/* Rideaux verticaux — 3 voiles seulement, très diffus */
+.senac-scroll-glyphs__layer--veils {
+  transform: translate3d(0, calc(var(--senac-glyph-y) * -0.032), 0);
+  opacity: clamp(0.05, calc(0.07 + var(--frise-t, 0) * 0.14), 0.22);
+  filter: blur(14px);
+  background-image:
+    linear-gradient(
+      182deg,
+      transparent 0%,
+      rgba(197, 160, 89, 0.04) 22%,
+      rgba(139, 213, 255, 0.035) 48%,
+      transparent 72%
+    ),
+    linear-gradient(
+      168deg,
+      transparent 8%,
+      rgba(212, 195, 161, 0.03) 38%,
+      rgba(197, 160, 89, 0.025) 55%,
+      transparent 78%
+    ),
+    linear-gradient(
+      195deg,
+      transparent 12%,
+      rgba(244, 234, 210, 0.028) 42%,
+      transparent 68%
+    );
+  background-size: 42% 120%, 36% 110%, 48% 115%;
+  background-position:
+    18% 0%,
+    72% 4%,
+    48% -2%;
+  background-repeat: no-repeat;
+  mask-image: radial-gradient(ellipse 88% 72% at 50% 48%, black 0%, transparent 74%);
+  -webkit-mask-image: radial-gradient(ellipse 88% 72% at 50% 48%, black 0%, transparent 74%);
+  animation: senac-glyph-aurora-veil 28s ease-in-out infinite alternate;
+}
+
+/* Voiles obliques type aurore — pas de grille */
+.senac-scroll-glyphs__layer--threads {
+  transform: translate3d(calc(var(--senac-glyph-y) * 0.012), calc(var(--senac-glyph-y) * -0.06), 0)
+    rotate(-0.2deg);
+  opacity: clamp(0.04, calc(0.06 + var(--frise-t, 0) * 0.12), 0.18);
+  filter: blur(18px);
+  background-image:
+    radial-gradient(
+      ellipse 28% 95% at 32% 42%,
+      rgba(197, 160, 89, 0.07) 0%,
+      rgba(139, 213, 255, 0.04) 38%,
+      transparent 72%
+    ),
+    radial-gradient(
+      ellipse 22% 88% at 68% 58%,
+      rgba(212, 195, 161, 0.05) 0%,
+      rgba(197, 160, 89, 0.03) 42%,
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 18% 70% at 50% 28%,
+      rgba(244, 234, 210, 0.04) 0%,
+      transparent 65%
+    );
+  background-repeat: no-repeat;
+  mask-image: radial-gradient(ellipse 95% 68% at 50% 50%, black 5%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse 95% 68% at 50% 50%, black 5%, transparent 78%);
+  animation: senac-glyph-aurora-thread 34s ease-in-out infinite alternate;
+}
+
+/* Deux lueurs horizontales — pas de repeating */
+.senac-scroll-glyphs__layer--marks {
+  transform: translate3d(calc(var(--senac-glyph-y) * -0.008), calc(var(--senac-glyph-y) * -0.09), 0);
+  opacity: clamp(0.05, calc(0.08 + var(--hero-t, 0) * 0.08 + var(--frise-t, 0) * 0.1), 0.2);
+  filter: blur(12px);
+  background-image:
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(197, 160, 89, 0.05) 22%,
+      rgba(139, 213, 255, 0.035) 50%,
+      rgba(197, 160, 89, 0.04) 78%,
+      transparent 100%
+    ),
+    linear-gradient(
+      90deg,
+      transparent 8%,
+      rgba(232, 212, 164, 0.04) 42%,
+      transparent 92%
+    );
+  background-size: 100% 1px, 72% 1px;
+  background-position: 50% 38%, 50% 62%;
+  background-repeat: no-repeat;
+  mask-image: radial-gradient(ellipse 90% 55% at 50% 50%, black 10%, transparent 72%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 55% at 50% 50%, black 10%, transparent 72%);
+}
+
+/* Halo circulaire — fine couronne */
+.senac-scroll-glyphs__layer--arcs {
+  transform: translate3d(0, calc(var(--senac-glyph-y) * -0.04), 0);
+  opacity: clamp(0.04, calc(0.07 + var(--frise-t, 0) * 0.12), 0.18);
+  filter: blur(0.4px);
+}
+
+.senac-scroll-glyphs__layer--arcs::before,
+.senac-scroll-glyphs__layer--arcs::after {
+  content: "";
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  right: auto;
+  border-radius: 50%;
+  border: 0.5px solid transparent;
+  pointer-events: none;
+  box-shadow:
+    0 0 48px rgba(197, 160, 89, 0.06),
+    0 0 80px rgba(139, 213, 255, 0.04);
+}
+
+.senac-scroll-glyphs__layer--arcs::before {
+  width: min(68vw, 34rem);
+  height: min(68vw, 34rem);
+  border-color: rgba(197, 160, 89, 0.06);
+  border-top-color: rgba(244, 234, 210, 0.1);
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+  transform: translate(-50%, -50%) rotate(-14deg);
+  animation: senac-glyph-halo-breathe 22s ease-in-out infinite;
+}
+
+.senac-scroll-glyphs__layer--arcs::after {
+  width: min(52vw, 26rem);
+  height: min(52vw, 26rem);
+  border-color: rgba(197, 160, 89, 0.05);
+  border-left-color: rgba(232, 212, 164, 0.08);
+  border-top-color: transparent;
+  transform: translate(-50%, -50%) rotate(9deg);
+  animation: senac-glyph-halo-breathe 26s ease-in-out infinite reverse;
+}
+
+/* Éclats : 3 traits seulement, très fins */
+.senac-scroll-glyphs__spark {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+  transform-origin: center center;
+  filter: blur(0.6px);
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(197, 160, 89, 0.2) 42%,
+    rgba(139, 213, 255, 0.12) 58%,
+    transparent
+  );
+}
+
+.senac-scroll-glyphs__spark--1 {
+  left: 28%;
+  top: 22%;
+  width: 0.5px;
+  height: clamp(2.5rem, 9vh, 5.5rem);
+  transform: rotate(6deg) translate3d(0, calc(var(--senac-glyph-y) * -0.08), 0);
+  opacity: 0.14;
+}
+
+.senac-scroll-glyphs__spark--2 {
+  right: 24%;
+  top: 36%;
+  width: clamp(1.5rem, 4vw, 3rem);
+  height: 0.5px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(212, 195, 161, 0.18) 50%,
+    transparent
+  );
+  transform: rotate(-3deg) translate3d(calc(var(--senac-glyph-y) * 0.01), calc(var(--senac-glyph-y) * -0.06), 0);
+  opacity: 0.11;
+}
+
+.senac-scroll-glyphs__spark--3 {
+  left: 62%;
+  top: 68%;
+  width: 0.5px;
+  height: clamp(1.75rem, 6vh, 4rem);
+  transform: rotate(-8deg) translate3d(0, calc(var(--senac-glyph-y) * -0.1), 0);
+  opacity: 0.1;
+}
+
+.senac-scroll-glyphs__spark--4 {
+  left: 14%;
+  top: 48%;
+  width: clamp(1.25rem, 3.5vw, 2.5rem);
+  height: 0.5px;
+  background: linear-gradient(90deg, transparent, rgba(139, 213, 255, 0.2) 50%, transparent);
+  transform: rotate(12deg) translate3d(calc(var(--senac-glyph-y) * 0.02), calc(var(--senac-glyph-y) * -0.05), 0);
+  opacity: 0.12;
+}
+
+.senac-scroll-glyphs__spark--5 {
+  right: 18%;
+  top: 58%;
+  width: 0.5px;
+  height: clamp(2rem, 7vh, 4.5rem);
+  transform: rotate(-5deg) translate3d(0, calc(var(--senac-glyph-y) * -0.07), 0);
+  opacity: 0.11;
+}
+
+.senac-scroll-glyphs__spark--6 {
+  left: 44%;
+  top: 14%;
+  width: 0.5px;
+  height: clamp(1.5rem, 5vh, 3.25rem);
+  transform: rotate(3deg) translate3d(calc(var(--senac-glyph-y) * -0.01), calc(var(--senac-glyph-y) * -0.04), 0);
+  opacity: 0.1;
+}
+
+.senac-scroll-glyphs__spark--7 {
+  left: 8%;
+  top: 52%;
+  width: 0.5px;
+  height: clamp(3rem, 11vh, 6.5rem);
+  transform: rotate(4deg) translate3d(0, calc(var(--senac-glyph-y) * -0.09), 0);
+  opacity: 0.11;
+}
+
+.senac-scroll-glyphs__spark--8 {
+  right: 10%;
+  top: 28%;
+  width: clamp(2rem, 5vw, 3.5rem);
+  height: 0.5px;
+  background: linear-gradient(90deg, transparent, rgba(139, 213, 255, 0.16) 50%, transparent);
+  transform: rotate(-6deg) translate3d(calc(var(--senac-glyph-y) * 0.015), 0, 0);
+  opacity: 0.1;
+}
+
+.senac-scroll-glyphs__spark--9 {
+  left: 52%;
+  top: 78%;
+  width: 0.5px;
+  height: clamp(2rem, 7vh, 4rem);
+  transform: rotate(-11deg) translate3d(0, calc(var(--senac-glyph-y) * -0.11), 0);
+  opacity: 0.09;
+}
+
+.senac-scroll-glyphs__spark--10 {
+  right: 38%;
+  top: 8%;
+  width: clamp(1.75rem, 4.5vw, 3rem);
+  height: 0.5px;
+  background: linear-gradient(90deg, transparent, rgba(197, 160, 89, 0.2) 50%, transparent);
+  opacity: 0.1;
+}
+
+/* Grille oblique légère (traits fins multiples) */
+.senac-scroll-glyphs__layer--staves {
+  transform: translate3d(calc(var(--senac-glyph-y) * -0.01), calc(var(--senac-glyph-y) * -0.045), 0);
+  opacity: clamp(0.04, calc(0.06 + var(--frise-t, 0) * 0.1 + var(--senac-presence-gate, 0) * 0.08), 0.16);
+  filter: blur(0.25px);
+  background-image:
+    linear-gradient(
+      112deg,
+      transparent 49.88%,
+      rgba(197, 160, 89, 0.07) 49.94%,
+      transparent 50.06%
+    ),
+    linear-gradient(
+      68deg,
+      transparent 49.9%,
+      rgba(139, 213, 255, 0.05) 50%,
+      transparent 50.1%
+    ),
+    linear-gradient(
+      158deg,
+      transparent 49.92%,
+      rgba(212, 195, 161, 0.05) 50%,
+      transparent 50.08%
+    );
+  background-size: 140% 140%, 120% 120%, 160% 160%;
+  background-position: 20% 30%, 70% 60%, 45% 80%;
+  background-repeat: no-repeat;
+  mask-image: radial-gradient(ellipse 92% 80% at 50% 45%, black 8%, transparent 76%);
+  -webkit-mask-image: radial-gradient(ellipse 92% 80% at 50% 45%, black 8%, transparent 76%);
+  animation: senac-glyph-staves-drift 40s ease-in-out infinite alternate;
+}
+
+@keyframes senac-glyph-staves-drift {
+  0% {
+    background-position: 18% 28%, 72% 58%, 42% 78%;
+  }
+  100% {
+    background-position: 24% 34%, 66% 64%, 48% 74%;
+  }
+}
+
+/* Poussière fine (points CSS, complément canvas) */
+.senac-scroll-glyphs__layer--dust {
+  transform: translate3d(0, calc(var(--senac-glyph-y) * -0.055), 0);
+  opacity: clamp(0.12, calc(0.16 + var(--frise-t, 0) * 0.14), 0.32);
+  mix-blend-mode: screen;
+}
+
+.senac-scroll-glyphs__dust-mote {
+  position: absolute;
+  display: block;
+  width: var(--senac-dust-size, 2px);
+  height: var(--senac-dust-size, 2px);
+  margin: calc(var(--senac-dust-size, 2px) * -0.5) 0 0 calc(var(--senac-dust-size, 2px) * -0.5);
+  border-radius: 50%;
+  pointer-events: none;
+  background: var(--senac-dust-color, rgba(232, 212, 164, 0.55));
+  box-shadow: 0 0 6px var(--senac-dust-glow, rgba(197, 160, 89, 0.35));
+  animation: senac-glyph-dust-float var(--senac-dust-dur, 18s) ease-in-out infinite;
+  animation-delay: var(--senac-dust-delay, 0s);
+  will-change: transform, opacity;
+}
+
+@keyframes senac-glyph-dust-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: var(--senac-dust-a0, 0.35);
+  }
+  50% {
+    transform: translate3d(var(--senac-dust-dx, 6px), var(--senac-dust-dy, -10px), 0) scale(1.15);
+    opacity: var(--senac-dust-a1, 0.75);
+  }
+}
+
+@keyframes senac-glyph-aurora-veil {
+  0% {
+    background-position: 16% 0%, 74% 3%, 46% -1%;
+    opacity: 0.92;
+  }
+  100% {
+    background-position: 22% 2%, 68% 6%, 52% 3%;
+    opacity: 1;
+  }
+}
+
+@keyframes senac-glyph-aurora-thread {
+  0% {
+    transform: translate3d(calc(var(--senac-glyph-y) * 0.012), calc(var(--senac-glyph-y) * -0.06), 0)
+      rotate(-0.6deg) scale(1);
+  }
+  100% {
+    transform: translate3d(calc(var(--senac-glyph-y) * 0.012), calc(var(--senac-glyph-y) * -0.06), 0)
+      rotate(0.45deg) scale(1.03);
+  }
+}
+
+@keyframes senac-glyph-halo-breathe {
+  0%,
+  100% {
+    opacity: 0.85;
+    filter: blur(0.35px);
+  }
+  50% {
+    opacity: 1;
+    filter: blur(0.65px);
+  }
+}
+
+html.senac-in-iframe .senac-scroll-glyphs {
+  opacity: 0.88;
+}
+
+html.senac-in-iframe .senac-scroll-glyphs__layer--veils {
+  opacity: clamp(0.04, calc(0.06 + var(--frise-t, 0) * 0.12), 0.18);
+}
+
+body.senac-reading-flow .senac-scroll-glyphs {
+  mix-blend-mode: screen;
+  opacity: 0.9;
+}
+
+@media (max-width: 840px) {
+  .senac-scroll-glyphs__layer--veils,
+  .senac-scroll-glyphs__layer--threads {
+    filter: blur(10px);
+  }
+
+  .senac-scroll-glyphs__spark {
+    opacity: 0.08;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .senac-scroll-glyphs__layer,
+  .senac-scroll-glyphs__spark,
+  .senac-scroll-glyphs__layer--arcs::before,
+  .senac-scroll-glyphs__layer--arcs::after {
+    animation: none !important;
+    transform: translate(-50%, -50%) !important;
+  }
+
+  .senac-scroll-glyphs__layer--veils,
+  .senac-scroll-glyphs__layer--threads,
+  .senac-scroll-glyphs__layer--marks {
+    transform: none !important;
+  }
+
+  .senac-scroll-glyphs__spark--1,
+  .senac-scroll-glyphs__spark--2,
+  .senac-scroll-glyphs__spark--3,
+  .senac-scroll-glyphs__spark--4,
+  .senac-scroll-glyphs__spark--5,
+  .senac-scroll-glyphs__spark--6,
+  .senac-scroll-glyphs__spark--7,
+  .senac-scroll-glyphs__spark--8,
+  .senac-scroll-glyphs__spark--9,
+  .senac-scroll-glyphs__spark--10 {
+    transform: none !important;
+  }
+
+  .senac-scroll-glyphs__layer--staves {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .senac-scroll-glyphs__layer--dust,
+  .senac-scroll-glyphs__dust-mote {
+    animation: none !important;
+  }
+}

@@ -1,0 +1,53 @@
+/**
+ * Acte II — rythme lecture : un écran par station (texte / image / citation).
+ * Mise en page « Saviez-vous » : parchemin-senac-didyouknow.css
+ */
+
+body.senac-reading-flow {
+  --senac-beat: min(100svh, 100dvh);
+  --senac-beat-pad: clamp(1.75rem, 5.5vh, 3.75rem);
+}
+
+body.senac-reading-flow header.hero.senac-hero-portal.senac-hero-stack {
+  --senac-hero-col: min(40rem, 94vw);
+}
+
+body.senac-reading-flow #timeline-start.timeline.senac-constellation-track > .senac-scene {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: max(calc(var(--senac-beat) - var(--senac-beat-pad)), 22rem);
+  margin-block: 0 !important;
+  padding-block: var(--senac-beat-pad);
+  scroll-margin-block: clamp(3rem, 12vh, 5rem);
+}
+
+body.senac-reading-flow #timeline-start.timeline.senac-constellation-track > :not(.quote-break) {
+  margin-block: 0;
+}
+
+body.senac-reading-flow .senac-scroll-glyphs {
+  mix-blend-mode: screen;
+  opacity: 0.9;
+}
+
+@media (max-height: 640px) {
+  body.senac-reading-flow {
+    --senac-beat-pad: clamp(0.85rem, 3vh, 1.5rem);
+  }
+
+  body.senac-reading-flow header.hero.senac-hero-portal {
+    min-height: auto;
+    padding-block: clamp(2rem, 6vh, 3rem);
+  }
+
+  body.senac-reading-flow .senac-scene--card,
+  body.senac-reading-flow .senac-scene--reliquary,
+  body.senac-reading-flow .senac-scene--chamber.quote-break {
+    min-height: auto;
+    padding-block: clamp(2rem, 8vh, 3.5rem);
+  }
+
+  body.senac-reading-flow .hero-portrait {
+    width: min(100%, 11rem);
+  }
+}

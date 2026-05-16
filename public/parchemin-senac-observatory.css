@@ -1,0 +1,246 @@
+/**
+ * Al Rihla · Acte II — Observatoire (stations scroll, constellation)
+ * Fond 3D / ciel inchangés ; grammaire visuelle des scènes biographiques.
+ */
+
+/* Traits verticaux très légers — grille graphique (1px fixes, pas de repeating-gradient). */
+.night-gradient::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+  opacity: clamp(
+    0.09,
+    calc(0.11 + var(--frise-t, 0) * 0.18 + var(--hero-t, 0) * 0.05),
+    0.3
+  );
+  mask-image: radial-gradient(ellipse 94% 80% at 50% 44%, black 28%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 94% 80% at 50% 44%, black 28%, transparent 80%);
+  background-repeat: no-repeat;
+  background-image:
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      rgba(212, 195, 161, 0.05) 14%,
+      rgba(197, 160, 89, 0.07) 46%,
+      rgba(232, 212, 164, 0.04) 66%,
+      rgba(197, 160, 89, 0.055) 86%,
+      transparent 100%
+    ),
+    linear-gradient(180deg, transparent 5%, rgba(197, 160, 89, 0.04) 24%, rgba(212, 195, 161, 0.028) 52%, transparent 94%),
+    linear-gradient(180deg, transparent 7%, rgba(244, 234, 210, 0.028) 30%, transparent 92%),
+    linear-gradient(180deg, transparent 6%, rgba(197, 160, 89, 0.036) 28%, transparent 91%),
+    linear-gradient(180deg, transparent 8%, rgba(197, 160, 89, 0.03) 32%, transparent 90%),
+    linear-gradient(180deg, transparent 4%, rgba(197, 160, 89, 0.034) 26%, transparent 93%),
+    linear-gradient(180deg, transparent 9%, rgba(212, 195, 161, 0.026) 36%, transparent 88%),
+    linear-gradient(180deg, transparent 6%, rgba(197, 160, 89, 0.032) 30%, transparent 91%),
+    linear-gradient(180deg, transparent 5%, rgba(197, 160, 89, 0.028) 28%, transparent 92%),
+    linear-gradient(180deg, transparent 7%, rgba(197, 160, 89, 0.038) 25%, transparent 94%),
+    linear-gradient(180deg, transparent 8%, rgba(244, 234, 210, 0.026) 34%, transparent 89%),
+    linear-gradient(180deg, transparent 6%, rgba(197, 160, 89, 0.034) 27%, transparent 93%);
+  background-size:
+    1px 96%,
+    1px 88%,
+    1px 84%,
+    1px 82%,
+    1px 86%,
+    1px 80%,
+    1px 85%,
+    1px 83%,
+    1px 87%,
+    1px 81%,
+    1px 86%,
+    1px 84%;
+  background-position:
+    50% 50%,
+    11.5% 50%,
+    18.5% 48%,
+    26% 52%,
+    34% 49%,
+    41% 51%,
+    59% 50%,
+    66% 48%,
+    74% 52%,
+    81.5% 49%,
+    88.5% 51%,
+    93.5% 50%;
+  transition: opacity 1.1s var(--da-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+html.senac-in-iframe .night-gradient::after {
+  opacity: clamp(0.08, calc(0.1 + var(--frise-t, 0) * 0.16), 0.26);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .night-gradient::after {
+    transition: none;
+  }
+}
+
+#timeline-start.timeline.senac-constellation-track {
+  --senac-scene-active: 0;
+  padding-bottom: clamp(6rem, 14vh, 10rem);
+}
+
+/* Scroll libre : pas de min-height « station pin » sur desktop. */
+@media (min-width: 841px) {
+  #timeline-start.timeline.senac-constellation-track > .senac-scene--card,
+  #timeline-start.timeline.senac-constellation-track > .senac-scene--reliquary {
+    min-height: auto;
+  }
+
+  #timeline-start.timeline.senac-constellation-track > .senac-scene--chamber {
+    min-height: 0;
+  }
+}
+
+#timeline-start.timeline.senac-constellation-track > :not(.quote-break) {
+  margin-block: clamp(2rem, 5vh, 3.5rem);
+}
+
+body.senac-reading-flow #timeline-start.timeline.senac-constellation-track > :not(.quote-break) {
+  margin-block: 0;
+}
+
+#timeline-start.timeline.senac-constellation-track > .quote-break {
+  margin-block: 0;
+}
+
+/* Nœud constellation actif */
+.senac-scene--active .pin {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1.15);
+  box-shadow:
+    0 0 0 1px rgba(197, 160, 89, 0.55),
+    0 0 22px rgba(197, 160, 89, 0.45),
+    0 0 40px rgba(197, 160, 89, 0.12);
+}
+
+.senac-scene--card .pin {
+  transition:
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.45s ease;
+}
+
+/* Orbite : panneau gravit autour du fil (desktop) */
+@media (min-width: 841px) {
+  .senac-scene--card.story-card--right .story-panel {
+    transform-origin: 18% 50%;
+  }
+
+  .senac-scene--card.story-card--left .story-panel {
+    transform-origin: 82% 50%;
+  }
+
+  .senac-scene--active.story-card--right .date-ghost {
+    transform: translateX(6%) translateY(-6px) scale(1.03);
+  }
+
+  .senac-scene--active.story-card--left .date-ghost {
+    transform: translateX(-6%) translateY(-6px) scale(1.03);
+  }
+}
+
+/* Reliquaire — archive comme passage */
+.senac-scene--reliquary.archive-window {
+  min-height: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-block: clamp(3rem, 10vh, 6rem);
+}
+
+.senac-scene--reliquary .archive-media {
+  transform-origin: center center;
+  transition: filter 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.senac-scene--active.senac-scene--reliquary .archive-media img {
+  filter:
+    grayscale(0.04)
+    contrast(1.06)
+    brightness(1.04)
+    drop-shadow(0 24px 56px rgba(0, 0, 0, 0.5))
+    drop-shadow(0 0 40px rgba(197, 160, 89, 0.14));
+}
+
+.senac-scene--reliquary figcaption {
+  margin-top: clamp(1rem, 2.5vh, 1.45rem);
+  opacity: 0.72;
+  transition: opacity 0.5s ease;
+}
+
+.senac-scene--active.senac-scene--reliquary figcaption {
+  opacity: 1;
+}
+
+/* Chambre citation — déjà plein écran ; renforce le vide */
+.senac-scene--chamber.quote-break {
+  isolation: isolate;
+}
+
+.senac-scene--chamber.quote-break.is-visible::before,
+.senac-scene--active.senac-scene--chamber.quote-break::before {
+  opacity: 1;
+}
+
+/* Hero portail — moins « carte blog », plus observatoire */
+.chapter-two header.hero.senac-hero-portal:not(.senac-hero-stack) {
+  min-height: min(100vh, 100dvh);
+  padding-bottom: clamp(3rem, 8vh, 5rem);
+}
+
+.chapter-two header.hero.senac-hero-portal .hero-intro-block {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding-bottom: clamp(0.5rem, 2vh, 1rem);
+}
+
+.chapter-two header.hero.senac-hero-portal:not(.senac-hero-stack) .hero-intro-block::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(88vw, 28rem);
+  height: min(88vw, 28rem);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 1px solid rgba(197, 160, 89, 0.12);
+  box-shadow: none;
+  pointer-events: none;
+  z-index: -1;
+  opacity: calc(1 - min(1, var(--hero-t, 0) * 1.05));
+}
+
+/* GSAP : scènes hors champ */
+html.senac-observatory-motion .senac-scene[data-reveal]:not(.quote-break) {
+  will-change: transform, opacity, filter;
+}
+
+html.senac-observatory-motion .senac-scene--chamber[data-reveal] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (max-width: 840px) {
+  #timeline-start.timeline.senac-constellation-track > .senac-scene--card,
+  #timeline-start.timeline.senac-constellation-track > .senac-scene--reliquary {
+    min-height: auto;
+  }
+
+  .senac-scene--reliquary.archive-window {
+    min-height: auto;
+    padding-block: clamp(2.5rem, 8vh, 4rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .senac-scene--active .pin {
+    transform: translate(-50%, -50%);
+  }
+}

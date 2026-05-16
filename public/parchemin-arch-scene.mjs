@@ -1,4 +1,5 @@
 /**
+ * Copie iframe (Acte II) — source canonique : `src/lib/parchemin-arch-scene.mjs`.
  * Arche 3D pilotée par le scroll (Acte II, iframe parchemin).
  * Modèle : public/models/model.glb - ratio = scrollY / scrollMax.
  *
@@ -13,7 +14,8 @@ const DRACO_LOADER_SRC = `https://esm.sh/three@${THREE_VER}/examples/jsm/loaders
 const DRACO_DECODER_PATH = `https://esm.sh/three@${THREE_VER}/examples/jsm/libs/draco/gltf/`;
 
 /** Ratio scroll où commence le zoom. Plus bas = phase zoom plus longue (moins « rapide » à la molette). Synchro `parchemin-senac.js`. */
-const ARCH_ZOOM_BEGIN = 0.86;
+/** Plus bas = l’arche visible plus tôt dans la descente (fond vivant pendant la frise). */
+const ARCH_ZOOM_BEGIN = 0.68;
 
 /**
  * @param {object} opts
@@ -21,10 +23,11 @@ const ARCH_ZOOM_BEGIN = 0.86;
  * @param {boolean} opts.reducedMotion
  * @param {string} opts.modelUrl
  * @param {() => number} opts.getScrollRatio 0-1
+ * @param {() => { x: number, y: number }} [opts.getMouse01] pointeur 0–1 (x gauche→droite, y bas→haut)
  * @returns {Promise<{ dispose: () => void; sync: () => void }>}
  */
 export async function initSenacArchScene(opts) {
-  const { canvas, reducedMotion, modelUrl, getScrollRatio } = opts;
+  const { canvas, reducedMotion, modelUrl, getScrollRatio, getMouse01 } = opts;
   let disposed = false;
 
   let THREE;
@@ -104,6 +107,31 @@ export async function initSenacArchScene(opts) {
   const _scratchQFrom = new THREE.Quaternion();
   const _scratchQTo = new THREE.Quaternion();
   const _scratchQWobble = new THREE.Quaternion();
+  const mouseSmooth = { x: 0.5, y: 0.5 };
+
+  function applyMouseParallax() {
+    if (reducedMotion || typeof getMouse01 !== "function") return;
+    const m = getMouse01();
+    if (!m) return;
+    const tx = Math.min(1, Math.max(0, m.x));
+    const ty = Math.min(1, Math.max(0, m.y));
+    mouseSmooth.x += (tx - mouseSmooth.x) * 0.11;
+    mouseSmooth.y += (ty - mouseSmooth.y) * 0.11;
+    const mx = (mouseSmooth.x - 0.5) * 2;
+    const my = (mouseSmooth.y - 0.5) * 2;
+    const t = Math.min(1, Math.max(0, getScrollRatio()));
+
+    _scratchEulerB.set(my * 0.11, mx * 0.16, mx * 0.045, "XYZ");
+    _scratchQWobble.setFromEuler(_scratchEulerB);
+    animRoot.quaternion.multiply(_scratchQWobble);
+
+    const par = 0.28 + t * 0.22;
+    animRoot.position.x += mx * par;
+    animRoot.position.y += my * par * 0.82;
+
+    camera.position.x += mx * 0.12;
+    camera.position.y += my * 0.09;
+  }
 
   function fitSize() {
     const w = window.innerWidth;
@@ -180,6 +208,8 @@ export async function initSenacArchScene(opts) {
       THREE.MathUtils.lerp(0, -0.56, zoomEased),
       0,
     );
+
+    applyMouseParallax();
   }
 
   let meshReady = false;
@@ -235,11 +265,25 @@ export async function initSenacArchScene(opts) {
   function sync() {
     if (disposed) return;
     applyPose(getScrollRatio());
-    if (meshReady) renderer.render(scene, camera);
+    if (meshReady) {
+      if (!canvas.classList.contains("senac-arch-live")) {
+        canvas.classList.add("senac-arch-live");
+      }
+      renderer.render(scene, camera);
+    }
   }
+
+  let rafId = 0;
+  function tick() {
+    if (disposed) return;
+    sync();
+    rafId = requestAnimationFrame(tick);
+  }
+  rafId = requestAnimationFrame(tick);
 
   function dispose() {
     disposed = true;
+    if (rafId) cancelAnimationFrame(rafId);
     window.removeEventListener("resize", onResize);
     try { renderer.dispose(); } catch { /* ignore */ }
   }

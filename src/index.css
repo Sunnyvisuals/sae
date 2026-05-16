@@ -70,6 +70,32 @@
    * Acte I : carte en fixed + Lenis sur la racine - sans ça le scroll révèle le fond crème du body.
    * Classe posée sur `<html>` depuis App.tsx (`phase === "act1"`).
    */
+  /**
+   * Intro / prologue vidéo : scène fixed plein écran — évite la barre crème du body sous la vidéo.
+   */
+  html.phase-intro-root {
+    overflow: hidden !important;
+    height: 100dvh;
+    max-height: 100dvh;
+    overscroll-behavior: none;
+  }
+
+  html.phase-intro-root body {
+    overflow: hidden !important;
+    min-height: 100dvh;
+    max-height: 100dvh;
+    overscroll-behavior: none;
+    background-color: var(--color-da-depth-intro);
+    background-image: none;
+  }
+
+  html.phase-intro-root #root {
+    height: 100dvh;
+    max-height: 100dvh;
+    min-height: 100dvh;
+    overflow: hidden;
+  }
+
   html.phase-act1-root {
     overflow: hidden !important;
     height: 100dvh;
@@ -122,7 +148,20 @@
 
   @media (hover: hover) and (pointer: fine) {
     html.phase-act2-root,
-    html.phase-act2-root body {
+    html.phase-act2-root body,
+    html.phase-act2-root #root,
+    html.phase-act2-root #root *:not(iframe) {
+      cursor: auto !important;
+    }
+
+    html.phase-act2-root.al-rihla-cursor-idle,
+    html.phase-act2-root.al-rihla-cursor-idle body,
+    html.phase-act2-root.al-rihla-cursor-idle #root,
+    html.phase-act2-root.al-rihla-cursor-idle #root *:not(iframe),
+    html.phase-act2-root.al-rihla-cursor-basic,
+    html.phase-act2-root.al-rihla-cursor-basic body,
+    html.phase-act2-root.al-rihla-cursor-basic #root,
+    html.phase-act2-root.al-rihla-cursor-basic #root *:not(iframe) {
       cursor: auto !important;
     }
   }
@@ -274,6 +313,79 @@
     font-size: clamp(1.8rem, 4.6vw, 3rem);
     letter-spacing: 0.02em;
     text-shadow: 0 0 18px rgba(0, 0, 0, 0.78);
+  }
+
+  /** Corps narratif — aligné sur `.story-panel p` (Acte II / frise). */
+  .da-act2-body {
+    @apply font-sans font-normal;
+    font-size: clamp(0.98rem, 1.5vw, 1.07rem);
+    line-height: 1.84;
+    letter-spacing: 0.015em;
+    color: rgba(254, 250, 243, 0.86);
+  }
+
+  .da-act2-body-ar {
+    @apply font-arabic-ui font-normal;
+    font-size: clamp(0.98rem, 1.5vw, 1.07rem);
+    line-height: 1.84;
+    letter-spacing: 0.02em;
+    color: rgba(244, 234, 210, 0.72);
+  }
+
+  /** Tutoriel prologue : mesure courte, césures propres, blocs aérés. */
+  .da-tutorial-body {
+    @apply font-sans font-normal mx-auto w-full max-w-[min(40ch,92vw)] text-pretty text-center;
+    font-size: clamp(0.98rem, 1.5vw, 1.07rem);
+    line-height: 1.84;
+    letter-spacing: 0.015em;
+    color: rgba(244, 234, 210, 0.78);
+    text-wrap: pretty;
+  }
+
+  .da-tutorial-body-ar {
+    @apply font-arabic-ui font-normal mx-auto w-full max-w-[min(44ch,92vw)] text-pretty text-center;
+    font-size: clamp(0.98rem, 1.5vw, 1.07rem);
+    line-height: 1.84;
+    letter-spacing: 0.02em;
+    color: rgba(244, 234, 210, 0.72);
+    text-wrap: pretty;
+  }
+
+  .da-tutorial-body-stack {
+    @apply mx-auto flex w-full max-w-[min(40ch,92vw)] flex-col gap-4 sm:gap-[1.35rem];
+  }
+
+  .da-tutorial-body-stack-ar {
+    @apply mx-auto flex w-full max-w-[min(44ch,92vw)] flex-col gap-4 sm:gap-[1.35rem];
+  }
+
+  /** Tutoriel Immersion : 2 phrases = 2 lignes (pas de wrap intra-phrase). */
+  .da-tutorial-body-stack-lines {
+    @apply mx-auto flex w-full max-w-[min(54rem,calc(100vw-1.25rem))] flex-col items-center gap-2 text-center sm:gap-2.5;
+  }
+
+  .da-tutorial-body-line {
+    @apply font-sans font-normal leading-snug text-da-parchment/78;
+    font-size: clamp(0.7rem, 1.22vw, 0.96rem);
+    letter-spacing: 0.012em;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  .da-tutorial-body-line-ar {
+    @apply font-arabic-ui font-normal leading-relaxed text-da-parchment/72;
+    font-size: clamp(0.72rem, 1.22vw, 0.96rem);
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  @media (max-width: 380px) {
+    .da-tutorial-body-line,
+    .da-tutorial-body-line-ar {
+      font-size: clamp(0.62rem, 2.85vw, 0.82rem);
+      letter-spacing: 0.008em;
+    }
   }
 
   .da-title-rule {

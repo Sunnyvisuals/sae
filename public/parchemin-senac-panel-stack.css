@@ -1,0 +1,278 @@
+/**
+ * Acte II — panneaux plein écran (transition GSAP type « animated sections »).
+ */
+
+.senac-panel-stack {
+  position: relative;
+  z-index: 3;
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  margin-block: 0;
+}
+
+.senac-panel-stack__pin {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* Frise chronologique centrale (alignée #timeline-start.timeline::before) */
+.senac-panel-stack__axis {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.senac-panel-stack__line {
+  position: absolute;
+  left: 50%;
+  top: clamp(3.5rem, 11vh, 5.5rem);
+  bottom: clamp(3.5rem, 11vh, 5.5rem);
+  width: 1px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(197, 160, 89, 0.34) 16%,
+    rgba(232, 212, 164, 0.28) 50%,
+    rgba(197, 160, 89, 0.32) 84%,
+    transparent 100%
+  );
+  box-shadow:
+    0 0 18px rgba(197, 160, 89, 0.16),
+    0 0 32px rgba(197, 160, 89, 0.08);
+  opacity: clamp(0.55, calc(0.62 + var(--frise-t, 0) * 0.2), 0.92);
+}
+
+.senac-panel-stack__chrono {
+  position: absolute;
+  left: 50%;
+  top: clamp(3.5rem, 11vh, 5.5rem);
+  bottom: clamp(3.5rem, 11vh, 5.5rem);
+  width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.senac-panel-stack__node {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  transform: translateX(0.5rem);
+  white-space: nowrap;
+}
+
+html[dir="rtl"] .senac-panel-stack__node,
+html[lang="ar-DZ"] .senac-panel-stack__node {
+  transform: translateX(-0.5rem);
+  flex-direction: row-reverse;
+}
+
+.senac-panel-stack__node-pin {
+  flex-shrink: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(244, 234, 210, 0.88);
+  box-shadow:
+    0 0 0 1px rgba(8, 6, 4, 0.65),
+    0 0 12px rgba(197, 160, 89, 0.35);
+  transition:
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.45s ease;
+}
+
+.senac-panel-stack__node-date {
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: clamp(0.56rem, 0.72vw, 0.62rem);
+  font-weight: 500;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: rgba(197, 160, 89, 0.48);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.85);
+  transition: color 0.45s ease, opacity 0.45s ease;
+}
+
+html[dir="rtl"] .senac-panel-stack__node-date,
+html[lang="ar-DZ"] .senac-panel-stack__node-date {
+  font-family: "Noto Naskh Arabic", Georgia, serif;
+  letter-spacing: 0.1em;
+  text-transform: none;
+}
+
+.senac-panel-stack__node.is-past .senac-panel-stack__node-pin {
+  background: rgba(197, 160, 89, 0.72);
+  box-shadow:
+    0 0 0 1px rgba(197, 160, 89, 0.35),
+    0 0 10px rgba(197, 160, 89, 0.22);
+}
+
+.senac-panel-stack__node.is-past .senac-panel-stack__node-date {
+  color: rgba(197, 160, 89, 0.42);
+}
+
+.senac-panel-stack__node.is-active .senac-panel-stack__node-pin {
+  transform: scale(1.22);
+  background: rgba(253, 248, 238, 0.98);
+  box-shadow:
+    0 0 0 1px rgba(197, 160, 89, 0.55),
+    0 0 18px rgba(234, 215, 164, 0.55),
+    0 0 32px rgba(197, 160, 89, 0.28);
+}
+
+.senac-panel-stack__node.is-active .senac-panel-stack__node-date {
+  color: rgba(244, 234, 210, 0.92);
+}
+
+.senac-panel-stack__node.is-active::after {
+  content: "";
+  position: absolute;
+  left: -1.35rem;
+  top: 50%;
+  width: 1.1rem;
+  height: 1px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, transparent, rgba(197, 160, 89, 0.55));
+  pointer-events: none;
+}
+
+html[dir="rtl"] .senac-panel-stack__node.is-active::after,
+html[lang="ar-DZ"] .senac-panel-stack__node.is-active::after {
+  left: auto;
+  right: -1.35rem;
+  background: linear-gradient(270deg, transparent, rgba(197, 160, 89, 0.55));
+}
+
+.senac-panel-stack__stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.senac-panel {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.senac-panel-stack:not(.senac-panel-stack--motion) .senac-panel {
+  position: relative;
+  visibility: visible;
+  min-height: 100dvh;
+  pointer-events: auto;
+}
+
+.senac-panel__outer,
+.senac-panel__inner {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.senac-panel__bg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.senac-panel__bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(5, 5, 8, 0.55) 0%,
+    rgba(5, 5, 8, 0.2) 45%,
+    rgba(5, 5, 8, 0.65) 100%
+  );
+  pointer-events: none;
+}
+
+.senac-panel__heading {
+  position: relative;
+  z-index: 6;
+  margin: 0;
+  padding: 0 clamp(1rem, 4vw, 2rem);
+  width: min(92vw, 52rem);
+  font-family: "Inter", system-ui, sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: clamp(1.65rem, 5.5vw, 3.25rem);
+  line-height: 1.12;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-transform: uppercase;
+  color: rgba(244, 234, 210, 0.94);
+  text-shadow: 0 0 18px rgba(0, 0, 0, 0.78);
+}
+
+.senac-panel--1 .senac-panel__bg {
+  background-image: url("/images/jean-senac-portrait.png");
+  background-position: 50% 35%;
+}
+
+.senac-panel--2 .senac-panel__bg {
+  background-image: url("/images/alger-vue-port.png");
+  background-position: 50% 42%;
+}
+
+.senac-panel--3 .senac-panel__bg {
+  background-image: url("/images/jean-senac-jeunesse.png");
+  background-position: 50% 28%;
+}
+
+.senac-panel--4 .senac-panel__bg {
+  background-image: url("/images/jean-senac-bureau.png");
+  background-position: 50% 22%;
+}
+
+.senac-panel--5 .senac-panel__bg {
+  background-image: url("/images/jean-senac-souvenir-photo.png");
+  background-position: 50% 38%;
+}
+
+@media (max-width: 840px) {
+  .senac-panel__heading {
+    font-size: clamp(1.65rem, 9vw, 3.25rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .senac-panel-stack__pin {
+    height: auto;
+    min-height: 100dvh;
+  }
+
+  .senac-panel {
+    position: relative;
+    visibility: visible;
+    min-height: 100dvh;
+    pointer-events: auto;
+  }
+
+  .senac-panel + .senac-panel {
+    margin-top: 0;
+  }
+}

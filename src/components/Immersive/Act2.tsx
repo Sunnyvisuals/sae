@@ -3,16 +3,11 @@
 import { useAppCopy } from "../../hooks/useAppCopy";
 import { PARCHEMIN_STATIC_QUERY } from "../../lib/parcheminAssetVersion";
 
-type Props = {
-  /** Ouvre l’acte III dans la SPA parente (même URL), sans naviguer vers `/act3`. */
-  onOpenActIII?: () => void;
-};
-
 /**
  * Acte II - frise parchemin Jean Sénac (page statique /public/parchemin-senac.html).
  * Utilise BASE_URL pour que le déploiement sous sous-chemin charge bien la page (évite iframe vide).
  */
-export default function Act2({ onOpenActIII }: Props) {
+export default function Act2() {
   const copy = useAppCopy();
   const base = import.meta.env.BASE_URL || "/";
   const prefix = base.endsWith("/") ? base : `${base}/`;

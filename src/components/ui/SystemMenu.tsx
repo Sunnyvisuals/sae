@@ -1,5 +1,5 @@
 import { useId, useState, type ChangeEvent, type ReactNode, type SVGProps } from 'react';
-import { motion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useCursorStore } from '../../hooks/useCursorContext';
 import { useCursorPrefsStore, type CursorExperienceMode } from '../../stores/cursorPrefsStore';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -149,10 +149,6 @@ function PauseCursorPicker({ midnight }: { midnight: boolean }) {
     'flex h-7 w-7 shrink-0 items-center justify-center rounded-[2px] transition-[color,transform] duration-300 sm:h-8 sm:w-8 ' +
     (midnight ? 'text-sky-300/70 hover:text-sky-100' : 'text-solar-gold/68 hover:text-solar-gold');
 
-  const haloLine = midnight
-    ? 'from-[rgba(90,168,255,0.06)] via-[rgba(139,213,255,0.52)] to-[rgba(139,213,255,0.06)]'
-    : 'from-solar-gold/[0.04] via-solar-gold/45 to-solar-gold/[0.04]';
-
   const optBase =
     'rounded-[2px] border px-3 py-2.5 text-start text-[10px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent sm:py-3 ';
 
@@ -225,36 +221,44 @@ function PauseCursorPicker({ midnight }: { midnight: boolean }) {
         >
           <div className={`min-h-0 overflow-hidden ${!cursorOpen ? 'pointer-events-none' : ''}`}>
             <div className="pt-2">
-              <div className={`pointer-events-none mb-2.5 h-px w-full bg-gradient-to-r sm:mb-3 ${haloLine}`} aria-hidden />
               <div className={`grid grid-cols-1 gap-2 sm:grid-cols-2 ${isArabic ? 'text-right' : ''}`} dir={isArabic ? 'rtl' : 'ltr'}>
                 <button
                   type="button"
                   onClick={() => applyExperience('fluid')}
                   tabIndex={cursorOpen ? 0 : -1}
+                  aria-label={`${copy.cursorOptionFluid} — ${copy.cursorOptionFluidHint}`}
                   className={
                     optBase +
                     (!cursorOpen ? 'pointer-events-none opacity-40 ' : 'pointer-events-auto ') +
                     optActive(experience === 'fluid')
                   }
                 >
-                  <span className="block text-[9px] font-medium uppercase tracking-[0.22em]">{copy.cursorOptionFluid}</span>
-                  <span className="mt-1 block text-[9px] font-serif italic leading-snug opacity-80 sm:text-[10px]">
-                    {copy.cursorOptionFluidHint}
+                  <span className="block text-[9px] font-medium uppercase tracking-[0.22em]">
+                    {copy.cursorOptionFluid}
+                    <span
+                      className={
+                        "font-light normal-case tracking-[0.14em] " +
+                        (midnight ? "text-sky-300/48" : "text-solar-gold/55")
+                      }
+                    >
+                      {" "}
+                      · {copy.cursorOptionDefaultBadge}
+                    </span>
                   </span>
                 </button>
                 <button
                   type="button"
                   onClick={() => applyExperience('basic')}
                   tabIndex={cursorOpen ? 0 : -1}
+                  aria-label={`${copy.cursorOptionBasic} — ${copy.cursorOptionBasicHint}`}
                   className={
                     optBase +
                     (!cursorOpen ? 'pointer-events-none opacity-40 ' : 'pointer-events-auto ') +
                     optActive(experience === 'basic')
                   }
                 >
-                  <span className="block text-[9px] font-medium uppercase tracking-[0.22em]">{copy.cursorOptionBasic}</span>
-                  <span className="mt-1 block text-[9px] font-serif italic leading-snug opacity-80 sm:text-[10px]">
-                    {copy.cursorOptionBasicHint}
+                  <span className="block text-[9px] font-medium uppercase tracking-[0.22em]">
+                    {copy.cursorOptionBasic}
                   </span>
                 </button>
               </div>
@@ -539,7 +543,6 @@ function PauseLanguagePicker({ midnight }: { midnight: boolean }) {
         >
           <div className={`min-h-0 overflow-hidden ${!languageOpen ? 'pointer-events-none' : ''}`}>
             <div className="pt-2">
-              <div className={`pointer-events-none mb-2.5 h-px w-full bg-gradient-to-r sm:mb-3 ${haloLine}`} aria-hidden />
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <button
                   type="button"
@@ -685,14 +688,6 @@ function PauseFullscreenPanel({ midnight }: { midnight: boolean }) {
                   >
                     {fsActive ? copy.menuFullscreenExit : copy.menuFullscreenEnter}
                   </MajesticButton>
-                  <p
-                    className={
-                      'mt-2 text-center text-[9px] leading-snug sm:mt-2.5 sm:text-[10px] ' +
-                      (midnight ? 'text-sky-300/44' : 'text-solar-gold/38')
-                    }
-                  >
-                    {fsActive ? copy.menuFullscreenHintExit : copy.menuFullscreenHintEnter}
-                  </p>
                 </>
               ) : (
                 <p
@@ -712,6 +707,109 @@ function PauseFullscreenPanel({ midnight }: { midnight: boolean }) {
   );
 }
 
+/** Confirmation rouge avant reset complet de l’expérience. */
+function PauseRestartConfirm({
+  open,
+  isArabic,
+  onCancel,
+  onConfirm,
+}: {
+  open: boolean;
+  isArabic: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const copy = useAppCopy();
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          key="pause-restart-confirm"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="pause-restart-confirm-title"
+          aria-describedby="pause-restart-confirm-desc"
+          dir={isArabic ? 'rtl' : 'ltr'}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.32 }}
+          className="pointer-events-auto fixed inset-0 z-[580] flex items-center justify-center px-4 py-6 sm:px-6"
+          onClick={onCancel}
+        >
+          <motion.div
+            className="absolute inset-0 bg-[#020000]/78 backdrop-blur-[3px]"
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_55%_at_50%_42%,rgba(127,29,29,0.22),transparent_62%)]"
+            aria-hidden
+          />
+
+          <motion.div
+            initial={{ opacity: 0, y: 14, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.98 }}
+            transition={{ duration: 0.42, ease: easeMajestic }}
+            className="relative z-10 mx-auto w-full max-w-[min(100%,26rem)] border border-red-900/55 bg-[#0a0303]/92 px-5 py-6 text-center shadow-[0_0_0_1px_rgba(220,38,38,0.12),inset_0_0_48px_rgba(127,29,29,0.14),0_24px_80px_rgba(0,0,0,0.55)] backdrop-blur-md sm:max-w-md sm:px-7 sm:py-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <motion.div
+              className="pointer-events-none absolute left-3 top-3 h-8 w-8 border-l border-t border-red-700/45 sm:left-4 sm:top-4 sm:h-9 sm:w-9"
+              aria-hidden
+            />
+            <motion.div
+              className="pointer-events-none absolute bottom-3 right-3 h-8 w-8 border-b border-r border-red-700/45 sm:bottom-4 sm:right-4 sm:h-9 sm:w-9"
+              aria-hidden
+            />
+
+            <p
+              className="text-[8px] font-medium uppercase tracking-[0.58em] text-red-400/58 sm:text-[9px] sm:tracking-[0.64em]"
+            >
+              {copy.menuRestart}
+            </p>
+
+            <p
+              id="pause-restart-confirm-title"
+              className="font-serif mt-4 text-[15px] italic leading-relaxed text-red-50/92 sm:mt-5 sm:text-[17px] sm:leading-relaxed"
+            >
+              {copy.menuRestartConfirmMessage}
+            </p>
+            <p id="pause-restart-confirm-desc" className="sr-only">
+              {copy.menuRestartConfirmAria}
+            </p>
+
+            <motion.nav
+              className="mt-6 flex flex-col gap-3 sm:mt-7 sm:flex-row sm:gap-3.5"
+              aria-label={copy.menuRestartConfirmAria}
+            >
+              <motion.button
+                type="button"
+                whileHover={{ scale: 1.008 }}
+                whileTap={{ scale: 0.995 }}
+                onClick={onConfirm}
+                className="w-full rounded-[2px] border border-red-800/70 bg-red-950/35 px-4 py-3 text-[11px] uppercase tracking-[0.24em] text-red-50/95 shadow-[inset_0_1px_0_rgba(254,226,226,0.06),0_0_28px_rgba(127,29,29,0.18)] transition-colors duration-500 hover:border-red-700/85 hover:bg-red-950/50 sm:flex-1 sm:py-[0.95rem] sm:text-[12px]"
+              >
+                {copy.menuRestartConfirmYes}
+              </motion.button>
+              <motion.button
+                type="button"
+                whileHover={{ scale: 1.008 }}
+                whileTap={{ scale: 0.995 }}
+                onClick={onCancel}
+                className="w-full rounded-[2px] border border-red-950/55 bg-black/25 px-4 py-3 text-[11px] uppercase tracking-[0.2em] text-red-200/62 transition-colors duration-500 hover:border-red-900/65 hover:bg-red-950/20 hover:text-red-100/78 sm:flex-1 sm:py-[0.95rem] sm:text-[12px]"
+              >
+                {copy.menuRestartConfirmNo}
+              </motion.button>
+            </motion.nav>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 /**
  * Menu pause - plein viewport, scroll si besoin, safe areas. Pas d’anneau animé (meilleure lisibilité mobile).
  */
@@ -726,6 +824,7 @@ export default function SystemMenu({
   const copy = useAppCopy();
   const language = useLanguageStore((s) => s.language);
   const isArabic = language === 'ar-dz';
+  const [restartConfirmOpen, setRestartConfirmOpen] = useState(false);
 
   /** Curseur personnalisé (fluide ou « basique ») : masque le pointeur OS dans le menu. */
   const shellCursor = finePointer ? 'cursor-none' : 'cursor-auto';
@@ -792,15 +891,15 @@ export default function SystemMenu({
             dir={isArabic ? 'rtl' : 'ltr'}
             className={
               midnight
-                ? 'relative mx-auto my-auto flex w-full max-w-[min(100%,40rem)] shrink-0 flex-col overflow-x-hidden border border-[rgba(90,168,255,0.26)] bg-[#040a14]/85 px-4 pb-12 pt-4 text-center shadow-[0_0_0_1px_rgba(90,168,255,0.1),inset_0_0_60px_rgba(45,110,190,0.05)] backdrop-blur-md sm:px-7 sm:pb-14 sm:pt-7 md:px-9 md:pb-16 md:pt-9'
-                : 'relative mx-auto my-auto flex w-full max-w-[min(100%,40rem)] shrink-0 flex-col overflow-x-hidden border border-solar-gold/25 bg-[#050302]/85 px-4 pb-12 pt-4 text-center shadow-[0_0_0_1px_rgba(197,160,89,0.08),inset_0_0_60px_rgba(197,160,89,0.03)] backdrop-blur-md sm:px-7 sm:pb-14 sm:pt-7 md:px-9 md:pb-16 md:pt-9'
+                ? 'relative mx-auto my-auto flex w-full max-w-[min(100%,40rem)] shrink-0 flex-col overflow-x-hidden border border-[rgba(90,168,255,0.26)] bg-[#040a14]/85 px-4 pb-12 pt-9 text-center shadow-[0_0_0_1px_rgba(90,168,255,0.1),inset_0_0_60px_rgba(45,110,190,0.05)] backdrop-blur-md sm:px-7 sm:pb-14 sm:pt-12 md:px-9 md:pb-16 md:pt-14'
+                : 'relative mx-auto my-auto flex w-full max-w-[min(100%,40rem)] shrink-0 flex-col overflow-x-hidden border border-solar-gold/25 bg-[#050302]/85 px-4 pb-12 pt-9 text-center shadow-[0_0_0_1px_rgba(197,160,89,0.08),inset_0_0_60px_rgba(197,160,89,0.03)] backdrop-blur-md sm:px-7 sm:pb-14 sm:pt-12 md:px-9 md:pb-16 md:pt-14'
             }
           >
             <div
               className={
                 midnight
-                  ? 'pointer-events-none absolute left-3 top-3 h-9 w-9 border-l border-t border-[rgba(139,213,255,0.38)] sm:left-5 sm:top-5 sm:h-10 sm:w-10'
-                  : 'pointer-events-none absolute left-3 top-3 h-9 w-9 border-l border-t border-solar-gold/30 sm:left-5 sm:top-5 sm:h-10 sm:w-10'
+                  ? 'pointer-events-none absolute left-3 top-5 h-9 w-9 border-l border-t border-[rgba(139,213,255,0.38)] sm:left-5 sm:top-6 sm:h-10 sm:w-10 md:top-7'
+                  : 'pointer-events-none absolute left-3 top-5 h-9 w-9 border-l border-t border-solar-gold/30 sm:left-5 sm:top-6 sm:h-10 sm:w-10 md:top-7'
               }
               aria-hidden
             />
@@ -815,7 +914,7 @@ export default function SystemMenu({
 
             <motion.div
               variants={item}
-              className="-mt-2 overflow-visible px-1 pt-0.5 text-center sm:-mt-3"
+              className="overflow-visible px-1 pt-1 text-center sm:pt-2"
             >
               <p
                 id="system-menu-title"
@@ -940,10 +1039,7 @@ export default function SystemMenu({
               <MajesticButton
                 variant="ember"
                 midnight={midnight}
-                onClick={() => {
-                  onClose();
-                  onRestartExperience();
-                }}
+                onClick={() => setRestartConfirmOpen(true)}
               >
                 {copy.menuRestart}
               </MajesticButton>
@@ -953,6 +1049,17 @@ export default function SystemMenu({
         </motion.div>
         </motion.div>
       </motion.div>
+
+      <PauseRestartConfirm
+        open={restartConfirmOpen}
+        isArabic={isArabic}
+        onCancel={() => setRestartConfirmOpen(false)}
+        onConfirm={() => {
+          setRestartConfirmOpen(false);
+          onClose();
+          onRestartExperience();
+        }}
+      />
 
       {/* Crédits - hors du cadre, bas d’écran */}
       <div className="pointer-events-none relative z-10 flex w-full shrink-0 flex-col items-center gap-1.5 px-4 pb-[max(1.35rem,env(safe-area-inset-bottom))] pt-4 text-center">

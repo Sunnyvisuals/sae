@@ -2,6 +2,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useAppCopy } from "../hooks/useAppCopy";
 import { useLanguageStore } from "../stores/languageStore";
 import { useFullscreenPrefsStore } from "../stores/fullscreenPrefsStore";
+import { DA_MOTION_EASE } from "../lib/motionDa";
 import {
   exitDocumentFullscreen,
   isFullscreenApiSupported,
@@ -65,7 +66,7 @@ export default function IntroFullscreenOverlay({ open, onRequestClose }: Props) 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, scale: prefersReducedMotion ? 1 : 1.02 }}
-          transition={{ duration: prefersReducedMotion ? 0.2 : 0.65, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: prefersReducedMotion ? 0.28 : 0.88, ease: DA_MOTION_EASE }}
           className="pointer-events-auto fixed inset-0 z-[105] flex flex-col items-center justify-center overflow-hidden"
         >
           <div className="absolute inset-0 bg-[#020100]" />
@@ -106,7 +107,7 @@ export default function IntroFullscreenOverlay({ open, onRequestClose }: Props) 
             <motion.span
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.12, duration: 0.55 }}
+              transition={{ delay: 0.18, duration: 0.82, ease: DA_MOTION_EASE }}
               className="text-[10px] uppercase tracking-[0.46em] text-[#c5a059]/42 sm:text-[11px]"
             >
               {copy.fullscreenPromptTitle}
@@ -115,7 +116,7 @@ export default function IntroFullscreenOverlay({ open, onRequestClose }: Props) 
             <motion.div
               initial={{ opacity: 0, scale: 0.85 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.22, duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ delay: 0.32, duration: 0.95, ease: DA_MOTION_EASE }}
               className="mt-9 flex w-full max-w-md flex-col gap-3.5 sm:mt-11 sm:flex-row sm:justify-center sm:gap-5"
             >
               <button

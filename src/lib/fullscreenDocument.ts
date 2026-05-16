@@ -21,6 +21,27 @@ export function getDocumentFullscreenElement(): Element | null {
   return document.fullscreenElement ?? d.webkitFullscreenElement ?? null;
 }
 
+export function isDocumentFullscreenActive(): boolean {
+  return !!getDocumentFullscreenElement();
+}
+
+/** Plein écran déjà actif (API, PWA, ou F11 navigateur sans élément document). */
+export function isAlreadyInFullscreen(): boolean {
+  if (isDocumentFullscreenActive()) return true;
+  if (typeof window === "undefined") return false;
+  try {
+    if (window.matchMedia("(display-mode: fullscreen)").matches) return true;
+  } catch {
+    /* ignore */
+  }
+  const tol = 36;
+  return (
+    window.innerHeight >= window.screen.availHeight - tol &&
+    window.innerWidth >= window.screen.availWidth - tol &&
+    window.outerHeight >= window.screen.availHeight - tol
+  );
+}
+
 export async function requestDocumentFullscreen(): Promise<boolean> {
   if (typeof document === "undefined") return false;
   const el = document.documentElement as ElWithFs;

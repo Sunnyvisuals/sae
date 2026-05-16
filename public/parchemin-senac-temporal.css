@@ -1,0 +1,91 @@
+/**
+ * Acte II — ambiance temporelle : vagues de présence / mouvement (pas de bruit continu).
+ * Variables pilotées par initSenacTemporalAmbience() dans parchemin-senac.js.
+ */
+
+.chapter-two {
+  --senac-time-phase: 0;
+  --senac-motion-gate: 1;
+  --senac-presence-gate: 1;
+}
+
+#senac-color-fluid,
+#fog-canvas,
+#sky-canvas,
+.senac-scroll-glyphs,
+.senac-scroll-glyphs__layer--dust,
+.senac-scroll-traits,
+.senac-scroll-pillars {
+  transition: opacity 1.2s ease;
+}
+
+#senac-color-fluid {
+  opacity: calc(
+    (0.22 + var(--hero-t, 0) * 0.1 + var(--frise-t, 0) * 0.14) *
+      (0.25 + var(--senac-presence-gate, 1) * 0.75)
+  );
+}
+
+body.senac-smoke-shader-active #senac-color-fluid {
+  opacity: calc(
+    (0.18 + var(--hero-t, 0) * 0.08 + var(--frise-t, 0) * 0.12) *
+      (0.28 + var(--senac-presence-gate, 1) * 0.72)
+  );
+}
+
+#fog-canvas {
+  opacity: calc(
+    (0.28 + var(--hero-t, 0) * 0.22 + var(--frise-t, 0) * 0.18) *
+      (0.2 + var(--senac-presence-gate, 1) * 0.8)
+  );
+}
+
+body.senac-smoke-shader-active #fog-canvas {
+  opacity: calc(
+    0.32 * (0.25 + var(--senac-presence-gate, 1) * 0.75) *
+      (0.85 + var(--senac-motion-gate, 1) * 0.15)
+  );
+}
+
+#sky-canvas {
+  opacity: calc(0.55 + var(--senac-presence-gate, 1) * 0.45);
+}
+
+.senac-scroll-glyphs {
+  opacity: calc(0.55 * (0.35 + var(--senac-presence-gate, 1) * 0.65));
+}
+
+body.senac-temporal-rest .senac-scroll-glyphs__layer--veils,
+body.senac-temporal-rest .senac-scroll-glyphs__layer--threads,
+body.senac-temporal-rest .senac-scroll-glyphs__layer--staves,
+body.senac-temporal-rest .senac-scroll-glyphs__layer--arcs::before,
+body.senac-temporal-rest .senac-scroll-glyphs__layer--arcs::after,
+body.senac-temporal-rest .senac-scroll-trait--d,
+body.senac-temporal-rest .senac-scroll-trait--h {
+  animation-play-state: paused;
+}
+
+.senac-scroll-glyphs__layer--dust {
+  opacity: calc(
+    clamp(0.06, calc(0.1 + var(--frise-t, 0) * 0.12), 0.28) *
+      (0.15 + var(--senac-presence-gate, 1) * 0.85)
+  );
+}
+
+.senac-scroll-glyphs__dust-mote {
+  opacity: calc(
+    var(--senac-dust-a0, 0.35) * (0.12 + var(--senac-presence-gate, 1) * 0.88)
+  );
+  animation-duration: calc(var(--senac-dust-dur, 18s) * (1.4 - var(--senac-motion-gate, 1) * 0.55));
+}
+
+.senac-scroll-glyphs__spark {
+  opacity: calc(0.06 + var(--senac-presence-gate, 1) * 0.1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chapter-two {
+    --senac-motion-gate: 1;
+    --senac-presence-gate: 1;
+  }
+}

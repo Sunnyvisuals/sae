@@ -179,6 +179,16 @@ export function randomPoemWord(seed: number): string {
   return POEM_POOL[Math.floor(rnd(seed, 9) * POEM_POOL.length)]!;
 }
 
+/** Tirage sans remplacement pour éviter le même mot deux fois sur la carte. */
+export function shuffledPoemPool(seed: number): string[] {
+  const pool = [...POEM_POOL];
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd(seed + i, 17) * (i + 1));
+    [pool[i], pool[j]] = [pool[j]!, pool[i]!];
+  }
+  return pool;
+}
+
 function rnd(s: number, salt: number) {
   const x = Math.sin(s * 12.9898 + salt * 78.233) * 43758.5453;
   return x - Math.floor(x);

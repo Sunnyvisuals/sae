@@ -3,9 +3,11 @@ import { motion } from "motion/react";
 import type { CursorExperienceMode } from "../stores/cursorPrefsStore";
 import { useLanguageStore } from "../stores/languageStore";
 import { useAppCopy } from "../hooks/useAppCopy";
+import { DA_MOTION_EASE } from "../lib/motionDa";
 
 type Props = {
   prefersReducedMotion: boolean;
+  finePointer?: boolean;
   onChoose: (experience: CursorExperienceMode) => void;
 };
 
@@ -13,6 +15,7 @@ type CursorPanelProps = {
   experience: CursorExperienceMode;
   eyebrow: string;
   title: string;
+  defaultBadge?: string;
   isArabic: boolean;
   enterY: number;
   enterDelay: number;
@@ -25,6 +28,7 @@ function CursorPanel({
   experience,
   eyebrow,
   title,
+  defaultBadge,
   isArabic,
   enterY,
   enterDelay,
@@ -36,11 +40,12 @@ function CursorPanel({
     <motion.button
       type="button"
       onClick={() => onChoose(experience)}
+      aria-default={defaultBadge ? true : undefined}
       dir={isArabic ? "rtl" : "ltr"}
       className="group relative flex min-h-[42dvh] flex-1 flex-col items-center justify-center overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-solar-gold/35 sm:min-h-0"
       initial={{ opacity: 0, y: enterY }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: enterDelay, duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ delay: enterDelay, duration: 1.2, ease: DA_MOTION_EASE }}
     >
       <motion.div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(197,160,89,0.04),rgba(197,160,89,0.015))]" />
       <motion.div
@@ -59,7 +64,7 @@ function CursorPanel({
         <motion.span
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: enterDelay + 0.21, duration: 0.9 }}
+          transition={{ delay: enterDelay + 0.28, duration: 1.05, ease: DA_MOTION_EASE }}
           className={isArabic ? "da-eyebrow-ar" : "da-eyebrow"}
         >
           {eyebrow}
@@ -67,7 +72,7 @@ function CursorPanel({
         <motion.span
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: enterDelay + 0.31, duration: 1, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ delay: enterDelay + 0.42, duration: 1.12, ease: DA_MOTION_EASE }}
           className={
             (isArabic ? "da-display-title-ar" : "da-display-title") +
             " transition-colors duration-300 group-hover:text-[#fff4dc]"
@@ -81,6 +86,19 @@ function CursorPanel({
           transition={{ delay: enterDelay + 0.46, duration: 0.7 }}
           className="da-title-rule"
         />
+        {defaultBadge ? (
+          <motion.span
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: enterDelay + 0.52, duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+            className={
+              (isArabic ? "da-eyebrow-ar" : "da-eyebrow") +
+              " mt-1 text-solar-gold/52 normal-case tracking-[0.28em]"
+            }
+          >
+            {defaultBadge}
+          </motion.span>
+        ) : null}
         {icon}
       </motion.div>
     </motion.button>
@@ -88,7 +106,11 @@ function CursorPanel({
 }
 
 /** Volet curseur — split horizontal (haut / bas), textes selon la langue choisie. */
-export default function CursorOnboardingGate({ prefersReducedMotion, onChoose }: Props) {
+export default function CursorOnboardingGate({
+  prefersReducedMotion,
+  finePointer = false,
+  onChoose,
+}: Props) {
   const copy = useAppCopy();
   const isArabic = useLanguageStore((s) => s.language) === "ar-dz";
 
@@ -128,10 +150,16 @@ export default function CursorOnboardingGate({ prefersReducedMotion, onChoose }:
   );
 
   const basicIcon = (
-    <motion.div
-      className="mt-2 h-[5.75rem] w-[5.75rem] rounded-full border-[3px] border-solar-gold/58 opacity-72 shadow-[0_0_28px_rgba(197,160,89,0.22)] transition-opacity duration-500 group-hover:opacity-95 sm:h-[6.75rem] sm:w-[6.75rem] sm:border-[3.5px]"
+    <svg
+      className="mt-2 h-[5.75rem] w-[5.75rem] opacity-72 transition-opacity duration-500 group-hover:opacity-95 sm:h-[6.75rem] sm:w-[6.75rem]"
+      viewBox="0 0 44 44"
+      fill="none"
       aria-hidden
-    />
+      style={{ filter: "drop-shadow(0 0 28px rgba(197,160,89,0.22))" }}
+    >
+      <circle cx="22" cy="22" r="15" stroke="rgba(240,224,180,0.9)" strokeWidth="0.85" />
+      <circle cx="22" cy="22" r="1.65" fill="rgba(253,248,238,0.92)" />
+    </svg>
   );
 
   return (
@@ -140,22 +168,22 @@ export default function CursorOnboardingGate({ prefersReducedMotion, onChoose }:
       role="dialog"
       aria-modal="true"
       aria-labelledby="cursor-onboarding-curtain"
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 6, scale: 1.02 }}
-      transition={{ duration: 1.85, ease: [0.22, 1, 0.36, 1] }}
-      className="pointer-events-auto fixed inset-0 z-[105] min-h-[100dvh] w-full overflow-hidden"
+      initial={{ y: 14 }}
+      animate={{ y: 0 }}
+      exit={{ opacity: 0, y: 8 }}
+      transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+      className={
+        "pointer-events-auto fixed inset-0 z-[105] min-h-[100dvh] w-full overflow-hidden " +
+        (finePointer ? "cursor-none" : "")
+      }
       dir={isArabic ? "rtl" : "ltr"}
     >
       <motion.div
-        className="absolute inset-0"
-        initial={{ opacity: 0, scale: 1.04 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
-        style={{
-          background:
-            "linear-gradient(180deg, rgba(7, 5, 3, 0.985) 0%, rgba(5, 3, 2, 0.996) 42%, rgba(2, 1, 0, 1) 100%)",
-        }}
+        aria-hidden
+        className="absolute inset-0 bg-[#020100]"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
       />
       <motion.div
         aria-hidden
@@ -226,6 +254,7 @@ export default function CursorOnboardingGate({ prefersReducedMotion, onChoose }:
           experience="fluid"
           eyebrow={copy.cursorSectionHeading}
           title={copy.cursorOptionFluid}
+          defaultBadge={copy.cursorOptionDefaultBadge}
           isArabic={isArabic}
           enterY={-36}
           enterDelay={0.34}

@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import { useAppCopy } from "../../hooks/useAppCopy";
+import { DA_MOTION_EASE } from "../../lib/motionDa";
 
 type Props = {
   chapterTitle: string;
@@ -16,9 +17,9 @@ type Props = {
   blendBridgeBackdrop?: boolean;
 };
 
-const easeEntrance = [0.22, 1, 0.36, 1] as const;
-/** Sortie un peu plus résistante : sensation de lever de rideau avant la transition vidéo. */
-const easeExit = [0.65, 0, 0.35, 1] as const;
+const easeEntrance = DA_MOTION_EASE;
+/** Sortie douce — chaque ligne part avant la suivante (pas de chevauchement). */
+const easeExit = [0.55, 0, 0.38, 1] as const;
 
 /**
  * Chapitre accompli - entrée sobre (pas de zoom / flou agressif), alignée carte / or du projet.
@@ -52,9 +53,9 @@ export default function ChapterCompleteToast({
       animate={{ opacity: Math.min(1, Math.max(0, reveal)) }}
       exit={{
         opacity: 0,
-        transition: { duration: 0.92, ease: easeExit, delay: 0.42 },
+        transition: { duration: 1.05, ease: easeExit, delay: 0.55 },
       }}
-      transition={{ duration: 0.55, ease: easeEntrance }}
+      transition={{ duration: 0.72, ease: easeEntrance }}
       className={outer + (blendBridgeBackdrop ? backdropLight : backdropHeavy)}
     >
       <motion.div
@@ -62,11 +63,11 @@ export default function ChapterCompleteToast({
         animate={{ opacity: 1, y: 0 }}
         exit={{
           opacity: 0,
-          y: -22,
-          scale: 0.985,
-          transition: { duration: 0.72, ease: easeExit, delay: 0.24 },
+          y: -18,
+          filter: "blur(4px)",
+          transition: { duration: 0.82, ease: easeExit, delay: 0.38 },
         }}
-        transition={{ duration: 0.95, ease: easeEntrance, delay: 0.06 }}
+        transition={{ duration: 1.08, ease: easeEntrance, delay: 0.1 }}
         className={"max-w-lg text-center " + innerTint}
       >
         <motion.p
@@ -74,10 +75,10 @@ export default function ChapterCompleteToast({
           animate={{ opacity: 1, y: 0 }}
           exit={{
             opacity: 0,
-            y: -10,
-            transition: { duration: 0.38, ease: easeExit, delay: 0.18 },
+            y: -8,
+            transition: { duration: 0.55, ease: easeExit, delay: 0.28 },
           }}
-          transition={{ duration: 0.65, ease: easeEntrance, delay: 0.12 }}
+          transition={{ duration: 0.88, ease: easeEntrance, delay: 0.18 }}
           className="text-[10px] uppercase tracking-[0.52em] text-solar-gold/48"
         >
           {copy.chapterToastKicker}
@@ -87,10 +88,10 @@ export default function ChapterCompleteToast({
           animate={{ opacity: 1, y: 0 }}
           exit={{
             opacity: 0,
-            y: -14,
-            transition: { duration: 0.42, ease: easeExit, delay: 0.11 },
+            y: -12,
+            transition: { duration: 0.58, ease: easeExit, delay: 0.2 },
           }}
-          transition={{ duration: 0.85, ease: easeEntrance, delay: 0.2 }}
+          transition={{ duration: 1.02, ease: easeEntrance, delay: 0.28 }}
           className="font-bahlull mt-5 text-4xl italic text-white md:text-5xl"
           style={{ textShadow: "0 1px 0 rgba(0,0,0,0.65), 0 0 40px rgba(197,160,89,0.12)" }}
         >
@@ -101,10 +102,10 @@ export default function ChapterCompleteToast({
           animate={{ opacity: 1, y: 0 }}
           exit={{
             opacity: 0,
-            y: -12,
-            transition: { duration: 0.4, ease: easeExit, delay: 0.05 },
+            y: -10,
+            transition: { duration: 0.52, ease: easeExit, delay: 0.12 },
           }}
-          transition={{ duration: 0.75, ease: easeEntrance, delay: 0.38 }}
+          transition={{ duration: 0.95, ease: easeEntrance, delay: 0.48 }}
           className="mt-7 font-serif text-base italic leading-relaxed text-solar-gold/50 md:text-lg"
         >
           {subtitle}

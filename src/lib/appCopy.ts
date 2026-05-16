@@ -85,6 +85,8 @@ type Copy = {
   cursorSectionHeading: string;
   cursorOptionFluid: string;
   cursorOptionFluidHint: string;
+  /** Pastille sur l’option Mirage (onboarding + menu). */
+  cursorOptionDefaultBadge: string;
   cursorOptionBasic: string;
   cursorOptionBasicHint: string;
   cursorOnboardingCurtainFr: string;
@@ -102,6 +104,11 @@ type Copy = {
   menuReplayVideo: string;
   menuReplayHint: string;
   menuRestart: string;
+  /** Dialogue de confirmation avant reset complet */
+  menuRestartConfirmAria: string;
+  menuRestartConfirmMessage: string;
+  menuRestartConfirmYes: string;
+  menuRestartConfirmNo: string;
   menuCreditsBy: string;
   menuMusicLine: string;
   menuEmbeddedParcours: string;
@@ -122,8 +129,6 @@ type Copy = {
   menuFullscreenStateLabel: string;
   menuFullscreenStateOn: string;
   menuFullscreenStateOff: string;
-  menuFullscreenHintEnter: string;
-  menuFullscreenHintExit: string;
   menuFullscreenShortcutEnter: string;
   menuFullscreenShortcutExit: string;
   introDevPreviewCreditsTitle: string;
@@ -153,10 +158,36 @@ type Copy = {
   introVideoVolumeRange: string;
   /** Bande lumineuse à droite du prologue : volume à la molette (lecteur d’écran). */
   introPrologueVolumeAuraAria: string;
+  introProloguePausedAria: string;
+  introProloguePlayingAria: string;
   /** Suspense intro vidéo — même typo que l’écran langue (sourcil + titre + filet). */
   introSuspenseEyebrow: string;
   introSuspenseTitle: string;
   introSuspenseProgressAria: string;
+  /** Tutoriel gamifié avant la vidéo prologue (skip puis volume molette). */
+  introTutorialMission: string;
+  introTutorialSkipEyebrow: string;
+  introTutorialSkipTitle: string;
+  introTutorialSkipBody: string;
+  introTutorialSkipFullscreenHint: string;
+  introTutorialSkipCta: string;
+  introTutorialFullscreenCta: string;
+  introTutorialFullscreenAria: string;
+  introTutorialFullscreenExitAria: string;
+  introTutorialFullscreenActive: string;
+  introTutorialVolumeEyebrow: string;
+  introTutorialVolumeTitle: string;
+  introTutorialVolumeBody: string;
+  introTutorialVolumeSaviezEyebrow: string;
+  introTutorialVolumeSaviezBody: string;
+  introTutorialVolumeScrollHint: string;
+  introTutorialVolumeScrollAria: string;
+  introTutorialVolumeLabel: string;
+  introTutorialVolumeProgressAria: string;
+  introTutorialVolumeSuccess: string;
+  introTutorialVolumeLaunchCta: string;
+  /** Mission 2 : relire le texte de la mission 1 sans perdre la jauge. */
+  introTutorialReviewMission1: string;
   /** Vidéo pont avant l’Acte III (même commande « passer » que l’introduction, phrase distincte). */
   act23BridgeVideoSkip: string;
   /** Clôture Acte II · phrase à compléter avant crédits */
@@ -191,9 +222,9 @@ type Copy = {
 };
 
 const FR: Copy = {
-  act1HudSubtitleDone: "Les cinq feux sont rallumés - la carte respire.",
+  act1HudSubtitleDone: "Les cinq feux sont rallumés, la carte respire.",
   act1HudSubtitleFind:
-    "En vous souvenant de la vidéo, retrouvez chaque fragment sur la carte, dans l’ordre des passages.",
+    "La vidéo que vous venez de voir, ainsi que les vers affichés en bas, vous indiquent comment retrouver chaque fragment sur la carte, dans l’ordre des différents passages.",
   act1TutorialHeading: "Consignes",
   act1TutorialLine1: "Survolez - clic sur le fragment attendu -",
   act1TutorialLine2: "Molette zoom",
@@ -206,7 +237,7 @@ const FR: Copy = {
   act1AriaHud: "Acte I - L’Algérie, Sahara",
   act1AriaStripWord: "Mot à trouver :",
   phraseStripComplete:
-    "Sous cette calligraphie de sable, les cinq vers se rejoignent - le vent vous retient encore un instant.",
+    "Sous cette calligraphie de sable, les cinq vers se rejoignent, le vent vous retient encore un instant.",
   phraseStripSteps: [...ACT1_PHRASE_STRIP_STEPS_FR],
   revelationWordAria: {
     désert: "Mot à trouver : désert",
@@ -218,7 +249,7 @@ const FR: Copy = {
   chapterToastKicker: "Chapitre accompli",
   chapterToastTitle: "Sahara",
   chapterToastSubtitle:
-    "Les cinq feux sont rallumés - la carte respire. Le voyage continue.",
+    "Les cinq feux sont rallumés, la carte respire. Le voyage continue.",
   menuAria: "Menu - options et pause",
   menuHintDiscover: "Découvrir le passage",
   daKicker: "Changement de ciel",
@@ -270,10 +301,11 @@ const FR: Copy = {
   menuAmbientMuteOff: "Couper le son ambiant",
   menuAmbientVolume: "Volume du son",
   cursorSectionHeading: "Curseur",
-  cursorOptionFluid: "Fluide",
-  cursorOptionFluidHint: "Simulation WebGL qui suit le geste et curseur du voyage (losange, halos).",
-  cursorOptionBasic: "Basique",
-  cursorOptionBasicHint: "Cercle simple à la place du fluide WebGL — plus léger pour la machine.",
+  cursorOptionFluid: "Mirage",
+  cursorOptionFluidHint: "Brume de lumière qui suit le geste — losange du voyage et halos dorés.",
+  cursorOptionDefaultBadge: "voie d'accueil",
+  cursorOptionBasic: "Signe",
+  cursorOptionBasicHint: "Point précis et léger — cercle sobre, sans brume animée.",
   cursorOnboardingCurtainFr: "Choisissez votre curseur",
   cursorOnboardingCurtainAr: "اختر مؤشّرك",
   languageSectionHeading: "Langue",
@@ -287,6 +319,10 @@ const FR: Copy = {
   menuReplayHint:
     "Lecture par-dessus l’expérience, pas de rechargement, votre progression est conservée.",
   menuRestart: "Recommencer l’expérience",
+  menuRestartConfirmAria: "Confirmation avant de recommencer l’expérience",
+  menuRestartConfirmMessage: "Êtes-vous sûr de vouloir recommencer l’expérience ?",
+  menuRestartConfirmYes: "Oui",
+  menuRestartConfirmNo: "Non",
   menuCreditsBy: "Une création de",
   menuMusicLine: "Musique · © Rafael Krux",
   menuEmbeddedParcours: "Parcours",
@@ -305,8 +341,6 @@ const FR: Copy = {
   menuFullscreenStateLabel: "État actuel",
   menuFullscreenStateOn: "Activé",
   menuFullscreenStateOff: "Désactivé",
-  menuFullscreenHintEnter: "Masque l’interface du navigateur pour une lecture plus immersive.",
-  menuFullscreenHintExit: "Revient à l’affichage standard avec l’interface du navigateur.",
   menuFullscreenShortcutEnter: "F11",
   menuFullscreenShortcutExit: "Échap",
   introDevPreviewCreditsTitle: "Prévisualiser le générique de fin (-previewCredits=1)",
@@ -370,9 +404,38 @@ const FR: Copy = {
   introVideoVolumeRange: "Volume",
   introPrologueVolumeAuraAria:
     "Volume du prologue : molette sur la bande lumineuse à droite — vers le haut augmente, vers le bas diminue. Flèches haut et bas quand la zone est sélectionnée.",
+  introProloguePausedAria: "Vidéo en pause — appuyez sur Espace pour reprendre.",
+  introProloguePlayingAria: "Lecture en cours.",
   introSuspenseEyebrow: "Prologue",
   introSuspenseTitle: "Le voyage va commencer",
   introSuspenseProgressAria: "Progression du chargement",
+  introTutorialMission: "Étape",
+  introTutorialSkipEyebrow: "Avant le départ",
+  introTutorialSkipTitle: "Immersion",
+  introTutorialSkipBody:
+    "Franchis une fois le plein écran : un seuil suffit, inutile d'y demeurer.\nIl est préférable d'écouter au casque : le désert ne livre ses murmures qu'à qui s'y abandonne.",
+  introTutorialSkipFullscreenHint:
+    "Franchis le plein écran une fois pour continuer",
+  introTutorialSkipCta: "Suivant",
+  introTutorialFullscreenCta: "Plein écran (F11)",
+  introTutorialFullscreenAria: "Activer le plein écran",
+  introTutorialFullscreenExitAria: "Quitter le plein écran",
+  introTutorialFullscreenActive: "Quitter le plein écran",
+  introTutorialVolumeEyebrow: "Teste le niveau sonore",
+  introTutorialVolumeTitle: "Réveille l'écho",
+  introTutorialVolumeBody:
+    "À droite, monte le volume en faisant défiler la molette vers le haut,\njusqu'à ce que le son te convienne.",
+  introTutorialVolumeSaviezEyebrow: "Saviez-vous ?",
+  introTutorialVolumeSaviezBody:
+    "« Zina », que vous écoutez, est un refrain du raï algérien,\nla même époque que Jean Sénac célébrait dans sa poésie, entre soleil et Méditerranée.",
+  introTutorialVolumeScrollHint: "Molette\nvers le haut",
+  introTutorialVolumeScrollAria:
+    "Fais défiler la molette de la souris vers le haut pour régler le volume",
+  introTutorialVolumeLabel: "Flamme sonore",
+  introTutorialVolumeProgressAria: "Progression de la résonance",
+  introTutorialVolumeSuccess: "Le seuil est franchi — le prologue commence.",
+  introTutorialVolumeLaunchCta: "Lancer la vidéo",
+  introTutorialReviewMission1: "Reprendre l'accueil",
   act23BridgeVideoSkip: "Passer cette transition",
   act2FinaleAria: "Clôture du voyage - complétez la phrase pour accéder aux crédits",
   act2FinaleStem: "Une traversée existe vraiment quand",
@@ -438,7 +501,7 @@ const AR: Copy = {
   act1HudSubtitleDone:
     "النجوم الخمس تشعل من جديد والخريطة تنبض.",
   act1HudSubtitleFind:
-    "بالذاكرة ديال الفيديو، دور على كل مقطع على الخريطة، بنفس الترتيب اللي سمعتو فيه.",
+    "الفيديو والأبيات اللي تبان فوق وتحت كيعاونوك : دور على كل مقطع على الخريطة، بنفس ترتيب المقاطع.",
   act1TutorialHeading: "التعليمات",
   act1TutorialLine1: "دوّاف - كليك على الشقّة المطلوبة -",
   act1TutorialLine2: "الحرّاف يقرّب",
@@ -513,10 +576,11 @@ const AR: Copy = {
   menuAmbientMuteOff: "كمّ الصوت المحيطي",
   menuAmbientVolume: "قوة الصوت المحيطي",
   cursorSectionHeading: "المؤشّر",
-  cursorOptionFluid: "سائل",
-  cursorOptionFluidHint: "محاكاة WebGL تتبع الحركة والمؤشّر المرسوم (مع الهالات).",
-  cursorOptionBasic: "بسيط",
-  cursorOptionBasicHint: "دائرة بسيطة بدل السائل WebGL — أخف على الجهاز.",
+  cursorOptionFluid: "سراب",
+  cursorOptionFluidHint: "ضباب ضوء يتبع الحركة — معين الرحلة وهالات ذهبية.",
+  cursorOptionDefaultBadge: "طريق الاستقبال",
+  cursorOptionBasic: "أثر",
+  cursorOptionBasicHint: "نقطة صافية وخفيفة — دائرة هادئة بلا ضباب متحرك.",
   cursorOnboardingCurtainFr: "Choisissez votre curseur",
   cursorOnboardingCurtainAr: "اختر مؤشّرك",
   languageSectionHeading: "اللغة",
@@ -530,6 +594,10 @@ const AR: Copy = {
   menuReplayHint:
     "يشغّل فوق التجرّبة، ماكاش إعادة تحميل؛ التقدّم يبقى محفوظ.",
   menuRestart: "عاود التجرّبة من الأول",
+  menuRestartConfirmAria: "تأكيد قبل ما تعاود التجرّبة من الأول",
+  menuRestartConfirmMessage: "واش راك متأكد باغي تعاود التجرّبة من الأول؟",
+  menuRestartConfirmYes: "إيه",
+  menuRestartConfirmNo: "لا",
   menuCreditsBy: "من وحدة:",
   menuMusicLine: "موسيقى · © Rafael Krux",
   menuEmbeddedParcours: "مسار الرحلة",
@@ -548,8 +616,6 @@ const AR: Copy = {
   menuFullscreenStateLabel: "الحالة دابا",
   menuFullscreenStateOn: "مفعّل",
   menuFullscreenStateOff: "مطفّي",
-  menuFullscreenHintEnter: "يخبي واجهة المتصفح باش تولّي التجربة أوسع.",
-  menuFullscreenHintExit: "يرجّع العرض العادي مع واجهة المتصفح.",
   menuFullscreenShortcutEnter: "F11",
   menuFullscreenShortcutExit: "Esc",
   introDevPreviewCreditsTitle: "تشوف التذييل النهاية (-previewCredits=1)",
@@ -613,9 +679,37 @@ const AR: Copy = {
   introVideoVolumeRange: "مستوى الصوت",
   introPrologueVolumeAuraAria:
     "صوت المقدّمة: عجلة الفأرة على الشريط المضيء يمين الشاشة — لفّة للأعلى ترفع، للأسفل تخفّض. أسهم للأعلى والأسفل عند التركيز على المنطقة.",
+  introProloguePausedAria: "الفيديو متوقّف — إضغط مسافة باش تكمل.",
+  introProloguePlayingAria: "التشغيل جاري.",
   introSuspenseEyebrow: "مقدّمة",
   introSuspenseTitle: "الرحلة غادي تبدا",
   introSuspenseProgressAria: "تقدّم التحميل",
+  introTutorialMission: "مرحلة",
+  introTutorialSkipEyebrow: "قبل الانطلاق",
+  introTutorialSkipTitle: "الانغماس",
+  introTutorialSkipBody:
+    "اعبر مرة إلى ملء الشاشة — يكفي عبور، ما تحتاجش تثبت فيه.\nالأفضل تسمع بالسمّاعات : الصحراء ما تهمس إلا لمن يستسلم ليها.",
+  introTutorialSkipFullscreenHint:
+    "اعبر ملء الشاشة مرة باش تكمل",
+  introTutorialSkipCta: "التالي",
+  introTutorialFullscreenCta: "ملء الشاشة (F11)",
+  introTutorialFullscreenAria: "فعّل ملء الشاشة",
+  introTutorialFullscreenExitAria: "اطلع من ملء الشاشة",
+  introTutorialFullscreenActive: "اطلع من ملء الشاشة",
+  introTutorialVolumeEyebrow: "جرّب مستوى الصوت",
+  introTutorialVolumeTitle: "أيقظ الصدى",
+  introTutorialVolumeBody:
+    "على اليمين، ارفع الصوت بتدوير عجلة الفأرة للأعلى،\nحتى يناسبك المستوى.",
+  introTutorialVolumeSaviezEyebrow: "هل تعلم؟",
+  introTutorialVolumeSaviezBody:
+    "« زينة » اللي تسمعوها، أنشودة راي جزائرية، نفس العصر\nاللي كان جان سيناك يمجّد في شعره، بين الشمس والبحر.",
+  introTutorialVolumeScrollHint: "عجلة الفأرة\nللأعلى",
+  introTutorialVolumeScrollAria: "دوّر عجلة الفأرة للأعلى لضبط مستوى الصوت",
+  introTutorialVolumeLabel: "لهب الصوت",
+  introTutorialVolumeProgressAria: "تقدّم الصدى",
+  introTutorialVolumeSuccess: "العتبة تجاوزت — المقدّمة تبدا.",
+  introTutorialVolumeLaunchCta: "شغّل الفيديو",
+  introTutorialReviewMission1: "رجع للاستقبال",
   act23BridgeVideoSkip: "تخطّى الانتقال",
   act2FinaleAria: "ختام الرحلة - أكمّل الجملة باش توصل لتذييل الفريق",
   act2FinaleStem: "المسيرة تكون حقيقية كي",

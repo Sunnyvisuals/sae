@@ -1,0 +1,415 @@
+/**
+ * Acte II — faits « Saviez-vous » à droite, centre libre (images / vide).
+ */
+
+body.senac-reading-flow {
+  --senac-fact-w: min(24rem, 36vw);
+  --senac-fact-pad: clamp(1.25rem, 4.5vw, 3.5rem);
+  --senac-read-line: rgba(244, 234, 210, 0.82);
+  --senac-read-muted: rgba(244, 234, 210, 0.58);
+}
+
+body.senac-reading-flow .chapter-two {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  padding-inline: var(--senac-fact-pad);
+}
+
+body.senac-reading-flow #timeline-start.timeline.senac-constellation-track {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+}
+
+body.senac-reading-flow #timeline-start.timeline.senac-constellation-track > .senac-scene {
+  align-items: stretch;
+  justify-content: center;
+  text-align: start;
+  padding-inline: 0;
+}
+
+/* Fil stellaire : parchemin-senac-stellar.css */
+
+/* Pas de fondu « carte » plein écran : seul le fait à droite apparaît */
+body.senac-reading-flow .senac-scene--card.story-card[data-reveal],
+body.senac-reading-flow .senac-scene--card.story-card[data-reveal]:not(.is-visible) {
+  opacity: 1;
+  transform: none;
+  filter: none;
+  pointer-events: auto;
+}
+
+/* —— Cartes : date à gauche, fait à droite —— */
+body.senac-reading-flow .senac-scene--card.story-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--senac-fact-w);
+  grid-template-rows: 1fr;
+  align-items: center;
+  gap: clamp(1rem, 4vw, 2.5rem);
+  text-align: start;
+}
+
+body.senac-reading-flow .senac-scene--card .date-ghost {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: start;
+  align-self: center;
+  margin: 0;
+  padding: 0;
+  text-align: start;
+  font-size: clamp(3.5rem, 16vw, 8.5rem);
+  line-height: 0.88;
+  color: rgba(197, 160, 89, 0.1);
+  pointer-events: none;
+}
+
+body.senac-reading-flow .senac-scene--card.is-visible .date-ghost,
+body.senac-reading-flow .senac-scene--active.story-card .date-ghost {
+  color: rgba(197, 160, 89, 0.14);
+}
+
+/* Panneau = typographie seule + trait vers l’axe stellaire */
+body.senac-reading-flow .senac-scene--card .story-panel {
+  position: relative;
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+  align-self: center;
+  width: 100%;
+  max-width: var(--senac-fact-w);
+  margin: 0;
+  padding: 0 0 0 clamp(0.5rem, 2vw, 1rem);
+  text-align: start;
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  overflow: visible;
+  opacity: 0;
+  transform: translate3d(1.75rem, 0, 0);
+  filter: none;
+  transition:
+    opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+body.senac-reading-flow .story-card.is-visible .story-panel,
+body.senac-reading-flow .story-card.senac-scene--active .story-panel {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+body.senac-reading-flow .senac-scene--card .story-panel::after {
+  content: "";
+  position: absolute;
+  right: 100%;
+  top: 1.35rem;
+  width: clamp(1.5rem, 6vw, 4.5rem);
+  height: 1px;
+  margin-right: 0.35rem;
+  background: linear-gradient(
+    90deg,
+    rgba(197, 160, 89, calc(0.15 + var(--senac-presence-gate, 1) * 0.35)),
+    rgba(139, 213, 255, calc(0.08 + var(--frise-t, 0) * 0.2)) 55%,
+    transparent 100%
+  );
+  opacity: 0;
+  transform: scaleX(0.4);
+  transform-origin: 100% 50%;
+  transition:
+    opacity 0.5s ease,
+    transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+body.senac-reading-flow .story-card.is-visible .story-panel::after,
+body.senac-reading-flow .story-card.senac-scene--active .story-panel::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+body.senac-reading-flow .story-card.senac-scene--active .story-panel::after {
+  background: linear-gradient(
+    90deg,
+    rgba(244, 234, 210, 0.55),
+    rgba(197, 160, 89, 0.45) 45%,
+    transparent 100%
+  );
+  box-shadow: 0 0 12px rgba(197, 160, 89, 0.2);
+}
+
+body.senac-reading-flow .story-panel::before,
+body.senac-reading-flow .story-panel::after {
+  display: none !important;
+}
+
+body.senac-reading-flow .story-panel:hover {
+  transform: translate3d(0, 0, 0);
+  border: none;
+  box-shadow: none;
+}
+
+body.senac-reading-flow .senac-fact-kicker {
+  margin: 0 0 0.65rem;
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: clamp(0.62rem, 1.2vw, 0.72rem);
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(197, 160, 89, 0.72);
+}
+
+body.senac-reading-flow .senac-fact-kicker::after {
+  content: " ·";
+  opacity: 0.45;
+  letter-spacing: 0;
+}
+
+body.senac-reading-flow .story-date {
+  margin-bottom: 0.55rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid rgba(197, 160, 89, 0.16);
+  font-size: clamp(0.7rem, 1.4vw, 0.8rem);
+}
+
+body.senac-reading-flow .story-panel h2 {
+  font-size: clamp(1.35rem, 2.8vw, 1.75rem);
+  line-height: 1.18;
+  margin-bottom: 0.75rem;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+body.senac-reading-flow .story-panel p:not(.story-date):not(.senac-fact-kicker):not(.senac-fact-detail) {
+  font-size: clamp(1rem, 1.55vw, 1.12rem);
+  line-height: 1.78;
+  max-width: 42ch;
+  margin-left: 0;
+  margin-right: 0;
+  color: var(--senac-read-line);
+  text-wrap: pretty;
+}
+
+body.senac-reading-flow .story-panel .senac-fact-detail {
+  margin-top: 0.65rem;
+  font-size: clamp(0.92rem, 1.4vw, 1.02rem);
+  line-height: 1.72;
+  max-width: 44ch;
+  color: var(--senac-read-muted);
+}
+
+body.senac-reading-flow .senac-scene--arch-portal .story-panel h2 {
+  font-size: clamp(1.45rem, 3vw, 1.85rem);
+}
+
+body.senac-reading-flow .senac-scene--arch-portal .date-ghost {
+  font-size: clamp(2.5rem, 12vw, 5rem);
+  opacity: 0.2;
+}
+
+body.senac-reading-flow .story-card.senac-scene--active .story-panel h2 {
+  color: rgba(244, 234, 210, 0.98);
+  text-shadow: 0 0 24px rgba(197, 160, 89, 0.12);
+}
+
+body.senac-reading-flow .story-panel .senac-cross-nav--compact {
+  margin-top: 1rem;
+  font-size: clamp(0.8rem, 1.35vw, 0.88rem);
+  opacity: 0.65;
+}
+
+body.senac-reading-flow .story-panel > * {
+  opacity: 0;
+  transform: translate3d(0, 10px, 0);
+  transition:
+    opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+body.senac-reading-flow .story-card.is-visible .story-panel > * {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+body.senac-reading-flow .story-card.is-visible .story-panel > *:nth-child(1) {
+  transition-delay: 0.06s;
+}
+body.senac-reading-flow .story-card.is-visible .story-panel > *:nth-child(2) {
+  transition-delay: 0.12s;
+}
+body.senac-reading-flow .story-card.is-visible .story-panel > *:nth-child(3) {
+  transition-delay: 0.18s;
+}
+body.senac-reading-flow .story-card.is-visible .story-panel > *:nth-child(4) {
+  transition-delay: 0.24s;
+}
+body.senac-reading-flow .story-card.is-visible .story-panel > *:nth-child(5) {
+  transition-delay: 0.3s;
+}
+body.senac-reading-flow .story-card.is-visible .story-panel > *:nth-child(6) {
+  transition-delay: 0.36s;
+}
+
+/* —— Citations : colonne droite, pas de bloc plein écran —— */
+body.senac-reading-flow .senac-scene--chamber.quote-break {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  padding-inline: var(--senac-fact-pad);
+  text-align: end;
+  min-height: max(calc(var(--senac-beat) - var(--senac-beat-pad)), 22rem);
+}
+
+body.senac-reading-flow .quote-break blockquote {
+  max-width: min(22ch, var(--senac-fact-w));
+  margin-inline: 0 0;
+  margin-left: auto;
+  text-align: start;
+  font-size: clamp(1.2rem, 3vw, 1.55rem);
+  opacity: 0;
+  transform: translate3d(1.5rem, 0, 0);
+  transition:
+    opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+body.senac-reading-flow .quote-break cite {
+  max-width: min(24ch, var(--senac-fact-w));
+  margin-left: auto;
+  text-align: start;
+  opacity: 0;
+  transform: translate3d(1.25rem, 0, 0);
+  transition:
+    opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.12s,
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.12s;
+}
+
+body.senac-reading-flow .quote-break.is-visible blockquote,
+body.senac-reading-flow .quote-break.senac-scene--active blockquote {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+body.senac-reading-flow .quote-break.is-visible cite,
+body.senac-reading-flow .quote-break.senac-scene--active cite {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+body.senac-reading-flow .quote-break--title > span {
+  margin-left: auto;
+}
+
+/* —— Archives : image au centre, légende discrète —— */
+body.senac-reading-flow .senac-scene--reliquary.archive-window {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-inline: var(--senac-fact-pad);
+}
+
+body.senac-reading-flow .senac-scene--reliquary .archive-media {
+  margin-inline: auto;
+  opacity: 0;
+  transform: scale(0.94);
+  transition:
+    opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+body.senac-reading-flow .senac-scene--reliquary.is-visible .archive-media,
+body.senac-reading-flow .senac-scene--reliquary.senac-scene--active .archive-media {
+  opacity: 1;
+  transform: scale(1);
+}
+
+body.senac-reading-flow .senac-scene--reliquary figcaption {
+  margin-top: 0.85rem;
+  text-align: center;
+  font-size: clamp(0.72rem, 1.2vw, 0.82rem);
+  opacity: 0.45;
+  max-width: 28ch;
+}
+
+html[dir="rtl"] body.senac-reading-flow .senac-scene--card {
+  grid-template-columns: var(--senac-fact-w) minmax(0, 1fr);
+}
+
+html[dir="rtl"] body.senac-reading-flow .senac-scene--card .date-ghost {
+  grid-column: 2;
+  text-align: end;
+}
+
+html[dir="rtl"] body.senac-reading-flow .senac-scene--card .story-panel {
+  grid-column: 1;
+  justify-self: start;
+  text-align: end;
+  transform: translate3d(-1.75rem, 0, 0);
+}
+
+html[dir="rtl"] body.senac-reading-flow .story-card.is-visible .story-panel {
+  transform: translate3d(0, 0, 0);
+}
+
+html[dir="rtl"] body.senac-reading-flow .senac-scene--chamber.quote-break {
+  align-items: flex-start;
+  text-align: start;
+}
+
+html[dir="rtl"] body.senac-reading-flow .quote-break blockquote,
+html[dir="rtl"] body.senac-reading-flow .quote-break cite {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+@media (max-width: 840px) {
+  body.senac-reading-flow {
+    --senac-fact-w: min(100%, 22rem);
+  }
+
+  body.senac-reading-flow .senac-scene--card.story-card {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    gap: 0.5rem;
+  }
+
+  body.senac-reading-flow .senac-scene--card .date-ghost {
+    grid-column: 1;
+    grid-row: 1;
+    font-size: clamp(2.5rem, 14vw, 4rem);
+    opacity: 0.35;
+  }
+
+  body.senac-reading-flow .senac-scene--card .story-panel {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: stretch;
+    max-width: none;
+  }
+
+  body.senac-reading-flow .senac-scene--chamber.quote-break {
+    align-items: stretch;
+    text-align: start;
+  }
+
+  body.senac-reading-flow .quote-break blockquote,
+  body.senac-reading-flow .quote-break cite {
+    margin-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.senac-reading-flow .story-panel,
+  body.senac-reading-flow .story-panel > *,
+  body.senac-reading-flow .quote-break blockquote,
+  body.senac-reading-flow .quote-break cite,
+  body.senac-reading-flow .senac-scene--reliquary .archive-media {
+    transition: none;
+    transform: none;
+    opacity: 1;
+  }
+}

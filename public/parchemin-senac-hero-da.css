@@ -1,0 +1,351 @@
+/**
+ * Acte II — hero : une colonne, lisible (tailles + rythme + responsive).
+ */
+
+.chapter-two header.hero.senac-hero-stack {
+  --senac-hero-col: min(38rem, 94vw);
+  --senac-hero-gap: clamp(0.9rem, 2.4vh, 1.45rem);
+  --senac-hero-gap-tight: clamp(0.5rem, 1.2vh, 0.75rem);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: var(--senac-hero-col);
+  max-width: 100%;
+  /* Pas de 100svh + margin-top:auto → évite le vide géant sous le portrait */
+  min-height: auto;
+  margin-inline: auto;
+  margin-bottom: clamp(2.5rem, 6vh, 4rem);
+  padding:
+    max(calc(env(safe-area-inset-top, 0px) + 0.65rem), clamp(3.75rem, 11vh, 6rem))
+    clamp(1.15rem, 5vw, 2rem)
+    clamp(2rem, 6vh, 3.25rem);
+  overflow: visible;
+  gap: var(--senac-hero-gap);
+  text-align: center;
+  isolation: isolate;
+  z-index: 2;
+}
+
+.chapter-two header.hero.senac-hero-portal.senac-hero-stack {
+  min-height: auto;
+  padding-bottom: clamp(1.75rem, 5vh, 3rem);
+}
+
+.chapter-two header.hero.senac-hero-stack .hero-intro-block,
+.chapter-two header.hero.senac-hero-stack .senac-cross-nav-wrap--hero,
+.chapter-two header.hero.senac-hero-stack .hero-portrait,
+.chapter-two header.hero.senac-hero-stack .scroll-cue {
+  width: 100%;
+  max-width: var(--senac-hero-col);
+  margin: 0;
+  padding: 0;
+}
+
+.chapter-two header.hero.senac-hero-stack .hero-intro-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--senac-hero-gap);
+  background: none;
+  border: none;
+  box-shadow: none;
+  overflow: visible;
+  padding-top: 0.35rem;
+}
+
+.chapter-two header.hero.senac-hero-stack .hero-intro-header,
+.chapter-two header.hero.senac-hero-stack .smc-split-curtain {
+  display: none;
+}
+
+.chapter-two header.hero.senac-hero-stack .hero-eyebrow {
+  margin: 0;
+  padding: 0 clamp(0.5rem, 3vw, 1rem) clamp(0.5rem, 1.2vh, 0.75rem);
+  max-width: var(--senac-hero-col);
+  font-family: var(--da-ui, "Inter", sans-serif);
+  font-size: clamp(0.76rem, 1.9vw, 0.88rem);
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  line-height: 1.55;
+  text-transform: uppercase;
+  color: rgba(212, 195, 161, 0.92);
+  text-shadow: 0 1px 14px rgba(0, 0, 0, 0.9);
+}
+
+.chapter-two header.hero.senac-hero-stack .hero-eyebrow::after {
+  content: "";
+  display: block;
+  width: min(12rem, 48vw);
+  height: 1px;
+  margin: clamp(0.55rem, 1.25vh, 0.85rem) auto 0;
+  background: linear-gradient(90deg, transparent, rgba(197, 160, 89, 0.55), transparent);
+}
+
+.chapter-two header.hero.senac-hero-stack h1 {
+  position: relative;
+  z-index: 3;
+  display: block;
+  width: 100%;
+  margin: 0;
+  /* Marge interne : évite le rognage des ascendantes (Bahlull + background-clip:text) */
+  padding: 0.28em 0.12em 0.1em;
+  overflow: visible;
+  font-size: clamp(3.15rem, 11.5vw, 6.5rem);
+  line-height: 1.12;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.chapter-two header.hero.senac-hero-stack .hero-subtitle {
+  margin: var(--senac-hero-gap-tight) 0 0;
+  padding: 0 clamp(0.5rem, 3vw, 1rem);
+  font-size: clamp(1.2rem, 3.5vw, 1.75rem);
+  line-height: 1.38;
+  color: rgba(232, 212, 164, 0.9);
+}
+
+.chapter-two header.hero.senac-hero-stack .hero-copy {
+  margin: var(--senac-hero-gap-tight) 0 0;
+  padding: 0 clamp(0.75rem, 4vw, 1.25rem);
+  max-width: min(30rem, 92vw);
+  font-size: clamp(1.05rem, 2.5vw, 1.2rem);
+  line-height: 1.68;
+  color: rgba(232, 220, 198, 0.88);
+  text-shadow: 0 1px 16px rgba(0, 0, 0, 0.92);
+}
+
+/* Cercle décoratif : derrière le bandeau, pas sur le logo */
+.chapter-two header.hero.senac-hero-portal.senac-hero-stack .hero-intro-block::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -0.5rem;
+  width: min(78vw, 19rem);
+  height: min(78vw, 19rem);
+  transform: translateX(-50%);
+  border-radius: 50%;
+  border: 1px solid rgba(197, 160, 89, 0.1);
+  z-index: 0;
+  pointer-events: none;
+  opacity: calc(0.2 * (1 - min(1, var(--hero-t, 0) * 0.9)));
+}
+
+.chapter-two header.hero.senac-hero-portal.senac-hero-stack .hero-intro-block {
+  position: relative;
+}
+
+.senac-scroll-glyphs__layer--arcs::before,
+.senac-scroll-glyphs__layer--arcs::after {
+  top: clamp(10%, 16vh, 22%);
+  opacity: calc((0.03 + var(--frise-t, 0) * 0.12) * (1 - min(1, var(--hero-t, 0) * 0.95)));
+}
+
+.celestial-rings::before {
+  background:
+    radial-gradient(circle at 50% 32%, transparent 0 11rem, rgba(197, 160, 89, calc(0.04 * (1 - var(--hero-t, 0)))) 11.05rem 11.12rem, transparent 11.2rem),
+    radial-gradient(circle at 50% 32%, transparent 0 18rem, rgba(232, 212, 164, calc(0.05 * (1 - var(--hero-t, 0) * 0.5))) 18.05rem 18.11rem, transparent 18.2rem),
+    radial-gradient(circle at 50% 32%, transparent 0 27rem, rgba(197, 160, 89, calc(0.03 * (1 - var(--hero-t, 0)))) 27.05rem 27.1rem, transparent 27.2rem);
+}
+
+/* Raccourcis hero */
+.senac-cross-nav-wrap--hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.65rem, 1.6vh, 0.95rem);
+  margin-top: clamp(0.15rem, 0.5vh, 0.35rem);
+  border: none;
+}
+
+.senac-cross-nav-wrap--hero .senac-cross-nav__status,
+.senac-cross-nav-wrap--hero .senac-cross-nav__lede {
+  display: none;
+}
+
+.senac-cross-nav-wrap--hero .senac-cross-nav-chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.5rem, 2vw, 1rem);
+  margin: 0;
+}
+
+.senac-cross-nav-wrap--hero .senac-hero-links__sep {
+  margin: 0 clamp(0.35rem, 1.2vw, 0.55rem);
+  font-size: clamp(0.75rem, 1.8vw, 0.9rem);
+  letter-spacing: 0;
+  color: rgba(197, 160, 89, 0.45);
+  user-select: none;
+}
+
+.senac-cross-nav-wrap--hero .senac-hero-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 2.75rem;
+  margin: 0;
+  padding: 0.45rem 0.85rem;
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  font-family: var(--da-ui, "Inter", sans-serif);
+  font-size: clamp(0.82rem, 2.1vw, 0.94rem);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  line-height: 1.35;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-decoration-color: rgba(197, 160, 89, 0.5);
+  text-underline-offset: 0.32em;
+  color: rgba(244, 234, 210, 0.95);
+  cursor: pointer;
+  transition: color 0.25s ease, text-decoration-color 0.25s ease;
+}
+
+.senac-cross-nav-wrap--hero .senac-hero-link:hover {
+  transform: none;
+  color: #fff8ec;
+  text-decoration-color: rgba(234, 215, 164, 0.85);
+  background: none;
+}
+
+.senac-cross-nav-wrap--hero .senac-hero-link .senac-nav-picto {
+  width: 1.1rem;
+  height: 1.1rem;
+  color: rgba(197, 160, 89, 0.92);
+  filter: none;
+}
+
+.senac-cross-nav-wrap--hero .senac-hero-link:hover .senac-nav-picto {
+  transform: none;
+}
+
+.senac-cross-nav-wrap--hero .senac-cross-nav__hint {
+  margin: 0;
+  padding: 0 clamp(0.5rem, 3vw, 1rem);
+  font-size: clamp(0.72rem, 1.75vw, 0.82rem);
+  letter-spacing: 0.12em;
+  line-height: 1.5;
+  text-transform: uppercase;
+  font-style: normal;
+  color: rgba(197, 160, 89, 0.52);
+}
+
+.chapter-two header.hero.senac-hero-stack .hero-portrait {
+  margin: clamp(1.25rem, 3.5vh, 2.25rem) auto clamp(0.5rem, 1.5vh, 1rem);
+  width: min(100%, clamp(17.5rem, 48vw, 24rem));
+  max-width: 100%;
+}
+
+.chapter-two header.hero.senac-hero-stack .hero-portrait-frame img {
+  width: min(100%, clamp(17.5rem, 48vw, 24rem));
+}
+
+.chapter-two header.hero.senac-hero-stack .scroll-cue {
+  margin-top: clamp(1rem, 2.5vh, 1.75rem);
+  padding-top: clamp(0.75rem, 2vh, 1.25rem);
+}
+
+body.senac-reading-flow header.hero.senac-hero-portal.senac-hero-stack {
+  width: 100%;
+  max-width: var(--senac-read-max, var(--senac-hero-col));
+  min-height: auto;
+  justify-content: center;
+  gap: var(--senac-hero-gap);
+  padding-top: max(calc(env(safe-area-inset-top, 0px) + 0.65rem), clamp(3.25rem, 10vh, 5.5rem));
+}
+
+/* Iframe : évite de rogner le haut du hero au scroll / reveal */
+html.senac-in-iframe .chapter-two > header.hero.senac-hero-stack {
+  scroll-margin-top: 1.25rem;
+}
+
+html.senac-in-iframe .chapter-two > header.hero.senac-hero-stack[data-reveal].is-visible,
+html.senac-in-iframe .chapter-two > header.hero.senac-hero-stack[data-reveal] {
+  transform: none;
+}
+
+html[dir="rtl"] .chapter-two header.hero.senac-hero-stack .hero-eyebrow {
+  font-family: "Noto Naskh Arabic", Georgia, serif;
+  letter-spacing: 0.06em;
+  text-transform: none;
+  font-size: clamp(0.8rem, 2vw, 0.95rem);
+}
+
+/* Mobile : liens empilés, typo un peu plus grande */
+@media (max-width: 840px) {
+  .chapter-two header.hero.senac-hero-stack {
+    --senac-hero-gap: clamp(0.85rem, 2.8vw, 1.25rem);
+    padding-top: max(env(safe-area-inset-top, 0px), clamp(2.5rem, 8vw, 4rem));
+  }
+
+  .chapter-two header.hero.senac-hero-stack h1 {
+    font-size: clamp(2.9rem, 13vw, 4.75rem);
+    padding-top: 0.32em;
+  }
+
+  .senac-cross-nav-wrap--hero .senac-cross-nav-chips {
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .senac-cross-nav-wrap--hero .senac-hero-links__sep {
+    display: none;
+  }
+
+  .senac-cross-nav-wrap--hero .senac-hero-link {
+    min-height: 3rem;
+    padding: 0.55rem 1rem;
+    font-size: clamp(0.82rem, 3.6vw, 0.92rem);
+  }
+
+  .chapter-two header.hero.senac-hero-stack .hero-portrait,
+  .chapter-two header.hero.senac-hero-stack .hero-portrait-frame img {
+    width: min(100%, clamp(16rem, 76vw, 21rem));
+  }
+}
+
+/* Écrans bas : compacter sans écraser la lisibilité */
+@media (max-height: 720px) {
+  .chapter-two header.hero.senac-hero-stack {
+    --senac-hero-gap: clamp(0.7rem, 1.8vh, 1rem);
+    padding-top: max(env(safe-area-inset-top, 0px), clamp(2rem, 6vh, 3rem));
+    padding-bottom: clamp(1.25rem, 4vh, 2rem);
+  }
+
+  .chapter-two header.hero.senac-hero-stack h1 {
+    font-size: clamp(2.5rem, 9vw, 4.5rem);
+  }
+
+  .chapter-two header.hero.senac-hero-stack .hero-portrait,
+  .chapter-two header.hero.senac-hero-stack .hero-portrait-frame img {
+    width: min(100%, clamp(13rem, 36vw, 17rem));
+  }
+}
+
+/* Grand écran : respiration */
+@media (min-width: 1100px) {
+  .chapter-two header.hero.senac-hero-stack {
+    --senac-hero-gap: clamp(1rem, 2.6vh, 1.55rem);
+    padding-top: max(env(safe-area-inset-top, 0px), clamp(3.5rem, 11vh, 5.5rem));
+  }
+
+  .chapter-two header.hero.senac-hero-stack h1 {
+    font-size: clamp(3.75rem, 8vmin, 6.75rem);
+  }
+
+  .chapter-two header.hero.senac-hero-stack .hero-subtitle {
+    font-size: clamp(1.28rem, 2.6vmin, 1.82rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .senac-cross-nav-wrap--hero .senac-hero-link {
+    transition: none;
+  }
+}

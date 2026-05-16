@@ -26,12 +26,31 @@ import {
   shouldIgnoreVolumeKeyboardTarget,
 } from "../lib/volumeKeyboard";
 import { playSuspenseLoadCompleteChime, primeSuspenseAudio } from "../lib/suspenseLoadChime";
+import { tapVideoElementForMeter } from "../lib/prologueVolumeAudioLevel";
+import {
+  applyPrologueVideoElementVolume,
+  readPrologueVolume01,
+  PROLOGUE_VIDEO_DEFAULT_VOLUME,
+} from "../lib/prologueVideoElement";
+import ProloguePlaybackMark, { GoldPlayIcon } from "./ProloguePlaybackMark";
+import {
+  disposePrologueTutorialVolumeProbe,
+  primePrologueTutorialVolumeProbe,
+  syncPrologueTutorialVolumeProbe,
+} from "../lib/prologueTutorialVolumeProbe";
+import PrologueTutorialOverlay, {
+  type PrologueTutorialStep,
+} from "./PrologueTutorialOverlay";
+import PrologueVolumeFluid from "./PrologueVolumeFluid";
+import PrologueVolumeHud from "./PrologueVolumeHud";
+import DevChapterJumpsPanel, { type DevChapterJumps } from "./DevChapterJumpsPanel";
 import { INTRO_VIDEO_SRC } from "../lib/act1IntroBridge";
 import { useLanguageStore } from "../stores/languageStore";
 import { useFullscreenPrefsStore } from "../stores/fullscreenPrefsStore";
 import { useCursorPrefsStore, type CursorExperienceMode } from "../stores/cursorPrefsStore";
 import { useCursorStore } from "../hooks/useCursorContext";
 import { isFullscreenApiSupported } from "../lib/fullscreenDocument";
+import { useMasterVolumeStore } from "../stores/masterVolumeStore";
 import IntroFullscreenOverlay from "./IntroFullscreenOverlay";
 import CursorOnboardingGate from "./CursorOnboardingGate";
 import { useMediaQuery } from "../hooks/useMediaQuery";
@@ -63,6 +82,8 @@ type AnimatedTitleProps = {
   heroMotion?: boolean;
   children?: React.ReactNode;
   viewportTracking?: boolean;
+  /** false = texte statique (révélation gérée par GSAP parent, moins de travail main-thread). */
+  staggerLetters?: boolean;
 };
 
 const AnimatedTitle = ({
@@ -71,6 +92,7 @@ const AnimatedTitle = ({
   heroMotion = false,
   children,
   viewportTracking = false,
+  staggerLetters = true,
 }: AnimatedTitleProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mouseX = useMotionValue(0);
@@ -183,7 +205,7 @@ const AnimatedTitle = ({
           >
             {children}
           </motion.div>
-        ) : (
+        ) : staggerLetters ? (
           characters.map((char, i) => (
             <motion.span
               key={i}
@@ -199,41 +221,21 @@ const AnimatedTitle = ({
               {char === " " ? "\u00A0" : char}
             </motion.span>
           ))
+        ) : (
+          <span>{text}</span>
         )}
       </div>
     </motion.div>
   );
 };
 
-function Volume2Icon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path d="M4 10v4h4l5 4V6l-5 4H4z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
-      <path d="M16 9a4 4 0 010 6" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
-      <path d="M18.5 6.5a7.5 7.5 0 010 11" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
-    </svg>
-  );
-}
-
-function Volume1Icon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path d="M4 10v4h4l5 4V6l-5 4H4z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
-      <path d="M16 9a4 4 0 010 6" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
-    </svg>
-  );
-}
-
-function VolumeXIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
-      <path d="M4 10v4h4l5 4V6l-5 4H4z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
-      <path d="M16 10l5 5M21 10l-5 5" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
-    </svg>
-  );
-}
-
-function SuspenseOverlay({ prefersReducedMotion }: { prefersReducedMotion: boolean | null }) {
+function SuspenseOverlay({
+  prefersReducedMotion,
+  onComplete,
+}: {
+  prefersReducedMotion: boolean | null;
+  onComplete: () => void;
+}) {
   const copy = useAppCopy();
   const isArabic = useLanguageStore((s) => s.language === "ar-dz");
   const [phase, setPhase] = useState<"idle" | "building" | "climax">("idle");
@@ -241,12 +243,16 @@ function SuspenseOverlay({ prefersReducedMotion }: { prefersReducedMotion: boole
   const [loadPct, setLoadPct] = useState(0);
   const loadWidth = useTransform(loadProgress, [0, 100], ["0%", "100%"]);
   const chimePlayedRef = useRef(false);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   useEffect(() => {
+    const loadDelay = prefersReducedMotion ? 0.55 : 2.2;
     const ctrl = animate(loadProgress, 100, {
-      delay: 2.1,
+      delay: loadDelay,
       duration: prefersReducedMotion ? 0.45 : 3,
       ease: [0.4, 0, 0.2, 1],
+      onComplete: () => onCompleteRef.current(),
     });
     return () => ctrl.stop();
   }, [loadProgress, prefersReducedMotion]);
@@ -260,30 +266,35 @@ function SuspenseOverlay({ prefersReducedMotion }: { prefersReducedMotion: boole
   });
 
   useEffect(() => {
-    // "building" démarre quand la barre commence (~2,1 s)
-    const t1 = setTimeout(() => setPhase("building"), 2100);
-    // "climax" quand la barre est à ~85% (~4,6 s après le début = 2,1 + 2,5)
-    const t2 = setTimeout(() => setPhase("climax"), 4600);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, []);
+    const buildingAt = prefersReducedMotion ? 2100 : 2200;
+    const climaxAt = prefersReducedMotion ? 4600 : 4700;
+    const t1 = setTimeout(() => setPhase("building"), buildingAt);
+    const t2 = setTimeout(() => setPhase("climax"), climaxAt);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [prefersReducedMotion]);
 
   const isClimax = phase === "climax";
   const isBuilding = phase === "building" || isClimax;
+  const revealEase = [0.22, 1, 0.36, 1] as const;
+  const veilIn = prefersReducedMotion ? 0.4 : 1.55;
+  const contentIn = prefersReducedMotion ? 0.35 : 1.15;
 
   return (
     <div className="pointer-events-none absolute inset-0 z-[26] flex flex-col items-center justify-center gap-0 px-6 text-center">
 
-      {/* fond noir */}
+      {/* fond opaque — montée lente pour ne pas couper l’accueil d’un coup */}
       <motion.div
         aria-hidden
-        className="absolute inset-0"
+        className="absolute inset-0 bg-[#020100]"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 1.45, ease: "easeIn" }}
-        style={{ background: "radial-gradient(ellipse 110% 110% at 50% 50%, rgba(4,2,1,0.82) 0%, rgba(2,1,0,0.97) 100%)" }}
+        transition={{ duration: veilIn, ease: revealEase }}
       />
 
-      {/* halo doré - s'emballe au climax */}
+      {/* halo dor? - s'emballe au climax */}
       <motion.div
         aria-hidden
         className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
@@ -297,12 +308,16 @@ function SuspenseOverlay({ prefersReducedMotion }: { prefersReducedMotion: boole
         transition={
           isClimax
             ? { duration: 0.55, repeat: Infinity, ease: "easeInOut" }
-            : { duration: 3.2, delay: isBuilding ? 0 : 0.6, ease: [0.22, 1, 0.36, 1] }
+            : {
+                duration: 3.2,
+                delay: isBuilding ? 0 : prefersReducedMotion ? 0.25 : 1.05,
+                ease: revealEase,
+              }
         }
         style={{ width: 520, height: 520, background: "radial-gradient(circle, rgba(197,160,89,0.28) 0%, transparent 68%)", filter: isClimax ? "blur(28px)" : "blur(40px)" }}
       />
 
-      {/* éclats de particules au climax */}
+      {/* ?clats de particules au climax */}
       {isClimax && !prefersReducedMotion && (
         <>
           {[...Array(6)].map((_, i) => (
@@ -342,16 +357,27 @@ function SuspenseOverlay({ prefersReducedMotion }: { prefersReducedMotion: boole
         style={{ background: "radial-gradient(ellipse 80% 80% at 50% 50%, rgba(197,160,89,0.12) 0%, transparent 70%), linear-gradient(to bottom, transparent 60%, rgba(197,100,20,0.08) 100%)" }}
       />
 
-      {/* contenu centré — même DA que l'écran langue (sourcil, titre caps, filet) */}
+      {/* contenu centré — même DA que l’écran langue (sourcil, titre caps, filet) */}
       <motion.div
         dir={isArabic ? "rtl" : "ltr"}
         className="relative z-[2] flex flex-col items-center gap-6 px-4 text-center"
+        initial={{ opacity: 0, y: 16, filter: "blur(6px)" }}
+        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+        transition={{
+          duration: contentIn,
+          delay: prefersReducedMotion ? 0.2 : 0.95,
+          ease: revealEase,
+        }}
       >
         <motion.span
           className={isArabic ? "da-eyebrow-ar" : "da-eyebrow"}
-          initial={{ opacity: 0, y: -8 }}
+          initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          transition={{
+            duration: prefersReducedMotion ? 0.35 : 1.05,
+            delay: prefersReducedMotion ? 0.28 : 1.15,
+            ease: revealEase,
+          }}
         >
           {copy.introSuspenseEyebrow}
         </motion.span>
@@ -363,7 +389,7 @@ function SuspenseOverlay({ prefersReducedMotion }: { prefersReducedMotion: boole
               : "da-display-title max-w-[96vw] whitespace-nowrap text-[clamp(0.82rem,2.85vw,3rem)]") +
             (isClimax ? " text-[#fff4dc]" : "")
           }
-          initial={{ opacity: 0, y: 14 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={
             isClimax && !prefersReducedMotion
               ? { opacity: 1, y: [0, -1, 0.6, 0], scale: [1, 1.008, 1] }
@@ -376,7 +402,11 @@ function SuspenseOverlay({ prefersReducedMotion }: { prefersReducedMotion: boole
                   scale: { duration: 0.38, repeat: Infinity },
                   opacity: { duration: 0 },
                 }
-              : { duration: 1, delay: 0.9, ease: [0.22, 1, 0.36, 1] }
+              : {
+                  duration: prefersReducedMotion ? 0.4 : 1.2,
+                  delay: prefersReducedMotion ? 0.38 : 1.42,
+                  ease: revealEase,
+                }
           }
         >
           {copy.introSuspenseTitle}
@@ -384,17 +414,25 @@ function SuspenseOverlay({ prefersReducedMotion }: { prefersReducedMotion: boole
 
         <motion.div
           className="da-title-rule"
-          initial={{ scaleX: 0 }}
-          animate={{ scaleX: 1 }}
-          transition={{ duration: 0.7, delay: 1.15, ease: [0.22, 1, 0.36, 1] }}
+          initial={{ scaleX: 0, opacity: 0 }}
+          animate={{ scaleX: 1, opacity: 1 }}
+          transition={{
+            duration: prefersReducedMotion ? 0.35 : 0.95,
+            delay: prefersReducedMotion ? 0.48 : 1.78,
+            ease: revealEase,
+          }}
           aria-hidden
         />
 
         <motion.div
           className="relative flex w-full max-w-[17.5rem] flex-col items-center gap-2 md:max-w-[20rem]"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 2.0 }}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{
+            duration: prefersReducedMotion ? 0.35 : 0.85,
+            delay: prefersReducedMotion ? 0.55 : 2.35,
+            ease: revealEase,
+          }}
         >
           <motion.div
             className="relative h-px w-full overflow-hidden bg-solar-gold/18"
@@ -418,50 +456,25 @@ function SuspenseOverlay({ prefersReducedMotion }: { prefersReducedMotion: boole
   );
 }
 
-function GoldPlayIcon({ className }: { className?: string }) {
-  const gid = useId().replace(/:/g, "");
-  return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden>
-      <defs>
-        <linearGradient id={`play-grad-${gid}`} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#e8d5a4" />
-          <stop offset="42%" stopColor="#c5a059" />
-          <stop offset="100%" stopColor="#7a5c2e" />
-        </linearGradient>
-      </defs>
-      <polygon
-        points="8,5 8,19 19,12"
-        fill={`url(#play-grad-${gid})`}
-        className="transition-[filter] duration-500 group-hover:brightness-110"
-        style={{ filter: `drop-shadow(0 0 8px rgba(197, 160, 89, 0.35))` }}
-      />
-    </svg>
-  );
-}
-
-export type DevChapterJumps = {
-  goChapter1: () => void;
-  goChapter2: () => void;
-  goChapter3: () => void;
-  /** Ouvre le parchemin sur Ch. III avec générique façon cinéma (`-previewCredits=1`). */
-  previewCredits: () => void;
-  /** Dev : ms en plus avant le pont acte I→II (après carte mémoire complétée). */
-  devAct12AddPrefaceMs?: (deltaMs: number) => void;
-  devAct12ResetPrefaceExtra?: () => void;
-  devAct12ExtraPrefaceMs?: number;
-  /** Dev : ms de base (constante `ACT12_POST_MAP_COMPLETE_DELAY_MS`) pour l’affichage. */
-  devAct12BasePrefaceDelayMs?: number;
-};
+export type { DevChapterJumps };
 
 interface IntroProps {
   onComplete: () => void;
   isExploring?: boolean;
   onVideoStart?: () => void;
+  /** Volet langue / curseur : garde le curseur custom visible (App `CustomCursor`). */
+  onIntroGateOpenChange?: (open: boolean) => void;
   /** Raccourcis vers les chapitres - affichés uniquement si défini (ex. mode dev dans App). */
   devChapterJumps?: DevChapterJumps;
 }
 
-export default function Intro({ onComplete, isExploring, onVideoStart, devChapterJumps }: IntroProps) {
+export default function Intro({
+  onComplete,
+  isExploring,
+  onVideoStart,
+  onIntroGateOpenChange,
+  devChapterJumps,
+}: IntroProps) {
   const language = useLanguageStore((s) => s.language);
   const confirmLanguage = useLanguageStore((s) => s.confirmLanguage);
   const offerFullscreenOnArrival = useFullscreenPrefsStore((s) => s.offerFullscreenOnArrival);
@@ -470,7 +483,8 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
   const introCtaWords = isArabic ? INTRO_CTA_WORDS_AR : INTRO_CTA_WORDS_FR;
   const ui = isArabic
     ? {
-        shortcuts: "اختصارات المطور",
+        shortcuts: "اختصارات",
+        prologueDirect: "مقدمة",
         secretFragment: "قطعة من سيناك",
         openGame: "فتح اللعبة",
         secretHint: "هناك سر هنا...",
@@ -481,7 +495,8 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
         arabicDz: copy.languageArabicBtn,
       }
     : {
-        shortcuts: "Raccourcis dev",
+        shortcuts: "Raccourcis",
+        prologueDirect: "Prologue",
         secretFragment: "Fragment de Senac",
         openGame: "Ouvrir le jeu",
         secretHint: "Un secret est cache ici...",
@@ -497,13 +512,24 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
   const finePointer = useMediaQuery("(any-pointer: fine)");
   const [videoStarted, setVideoStarted] = useState(false);
   const [showInitialTitle, setShowInitialTitle] = useState(true);
-  const [volume, setVolume] = useState(0.1);
+  const [volume, setVolume] = useState(PROLOGUE_VIDEO_DEFAULT_VOLUME);
   const [isMuted, setIsMuted] = useState(false);
   /** Prologue vidéo : indicateur 0–100 affiché à la molette, puis masqué. */
   const [prologueVolumeHudVisible, setPrologueVolumeHudVisible] = useState(false);
+  const [prologueVideoPaused, setPrologueVideoPaused] = useState(false);
+  const [prologuePlayMarkVisible, setProloguePlayMarkVisible] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [showSkip, setShowSkip] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
+  /** true après l’overlay « Prologue » : le 2e clic ouvre le tutoriel puis la vidéo. */
+  const [introPrefetchDone, setIntroPrefetchDone] = useState(Boolean(isExploring));
+  const [prologueTutorialStep, setPrologueTutorialStep] = useState<PrologueTutorialStep | null>(null);
+  /** Évite double validation « Lancer la vidéo ». */
+  const prologueTutorialVolumeDoneRef = useRef(false);
+  /** Volume validé à la fin du test sonore — conservé jusqu’au lancement vidéo. */
+  const prologueChosenVolumeRef = useRef<number | null>(null);
+  const introSuspenseFinishedRef = useRef(false);
+  const [introHandoffBlackout, setIntroHandoffBlackout] = useState(false);
   const [isPoetryGameOpen, setIsPoetryGameOpen] = useState(false);
   const [isEasterEggFound, setIsEasterEggFound] = useState(false);
   const [easterEggPromptHidden, setEasterEggPromptHidden] = useState(false);
@@ -535,7 +561,9 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
   const launchAuraRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const volumeScrollRef = useRef(volume);
-  const prologueVolumeHudHideRef = useRef<number | null>(null);
+  const prologueVolumeAuraHideRef = useRef<number | null>(null);
+  const prologuePlayMarkHideRef = useRef<number | null>(null);
+  const prologueWasPausedRef = useRef(false);
   const mutedScrollRef = useRef(isMuted);
   const arrivalLangBridgeVideoRef = useRef<HTMLVideoElement>(null);
   const languageGateSmokeSfxRef = useRef<import("howler").Howl | null>(null);
@@ -546,8 +574,37 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
   const isMutedRef = useRef(isMuted);
   volumeRef.current = volume;
   isMutedRef.current = isMuted;
-  volumeScrollRef.current = volume;
-  mutedScrollRef.current = isMuted;
+  if (prologueTutorialStep !== "volume") {
+    volumeScrollRef.current = volume;
+    mutedScrollRef.current = isMuted;
+  }
+
+  const commitPrologueVolume = useCallback((volume01: number) => {
+    const v = Math.min(1, Math.max(0, volume01));
+    const silent = v <= 0;
+    prologueChosenVolumeRef.current = v;
+    volumeScrollRef.current = v;
+    mutedScrollRef.current = silent;
+    volumeRef.current = v;
+    isMutedRef.current = silent;
+    setVolume(v);
+    setIsMuted(silent);
+    if (v > 0) {
+      useMasterVolumeStore.getState().setVolume(v);
+      useMasterVolumeStore.getState().unlockPlayback();
+    }
+  }, []);
+
+  const pulsePrologueVolumeHud = useCallback(() => {
+    setPrologueVolumeHudVisible(true);
+    if (prologueVolumeAuraHideRef.current != null) {
+      window.clearTimeout(prologueVolumeAuraHideRef.current);
+    }
+    prologueVolumeAuraHideRef.current = window.setTimeout(() => {
+      setPrologueVolumeHudVisible(false);
+      prologueVolumeAuraHideRef.current = null;
+    }, 1500);
+  }, []);
 
   const shouldOfferFullscreenNow =
     offerFullscreenOnArrival &&
@@ -718,10 +775,21 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
   }, [arrivalLanguageBridgeVideoActive, endArrivalLanguageBridgeVideo]);
-  /**
-   * Losange sous le sous-titre : visible jusqu’au volet langue « statique », mais conservé pendant
-   * le pont WebM (révélation) pour qu’on le voie encore avant les libellés FR/AR.
-   */
+  /** Masquer le losange décoratif seulement pendant la WebM pont (pas pendant le choix FR/AR). */
+  const hideLandingDiamondForLangBridge =
+    showArrivalLanguageOverlay &&
+    arrivalLanguageBridgeVideoActive &&
+    !arrivalLanguageBridgeCrossfading &&
+    languageBridgeReveal01 < 0.72;
+
+  const introSuspenseActive = isStarting && !videoStarted;
+  const prologueTutorialActive = prologueTutorialStep !== null;
+  const introCoverActive =
+    introSuspenseActive ||
+    prologueTutorialActive ||
+    introHandoffBlackout ||
+    cursorOnboardingOpen;
+
   const showLandingDiamond =
     landingOrnamentAllowed &&
     showInitialTitle &&
@@ -732,12 +800,11 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
     !fullscreenIntroOpen &&
     !launchCtaVisible &&
     !cursorOnboardingOpen &&
-    !(
-      showArrivalLanguageOverlay &&
-      (!arrivalLanguageBridgeVideoActive ||
-        arrivalLanguageBridgeCrossfading ||
-        languageBridgeReveal01 >= 0.72)
-    );
+    !hideLandingDiamondForLangBridge;
+
+  useEffect(() => {
+    onIntroGateOpenChange?.(showArrivalLanguageOverlay || cursorOnboardingOpen);
+  }, [showArrivalLanguageOverlay, cursorOnboardingOpen, onIntroGateOpenChange]);
 
   const triggerLaunchCtaReveal = useCallback(() => {
     setLaunchCtaVisible(true);
@@ -816,9 +883,9 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
     }
     const ctx = gsap.context(() => {
       gsap.set(backgroundRevealRef.current, {
-        opacity: 0.38,
-        scale: 1.16,
-        filter: "brightness(0.62) saturate(0.78) blur(22px)",
+        opacity: 0.42,
+        scale: 1.12,
+        filter: "brightness(0.68) saturate(0.82)",
       });
       gsap.set([sunRevealRef.current, duneFrontRevealRef.current], {
         opacity: 0,
@@ -826,12 +893,10 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
       gsap.set(titleRevealRef.current, {
         opacity: 0,
         y: 56,
-        filter: "blur(18px)",
       });
       gsap.set(subtitleRevealRef.current, {
         opacity: 0,
         y: 28,
-        filter: "blur(12px)",
       });
       gsap.set(hazeRevealRef.current, { opacity: 0 });
 
@@ -848,7 +913,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
           {
             opacity: 1,
             scale: 1,
-            filter: "brightness(1) saturate(1) blur(0px)",
+            filter: "brightness(1) saturate(1)",
             duration: 3.9,
             ease: "power2.out",
           },
@@ -880,7 +945,6 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
           {
             opacity: 1,
             y: 0,
-            filter: "blur(0px)",
             duration: 2.35,
             ease: "power4.out",
           },
@@ -891,7 +955,6 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
           {
             opacity: 1,
             y: 0,
-            filter: "blur(0px)",
             duration: 1.75,
             ease: "power3.out",
           },
@@ -918,83 +981,9 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
     showInitialTitle,
   ]);
 
-  useLayoutEffect(() => {
-    if (
-      launchCtaRevealToken === 0 ||
-      !launchCtaVisible ||
-      !showInitialTitle ||
-      videoStarted ||
-      isStarting
-    ) {
-      return;
-    }
-    if (prefersReducedMotion) {
-      gsap.set([launchCtaWrapRef.current, launchOrbRef.current, launchPromptRef.current, launchAuraRef.current], {
-        clearProps: "all",
-      });
-      return;
-    }
-    const ctx = gsap.context(() => {
-      gsap.set(launchCtaWrapRef.current, {
-        opacity: 1,
-        y: 0,
-      });
-      gsap.set(launchOrbRef.current, {
-        opacity: 0,
-        scale: 0.68,
-        rotate: -34,
-        filter: "blur(10px)",
-      });
-      gsap.set(launchPromptRef.current, {
-        opacity: 0,
-        y: 22,
-        filter: "blur(8px)",
-      });
-      gsap.set(launchAuraRef.current, {
-        opacity: 0,
-        scale: 1,
-      });
-
-      gsap
-        .timeline({ defaults: { overwrite: true } })
-        .to(
-          launchOrbRef.current,
-          {
-            opacity: 1,
-            scale: 1,
-            rotate: 0,
-            filter: "blur(0px)",
-            duration: 1.28,
-            ease: "power4.out",
-          },
-          0.1
-        )
-        .to(
-          launchPromptRef.current,
-          {
-            opacity: 1,
-            y: 0,
-            filter: "blur(0px)",
-            duration: 1.05,
-            ease: "power3.out",
-          },
-          0.58
-        );
-    }, launchCtaWrapRef);
-
-    return () => ctx.revert();
-  }, [
-    isStarting,
-    launchCtaRevealToken,
-    launchCtaVisible,
-    prefersReducedMotion,
-    showInitialTitle,
-    videoStarted,
-  ]);
-
-  /** Plein écran : reste fermé dès que l’intro démarre ou si l’option est indisponible. */
+  /** Plein écran : proposé sur l’écran Immersion ; overlay classique fermé pendant le tuto. */
   useEffect(() => {
-    if (videoStarted || isStarting) {
+    if (videoStarted || isStarting || prologueTutorialActive) {
       setFullscreenIntroOpen(false);
       return undefined;
     }
@@ -1003,7 +992,13 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
       return undefined;
     }
     return undefined;
-  }, [arrivalLanguageConfirmed, videoStarted, isStarting, shouldOfferFullscreenNow]);
+  }, [
+    arrivalLanguageConfirmed,
+    videoStarted,
+    isStarting,
+    prologueTutorialActive,
+    shouldOfferFullscreenNow,
+  ]);
 
   useEffect(() => {
     if (!videoStarted) return;
@@ -1019,10 +1014,11 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
       );
       setVolume(v);
       setIsMuted(m);
+      pulsePrologueVolumeHud();
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
-  }, [videoStarted]);
+  }, [videoStarted, pulsePrologueVolumeHud]);
 
   useEffect(() => {
     if (videoStarted && isEasterEggFound) {
@@ -1063,35 +1059,125 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
     }
   }, [videoStarted]);
 
+  const startPrologueVideo = useCallback(() => {
+    if (videoStarted) return;
+    disposePrologueTutorialVolumeProbe();
+    const chosen =
+      prologueChosenVolumeRef.current ??
+      readPrologueVolume01(volumeRef, isMutedRef);
+    prologueChosenVolumeRef.current = null;
+    if (chosen > 0) commitPrologueVolume(chosen);
+    setVideoStarted(true);
+    onVideoStart?.();
+    window.setTimeout(() => {
+      const el = videoRef.current;
+      if (!el) return;
+      const vol = readPrologueVolume01(volumeRef, isMutedRef);
+      applyPrologueVideoElementVolume(el, vol);
+      void el.play().catch((err) => {
+        console.log("Play failed:", err);
+      });
+    }, 100);
+    setShowInitialTitle(false);
+  }, [videoStarted, onVideoStart, commitPrologueVolume]);
+
+  const startPrologueDirect = useCallback(() => {
+    if (videoStarted) return;
+    disposePrologueTutorialVolumeProbe();
+    if (!arrivalLanguageConfirmed) {
+      confirmLanguage(language);
+      setArrivalLanguageConfirmed(true);
+    }
+    introSuspenseFinishedRef.current = true;
+    setIntroPrefetchDone(true);
+    setIsStarting(false);
+    setPrologueTutorialStep(null);
+    startPrologueVideo();
+  }, [
+    videoStarted,
+    arrivalLanguageConfirmed,
+    confirmLanguage,
+    language,
+    startPrologueVideo,
+  ]);
+
+  const openPrologueTutorial = useCallback(() => {
+    prologueTutorialVolumeDoneRef.current = false;
+    prologueChosenVolumeRef.current = null;
+    volumeScrollRef.current = 0;
+    mutedScrollRef.current = true;
+    setVolume(0);
+    setIsMuted(true);
+    setPrologueTutorialStep("skip");
+  }, []);
+
+  const reviewPrologueTutorialSkip = useCallback(() => {
+    setPrologueTutorialStep("skip");
+  }, []);
+
+  const acknowledgePrologueTutorialSkip = useCallback(() => {
+    prologueTutorialVolumeDoneRef.current = false;
+    setPrologueTutorialStep("volume");
+  }, []);
+
+  const handleTutorialStepRevealed = useCallback(() => {
+    setIntroHandoffBlackout(false);
+  }, []);
+
+  const finishIntroSuspense = useCallback(() => {
+    if (introSuspenseFinishedRef.current) return;
+    introSuspenseFinishedRef.current = true;
+    setIntroPrefetchDone(true);
+    if (!videoStarted) {
+      if (isExploring) {
+        startPrologueVideo();
+        setIsStarting(false);
+        return;
+      }
+      setIntroHandoffBlackout(true);
+      setIsStarting(false);
+      openPrologueTutorial();
+      return;
+    }
+    setIsStarting(false);
+  }, [isExploring, videoStarted, startPrologueVideo, openPrologueTutorial]);
+
+  useEffect(() => {
+    if (!isStarting || introSuspenseFinishedRef.current) return;
+    const fallbackMs = (prefersReducedMotion ? 2550 : 5100) + 400;
+    const t = window.setTimeout(finishIntroSuspense, fallbackMs);
+    return () => window.clearTimeout(t);
+  }, [isStarting, prefersReducedMotion, finishIntroSuspense]);
+
   const startExperience = () => {
     if (!arrivalLanguageConfirmed) {
       openFirstIntroGate();
       return;
     }
-    if (isStarting || videoStarted) return;
-    primeSuspenseAudio();
+    if (isStarting || videoStarted || prologueTutorialActive) return;
+
+    if (!introPrefetchDone) {
+      primeSuspenseAudio();
+      introSuspenseFinishedRef.current = false;
+      setIntroHandoffBlackout(false);
+      setIsStarting(true);
+      return;
+    }
+
+    if (isExploring) {
+      startPrologueVideo();
+      return;
+    }
+
+    introSuspenseFinishedRef.current = false;
+    setIntroHandoffBlackout(false);
     setIsStarting(true);
-    const suspenseDuration = 3700;
-    setTimeout(() => {
-      setVideoStarted(true);
-      onVideoStart?.();
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.volume = isMuted ? 0 : volume;
-          videoRef.current.play().catch((err) => {
-            console.log("Play failed:", err);
-          });
-        }
-      }, 100);
-      setTimeout(() => {
-        setShowInitialTitle(false);
-        setIsStarting(false);
-      }, 2000);
-    }, suspenseDuration);
   };
 
   useEffect(() => {
-    if (videoStarted || isStarting || !showInitialTitle || isPoetryGameOpen) return;
+    if (videoStarted || isStarting || !showInitialTitle || isPoetryGameOpen || prologueTutorialActive) {
+      return;
+    }
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Enter" || e.repeat) return;
       const t = e.target;
@@ -1102,40 +1188,213 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps ?? déclenchement aligné sur l’écran titre initial uniquement
-  }, [videoStarted, isStarting, showInitialTitle, isPoetryGameOpen]);
-  // Entr\u00e9e pendant le trailer = passer
+  }, [videoStarted, isStarting, showInitialTitle, isPoetryGameOpen, prologueTutorialActive]);
+
+  const completePrologueVolumeTutorial = useCallback(() => {
+    if (prologueTutorialVolumeDoneRef.current) return false;
+    const vol = readPrologueVolume01(volumeRef, isMutedRef);
+    if (vol <= 0) return false;
+
+    prologueTutorialVolumeDoneRef.current = true;
+    commitPrologueVolume(vol);
+    disposePrologueTutorialVolumeProbe();
+    setPrologueTutorialStep(null);
+    setIntroHandoffBlackout(false);
+    setIsStarting(false);
+    introSuspenseFinishedRef.current = true;
+    setIntroPrefetchDone(true);
+    startPrologueVideo();
+    return true;
+  }, [commitPrologueVolume, startPrologueVideo]);
+
   useEffect(() => {
-    if (!videoStarted) return;
+    if (prologueTutorialStep === "skip") {
+      prologueTutorialVolumeDoneRef.current = false;
+    }
+  }, [prologueTutorialStep]);
+
+  useEffect(() => {
+    if (prologueTutorialStep !== "volume") {
+      setPrologueVolumeHudVisible(false);
+      return;
+    }
+    volumeScrollRef.current = 0;
+    mutedScrollRef.current = true;
+    setVolume(0);
+    setIsMuted(true);
+    setPrologueVolumeHudVisible(false);
+    const onWheel = (e: WheelEvent) => {
+      const t = e.target;
+      if (
+        t instanceof HTMLInputElement ||
+        t instanceof HTMLTextAreaElement ||
+        t instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+      e.preventDefault();
+      const currentPct = Math.round(
+        (mutedScrollRef.current ? 0 : volumeScrollRef.current) * 100
+      );
+      const dy = e.deltaY;
+      const deltaPct =
+        -Math.sign(dy) * Math.max(1, Math.min(2, Math.round(Math.abs(dy) / 48)));
+      const nextPct = Math.min(100, Math.max(0, currentPct + deltaPct));
+      const next = nextPct / 100;
+      volumeScrollRef.current = next;
+      mutedScrollRef.current = next === 0;
+      setVolume(next);
+      setIsMuted(next === 0);
+      pulsePrologueVolumeHud();
+    };
     const onKey = (e: KeyboardEvent) => {
+      const dir = getVolumeKeyDirection(e);
+      if (dir) {
+        if (shouldIgnoreVolumeKeyboardTarget(e.target)) return;
+        e.preventDefault();
+        const { volume: v, muted: m } = applyVolumeKeyStep(
+          dir,
+          mutedScrollRef.current ? 0 : volumeScrollRef.current,
+          mutedScrollRef.current
+        );
+        volumeScrollRef.current = v;
+        mutedScrollRef.current = m;
+        setVolume(v);
+        setIsMuted(m);
+        pulsePrologueVolumeHud();
+        return;
+      }
       if (e.key !== "Enter" || e.repeat) return;
       const t = e.target;
-      if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement) return;
+      if (
+        t instanceof HTMLInputElement ||
+        t instanceof HTMLTextAreaElement ||
+        t instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+      e.preventDefault();
+      completePrologueVolumeTutorial();
+    };
+    window.addEventListener("wheel", onWheel, { passive: false, capture: true });
+    window.addEventListener("keydown", onKey, true);
+    return () => {
+      window.removeEventListener("wheel", onWheel, { capture: true });
+      window.removeEventListener("keydown", onKey, true);
+    };
+  }, [prologueTutorialStep, completePrologueVolumeTutorial, pulsePrologueVolumeHud]);
+
+  useEffect(() => {
+    if (prologueTutorialStep !== "volume") {
+      disposePrologueTutorialVolumeProbe();
+      return;
+    }
+    primePrologueTutorialVolumeProbe();
+    return () => disposePrologueTutorialVolumeProbe();
+  }, [prologueTutorialStep]);
+
+  useEffect(() => {
+    if (prologueTutorialStep !== "volume") return;
+    syncPrologueTutorialVolumeProbe(volume, isMuted);
+  }, [prologueTutorialStep, volume, isMuted]);
+
+  /** Précharge la vidéo prologue pendant l’overlay « Le voyage va commencer ». */
+  useEffect(() => {
+    if (!isStarting || introPrefetchDone || videoStarted) return;
+    const v = document.createElement("video");
+    v.preload = "auto";
+    v.muted = true;
+    v.playsInline = true;
+    v.src = INTRO_VIDEO_SRC;
+    v.load();
+    return () => {
+      v.removeAttribute("src");
+      v.load();
+    };
+  }, [isStarting, introPrefetchDone, videoStarted]);
+
+  const hideProloguePlayMark = useCallback(() => {
+    if (prologuePlayMarkHideRef.current != null) {
+      window.clearTimeout(prologuePlayMarkHideRef.current);
+      prologuePlayMarkHideRef.current = null;
+    }
+    setProloguePlayMarkVisible(false);
+  }, []);
+
+  const showProloguePlayMark = useCallback(() => {
+    hideProloguePlayMark();
+    setProloguePlayMarkVisible(true);
+    prologuePlayMarkHideRef.current = window.setTimeout(() => {
+      setProloguePlayMarkVisible(false);
+      prologuePlayMarkHideRef.current = null;
+    }, 900);
+  }, [hideProloguePlayMark]);
+
+  const toggleProloguePlayback = useCallback(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (v.paused) {
+      void v.play().catch(() => {});
+    } else {
+      v.pause();
+    }
+  }, []);
+
+  const handleSkip = useCallback(() => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+    }
+    onComplete();
+  }, [onComplete]);
+
+  // Trailer : Espace = lecture/pause, Entrée = passer
+  useEffect(() => {
+    if (!videoStarted || isPoetryGameOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target;
+      if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement) {
+        return;
+      }
+      if (e.key === " " || e.code === "Space") {
+        e.preventDefault();
+        toggleProloguePlayback();
+        return;
+      }
+      if (e.key !== "Enter" || e.repeat) return;
       e.preventDefault();
       handleSkip();
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
+  }, [videoStarted, isPoetryGameOpen, toggleProloguePlayback, handleSkip]);
+
+  useEffect(() => {
+    if (!videoRef.current || !videoStarted) return;
+    applyPrologueVideoElementVolume(
+      videoRef.current,
+      readPrologueVolume01(volumeRef, isMutedRef)
+    );
+  }, [volume, isMuted, videoStarted]);
+
+  useEffect(() => {
+    if (!videoStarted) return;
+    const v = videoRef.current;
+    if (!v) return;
+    tapVideoElementForMeter(v);
   }, [videoStarted]);
 
   useEffect(() => {
-    if (!videoRef.current) return;
-    videoRef.current.volume = isMuted ? 0 : volume;
-  }, [volume, isMuted, videoStarted]);
+    if (videoStarted) return;
+    setPrologueVideoPaused(false);
+    prologueWasPausedRef.current = false;
+    hideProloguePlayMark();
+  }, [videoStarted, hideProloguePlayMark]);
 
   useEffect(() => {
     if (!videoStarted) {
       setPrologueVolumeHudVisible(false);
       return;
     }
-    const scheduleHudHide = () => {
-      if (prologueVolumeHudHideRef.current != null) {
-        window.clearTimeout(prologueVolumeHudHideRef.current);
-      }
-      prologueVolumeHudHideRef.current = window.setTimeout(() => {
-        setPrologueVolumeHudVisible(false);
-        prologueVolumeHudHideRef.current = null;
-      }, 1100);
-    };
     const onWheel = (e: WheelEvent) => {
       const t = e.target;
       if (
@@ -1159,32 +1418,17 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
       mutedScrollRef.current = next === 0;
       setVolume(next);
       setIsMuted(next === 0);
-      setPrologueVolumeHudVisible(true);
-      scheduleHudHide();
+      pulsePrologueVolumeHud();
     };
     window.addEventListener("wheel", onWheel, { passive: false, capture: true });
     return () => {
       window.removeEventListener("wheel", onWheel, { capture: true });
-      if (prologueVolumeHudHideRef.current != null) {
-        window.clearTimeout(prologueVolumeHudHideRef.current);
-        prologueVolumeHudHideRef.current = null;
+      if (prologueVolumeAuraHideRef.current != null) {
+        window.clearTimeout(prologueVolumeAuraHideRef.current);
+        prologueVolumeAuraHideRef.current = null;
       }
     };
-  }, [videoStarted]);
-
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newVolume = parseFloat(e.target.value);
-    setVolume(newVolume);
-    if (newVolume > 0) setIsMuted(false);
-    else setIsMuted(true);
-  };
-
-  const toggleMute = (e: MouseEvent) => {
-    e.stopPropagation();
-    const newMuted = !isMuted;
-    setIsMuted(newMuted);
-    if (!newMuted && volume === 0) setVolume(0.5);
-  };
+  }, [videoStarted, pulsePrologueVolumeHud]);
 
   const handleManualPlay = () => {
     if (videoRef.current) {
@@ -1193,13 +1437,6 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
   };
 
   const handleVideoEnd = () => {
-    onComplete();
-  };
-
-  const handleSkip = () => {
-    if (videoRef.current) {
-      videoRef.current.pause();
-    }
     onComplete();
   };
 
@@ -1215,89 +1452,20 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
         />
       </Suspense>
 
-      {devChapterJumps && (
-        <div
-          className="pointer-events-auto fixed z-[100] flex flex-col gap-2 rounded-sm border border-solar-gold/25 bg-black/55 p-3 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-sm"
-          style={{
-            left: "max(0.75rem, env(safe-area-inset-left))",
-            bottom: "max(0.75rem, env(safe-area-inset-bottom))",
-          }}
-        >
-          <p className="m-0 text-[8px] font-medium uppercase tracking-[0.35em] text-solar-gold/50">
-            {ui.shortcuts}
-          </p>
-          <div className="flex flex-wrap gap-1.5">
+      {devChapterJumps ? (
+        <DevChapterJumpsPanel jumps={devChapterJumps} shortcutsLabel={ui.shortcuts}>
+          <motion.div className="mb-1.5 flex flex-wrap gap-1.5">
             <button
               type="button"
-              onClick={devChapterJumps.goChapter1}
-              className="rounded-sm border border-solar-gold/30 bg-black/40 px-2.5 py-1.5 text-[9px] uppercase tracking-[0.18em] text-solar-gold/90 transition-colors hover:border-solar-gold/50 hover:bg-solar-gold/10"
+              onClick={startPrologueDirect}
+              disabled={videoStarted}
+              className="rounded-sm border border-solar-gold/45 bg-solar-gold/12 px-2.5 py-1.5 text-[9px] uppercase tracking-[0.18em] text-solar-gold transition-colors hover:border-solar-gold/60 hover:bg-solar-gold/20 disabled:pointer-events-none disabled:opacity-40"
             >
-              Ch. I
+              {ui.prologueDirect}
             </button>
-            <button
-              type="button"
-              onClick={devChapterJumps.goChapter2}
-              className="rounded-sm border border-solar-gold/30 bg-black/40 px-2.5 py-1.5 text-[9px] uppercase tracking-[0.18em] text-solar-gold/90 transition-colors hover:border-solar-gold/50 hover:bg-solar-gold/10"
-            >
-              Ch. II
-            </button>
-            <button
-              type="button"
-              onClick={devChapterJumps.goChapter3}
-              className="rounded-sm border border-solar-gold/30 bg-black/40 px-2.5 py-1.5 text-[9px] uppercase tracking-[0.18em] text-solar-gold/90 transition-colors hover:border-solar-gold/50 hover:bg-solar-gold/10"
-            >
-              Ch. III
-            </button>
-            <button
-              type="button"
-              onClick={devChapterJumps.previewCredits}
-              className="rounded-sm border border-solar-gold/30 bg-black/40 px-2.5 py-1.5 text-[9px] uppercase tracking-[0.18em] text-solar-gold/90 transition-colors hover:border-solar-gold/50 hover:bg-solar-gold/10"
-              title={copy.introDevPreviewCreditsTitle}
-            >
-              Crédits
-            </button>
-          </div>
-          {devChapterJumps.devAct12AddPrefaceMs != null && (
-            <>
-              <p className="m-0 mt-1.5 text-[8px] font-medium uppercase tracking-[0.35em] text-solar-gold/50">
-                Pont I→II
-              </p>
-              <p className="m-0 text-[9px] tabular-nums text-solar-gold/75">
-                +{((devChapterJumps.devAct12ExtraPrefaceMs ?? 0) / 1000).toFixed(1)}s — total{" "}
-                {(
-                  ((devChapterJumps.devAct12BasePrefaceDelayMs ?? 0) +
-                    (devChapterJumps.devAct12ExtraPrefaceMs ?? 0)) /
-                  1000
-                ).toFixed(1)}
-                s avant transi
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => devChapterJumps.devAct12AddPrefaceMs?.(1_000)}
-                  className="rounded-sm border border-solar-gold/30 bg-black/40 px-2.5 py-1.5 text-[9px] uppercase tracking-[0.18em] text-solar-gold/90 transition-colors hover:border-solar-gold/50 hover:bg-solar-gold/10"
-                >
-                  +1 s
-                </button>
-                <button
-                  type="button"
-                  onClick={() => devChapterJumps.devAct12AddPrefaceMs?.(2_000)}
-                  className="rounded-sm border border-solar-gold/30 bg-black/40 px-2.5 py-1.5 text-[9px] uppercase tracking-[0.18em] text-solar-gold/90 transition-colors hover:border-solar-gold/50 hover:bg-solar-gold/10"
-                >
-                  +2 s
-                </button>
-                <button
-                  type="button"
-                  onClick={() => devChapterJumps.devAct12ResetPrefaceExtra?.()}
-                  className="rounded-sm border border-solar-gold/30 bg-black/40 px-2.5 py-1.5 text-[9px] uppercase tracking-[0.18em] text-solar-gold/90 transition-colors hover:border-solar-gold/50 hover:bg-solar-gold/10"
-                >
-                  Reset
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      )}
+          </motion.div>
+        </DevChapterJumpsPanel>
+      ) : null}
 
       {!videoStarted && arrivalLanguageConfirmed && !cursorOnboardingOpen && (
       <motion.div 
@@ -1360,9 +1528,9 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
       </motion.div>
       )}
 
-      <div className="relative flex h-full w-full items-center justify-center overflow-x-hidden overflow-y-visible">
-      <AnimatePresence>
-        {showInitialTitle && (
+      <motion.div className="fixed inset-0 z-0 overflow-hidden bg-[#020100]">
+      <AnimatePresence mode="wait">
+        {showInitialTitle && !videoStarted && (
           <motion.div
             ref={initialStageRef}
             key="initial-title"
@@ -1370,12 +1538,13 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, scale: 1.08 }}
             transition={{ duration: 2, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute inset-0 z-20 flex flex-col items-center justify-center overflow-x-hidden overflow-y-visible"
+            className="absolute inset-0 z-20 flex flex-col items-center justify-center overflow-hidden"
           >
           <AnimatePresence>
             {cursorOnboardingOpen && (
               <CursorOnboardingGate
                 prefersReducedMotion={prefersReducedMotion}
+                finePointer={finePointer}
                 onChoose={confirmCursorOnboarding}
               />
             )}
@@ -1388,7 +1557,10 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 6, scale: 1.02 }}
               transition={{ duration: 1.85, ease: [0.22, 1, 0.36, 1] }}
-              className="pointer-events-auto fixed inset-0 z-[100] min-h-[100dvh] w-full overflow-hidden"
+              className={
+                "pointer-events-auto fixed inset-0 z-[100] min-h-[100dvh] w-full overflow-hidden " +
+                (finePointer ? "cursor-none" : "")
+              }
               style={{ background: "#03020100" }}
             >
               <div
@@ -1476,9 +1648,17 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.34, duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-                className="absolute left-1/2 top-[max(2.65rem,calc(env(safe-area-inset-top)+1.35rem))] z-20 flex w-full -translate-x-1/2 flex-row justify-center px-4 text-center pointer-events-none"
+                className="absolute inset-x-0 top-0 z-20 pointer-events-none"
+                style={{
+                  height: "max(7.25rem, calc(env(safe-area-inset-top) + 5.75rem))",
+                }}
               >
-                <motion.div
+                <div
+                  aria-hidden
+                  className="absolute inset-0 bg-[#020100]"
+                />
+                <div className="relative flex h-full w-full items-center justify-center px-4 py-4 text-center sm:py-5">
+                  <motion.div
                   className="mx-auto flex max-w-[min(96vw,52rem)] flex-row flex-wrap items-center justify-center gap-x-2 gap-y-1 sm:gap-x-4"
                   animate={
                     prefersReducedMotion
@@ -1511,7 +1691,8 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                     Choisissez votre langue
                   </span>
                   <span className="hidden h-px w-[min(9rem,22vw)] bg-gradient-to-l from-transparent to-[#c5a059]/18 sm:block" />
-                </motion.div>
+                  </motion.div>
+                </div>
               </motion.div>
 
               {/* Split layout */}
@@ -1556,7 +1737,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                     <motion.span
                       initial={{ opacity: 0, y: -8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.55, duration: 0.9 }}
+                      transition={{ delay: 0.72, duration: 1.05, ease: [0.22, 1, 0.36, 1] }}
                       className="da-eyebrow"
                     >
                       Langue
@@ -1565,7 +1746,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                     <motion.span
                       initial={{ opacity: 0, y: 14 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.65, duration: 1, ease: [0.22, 1, 0.36, 1] }}
+                      transition={{ delay: 0.88, duration: 1.12, ease: [0.22, 1, 0.36, 1] }}
                       className="da-display-title transition-colors duration-300 group-hover:text-[#fff4dc]"
                     >
                       Français
@@ -1648,7 +1829,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                     <motion.span
                       initial={{ opacity: 0, y: -8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.55, duration: 0.9 }}
+                      transition={{ delay: 0.72, duration: 1.05, ease: [0.22, 1, 0.36, 1] }}
                       className="da-eyebrow-ar"
                     >
                       لغة
@@ -1657,7 +1838,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                     <motion.span
                       initial={{ opacity: 0, y: 14 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.65, duration: 1, ease: [0.22, 1, 0.36, 1] }}
+                      transition={{ delay: 0.88, duration: 1.12, ease: [0.22, 1, 0.36, 1] }}
                       className="da-display-title-ar transition-colors duration-300 group-hover:text-[#fff4dc]"
                     >
                       العربية الجزائرية
@@ -1757,7 +1938,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                       }
                     : showArrivalLanguageOverlay
                       ? { scale: 1.01, opacity: 0, filter: "blur(24px) saturate(0.4) brightness(0.2)" }
-                      : { scale: isStarting ? 1.14 : 1, opacity: 1, filter: "blur(0px) saturate(1)" }
+                      : { scale: 1, opacity: 1, filter: "blur(0px) saturate(1)" }
               }
               transition={{
                 duration: prefersReducedMotion
@@ -1768,9 +1949,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                     ? 0
                     : showArrivalLanguageOverlay
                       ? 1.68
-                      : isStarting
-                        ? 2.85
-                        : 0.55,
+                      : 0.55,
                 ease: [0.22, 1, 0.36, 1],
               }}
             >
@@ -1778,13 +1957,14 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                 aria-hidden
                 className="pointer-events-none absolute inset-0 z-[1]"
                 initial={false}
-                animate={{ opacity: prefersReducedMotion ? 0 : isStarting ? 1 : 0 }}
+                animate={{ opacity: 0 }}
                 transition={{ duration: 2.35, ease: [0.22, 1, 0.36, 1] }}
                 style={{ background: "radial-gradient(ellipse 72% 58% at 50% 48%, transparent 0%, rgba(8, 5, 3, 0.08) 45%, rgba(5, 3, 2, 0.72) 100%)" }}
               />
 
+              {!introCoverActive ? (
               <motion.div
-                animate={{ opacity: isStarting ? 0 : 1 }}
+                animate={{ opacity: 1 }}
                 transition={{ duration: 1.92, ease: [0.22, 1, 0.36, 1] }}
                 className="absolute inset-0 z-[-1]"
                 >
@@ -1819,14 +1999,13 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                   }}
                 />
               </motion.div>
+              ) : null}
 
             <motion.h1
-              animate={{
-                opacity: isStarting ? 0 : 1,
-                y: isStarting ? -28 : 0,
-              }}
-              transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+              animate={{ opacity: introCoverActive ? 0 : 1, y: 0 }}
+              transition={{ duration: introCoverActive ? 0.48 : 0.55, ease: [0.22, 1, 0.36, 1] }}
               className="relative z-[2]"
+              aria-hidden={introCoverActive}
             >
               <div ref={titleRevealRef}>
                 {language === "ar-dz" ? (
@@ -1855,6 +2034,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                   <AnimatedTitle
                     heroMotion
                     viewportTracking
+                    staggerLetters={false}
                     text="Al Rihla"
                     className={
                       "font-bahlull text-white tracking-tighter italic drop-shadow-[0_0_22px_rgba(197,160,89,0.35)] " +
@@ -1866,13 +2046,14 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
             </motion.h1>
 
             <motion.div
-              animate={{ opacity: isStarting ? 0 : 1, y: isStarting ? 40 : 0 }}
-              transition={{ duration: 0.5 }}
+              animate={{ opacity: introCoverActive ? 0 : 1, y: 0 }}
+              transition={{ duration: introCoverActive ? 0.48 : 0.5, ease: [0.22, 1, 0.36, 1] }}
               className="flex flex-col items-center text-center"
+              aria-hidden={introCoverActive}
             >
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: isStarting ? 0 : 1, y: isStarting ? -4 : 0 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.95, delay: 0.72, ease: [0.22, 1, 0.36, 1] }}
                 className={
                   "mx-auto max-w-[min(min(18rem,88vw),22rem)] px-6 text-center [font-feature-settings:'kern'_1] " +
@@ -1961,19 +2142,17 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
               ) : null}
 
               <AnimatePresence>
-                {arrivalLanguageConfirmed && launchCtaVisible ? (
+                {arrivalLanguageConfirmed && launchCtaVisible && !introCoverActive ? (
                   <motion.div
-                    key="intro-launch-cta"
+                    key={`intro-launch-cta-${launchCtaRevealToken}`}
                     ref={launchCtaWrapRef}
-                    initial={{ opacity: 0 }}
-                    animate={{
-                      opacity: isStarting ? 0 : 1,
-                      y: isStarting ? 48 : 0,
-                    }}
-                    exit={{ opacity: 0 }}
+                    initial={{ opacity: 0, y: 16, scale: 0.94 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.97 }}
                     transition={{
-                      opacity: { duration: 0.75, ease: [0.22, 1, 0.36, 1] },
-                      y: { duration: 0.85, ease: [0.22, 1, 0.36, 1] },
+                      duration: prefersReducedMotion ? 0.42 : 1.15,
+                      delay: prefersReducedMotion ? 0.05 : 0.18,
+                      ease: [0.22, 1, 0.36, 1],
                     }}
                     className={compactDesktop ? "mt-12" : "mt-20"}
                   >
@@ -1982,15 +2161,32 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                       whileTap={{ scale: 0.98 }}
                       whileHover={prefersReducedMotion ? undefined : { scale: 1.015 }}
                       transition={{ type: "spring", stiffness: 420, damping: 28 }}
-                      className="group relative flex flex-col items-center gap-6 pointer-events-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-solar-gold/30 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent rounded-sm"
+                      className="group relative flex flex-col items-center gap-10 pointer-events-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-solar-gold/30 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent rounded-sm"
                     >
-                      <div
+                      <motion.div
                         ref={launchAuraRef}
-                        className="absolute -inset-14 opacity-0 pointer-events-none bg-[radial-gradient(circle_at_center,rgba(197,160,89,0.18)_0%,transparent_68%)] blur-2xl"
+                        className="absolute -inset-14 pointer-events-none bg-[radial-gradient(circle_at_center,rgba(197,160,89,0.18)_0%,transparent_68%)] blur-2xl"
+                        initial={{ opacity: 0, scale: 0.88 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{
+                          duration: prefersReducedMotion ? 0.35 : 1.35,
+                          delay: prefersReducedMotion ? 0.08 : 0.22,
+                          ease: [0.22, 1, 0.36, 1],
+                        }}
                       />
                       <div className="absolute -inset-14 opacity-0 group-hover:opacity-100 transition-opacity duration-700 ease-[0.22,1,0.36,1] pointer-events-none bg-[radial-gradient(circle_at_center,rgba(197,160,89,0.14)_0%,transparent_68%)] blur-2xl" />
 
-                      <div ref={launchOrbRef} className="relative h-20 w-20 flex items-center justify-center">
+                      <motion.div
+                        ref={launchOrbRef}
+                        className="relative flex h-20 w-20 items-center justify-center"
+                        initial={{ opacity: 0, scale: 0.7, rotate: -28, filter: "blur(8px)" }}
+                        animate={{ opacity: 1, scale: 1, rotate: 0, filter: "blur(0px)" }}
+                        transition={{
+                          duration: prefersReducedMotion ? 0.4 : 1.22,
+                          delay: prefersReducedMotion ? 0.1 : 0.28,
+                          ease: [0.22, 1, 0.36, 1],
+                        }}
+                      >
                         <motion.div
                           aria-hidden
                           className="absolute inset-0 flex items-center justify-center"
@@ -2019,32 +2215,43 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                             </motion.div>
                           </motion.div>
                         </motion.div>
-                      </div>
+                      </motion.div>
 
-                      <motion.p
-                        ref={launchPromptRef}
-                        className="max-w-[min(92vw,24rem)] text-center text-[9px] font-light uppercase leading-relaxed tracking-[0.38em] text-solar-gold/75 transition-colors duration-500 group-hover:text-solar-gold md:text-[10px] md:tracking-[0.42em]"
-                        animate={
-                          prefersReducedMotion || isStarting
-                            ? { opacity: 0.9, filter: "brightness(1)" }
-                            : {
-                                opacity: [0.52, 1, 0.52],
-                                filter: ["brightness(0.88)", "brightness(1.14)", "brightness(0.88)"],
-                                textShadow: [
-                                  "0 0 12px rgba(197,160,89,0.1), 0 0 2px rgba(253,248,238,0.06)",
-                                  "0 0 36px rgba(197,160,89,0.55), 0 0 14px rgba(253,248,238,0.2)",
-                                  "0 0 12px rgba(197,160,89,0.1), 0 0 2px rgba(253,248,238,0.06)",
-                                ],
-                              }
-                        }
+                      <motion.div
+                        initial={{ opacity: 0, y: 12, filter: "blur(6px)" }}
+                        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                         transition={{
-                          duration: 2.65,
-                          repeat: prefersReducedMotion || isStarting ? 0 : Infinity,
-                          ease: [0.4, 0, 0.6, 1],
+                          duration: prefersReducedMotion ? 0.38 : 1.05,
+                          delay: prefersReducedMotion ? 0.16 : 0.72,
+                          ease: [0.22, 1, 0.36, 1],
                         }}
                       >
-                        {introCtaWords.join(" ")}
-                      </motion.p>
+                        <motion.p
+                          ref={launchPromptRef}
+                          className="max-w-[min(92vw,24rem)] text-center text-[9px] font-light uppercase leading-relaxed tracking-[0.38em] text-solar-gold/75 transition-colors duration-500 group-hover:text-solar-gold md:text-[10px] md:tracking-[0.42em]"
+                          animate={
+                            prefersReducedMotion
+                              ? { opacity: 0.9, filter: "brightness(1)" }
+                              : {
+                                  opacity: [0.52, 1, 0.52],
+                                  filter: ["brightness(0.88)", "brightness(1.14)", "brightness(0.88)"],
+                                  textShadow: [
+                                    "0 0 12px rgba(197,160,89,0.1), 0 0 2px rgba(253,248,238,0.06)",
+                                    "0 0 36px rgba(197,160,89,0.55), 0 0 14px rgba(253,248,238,0.2)",
+                                    "0 0 12px rgba(197,160,89,0.1), 0 0 2px rgba(253,248,238,0.06)",
+                                  ],
+                                }
+                          }
+                          transition={{
+                            duration: 2.65,
+                            repeat: prefersReducedMotion ? 0 : Infinity,
+                            ease: [0.4, 0, 0.6, 1],
+                            delay: prefersReducedMotion ? 0 : 1.05,
+                          }}
+                        >
+                          {introCtaWords.join(" ")}
+                        </motion.p>
+                      </motion.div>
                     </motion.button>
                   </motion.div>
                 ) : null}
@@ -2055,25 +2262,54 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
             </motion.div>
 
             <AnimatePresence>
-              {isStarting && !videoStarted && (
+              {introHandoffBlackout && !introSuspenseActive ? (
+                <motion.div
+                  key="intro-handoff-blackout"
+                  aria-hidden
+                  initial={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{
+                    duration: prefersReducedMotion ? 0.45 : 1.15,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                  className="pointer-events-none absolute inset-0 z-[44] bg-[#020100]"
+                />
+              ) : null}
+            </AnimatePresence>
+
+            <AnimatePresence mode="wait">
+              {prologueTutorialStep ? (
+                <PrologueTutorialOverlay
+                  key="prologue-tutorial"
+                  step={prologueTutorialStep}
+                  volume01={isMuted ? 0 : volume}
+                  volumeHudVisible={prologueVolumeHudVisible}
+                  prefersReducedMotion={prefersReducedMotion ?? false}
+                  isArabic={isArabic}
+                  copy={copy}
+                  onSkipAck={acknowledgePrologueTutorialSkip}
+                  onReviewSkip={reviewPrologueTutorialSkip}
+                  onLaunchVideo={completePrologueVolumeTutorial}
+                  onStepRevealed={handleTutorialStepRevealed}
+                />
+              ) : isStarting && !videoStarted ? (
                 <motion.div
                   key="intro-suspense"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  exit={{ opacity: 0, scale: 1.06 }}
+                  exit={{ opacity: 0, filter: "blur(6px)" }}
                   transition={{
-                    opacity: {
-                      duration: prefersReducedMotion ? 0.2 : 0.95,
-                      delay: prefersReducedMotion ? 0 : 0.5,
-                      ease: [0.22, 1, 0.36, 1],
-                    },
-                    scale: { duration: 1.25, ease: [0.22, 1, 0.36, 1] },
+                    duration: prefersReducedMotion ? 0.42 : 1.15,
+                    ease: [0.22, 1, 0.36, 1],
                   }}
-                  className="absolute inset-0 z-[26]"
+                  className="absolute inset-0 z-[45] overflow-hidden"
                 >
-                  <SuspenseOverlay prefersReducedMotion={prefersReducedMotion ?? false} />
+                  <SuspenseOverlay
+                    prefersReducedMotion={prefersReducedMotion ?? false}
+                    onComplete={finishIntroSuspense}
+                  />
                 </motion.div>
-              )}
+              ) : null}
             </AnimatePresence>
         </motion.div>
       )}
@@ -2085,81 +2321,81 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 3.1, delay: 0.12, ease: "easeInOut" }}
-          className="absolute inset-0 w-full h-full z-10"
+          className="fixed inset-0 z-10 h-dvh max-h-dvh w-full overflow-hidden bg-[#020100]"
         >
-          <motion.div className="relative h-full w-full overflow-hidden">
+          <motion.div className="relative h-full min-h-0 w-full overflow-hidden">
+            <motion.div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 z-0 bg-[#060403]"
+            />
             <video
               ref={videoRef}
               onEnded={handleVideoEnd}
               onError={() => setHasError(true)}
-              className="h-full w-full cursor-none object-cover"
+              onPlay={() => {
+                setPrologueVideoPaused(false);
+                if (prologueWasPausedRef.current) {
+                  prologueWasPausedRef.current = false;
+                  showProloguePlayMark();
+                }
+              }}
+              onPause={() => {
+                const v = videoRef.current;
+                if (v?.ended) return;
+                prologueWasPausedRef.current = true;
+                hideProloguePlayMark();
+                setPrologueVideoPaused(true);
+              }}
+              className="absolute inset-0 z-[1] h-full w-full cursor-none object-cover"
               muted={isMuted}
               playsInline
               autoPlay
               src={INTRO_VIDEO_SRC}
             />
             <AnimatePresence>
-              {prologueVolumeHudVisible && (
+              {prologueVideoPaused ? (
+                <ProloguePlaybackMark
+                  key="prologue-pause-mark"
+                  mode="pause"
+                  ariaLabel={copy.introProloguePausedAria}
+                  prefersReducedMotion={prefersReducedMotion}
+                />
+              ) : null}
+              {prologuePlayMarkVisible && !prologueVideoPaused ? (
+                <ProloguePlaybackMark
+                  key="prologue-play-mark"
+                  mode="play"
+                  ariaLabel={copy.introProloguePlayingAria}
+                  prefersReducedMotion={prefersReducedMotion}
+                />
+              ) : null}
+            </AnimatePresence>
+            <AnimatePresence mode="wait">
+              {prologueVolumeHudVisible ? (
                 <motion.div
-                  key="prologue-volume-hud"
-                  role="status"
-                  aria-live="polite"
-                  aria-label={copy.introPrologueVolumeAuraAria}
-                  initial={{ opacity: 0, scale: 0.94, y: 8, filter: "blur(5px)" }}
-                  animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
-                  exit={{ opacity: 0, scale: 0.97, y: 4, filter: "blur(3px)" }}
+                  key="prologue-volume-feedback"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
                   transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-                  className="pointer-events-none absolute right-[max(2.75rem,calc(env(safe-area-inset-right)+1.35rem))] top-1/2 z-[22] -translate-y-1/2 text-right"
+                  className="absolute inset-0 pointer-events-none"
                 >
-                  <motion.span
-                    key={Math.round((isMuted ? 0 : volume) * 100)}
-                    initial={{ opacity: 0.65, y: 3 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-                    className="font-sans text-[clamp(1.65rem,3.6vw,2.35rem)] font-medium tabular-nums leading-none tracking-[0.06em] text-[#f4ead2]/88"
-                    style={{ textShadow: "0 0 20px rgba(0,0,0,0.78)" }}
-                  >
-                    {Math.round((isMuted ? 0 : volume) * 100)}
-                  </motion.span>
+                  <PrologueVolumeFluid
+                    visible
+                    volume01={isMuted ? 0 : volume}
+                    prefersReducedMotion={prefersReducedMotion}
+                    className="absolute inset-0 z-[19]"
+                  />
+                  <div className="absolute inset-0 z-[22]">
+                    <PrologueVolumeHud
+                      volumePct={Math.round((isMuted ? 0 : volume) * 100)}
+                      ariaLabel={copy.introPrologueVolumeAuraAria}
+                    />
+                  </div>
                 </motion.div>
-              )}
+              ) : null}
             </AnimatePresence>
           </motion.div>
-
-          {/* Volume - toujours visible pendant la vidéo (indépendant du bouton « Passer ») */}
-          <AnimatePresence>
-            <motion.div
-              key="intro-volume"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ delay: 1, duration: 1 }}
-              className="absolute top-16 z-50 flex items-center gap-4 group"
-              style={{
-                right: "max(2.75rem, calc(env(safe-area-inset-right, 0px) + 1.35rem))",
-              }}
-            >
-                <div
-                  onClick={toggleMute}
-                  className="w-10 h-10 border border-solar-gold/40 bg-black/40 backdrop-blur-md rotate-45 flex items-center justify-center cursor-none hover:border-solar-gold transition-colors group-hover:shadow-[0_0_15px_rgba(197,160,89,0.5)]"
-                >
-                  <div className="-rotate-45 text-white group-hover:text-solar-gold transition-colors">
-                    {isMuted || volume === 0 ? <VolumeXIcon width={16} height={16} /> : volume < 0.5 ? <Volume1Icon width={16} height={16} /> : <Volume2Icon width={16} height={16} />}
-                  </div>
-                </div>
-                <div className="w-0 group-hover:w-32 overflow-hidden transition-all duration-700 ease-[0.22,1,0.36,1] flex items-center bg-black/40 backdrop-blur-md rounded-full px-0 group-hover:px-4 h-8 border border-transparent group-hover:border-solar-gold/20">
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.01"
-                    value={isMuted ? 0 : volume}
-                    onChange={handleVolumeChange}
-                    className="w-24 h-0.5 bg-solar-gold/20 rounded-full appearance-none cursor-none accent-solar-gold"
-                  />
-                </div>
-              </motion.div>
-          </AnimatePresence>
 
           {/* Skip */}
           <AnimatePresence>
@@ -2180,16 +2416,16 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                     <span className="text-[10px] font-light uppercase tracking-[0.6em] text-solar-gold/70 transition-colors duration-500 group-hover:text-solar-gold">
                       {ui.skipIntro}
                     </span>
-                    <div className="relative mt-0.5 h-[2px] w-[min(17rem,72vw)] overflow-hidden rounded-full bg-solar-gold/15">
+                    <motion.div className="relative mt-0.5 h-[2px] w-[min(17rem,72vw)] overflow-hidden rounded-full bg-solar-gold/15">
                       <motion.div
                         initial={{ width: "0%" }}
                         animate={{ width: "100%" }}
                         transition={{ duration: 8, ease: "linear" }}
                         className="h-full bg-solar-gold/50"
                       />
-                    </div>
+                    </motion.div>
                   </div>
-                  <div className="relative flex h-14 w-14 shrink-0 items-center justify-center">
+                  <motion.div className="relative flex h-14 w-14 shrink-0 items-center justify-center">
                     <div className="absolute inset-0 rotate-45 border border-solar-gold/40 bg-black/45 backdrop-blur-md transition-all duration-700 ease-[0.22,1,0.36,1] group-hover:border-solar-gold group-hover:shadow-[0_0_18px_rgba(197,160,89,0.5)]" />
                     <div className="relative z-[1] -rotate-45 flex items-center justify-center">
                       <motion.div
@@ -2208,7 +2444,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
                         />
                       </motion.div>
                     </div>
-                  </div>
+                  </motion.div>
                 </motion.button>
               </motion.div>
             )}
@@ -2217,7 +2453,7 @@ export default function Intro({ onComplete, isExploring, onVideoStart, devChapte
         </motion.div>
       )}
     </AnimatePresence>
-      </div>
+      </motion.div>
 
       <IntroFullscreenOverlay
         open={fullscreenIntroOpen}

@@ -1,0 +1,30 @@
+/**
+ * Acte II — calque fluide coloré (WebGL).
+ */
+
+#senac-color-fluid {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  overflow: hidden;
+  mix-blend-mode: screen;
+  transition: opacity 1.1s ease;
+}
+
+#senac-color-fluid canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+body.senac-smoke-shader-active #senac-color-fluid {
+  mix-blend-mode: screen;
+  z-index: 3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #senac-color-fluid {
+    display: none !important;
+  }
+}

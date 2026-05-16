@@ -17,7 +17,7 @@ export function runWhenIdle(task: () => void, timeoutMs = 2800): () => void {
 }
 
 /** Chunk lazy `AlgeriaMap` - à précharger pendant l’intro pour un passage acte I sans attente. */
-export function prefetchAct1MapChunk(): Promise<unknown> {
+function prefetchAct1MapChunk(): Promise<unknown> {
   return import("../components/Immersive/AlgeriaMap");
 }
 

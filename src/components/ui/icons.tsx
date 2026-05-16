@@ -40,6 +40,42 @@ export function IconChevronLeft(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function IconChevronUp(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
+      <path d="M18 15l-6-6-6 6" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+/** Entrer en plein écran (coins vers l’extérieur). */
+export function IconFullscreenEnter(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
+      <path
+        d="M4 9V4h5M4 15v5h5M15 4h5v5M20 15v5h-5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.6"
+      />
+    </svg>
+  );
+}
+
+/** Quitter le plein écran (coins vers l’intérieur). */
+export function IconFullscreenExit(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
+      <path
+        d="M9 4H4v5M4 15v5h5M20 9V4h-5M20 15v5h-5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.6"
+      />
+    </svg>
+  );
+}
+
 export function IconVolume2(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
@@ -64,6 +100,25 @@ export function IconVolumeX(props: SVGProps<SVGSVGElement>) {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
       <path d="M4 10v4h4l5 4V6l-5 4H4z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
       <path d="M16 10l5 5M21 10l-5 5" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
+/** Souris avec molette (invite scroll volume prologue). */
+export function IconMouseScroll(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...props}>
+      <path
+        d="M12 4.25c-3.18 0-5.75 2.35-5.75 5.25v7.5c0 2.9 2.57 5.25 5.75 5.25s5.75-2.35 5.75-5.25v-7.5C17.75 6.6 15.18 4.25 12 4.25z"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.25"
+      />
+      <path
+        d="M12 8.25v5"
+        strokeLinecap="round"
+        strokeWidth="1.35"
+      />
     </svg>
   );
 }

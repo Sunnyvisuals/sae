@@ -35,6 +35,7 @@ import {
   REVELATION_WORDS,
   metaForWord,
   randomPoemWord,
+  shuffledPoemPool,
   isRevelationWord,
   type RevelationWord,
   type WordFontRole,
@@ -60,8 +61,49 @@ function rnd(s: number, salt: number) {
   return x - Math.floor(x);
 }
 
-// Construit un bitmap de la silhouette Algérie
-function buildChecker(size: number) {
+type TerritoryMask = {
+  inside: (nx: number, ny: number) => boolean;
+  /** Marge intérieure pour texte (évite les mots sur le contour). */
+  safeForWord: (nx: number, ny: number, marginX: number, marginY: number) => boolean;
+};
+
+function sampleInside(
+  d: Uint8ClampedArray,
+  size: number,
+  nx: number,
+  ny: number,
+): boolean {
+  const ix = Math.min(size - 1, Math.max(0, Math.round(nx * (size - 1))));
+  const iy = Math.min(size - 1, Math.max(0, Math.round(ny * (size - 1))));
+  return d[(iy * size + ix) * 4]! > 128;
+}
+
+function wordFootprintInside(
+  inside: (nx: number, ny: number) => boolean,
+  nx: number,
+  ny: number,
+  marginX: number,
+  marginY: number,
+): boolean {
+  const pts: [number, number][] = [
+    [nx, ny],
+    [nx - marginX, ny],
+    [nx + marginX, ny],
+    [nx, ny - marginY],
+    [nx, ny + marginY],
+    [nx - marginX, ny - marginY],
+    [nx + marginX, ny + marginY],
+    [nx - marginX, ny + marginY],
+    [nx + marginX, ny - marginY],
+  ];
+  for (const [x, y] of pts) {
+    if (x < 0 || x > 1 || y < 0 || y > 1 || !inside(x, y)) return false;
+  }
+  return true;
+}
+
+/** Bitmap silhouette Algérie + test « zone sûre » pour les mots. */
+function buildTerritoryMask(size: number): TerritoryMask {
   const c = document.createElement('canvas');
   c.width = c.height = size;
   const ctx = c.getContext('2d')!;
@@ -72,11 +114,94 @@ function buildChecker(size: number) {
   ctx.fill(ALGERIA_SHAPE_PATH);
   ctx.restore();
   const d = ctx.getImageData(0, 0, size, size).data;
-  return (nx: number, ny: number) => {
-    const ix = Math.min(size - 1, Math.max(0, Math.round(nx * (size - 1))));
-    const iy = Math.min(size - 1, Math.max(0, Math.round(ny * (size - 1))));
-    return d[(iy * size + ix) * 4]! > 128;
+  const inside = (nx: number, ny: number) => sampleInside(d, size, nx, ny);
+  const safeForWord = (nx: number, ny: number, marginX: number, marginY: number) =>
+    wordFootprintInside(inside, nx, ny, marginX, marginY);
+  return { inside, safeForWord };
+}
+
+function poemWordMarginsNorm(p: Particle, S: number): { mx: number; my: number } {
+  const fontPx = poemParticleFontSizePx(p, false);
+  const label = p.word.length > 0 ? p.word : 'immensité';
+  const approxW = label.length * fontPx * 0.56;
+  const approxH = fontPx * 1.18;
+  return {
+    mx: approxW / 2 / S + 0.014,
+    my: approxH / 2 / S + 0.01,
   };
+}
+
+type PoemAnchor = { ox: number; oy: number; mx: number; my: number };
+
+function estimatePoemMargins(
+  word: string,
+  size: number,
+  importance: Importance,
+  S: number,
+): { mx: number; my: number } {
+  const fontPx = Math.max(
+    14,
+    Math.round(size * (importance === 3 ? 1.28 : importance === 2 ? 1.12 : 1.04)),
+  );
+  const approxW = word.length * fontPx * 0.56;
+  const approxH = fontPx * 1.18;
+  return {
+    mx: approxW / 2 / S + 0.014,
+    my: approxH / 2 / S + 0.01,
+  };
+}
+
+function poemSpacingOk(
+  ox: number,
+  oy: number,
+  mx: number,
+  my: number,
+  placed: PoemAnchor[],
+  gap: number,
+): boolean {
+  for (const a of placed) {
+    if (Math.abs(ox - a.ox) < mx + a.mx + gap && Math.abs(oy - a.oy) < my + a.my + gap) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function relocatePoemParticle(
+  p: Particle,
+  idx: number,
+  list: Particle[],
+  S: number,
+  mask: TerritoryMask,
+  gap: number,
+): void {
+  const { mx, my } = poemWordMarginsNorm(p, S);
+  const others: PoemAnchor[] = [];
+  for (let j = 0; j < list.length; j++) {
+    if (j === idx || !list[j]!.isPoem) continue;
+    const q = list[j]!;
+    const m = poemWordMarginsNorm(q, S);
+    others.push({ ox: q.ox, oy: q.oy, mx: m.mx, my: m.my });
+  }
+  if (poemSpacingOk(p.ox, p.oy, mx, my, others, gap) && mask.safeForWord(p.ox, p.oy, mx, my)) {
+    return;
+  }
+  const mapOX = p.cx - p.ox * S;
+  const mapOY = p.cy - p.oy * S;
+  for (let t = 0; t < 280; t++) {
+    const seed = idx * 1319 + t;
+    const ox = rnd(seed, 1);
+    const oy = rnd(seed, 2);
+    if (!mask.safeForWord(ox, oy, mx, my)) continue;
+    if (!poemSpacingOk(ox, oy, mx, my, others, gap)) continue;
+    p.ox = ox;
+    p.oy = oy;
+    p.cx = mapOX + ox * S;
+    p.cy = mapOY + oy * S;
+    p.tx = p.cx;
+    p.ty = p.cy;
+    return;
+  }
 }
 
 interface Particle {
@@ -100,13 +225,52 @@ const WORD_HINT_AFTER_MISS_CLICKS = 2;
 /** Surbrillance d’indice : léger zoom pulsé (canvas). */
 const HINT_GLOW_SCALE_MIN = 1.07;
 const HINT_GLOW_SCALE_AMP = 0.12;
-/** Marge cliquable autour du mot (italique / serif = traits fins sur le canvas). */
-const WORD_HIT_EXTRA_X = 2.8;
-const WORD_HIT_EXTRA_Y = 2.4;
+/** Zone cliquable : padding + minimum (petits mots / italiques). */
+const WORD_HIT_PAD_X = 12;
+const WORD_HIT_PAD_Y = 10;
+const WORD_HIT_MIN_HALF_W = 28;
+const WORD_HIT_MIN_HALF_H = 18;
+const WORD_HIT_EXTRA_X = 1.38;
+const WORD_HIT_EXTRA_Y = 1.42;
+/** Clic toléré si le curseur était sur le mot au survol (léger décalage). */
+const WORD_CLICK_MAX_MOVE_PX = 20;
 
-const N_PARTICLES = 2700;
-/** Calibre la densité de « slots » poème comme avant (3200 × 0.022 ≈ N_PARTICLES × ce taux). */
-const INSIDE_POEM_RATE = (3200 * 0.022) / N_PARTICLES;
+let poemMeasureCtx: CanvasRenderingContext2D | null = null;
+function getPoemMeasureCtx(): CanvasRenderingContext2D | null {
+  if (poemMeasureCtx) return poemMeasureCtx;
+  if (typeof document === 'undefined') return null;
+  poemMeasureCtx = document.createElement('canvas').getContext('2d');
+  return poemMeasureCtx;
+}
+
+function poemWordHitHalfExtents(
+  p: Particle,
+  label: string,
+  font: string,
+  hintPad: number,
+): { halfW: number; halfH: number } {
+  const sz = poemParticleFontSizePx(p, false);
+  const mctx = getPoemMeasureCtx();
+  let halfW = sz * 0.56 * Math.max(label.length, 2.5) * 0.5;
+  if (mctx) {
+    mctx.font = font;
+    halfW = mctx.measureText(label).width / 2;
+  }
+  halfW = Math.max(WORD_HIT_MIN_HALF_W, (halfW + WORD_HIT_PAD_X) * WORD_HIT_EXTRA_X) * hintPad;
+  const halfH =
+    Math.max(WORD_HIT_MIN_HALF_H, (sz * 0.55 + WORD_HIT_PAD_Y) * WORD_HIT_EXTRA_Y) * hintPad;
+  return { halfW, halfH };
+}
+
+/** Points lumineux (sans texte) à l’intérieur du pays. */
+const N_DUST_PARTICLES = 480;
+/** Mots poétiques affichés (dont 5 révélations du parcours). */
+const N_POEM_WORDS = 22;
+/** Marge intérieure au bord du territoire. */
+const POEM_PLACE_MARGIN_X = 0.05;
+const POEM_PLACE_MARGIN_Y = 0.03;
+/** Écart minimal entre deux mots (évite les chevauchements). */
+const POEM_MIN_GAP_NORM = 0.028;
 /** > 1 : compense la rotation 3D (perspective) pour ne pas révéler le fond derrière aux bords de l’écran. */
 /** Légère marge sur scale pour éviter franges aux bords en ultrawide + tilt 3D. */
 const MAP_PARALLAX_COVER_SCALE = 1.098;
@@ -133,7 +297,7 @@ function plantRevelationKeywords(list: Particle[]) {
     p.isRevelation = true;
     p.importance = 3;
     p.fontRole = m.fontRole;
-    p.size = 11 + rnd(idx, 44) * 5;
+    p.size = 15 + rnd(idx, 44) * 6;
   }
 }
 
@@ -141,8 +305,8 @@ function plantRevelationKeywords(list: Particle[]) {
 function poemParticleFontSizePx(p: Particle, hover: boolean): number {
   const mult = hover ? 1.12 : 1;
   const imp = p.importance;
-  const base = p.size * (imp === 3 ? 1.22 : imp === 2 ? 1.06 : 0.94) * mult;
-  return Math.max(10, Math.round(base));
+  const base = p.size * (imp === 3 ? 1.28 : imp === 2 ? 1.12 : 1.04) * mult;
+  return Math.max(14, Math.round(base));
 }
 
 function canvasFontForParticle(p: Particle, hover: boolean): string {
@@ -207,6 +371,12 @@ export default function AlgeriaMap({
   });
   /** Arrêt rendu canvas si l’onglet est en arrière-plan (CPU/GPU). */
   const pageVisibleRef = useRef(typeof document !== 'undefined' ? document.visibilityState === 'visible' : true);
+  const lastPaintMsRef = useRef(0);
+  const lastMousePaintRef = useRef({ x: -9999, y: -9999 });
+  const forcePaintUntilRef = useRef(0);
+  const canvasFontCacheRef = useRef(new Map<string, string>());
+  /** Masque silhouette (coords normalisées 0–1 dans le carré carte). */
+  const territoryMaskRef = useRef<TerritoryMask | null>(null);
   /** Index canvas du mot-révélation planté (un par mot du parcours). */
   const revelationParticleIdxRef = useRef<Partial<Record<RevelationWord, number>>>({});
   const mouse      = useRef({ x: -9999, y: -9999 });
@@ -245,6 +415,20 @@ export default function AlgeriaMap({
     [arabicUi],
   );
 
+  const bumpPaintPriority = useCallback(() => {
+    forcePaintUntilRef.current = performance.now() + 160;
+  }, []);
+
+  const canvasFontCached = useCallback((p: Particle, hover: boolean) => {
+    const key = `${p.fontRole}:${poemParticleFontSizePx(p, hover)}:${hover ? 1 : 0}`;
+    const cache = canvasFontCacheRef.current;
+    const hit = cache.get(key);
+    if (hit) return hit;
+    const font = canvasFontForParticle(p, hover);
+    cache.set(key, font);
+    return font;
+  }, []);
+
   const revelRef = useRef(0);
   const mapAwakenedRef = useRef(false);
   const awakenNotify = useRef(
@@ -280,13 +464,14 @@ export default function AlgeriaMap({
   }, []);
 
   useEffect(() => {
+    bumpPaintPriority();
     revelRef.current = revelationFound.length;
     mapAwakenedRef.current = revelationFound.length >= 5;
     if (revelationFound.length >= 5 && onMemoryMapComplete && !awakenNotify.current) {
       awakenNotify.current = true;
       onMemoryMapComplete();
     }
-  }, [revelationFound, onMemoryMapComplete]);
+  }, [revelationFound, onMemoryMapComplete, bumpPaintPriority]);
 
   useEffect(() => {
     onRevelationProgress?.(revelationFound.length);
@@ -314,12 +499,15 @@ export default function AlgeriaMap({
   const [zoomLabel, setZoomLabel] = useState(1);
   const zoomLabelStepRef = useRef(1);
   useMotionValueEvent(zoomSpring, 'change', (v) => {
+    bumpPaintPriority();
     const step = Math.round(v * 10) / 10;
     if (step !== zoomLabelStepRef.current) {
       zoomLabelStepRef.current = step;
       setZoomLabel(step);
     }
   });
+  useMotionValueEvent(panXSpring, 'change', bumpPaintPriority);
+  useMotionValueEvent(panYSpring, 'change', bumpPaintPriority);
 
   /** Mot du parcours en cours - tant qu’il reste des trous, seul ce mot est cliquable / mis en avant. */
   const activeWordTarget = useMemo(
@@ -420,22 +608,32 @@ export default function AlgeriaMap({
     const H = canvas.offsetHeight || window.innerHeight;
     canvas.width  = W;
     canvas.height = H;
-    const checker = buildChecker(256);
+    const mask = buildTerritoryMask(512);
+    territoryMaskRef.current = mask;
     const { S, mapOX, mapOY } = mapLayout(W, H);
     const list: Particle[] = [];
 
-    for (let i = 0; i < N_PARTICLES; i++) {
-      const ox = rnd(i, 1);
-      const oy = rnd(i, 2);
-      const inside = checker(ox, oy);
-      const isPoem = inside && rnd(i, 3) < INSIDE_POEM_RATE;
-      const baseAlpha = inside
-        ? (isPoem ? 0.84 + rnd(i, 6) * 0.16 : 0.38 + rnd(i, 7) * 0.38)
-        : 0.08 + rnd(i, 8) * 0.1;
+    let dust = 0;
+    let poems = 0;
+    let attempts = 0;
+    const maxAttempts = (N_DUST_PARTICLES + N_POEM_WORDS) * 64;
 
-      const w = isPoem ? randomPoemWord(i) : '';
-      const m = isPoem ? metaForWord(w) : null;
+    const poemPool = shuffledPoemPool(42);
+    let poemPoolIdx = 0;
+    const poemAnchors: PoemAnchor[] = [];
 
+    const pushParticle = (
+      slot: number,
+      ox: number,
+      oy: number,
+      isPoem: boolean,
+      word = '',
+    ) => {
+      const i = slot;
+      const baseAlpha = isPoem
+        ? 0.84 + rnd(i, 6) * 0.16
+        : 0.38 + rnd(i, 7) * 0.38;
+      const m = isPoem && word ? metaForWord(word) : null;
       list.push({
         ox,
         oy,
@@ -443,18 +641,53 @@ export default function AlgeriaMap({
         cy: mapOY + oy * S,
         tx: mapOX + ox * S,
         ty: mapOY + oy * S,
-        size: isPoem ? 8 + rnd(i, 4) * (m!.importance >= 2 ? 5 : 3.5) : 1.2 + rnd(i, 5) * 1.8,
+        size: isPoem
+          ? 12 + rnd(i, 4) * (m && m.importance >= 2 ? 6 : 4.5)
+          : 1.35 + rnd(i, 5) * 2.1,
         alpha: 0,
         baseAlpha,
-        word: w,
+        word: isPoem ? word : '',
         isPoem,
         colorT: rnd(i, 10),
         fontRole: m?.fontRole ?? 'sansNote',
         importance: m?.importance ?? 1,
         isRevelation: false,
       });
+    };
+
+    while ((dust < N_DUST_PARTICLES || poems < N_POEM_WORDS) && attempts < maxAttempts) {
+      attempts += 1;
+      const ox = rnd(attempts, 1);
+      const oy = rnd(attempts, 2);
+      if (!mask.inside(ox, oy)) continue;
+
+      if (poems < N_POEM_WORDS) {
+        const word = poemPool[poemPoolIdx] ?? randomPoemWord(poems);
+        poemPoolIdx += 1;
+        const m = metaForWord(word);
+        const size = 12 + rnd(poems, 4) * (m.importance >= 2 ? 6 : 4.5);
+        const { mx, my } = estimatePoemMargins(word, size, m.importance, S);
+        if (!mask.safeForWord(ox, oy, mx, my)) continue;
+        if (!poemSpacingOk(ox, oy, mx, my, poemAnchors, POEM_MIN_GAP_NORM)) continue;
+        pushParticle(list.length, ox, oy, true, word);
+        poemAnchors.push({ ox, oy, mx, my });
+        poems += 1;
+        continue;
+      }
+
+      if (dust < N_DUST_PARTICLES) {
+        pushParticle(list.length, ox, oy, false);
+        dust += 1;
+      }
     }
+
     plantRevelationKeywords(list);
+
+    for (let i = 0; i < list.length; i++) {
+      const p = list[i]!;
+      if (!p.isPoem) continue;
+      relocatePoemParticle(p, i, list, S, mask, POEM_MIN_GAP_NORM);
+    }
     const poemIdx: number[] = [];
     const byWord: Partial<Record<RevelationWord, number>> = {};
     for (let i = 0; i < list.length; i++) {
@@ -469,6 +702,7 @@ export default function AlgeriaMap({
     particles.current = list;
     ready.current = true;
     pulseGradCacheRef.current = { W: -1, H: -1, grad: null };
+    canvasFontCacheRef.current.clear();
   }, []);
 
   useEffect(() => {
@@ -519,10 +753,28 @@ export default function AlgeriaMap({
     const ctx = canvas.getContext('2d', { alpha: true, desynchronized: true });
     if (!ctx) return;
 
-    const tick = () => {
+    const tick = (now: number) => {
       raf.current = requestAnimationFrame(tick);
       if (!ready.current) return;
       if (!pageVisibleRef.current) return;
+
+      const mx0 = mouse.current.x;
+      const my0 = mouse.current.y;
+      const mouseMoved =
+        Math.hypot(mx0 - lastMousePaintRef.current.x, my0 - lastMousePaintRef.current.y) > 2.5;
+      if (mouseMoved) lastMousePaintRef.current = { x: mx0, y: my0 };
+
+      const appearNow = appearRef.current;
+      const needsFullRate =
+        appearNow < 0.998 ||
+        isDragging.current ||
+        mouseMoved ||
+        now < forcePaintUntilRef.current;
+      if (!needsFullRate) {
+        const sincePaint = now - lastPaintMsRef.current;
+        if (sincePaint < 34) return;
+      }
+      lastPaintMsRef.current = now;
 
       const W = canvas.width, H = canvas.height;
       if (!W || !H) return;
@@ -609,6 +861,7 @@ export default function AlgeriaMap({
       const hintOn = Boolean(need && showWordHintRef.current);
       const hintIdx =
         hintOn && need ? revelationParticleIdxRef.current[need as RevelationWord] : undefined;
+      const territory = territoryMaskRef.current;
 
       for (let idx = 0; idx < arr.length; idx++) {
         const p = arr[idx]!;
@@ -617,7 +870,7 @@ export default function AlgeriaMap({
 
         const dx = p.cx - mx, dy = p.cy - my;
         const distSq = dx * dx + dy * dy;
-        if (distSq > 0 && distSq < REPEL_R * REPEL_R) {
+        if (!p.isPoem && distSq > 0 && distSq < REPEL_R * REPEL_R) {
           const dist = Math.sqrt(distSq);
           const f = (1 - dist / REPEL_R) * REPEL_F;
           p.tx += (dx / dist) * f * REPEL_R;
@@ -626,6 +879,21 @@ export default function AlgeriaMap({
 
         p.cx += (p.tx - p.cx) * RETURN;
         p.cy += (p.ty - p.cy) * RETURN;
+
+        let nx = (p.cx - mapOX) / S;
+        let ny = (p.cy - mapOY) / S;
+        if (territory && !territory.inside(nx, ny)) continue;
+
+        if (p.isPoem && territory) {
+          const { mx, my } = poemWordMarginsNorm(p, S);
+          if (!territory.safeForWord(nx, ny, mx, my)) {
+            nx = p.ox;
+            ny = p.oy;
+            p.cx = mapOX + p.ox * S;
+            p.cy = mapOY + p.oy * S;
+            if (!territory.safeForWord(nx, ny, mx, my)) continue;
+          }
+        }
 
         const target = p.baseAlpha * prog * veil * (mapAwake && p.isPoem ? 1.12 : 1);
         p.alpha += (target - p.alpha) * 0.05;
@@ -649,10 +917,12 @@ export default function AlgeriaMap({
 
         if (p.isPoem) {
           ctx.save();
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
           if (isHover) {
             ctx.shadowColor = 'rgba(253,248,238,0.45)';
             ctx.shadowBlur = 18 / z;
-            ctx.font = canvasFontForParticle(p, true);
+            ctx.font = canvasFontCached(p, true);
             ctx.fillStyle = `rgb(${Math.round(c.r)},${Math.round(c.g)},${Math.round(c.b)})`;
             ctx.fillText(poemLabel(p), p.cx, p.cy);
           } else if (isHintGlow) {
@@ -660,25 +930,18 @@ export default function AlgeriaMap({
             ctx.translate(p.cx, p.cy);
             ctx.scale(hintScalePulse, hintScalePulse);
             ctx.translate(-p.cx, -p.cy);
-            ctx.font = canvasFontForParticle(p, false);
+            ctx.font = canvasFontCached(p, false);
             ctx.shadowColor = `rgba(${GOLD.r}, ${GOLD.g}, ${GOLD.b}, ${0.28 + 0.22 * hintBreath})`;
-            ctx.shadowBlur = (11 + 9 * hintTwinkle) / z;
+            ctx.shadowBlur = (12 + 8 * hintTwinkle) / z;
             const br = Math.min(255, Math.round(c.r + (CREAM.r - c.r) * (0.4 + 0.35 * hintTwinkle)));
             const bg = Math.min(255, Math.round(c.g + (CREAM.g - c.g) * (0.32 + 0.28 * hintTwinkle)));
             const bb = Math.min(255, Math.round(c.b + (CREAM.b - c.b) * (0.26 + 0.22 * hintTwinkle)));
             ctx.fillStyle = `rgb(${br},${bg},${bb})`;
             ctx.fillText(poemLabel(p), p.cx, p.cy);
-            ctx.shadowBlur = (6 + 5 * hintTwinkle) / z;
-            ctx.shadowColor = `rgba(253, 248, 238, ${0.2 + 0.18 * hintBreath})`;
-            ctx.fillText(poemLabel(p), p.cx, p.cy);
             ctx.shadowBlur = 0;
             ctx.shadowColor = 'transparent';
-            ctx.globalCompositeOperation = 'lighter';
-            ctx.fillStyle = `rgba(255, 250, 238, ${0.1 + 0.2 * hintTwinkle * hintTwinkle})`;
-            ctx.fillText(poemLabel(p), p.cx, p.cy);
-            ctx.globalCompositeOperation = 'source-over';
           } else {
-            ctx.font = canvasFontForParticle(p, false);
+            ctx.font = canvasFontCached(p, false);
             ctx.fillStyle = `rgb(${Math.round(c.r)},${Math.round(c.g)},${Math.round(c.b)})`;
             ctx.fillText(poemLabel(p), p.cx, p.cy);
           }
@@ -697,7 +960,7 @@ export default function AlgeriaMap({
 
     raf.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf.current);
-  }, [zoomSpring, panXSpring, panYSpring, poemLabel]);
+  }, [zoomSpring, panXSpring, panYSpring, poemLabel, canvasFontCached]);
 
   const hitTestWord = useCallback((canvasX: number, canvasY: number) => {
     const z = zoomSpring.get();
@@ -717,17 +980,14 @@ export default function AlgeriaMap({
     for (let k = 0; k < poemIndices.length; k++) {
       const i = poemIndices[k]!;
       const p = arr[i]!;
-      const sz = poemParticleFontSizePx(p, false);
-      const cyVis = p.cy - sz * 0.38;
+      const label = poemLabel(p);
       const hintPad = hintIdxHit === i ? HINT_GLOW_SCALE_MIN + HINT_GLOW_SCALE_AMP : 1;
-      const lw = poemLabel(p).length;
-      const halfW =
-        Math.max(sz * 1.65, sz * 0.56 * Math.max(lw, 2.5)) * WORD_HIT_EXTRA_X * hintPad;
-      const halfH = sz * 0.95 * WORD_HIT_EXTRA_Y * hintPad;
+      const font = canvasFontForParticle(p, false);
+      const { halfW, halfH } = poemWordHitHalfExtents(p, label, font, hintPad);
       const dx = mx2 - p.cx;
-      const dy = my2 - cyVis;
+      const dy = my2 - p.cy;
       if (Math.abs(dx) >= halfW || Math.abs(dy) >= halfH) continue;
-      const d = Math.hypot(dx, dy);
+      const d = Math.hypot(dx / halfW, dy / halfH);
       if (d < bestD) {
         bestD = d;
         best = { p, i };
@@ -738,6 +998,7 @@ export default function AlgeriaMap({
 
   // ── Mouse move ────────────────────────────────────────────────────────────
   const handleMouseMove = useCallback((e: ReactMouseEvent<HTMLCanvasElement>) => {
+    bumpPaintPriority();
     if (tutorialActive) dismissTutorial();
     const canvas = e.currentTarget;
     const r = canvas.getBoundingClientRect();
@@ -816,10 +1077,12 @@ export default function AlgeriaMap({
     queueTooltip,
     arabicUi,
     cursorIdle,
+    bumpPaintPriority,
   ]);
 
   // ── Wheel zoom centré curseur ─────────────────────────────────────────────
   const handleWheel = useCallback((e: ReactWheelEvent<HTMLCanvasElement>) => {
+    bumpPaintPriority();
     if (tutorialActive) dismissTutorial();
     e.preventDefault();
     // Molette : pas plus fin (trackpad = petits deltas)
@@ -851,7 +1114,7 @@ export default function AlgeriaMap({
         onQuestStepComplete('zoom');
       }
     }
-  }, [mzoom, mpanX, mpanY, tutorialActive, dismissTutorial, onQuestStepComplete, onHasZoomedPersist]);
+  }, [mzoom, mpanX, mpanY, tutorialActive, dismissTutorial, onQuestStepComplete, onHasZoomedPersist, bumpPaintPriority]);
 
   const handleMouseDown = useCallback(
     (e: ReactMouseEvent<HTMLCanvasElement>) => {
@@ -872,7 +1135,14 @@ export default function AlgeriaMap({
       const scaleY = r.height > 0 ? canvas.height / r.height : 1;
       const cx = (clientX - r.left) * scaleX;
       const cy = (clientY - r.top)  * scaleY;
-      const hit = hitTestWord(cx, cy);
+      let hit = hitTestWord(cx, cy);
+      if (!hit) {
+        const hi = hoveredIdx.current;
+        const arr = particles.current;
+        if (hi >= 0 && arr[hi]?.isPoem) {
+          hit = { p: arr[hi]!, i: hi };
+        }
+      }
       if (!hit) return false;
 
       const need = REVELATION_WORDS.find((w) => !revelationFound.includes(w));
@@ -904,7 +1174,7 @@ export default function AlgeriaMap({
       panPending.current = false;
       downPt.current = null;
 
-      if (!wasDrag && moved < 14) {
+      if (!wasDrag && moved < WORD_CLICK_MAX_MOVE_PX) {
         const opened = tryRevealWordFromClick(e.clientX, e.clientY, e.currentTarget);
         const need = activeWordTargetRef.current;
         if (!opened && need && !showWordHintRef.current) {
@@ -927,11 +1197,11 @@ export default function AlgeriaMap({
       <ActOneAmbiance chapterComplete={memoryAwake} />
 
       {/* ── Grille narrative : chapitre + progression (5 mots-révélation) ── */}
-      <header className="pointer-events-none absolute left-0 right-0 top-0 z-20 flex flex-col items-center px-4 pt-6">
-        <p className="text-[11px] font-medium tracking-[0.32em] text-solar-gold/72 uppercase [text-shadow:0_1px_14px_rgba(0,0,0,0.75)] md:text-xs">
+      <header className="pointer-events-none absolute left-0 right-0 top-0 z-20 flex flex-col items-center px-4 pt-4 sm:pt-5">
+        <p className="text-[13px] font-medium tracking-[0.32em] text-solar-gold/82 uppercase [text-shadow:0_1px_14px_rgba(0,0,0,0.75)] sm:text-[14px]">
           {copy.act1HeaderLine}
         </p>
-        <div className="mt-3 flex h-[3px] w-full max-w-sm gap-1.5">
+        <div className="mt-2 flex h-[2px] w-full max-w-xs gap-1 sm:max-w-sm">
           {REVELATION_WORDS.map((w) => (
             <div
               key={w}
@@ -945,12 +1215,12 @@ export default function AlgeriaMap({
           ))}
         </div>
         {memoryAwake ? (
-          <p className="mt-3 max-w-lg text-center text-[12px] font-medium leading-snug text-solar-gold/72 [text-shadow:0_1px_14px_rgba(0,0,0,0.82)] sm:text-[13px] md:text-[14px]">
+          <p className="mt-3 max-w-lg text-center text-[14px] font-medium leading-relaxed text-white/92 [text-shadow:0_1px_14px_rgba(0,0,0,0.82)] sm:max-w-xl sm:text-[15px]">
             {copy.act1HudSubtitleDone}
           </p>
         ) : (
           <motion.p
-            className="mt-3 max-w-lg text-center text-[12px] font-medium leading-snug text-solar-gold/72 [text-shadow:0_1px_14px_rgba(0,0,0,0.82)] sm:text-[13px] md:text-[14px]"
+            className="mt-3 max-w-lg text-center text-[14px] font-medium leading-relaxed text-white/92 [text-shadow:0_1px_14px_rgba(0,0,0,0.82)] sm:max-w-xl sm:text-[15px]"
             animate={{
               opacity: prefersReducedMotion ? 1 : [1, 0.88, 1],
             }}

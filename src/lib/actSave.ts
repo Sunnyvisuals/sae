@@ -132,7 +132,7 @@ export function getHydratedActSave(): ActSaveState {
         ...base.act2.answers,
         entryChosen: true,
         quest: { scroll: true },
-        scrollRatio: 1,
+        scrollRatio: 0.8,
         chromeMode: "midnight",
         finaleComplete: true,
       },

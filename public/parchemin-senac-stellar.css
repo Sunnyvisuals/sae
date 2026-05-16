@@ -1,0 +1,239 @@
+/**
+ * Acte II — fil stellaire minimal (2026 sahara × 2036 nuit).
+ * Guide l’œil : axe → fait à droite ; centre libre pour archives & arche 3D.
+ */
+
+.chapter-two .aurora,
+.chapter-two .aurora-a,
+.chapter-two .aurora-b {
+  display: none !important;
+}
+
+/* Particules & glyphes : présence renforcée, toujours légères */
+body.senac-reading-flow .senac-scroll-glyphs {
+  opacity: 1;
+  mix-blend-mode: screen;
+}
+
+html.senac-in-iframe body.senac-reading-flow .senac-scroll-glyphs {
+  opacity: 0.95;
+}
+
+html.senac-in-iframe body.senac-reading-flow .senac-scroll-glyphs__layer--veils {
+  opacity: clamp(0.07, calc(0.1 + var(--frise-t, 0) * 0.2), 0.28);
+}
+
+body.senac-reading-flow .senac-scroll-glyphs__spark {
+  opacity: calc(0.12 + var(--senac-presence-gate, 1) * 0.2);
+}
+
+body.senac-reading-flow .senac-scroll-glyphs__dust-mote {
+  opacity: calc(var(--senac-dust-a0, 0.35) * (0.35 + var(--senac-presence-gate, 1) * 0.75));
+}
+
+/* Traits : grille saharienne très fine */
+body.senac-reading-flow .senac-scroll-traits {
+  opacity: calc(0.55 + var(--frise-t, 0) * 0.35);
+}
+
+body.senac-reading-flow .senac-scroll-trait--v {
+  opacity: calc(
+    (0.12 + var(--senac-pillar-glow, 0.35) * 0.2) * (0.35 + var(--senac-presence-gate, 1) * 0.65)
+  );
+}
+
+/* —— Fil de constellation (frise) —— */
+body.senac-reading-flow #timeline-start.timeline.senac-constellation-track {
+  --senac-stellar-axis: clamp(14%, 22vw, 26%);
+  --senac-stellar-progress: 0;
+  position: relative;
+}
+
+body.senac-reading-flow #timeline-start.timeline.senac-constellation-track::before {
+  content: "";
+  position: absolute;
+  left: var(--senac-stellar-axis);
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(197, 160, 89, 0.35) 8%,
+    rgba(139, 213, 255, calc(0.25 + var(--frise-t, 0) * 0.45)) 50%,
+    rgba(197, 160, 89, 0.28) 92%,
+    transparent 100%
+  );
+  box-shadow:
+    0 0 18px rgba(139, 213, 255, calc(0.08 + var(--frise-t, 0) * 0.12)),
+    0 0 32px rgba(197, 160, 89, 0.06);
+  opacity: clamp(0.35, calc(0.45 + var(--senac-stellar-progress, 0) * 0.4), 0.85);
+  pointer-events: none;
+  z-index: 0;
+}
+
+body.senac-reading-flow #timeline-start.timeline.senac-constellation-track::after {
+  content: "";
+  position: absolute;
+  left: var(--senac-stellar-axis);
+  top: 0;
+  width: 1px;
+  height: calc(var(--senac-stellar-progress, 0) * 100%);
+  transform: translateX(-50%);
+  background: linear-gradient(
+    180deg,
+    rgba(244, 234, 210, 0.55) 0%,
+    rgba(197, 160, 89, 0.75) 40%,
+    rgba(139, 213, 255, 0.65) 100%
+  );
+  box-shadow: 0 0 14px rgba(197, 160, 89, 0.35);
+  pointer-events: none;
+  z-index: 0;
+  transition: height 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+body.senac-reading-flow #timeline-start.timeline > .senac-scene {
+  position: relative;
+  z-index: 2;
+}
+
+/* Nœud stellaire sur l’axe */
+body.senac-reading-flow #timeline-start.timeline > .senac-scene::before {
+  content: "";
+  position: absolute;
+  left: var(--senac-stellar-axis);
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  border-radius: 50%;
+  background: rgba(197, 160, 89, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(197, 160, 89, 0.25),
+    0 0 12px rgba(197, 160, 89, 0.2);
+  opacity: 0.45;
+  transform: scale(0.85);
+  transition:
+    opacity 0.45s ease,
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.55s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+body.senac-reading-flow #timeline-start.timeline > .senac-scene.is-visible::before {
+  opacity: 0.72;
+  transform: scale(1);
+}
+
+body.senac-reading-flow #timeline-start.timeline > .senac-scene.senac-scene--active::before {
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  background: rgba(244, 234, 210, 0.92);
+  box-shadow:
+    0 0 0 1px rgba(197, 160, 89, 0.65),
+    0 0 20px rgba(197, 160, 89, 0.45),
+    0 0 36px rgba(139, 213, 255, 0.22);
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+/* Reliquaires : halo central (images) */
+body.senac-reading-flow .senac-scene--reliquary::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(72vw, 28rem);
+  height: min(72vw, 28rem);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 1px solid rgba(197, 160, 89, 0.08);
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(139, 213, 255, calc(0.06 + var(--senac-presence-gate, 1) * 0.08)) 0%,
+    transparent 68%
+  );
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.6;
+}
+
+body.senac-reading-flow .senac-scene--reliquary.senac-scene--active::after {
+  opacity: 1;
+  border-color: rgba(197, 160, 89, 0.18);
+  box-shadow: 0 0 48px rgba(139, 213, 255, 0.12);
+}
+
+/* Arche 3D — au-dessus du ciel, sous la brume quand elle s’éclaircit */
+#senac-arch-canvas {
+  z-index: 7;
+  pointer-events: none;
+  opacity: calc(0.14 + var(--senac-arch-visibility, 0) * 0.88);
+  transition: opacity 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+body.senac-reading-flow #fog-canvas {
+  opacity: calc(
+    (0.28 + var(--hero-t, 0) * 0.22 + var(--frise-t, 0) * 0.18) *
+      (1 - var(--senac-arch-visibility, 0) * 0.38)
+  );
+}
+
+body.senac-smoke-shader-active #fog-canvas {
+  opacity: calc(
+    0.32 * (0.25 + var(--senac-presence-gate, 1) * 0.75) *
+      (1 - var(--senac-arch-visibility, 0) * 0.42)
+  );
+}
+
+body.senac-color-fluid-active #senac-color-fluid {
+  opacity: calc(
+    (0.22 + var(--hero-t, 0) * 0.1 + var(--frise-t, 0) * 0.14) *
+      (0.25 + var(--senac-presence-gate, 1) * 0.75) *
+      (1 - var(--senac-arch-visibility, 0) * 0.25)
+  );
+}
+
+body.senac-reading-flow .senac-arch-scroll-tail {
+  position: relative;
+  min-height: min(140vh, 1200px);
+  z-index: 3;
+}
+
+body.senac-reading-flow .senac-arch-scroll-tail::before {
+  content: "";
+  position: absolute;
+  inset: 10% 8%;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse 58% 42% at 50% 42%,
+    rgba(139, 213, 255, calc(0.12 + var(--senac-stellar-progress, 0) * 0.18)) 0%,
+    rgba(197, 160, 89, 0.06) 38%,
+    transparent 72%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+html[dir="rtl"] body.senac-reading-flow #timeline-start.timeline.senac-constellation-track {
+  --senac-stellar-axis: clamp(74%, 78vw, 86%);
+}
+
+@media (max-width: 840px) {
+  body.senac-reading-flow #timeline-start.timeline.senac-constellation-track {
+    --senac-stellar-axis: 12%;
+  }
+
+  body.senac-reading-flow #timeline-start.timeline > .senac-scene::before {
+    top: 18%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.senac-reading-flow #timeline-start.timeline.senac-constellation-track::after {
+    transition: none;
+  }
+}
