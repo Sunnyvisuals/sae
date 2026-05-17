@@ -63,9 +63,10 @@
       hero_kicker: "Acte II - Nuits sahariennes",
       act2_garde_act: "Acte II",
       act2_garde_title: "La vie de Jean Sénac",
+      act2_garde_scroll_aria: "Faire défiler vers le contenu",
       hero_eyebrow: "Chronologie et archives · Acte II",
       hero_title: "Al Rihla",
-      hero_subtitle: "La traversée",
+      hero_subtitle: "« La traversée »",
       hero_copy: "Jean Sénac - dates, archives, constellations.",
       cross_nav_status_kicker: "Al Rihla · suite du parcours",
       cross_nav_group_aria: "Raccourcis facultatifs",
@@ -161,6 +162,7 @@
         "Dans les années 1947, Sénac fonde avec des amis le groupe littéraire de Belcourt. On y lit, on s'affiche, on invente une scène poétique algérienne avant la lettre.",
       s_belcourt_p2:
         "Ce n'est pas un salon parisien : c'est la rue, le thé, la mer. Une culture populaire et lettrée qui annonce les indépendances culturelles du Maghreb.",
+      ghost_radio: "Radio",
       s_radio_date: "1962, voix publique",
       s_radio_h2: "La radio, le peuple",
       s_radio_p:
@@ -187,7 +189,7 @@
       ch3_back: "Retour à l'expérience",
       ch3_replay: "Revoir la frise",
       vc_title: "Al Rihla",
-      vc_subtitle: "Médiation culturelle - Jean Sénac",
+      vc_subtitle: "Hommage à Jean Sénac",
       vc_h_conception: "Conception & réalisation",
       vc_l_conception_1: "Direction artistique et développement expérience interactive",
       vc_l_conception_2: "Parcours : Carte mémoire - Frise narrative - Clôture",
@@ -205,7 +207,7 @@
       vc_l_audio:
         "Ambiances et pistes utilisées : crédits et licences (ex. Creative Commons, bibliothèque).",
       vc_h_outils: "Outils",
-      vc_l_outils_1: "React, Vite, Motion ? Parchemin : Lenis, canvas & WebGL (selon activation).",
+      vc_l_outils_1: "React, Vite, Motion · Parchemin : Lenis, canvas & WebGL (selon activation).",
       vc_l_outils_2:
         "Création & post-production : Adobe Photoshop, Premiere Pro, After Effects, Blackmagic DaVinci Resolve.",
       vc_fin: "Merci d'avoir traversé cette nuit.",
@@ -238,9 +240,10 @@
       hero_kicker: "الجزء الثاني - ليالٍ صحراوية",
       act2_garde_act: "الجزء الثاني",
       act2_garde_title: "حياة جان سنّاك",
+      act2_garde_scroll_aria: "التمرير نحو المحتوى",
       hero_eyebrow: "أرشيف وزمن · الجزء الثاني",
       hero_title: "الرحلة",
-      hero_subtitle: "المسيرة",
+      hero_subtitle: "« المسيرة »",
       hero_copy: "جان سنّاك - تواريخ، أرشيف، كواكب.",
       cross_nav_chip_video: "فيديو",
       cross_nav_chip_map: "خريطة",
@@ -302,6 +305,7 @@
         "صدر عام 1949، يُقرأ <em>شموس متفرّقة</em> غالبًا كتابًا مؤسّسًا: صوت يعترف بالرغبة، بحرب الجزائر الكامنة، وباستحالة القسمة بين أوروبا والجنوب.",
       s_soleils_p2:
         "العنوان برنامج: شموس لا تلتقي، هويات متعددة. يخترع سنّاك حسّية سياسية ما زالت تزعج النقد المحافظ.",
+      ghost_radio: "إذاعة",
       s_radio_date: "1962، صوت علني",
       s_radio_h2: "الإذاعة والشعب",
       s_radio_p:
@@ -364,7 +368,7 @@
       ch3_back: "رجوع للتجربة",
       ch3_replay: "عاود الخط الزمني",
       vc_title: "الرحلة",
-      vc_subtitle: "وساطة ثقافية - جان سنّاك",
+      vc_subtitle: "تحية لجان سنّاك",
       vc_h_conception: "الإعداد والإنجاز",
       vc_l_conception_1: "الإخراج الفنّي وتطوير التجربة التفاعلية",
       vc_l_conception_2: "المسار: خريطة الذاكرة - خط زمني - ختام",
@@ -382,7 +386,7 @@
       vc_l_audio:
         "الأجواء والمقاطع المستعملة: شهادات وتراخيص (مثلاً Creative Commons، مكتبة).",
       vc_h_outils: "الأدوات",
-      vc_l_outils_1: "React، Vite، Motion ? الرقّ: Lenis، canvas و WebGL (حسب التفعيل).",
+      vc_l_outils_1: "React، Vite، Motion · الرقّ: Lenis، canvas و WebGL (حسب التفعيل).",
       vc_l_outils_2:
         "الإنشاء والما بعد: Adobe Photoshop، Premiere Pro، After Effects، DaVinci Resolve.",
       vc_fin: "شكرًا على اجتياز هاد الليل.",

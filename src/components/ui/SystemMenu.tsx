@@ -927,7 +927,7 @@ export default function SystemMenu({
                 {copy.menuPause}
               </p>
               <h2
-                className="font-bahlull mx-auto mt-3 mb-3 box-border flex w-full max-w-[min(100%,28ch)] flex-col items-center justify-center overflow-visible px-0.5 pb-1 pt-0.5 text-[clamp(2.35rem,8vw,4rem)] italic leading-[1.18] text-transparent sm:mt-3.5 sm:mb-3.5"
+                className="font-bahlull mx-auto mt-3 mb-1 box-border flex w-full max-w-[min(100%,28ch)] flex-col items-center justify-center overflow-visible px-0.5 pb-0.5 pt-0.5 text-[clamp(2.35rem,8vw,4rem)] italic leading-[1.18] text-transparent sm:mt-3.5 sm:mb-1.5"
                 style={
                   midnight
                     ? {
@@ -956,8 +956,8 @@ export default function SystemMenu({
               variants={item}
               className={
                 midnight
-                  ? 'font-serif mx-auto mt-3.5 max-w-[30ch] text-center text-[13px] italic leading-relaxed text-sky-200/52 sm:mt-4 sm:max-w-lg sm:text-[15px] md:text-[16px]'
-                  : 'font-serif mx-auto mt-3.5 max-w-[30ch] text-center text-[13px] italic leading-relaxed text-solar-gold/50 sm:mt-4 sm:max-w-lg sm:text-[15px] md:text-[16px]'
+                  ? 'font-serif mx-auto mt-1.5 max-w-[30ch] text-center text-[13px] italic leading-relaxed text-sky-200/52 sm:mt-2 sm:max-w-lg sm:text-[15px] md:text-[16px]'
+                  : 'font-serif mx-auto mt-1.5 max-w-[30ch] text-center text-[13px] italic leading-relaxed text-solar-gold/50 sm:mt-2 sm:max-w-lg sm:text-[15px] md:text-[16px]'
               }
             >
               <span className={midnight ? 'text-sky-300/42' : 'text-solar-gold/35'}>«</span>

@@ -2062,24 +2062,11 @@ export default function Intro({
               >
                 <div ref={subtitleRevealRef}>
                   {language === "ar-dz" ? (
-                    <p
-                      dir="rtl"
-                      className={
-                        "font-arabic-ui font-medium leading-relaxed text-[#f4ead2]/78 drop-shadow-[0_0_18px_rgba(197,160,89,0.22)] " +
-                        (compactDesktop
-                          ? "text-[clamp(0.82rem,1.65vw,1rem)] tracking-[0.06em]"
-                          : "text-[clamp(0.88rem,1.95vw,1.12rem)] tracking-[0.06em]")
-                      }
-                    >
+                    <p dir="rtl" className="da-curtain-ar">
                       {copy.introJeanSenacSubtitle}
                     </p>
                   ) : (
-                    <p
-                      className={
-                        "font-serif italic font-normal leading-none text-[#f4ead2]/78 tracking-[0.18em] drop-shadow-[0_0_18px_rgba(197,160,89,0.2)] " +
-                        (compactDesktop ? "text-[clamp(0.8rem,1.45vw,0.95rem)]" : "text-[clamp(0.85rem,1.75vw,1.05rem)]")
-                      }
-                    >
+                    <p className="da-curtain-fr sm:tracking-[0.4em]">
                       {copy.introJeanSenacSubtitle}
                     </p>
                   )}

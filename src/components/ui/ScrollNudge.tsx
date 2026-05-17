@@ -5,8 +5,17 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useAppCopy } from '../../hooks/useAppCopy';
 
 const DELAY_MS = 5000;
+/** Acte II : masquer le repère dès ce ratio de scroll iframe. */
+const ACT2_SCROLL_DISMISS_RATIO = 0.04;
 
-export default function ScrollNudge() {
+type ScrollNudgeProps = {
+  /** Acte II : masqué au scroll du parchemin (pas au zoom carte). */
+  act2?: boolean;
+  /** Progression scroll iframe (0–1) : masque le repère après le premier défilement. */
+  iframeScrollRatio?: number;
+};
+
+export default function ScrollNudge({ act2 = false, iframeScrollRatio }: ScrollNudgeProps = {}) {
   const copy = useAppCopy();
   const [visible, setVisible] = useState(false);
   const dismissedRef = useRef(false);
@@ -20,10 +29,24 @@ export default function ScrollNudge() {
     setVisible(false);
   };
 
+  const act2Mode = act2;
+
+  useEffect(() => {
+    if (act2Mode && iframeScrollRatio != null && iframeScrollRatio >= ACT2_SCROLL_DISMISS_RATIO) {
+      dismiss();
+    }
+  }, [act2Mode, iframeScrollRatio]);
+
   useEffect(() => {
     timerRef.current = setTimeout(() => {
       if (!dismissedRef.current) setVisible(true);
     }, DELAY_MS);
+
+    if (act2Mode) {
+      return () => {
+        if (timerRef.current) clearTimeout(timerRef.current);
+      };
+    }
 
     /** Acte I : masqué dès un zoom avant (molette / pincement) ou équivalent geste cartographique. */
     const onWheel = (e: WheelEvent) => {
@@ -63,7 +86,7 @@ export default function ScrollNudge() {
       window.removeEventListener('touchstart', onTouchStart);
       window.removeEventListener('touchmove', onTouchMove);
     };
-  }, []);
+  }, [act2Mode]);
 
   useEffect(() => {
     if (visible) lastScrollYRef.current = window.scrollY;

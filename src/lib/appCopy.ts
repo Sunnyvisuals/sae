@@ -17,6 +17,14 @@ type PoetryLevel = {
   options: string[];
 };
 
+export type VoyageCreditsBlock = {
+  heading: string;
+  /** Nom ou crédit principal du bloc (ex. réalisateur). */
+  lead?: string;
+  lines?: string[];
+  groups?: { label: string; lines: string[] }[];
+};
+
 /** Textes persistants hors React - une seule source pour FR / العربية الجزائرية */
 type Copy = {
   act1HudSubtitleDone: string;
@@ -200,7 +208,7 @@ type Copy = {
   voyageCreditsSubtitle: string;
   voyageCreditsClose: string;
   voyageCreditsFin: string;
-  voyageCreditsBlocks: { heading: string; lines: string[] }[];
+  voyageCreditsBlocks: VoyageCreditsBlock[];
   act3Aria: string;
   act3Kicker: string;
   act3Hint: string;
@@ -265,12 +273,12 @@ const FR: Copy = {
   orientationBreadcrumbAria: "Fil d'Ariane",
   orientationCreditsLabel: "Crédits",
   orientationCreditsSummary: "Générique de fin, remerciements et fermeture de ce voyage.",
-  orientationFutureAct3: "Acte III - -",
-  orientationFutureAct4: "--- - ---",
-  orientationFutureAct4Summary: "---- ---- ---- ----",
-  orientationLockedIntro: "Intro - -",
-  orientationLockedAct1: "Acte I - -",
-  orientationLockedAct2: "Acte II - -",
+  orientationFutureAct3: "Acte III",
+  orientationFutureAct4: "Suite du voyage",
+  orientationFutureAct4Summary: "À venir",
+  orientationLockedIntro: "Prologue",
+  orientationLockedAct1: "Acte I",
+  orientationLockedAct2: "Acte II",
   orientationPhaseIntroLabel: "Intro - Prologue",
   orientationPhaseAct1Label: "Acte I - L'algérie",
   orientationPhaseAct2Label: "Acte II - (suite)",
@@ -436,7 +444,7 @@ const FR: Copy = {
   introTutorialVolumeSuccess: "Le seuil est franchi - le prologue commence.",
   introTutorialVolumeLaunchCta: "Lancer la vidéo",
   introTutorialReviewMission1: "Reprendre l'accueil",
-  act23BridgeVideoSkip: "Passer cette transition",
+  act23BridgeVideoSkip: "Franchir le passage",
   act2FinaleAria: "Clôture du voyage - complétez la phrase pour accéder aux crédits",
   act2FinaleStem: "Une traversée existe vraiment quand",
   act2FinalePlaceholder: "… quelques mots suffisent",
@@ -444,36 +452,78 @@ const FR: Copy = {
     "Écrivez votre fin de phrase ci-dessous. Ce n’est ni un test ni une notation - seulement votre trace.",
   act2FinaleSubmit: "Voir les crédits",
   voyageCreditsTitle: "Al Rihla",
-  voyageCreditsSubtitle: "Médiation culturelle - Jean Sénac",
+  voyageCreditsSubtitle: "Hommage à Jean Sénac",
   voyageCreditsClose: "Fermer (Échap)",
   voyageCreditsFin: "Merci d’avoir traversé cette nuit.",
   voyageCreditsBlocks: [
     {
       heading: "Conception & réalisation",
+      lead: "Yacine Bouabdallah",
       lines: [
-        "Direction artistique et développement de l’expérience interactive.",
-        "Parcours : carte-mémoire, frise narrative, clôture du voyage.",
+        "Direction artistique & développement",
+        "Carte mémoire, frise Jean Sénac, écriture, générique",
+        "React, TypeScript, Vite, GSAP, Motion",
+        "Tailwind, Lenis, Howler, Zustand",
+        "Aide IA : débugage, conception du site web",
+        "Toute la partie développement",
       ],
     },
     {
       heading: "Textes & citations",
       lines: [
-        "Fragments et citations : Jean Sénac - références et droits à compléter dans le dossier du projet.",
+        "Fragments et citations de Jean Sénac",
+        "Reproduction pédagogique (art. L.122-5 CPI)",
+        "Projet BUT MMI, usage non commercial",
       ],
     },
     {
       heading: "Images & archives",
-      lines: ["Photographies et documents intégrés au parchemin : crédits à reporter (institutions, dates)."],
-    },
-    {
-      heading: "Vidéo · musique",
       lines: [
-        "Médias du projet - auteurs image, son et musique à mentionner dans les crédits finaux.",
+        "Portraits et documents dans le parchemin",
+        "Archives photographiques du dossier pédagogique",
       ],
     },
     {
-      heading: "Outils",
-      lines: ["React, Vite, Motion. Parchemin : Lenis, canvas & effets ambiants.", "Merci aux librairies open source utilisées dans la chaîne de production."],
+      heading: "Musique",
+      lines: [
+        "Raïna Raï, Zina",
+        "Switzerland, Thomas James White",
+        "Emotional Arabian Oud (Acte II)",
+      ],
+    },
+    {
+      heading: "Vidéo & son",
+      lines: [
+        "Intro & transitions (al-rihla.mp4, ponts)",
+        "Tournage, montage et prologue par Yacine Bouabdallah",
+        "Plans sous licence Artlist",
+        "Effets whoosh & transitions (local)",
+      ],
+    },
+    {
+      heading: "Technique & sources",
+      groups: [
+        {
+          label: "Création",
+          lines: ["Adobe CC, DaVinci Resolve, Blender"],
+        },
+        {
+          label: "Web & 3D",
+          lines: [
+            "Three.js, scène 3D de l’arche",
+            "Modèle public/models/model.glb",
+            "Turf.js, carte mémoire",
+          ],
+        },
+        {
+          label: "Données & typo",
+          lines: [
+            "Natural Earth 50 m, contour Algérie",
+            "Google Fonts, Bahlull (locale)",
+            "Bibliothèques open source",
+          ],
+        },
+      ],
     },
   ],
   act3Aria: "Acte III - poésie interactive, recomposition des fragments du voyage",
@@ -540,12 +590,12 @@ const AR: Copy = {
   orientationBreadcrumbAria: "مسار الرحلة",
   orientationCreditsLabel: "التذييل",
   orientationCreditsSummary: "التذييل النهائي، شكر وهدايا، وكتامة الدرب.",
-  orientationFutureAct3: "المشهد الثالث - ؟",
-  orientationFutureAct4: "؟؟؟ - ؟؟؟",
-  orientationFutureAct4Summary: "؟؟؟ - ؟؟؟ - ؟؟؟ - ؟؟؟",
-  orientationLockedIntro: "المقدمة - ؟",
-  orientationLockedAct1: "المشهد الأول - ؟",
-  orientationLockedAct2: "المشهد الثاني - ؟",
+  orientationFutureAct3: "المشهد الثالث",
+  orientationFutureAct4: "تتمة الرحلة",
+  orientationFutureAct4Summary: "قريبًا",
+  orientationLockedIntro: "المقدمة",
+  orientationLockedAct1: "المشهد الأول",
+  orientationLockedAct2: "المشهد الثاني",
   orientationPhaseIntroLabel: "المقدمة - تمهيد",
   orientationPhaseAct1Label: "المشهد الأول - الجزائر",
   orientationPhaseAct2Label: "المشهد الثاني - مواصلة",
@@ -710,7 +760,7 @@ const AR: Copy = {
   introTutorialVolumeSuccess: "العتبة تجاوزت - المقدّمة تبدا.",
   introTutorialVolumeLaunchCta: "شغّل الفيديو",
   introTutorialReviewMission1: "رجع للاستقبال",
-  act23BridgeVideoSkip: "تخطّى الانتقال",
+  act23BridgeVideoSkip: "اجتياز الممر",
   act2FinaleAria: "ختام الرحلة - أكمّل الجملة باش توصل لتذييل الفريق",
   act2FinaleStem: "المسيرة تكون حقيقية كي",
   act2FinalePlaceholder: "… بكلمات قلّال يكفي",
@@ -718,36 +768,77 @@ const AR: Copy = {
     "كتب خواتيس الجملة. ماكاش تقييم - غير أثر تنخلّيه وأنت تنقرا.",
   act2FinaleSubmit: "شوف التذييل",
   voyageCreditsTitle: "الرحلة",
-  voyageCreditsSubtitle: "وساطة ثقافية - جان سنّاك",
+  voyageCreditsSubtitle: "تحية لجان سنّاك",
   voyageCreditsClose: "سكر (Esc)",
   voyageCreditsFin: "شكرًا على اجتياز هاد الليل.",
   voyageCreditsBlocks: [
     {
       heading: "الإعداد والإنجاز",
+      lead: "ياسين بوعبد الله",
       lines: [
-        "الإخراج الفنّي وتطوير التجرّبة التفاعلية.",
-        "المسار: خريطة الذاكرة، خط زمني، ختام الرحلة.",
+        "الإخراج الفنّي والتطوير",
+        "خريطة الذاكرة، خط جان سنّاك، الكتابة، التذييل",
+        "React, TypeScript, Vite, GSAP, Motion",
+        "Tailwind, Lenis, Howler, Zustand",
+        "مساعدة الذكاء الاصطناعي : تصحيح، تصميم الموقع",
+        "جزء التطوير بالكامل",
       ],
     },
     {
       heading: "النصوص والاقتباسات",
       lines: [
-        "قطع واقتباسات جان سنّاك - ثبّت المراجع والحقوق في ملفّ المشروع.",
+        "مقتطفات واقتباسات جان سنّاك",
+        "إعادة إنتاج تربوي (المادة 122-5)",
+        "مشروع BUT MMI، غير تجاري",
       ],
     },
     {
       heading: "الصور والأرشيف",
-      lines: ["صور ومستندات في الرّقّ - الإسناد كي يتكمّل (مؤسسات، تواريخ)."],
-    },
-    {
-      heading: "الفيديو والموسيقى",
-      lines: ["وسائط المشروع - صورة وصوت وموسيقى تذكر في التذييل النهائي."],
-    },
-    {
-      heading: "الأدوات",
       lines: [
-        "React، Vite، Motion. الرقّ: Lenis وطبقات رسوم وحسّية.",
-        "شكر لمكتبات المصدر المفتوح المعتمدة في السلسلة.",
+        "صور ومستندات في الرّقّ",
+        "أرشيفات فوتوغرافية من الملفّ التربوي",
+      ],
+    },
+    {
+      heading: "الموسيقى",
+      lines: [
+        "Raïna Raï, Zina",
+        "Switzerland, Thomas James White",
+        "Emotional Arabian Oud (الجزء الثاني)",
+      ],
+    },
+    {
+      heading: "الفيديو والصوت",
+      lines: [
+        "مقدّمة وانتقالات (al-rihla.mp4، جسور)",
+        "تصوير ومونتاج وتمرين المقدّمة، ياسين بوعبد الله",
+        "لقطات برخصة Artlist",
+        "مؤثرات whoosh وانتقالات (محلي)",
+      ],
+    },
+    {
+      heading: "التقنية والمصادر",
+      groups: [
+        {
+          label: "الإبداع",
+          lines: ["Adobe CC, DaVinci Resolve, Blender"],
+        },
+        {
+          label: "الويب والثلاثي الأبعاد",
+          lines: [
+            "Three.js، مشهد القوس",
+            "نموذج public/models/model.glb",
+            "Turf.js، خريطة الذاكرة",
+          ],
+        },
+        {
+          label: "البيانات والخطوط",
+          lines: [
+            "Natural Earth 50 m، حدود الجزائر",
+            "Google Fonts، Bahlull (محلي)",
+            "مكتبات المصدر المفتوح",
+          ],
+        },
       ],
     },
   ],

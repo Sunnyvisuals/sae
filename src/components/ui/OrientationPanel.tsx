@@ -294,7 +294,7 @@ export function ParcoursPanelInnerContent({
           const visualCryptic = cryptic || act4MysteryRow;
           const showCrypticCopy = cryptic && rowPhase !== null;
           const rowLabel = showCrypticCopy ? lockedTitle(rowPhase) : label;
-          const rowSummary = showCrypticCopy ? '---' : summary;
+          const rowSummary = showCrypticCopy ? '' : summary;
           /** Retour + suite déjà débloquée (pont Acte I) : cliquable sans « Parcours libre ». */
           const canNavigate =
             typeof onNavigatePhase === 'function' &&
@@ -514,8 +514,8 @@ export default function OrientationPanel({
       setCollapsedMinimal(false);
       return;
     }
-    /** Acte II : rail discret dès l’entrée (pas de label vertical illisible). */
-    if (phase === "act2") {
+    /** Acte I & II : rail replié = flèche seule (pas de label vertical). */
+    if (phase === "act1" || phase === "act2") {
       setCollapsedMinimal(true);
       return;
     }
@@ -643,7 +643,7 @@ export default function OrientationPanel({
           />
           <span
             className={
-              (phase === 'act2' ? 'sr-only ' : '') +
+              (phase === 'act1' || phase === 'act2' ? 'sr-only ' : '') +
               'select-none text-[9px] font-semibold uppercase tracking-[0.32em] [writing-mode:vertical-rl] rotate-180 transition-[color,text-shadow] duration-[850ms] ease-out ' +
               (quietCollapsed
                 ? nightRail

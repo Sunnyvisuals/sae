@@ -35,7 +35,7 @@ body.senac-reading-flow .senac-scene--card.story-card[data-reveal]:not(.is-visib
   pointer-events: auto;
 }
 
-/* -- Cartes : date à gauche, fait à droite -- */
+/* -- Cartes : date fantôme côté libre, fait vers l’axe (alternance --right / --left) -- */
 body.senac-reading-flow .senac-scene--card.story-card {
   display: grid;
   grid-template-columns:
@@ -68,11 +68,87 @@ body.senac-reading-flow .senac-scene--card .date-ghost {
   transform: none;
 }
 
+html:not([dir="rtl"]) body.senac-reading-flow .senac-scene--card.story-card--right .date-ghost {
+  transform: translate3d(var(--senac-ghost-right-nudge, -1.35rem), 0, 0);
+}
+
+html:not([dir="rtl"]) body.senac-reading-flow .senac-scene--card.story-card--right .date-ghost--word {
+  transform: translate3d(var(--senac-ghost-right-nudge-word, -2.1rem), 0, 0);
+}
+
 /* Centrage vertical avec le panneau « Saviez-vous » - pas de décalage vers le haut */
 body.senac-reading-flow .senac-scene--active.story-card--right .date-ghost,
-body.senac-reading-flow .senac-scene--active.story-card--left .date-ghost,
-body.senac-reading-flow .story-card.is-visible .date-ghost {
-  transform: translate3d(0, 0, 0) scale(1.02);
+body.senac-reading-flow .story-card--right.is-visible .date-ghost {
+  transform: translate3d(var(--senac-ghost-right-nudge, -1.35rem), 0, 0) scale(1.02);
+}
+
+html:not([dir="rtl"])
+  body.senac-reading-flow
+  .senac-scene--active.story-card--right
+  .date-ghost--word,
+html:not([dir="rtl"]) body.senac-reading-flow .story-card--right.is-visible .date-ghost--word {
+  transform: translate3d(var(--senac-ghost-right-nudge-word, -2.1rem), 0, 0) scale(1.02);
+}
+
+html:not([dir="rtl"])
+  body.senac-reading-flow
+  .senac-scene--card.story-card--right
+  .date-ghost[data-i18n="ghost_radio"] {
+  transform: translate3d(var(--senac-ghost-right-nudge-radio, -2.85rem), 0, 0);
+}
+
+html:not([dir="rtl"]) body.senac-reading-flow .senac-scene--active.story-card--right .date-ghost[data-i18n="ghost_radio"],
+html:not([dir="rtl"]) body.senac-reading-flow .story-card--right.is-visible .date-ghost[data-i18n="ghost_radio"] {
+  transform: translate3d(var(--senac-ghost-right-nudge-radio, -2.85rem), 0, 0) scale(1.02);
+}
+
+html:not([dir="rtl"]) body.senac-reading-flow .senac-scene--active.story-card--left .date-ghost,
+html:not([dir="rtl"]) body.senac-reading-flow .story-card--left.is-visible .date-ghost {
+  transform: translate3d(var(--senac-ghost-left-nudge, -1.85rem), 0, 0) scale(1.02);
+}
+
+html:not([dir="rtl"])
+  body.senac-reading-flow
+  .senac-scene--active.story-card--left
+  .date-ghost--word,
+html:not([dir="rtl"]) body.senac-reading-flow .story-card--left.is-visible .date-ghost--word {
+  transform: translate3d(var(--senac-ghost-left-nudge-word, -3.5rem), 0, 0) scale(1.02);
+}
+
+html:not([dir="rtl"])
+  body.senac-reading-flow
+  .senac-scene--card.story-card--left
+  .date-ghost[data-i18n="ghost_corps"] {
+  transform: translate3d(var(--senac-ghost-left-nudge-corps, -4.35rem), 0, 0);
+}
+
+html:not([dir="rtl"]) body.senac-reading-flow .senac-scene--active.story-card--left .date-ghost[data-i18n="ghost_corps"],
+html:not([dir="rtl"]) body.senac-reading-flow .story-card--left.is-visible .date-ghost[data-i18n="ghost_corps"] {
+  transform: translate3d(var(--senac-ghost-left-nudge-corps, -4.35rem), 0, 0) scale(1.02);
+}
+
+html:not([dir="rtl"])
+  body.senac-reading-flow
+  .senac-scene--card.story-card--left
+  .date-ghost[data-i18n="ghost_soleils"] {
+  transform: translate3d(var(--senac-ghost-left-nudge-soleils, -5rem), 0, 0);
+}
+
+html:not([dir="rtl"]) body.senac-reading-flow .senac-scene--active.story-card--left .date-ghost[data-i18n="ghost_soleils"],
+html:not([dir="rtl"]) body.senac-reading-flow .story-card--left.is-visible .date-ghost[data-i18n="ghost_soleils"] {
+  transform: translate3d(var(--senac-ghost-left-nudge-soleils, -5rem), 0, 0) scale(1.02);
+}
+
+html:not([dir="rtl"])
+  body.senac-reading-flow
+  .senac-scene--card.story-card--left
+  .date-ghost[data-i18n="ghost_legs"] {
+  transform: translate3d(var(--senac-ghost-left-nudge-legs, -4.35rem), 0, 0);
+}
+
+html:not([dir="rtl"]) body.senac-reading-flow .senac-scene--active.story-card--left .date-ghost[data-i18n="ghost_legs"],
+html:not([dir="rtl"]) body.senac-reading-flow .story-card--left.is-visible .date-ghost[data-i18n="ghost_legs"] {
+  transform: translate3d(var(--senac-ghost-left-nudge-legs, -4.35rem), 0, 0) scale(1.02);
 }
 
 body.senac-reading-flow .senac-scene--card.is-visible .date-ghost,
@@ -109,8 +185,8 @@ body.senac-reading-flow .senac-scene--card .story-panel {
   transform: translate3d(0, 14px, 0);
   filter: none;
   transition:
-    opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    opacity var(--senac-text-in-dur, 1.05s) var(--senac-text-in-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+    transform var(--senac-text-in-dur-move, 1.35s) var(--senac-text-in-ease, cubic-bezier(0.22, 1, 0.36, 1));
 }
 
 body.senac-reading-flow .story-card.is-visible .story-panel,
@@ -158,6 +234,59 @@ body.senac-reading-flow .story-card.senac-scene--active .story-panel::after {
     transparent 100%
   );
   box-shadow: 0 0 12px rgba(197, 160, 89, 0.2);
+}
+
+/* Texte à gauche (LTR) : gouttière | panneau | date fantôme */
+html:not([dir="rtl"]) body.senac-reading-flow .senac-scene--card.story-card--left {
+  grid-template-columns:
+    var(--senac-gutter-ui, var(--senac-fact-margin-end, 3rem))
+    var(--senac-fact-col, minmax(0, var(--senac-fact-w)))
+    minmax(0, 1fr);
+}
+
+html:not([dir="rtl"]) body.senac-reading-flow .senac-scene--card.story-card--left .story-panel {
+  padding-inline-start: var(--senac-panel-pad-inline);
+  padding-inline-end: var(--senac-axis-gap);
+}
+
+html:not([dir="rtl"]) body.senac-reading-flow .senac-scene--card.story-card--left .date-ghost {
+  grid-column: 3;
+  place-self: center center;
+  justify-self: center;
+  width: fit-content;
+  max-width: min(22rem, calc(100% - 2 * var(--senac-fact-pad, 1.75rem)));
+  margin-inline: auto;
+  padding-inline: var(--senac-ghost-date-right-pad, clamp(2.5rem, 9vw, 6.5rem));
+  padding-inline-end: clamp(3.25rem, 11vw, 7.5rem);
+  text-align: center;
+  transform: translate3d(var(--senac-ghost-left-nudge, -1.85rem), 0, 0);
+}
+
+html:not([dir="rtl"]) body.senac-reading-flow .senac-scene--card.story-card--left .date-ghost--word {
+  transform: translate3d(var(--senac-ghost-left-nudge-word, -3.5rem), 0, 0);
+}
+
+html:not([dir="rtl"]) body.senac-reading-flow .senac-scene--card.story-card--left .story-panel::after {
+  right: auto;
+  left: 100%;
+  margin-right: 0;
+  margin-left: 0.5rem;
+  background: linear-gradient(
+    270deg,
+    rgba(197, 160, 89, calc(0.15 + var(--senac-presence-gate, 1) * 0.35)),
+    rgba(139, 213, 255, calc(0.08 + var(--frise-t, 0) * 0.2)) 55%,
+    transparent 100%
+  );
+  transform-origin: 0% 50%;
+}
+
+html:not([dir="rtl"]) body.senac-reading-flow .story-card.senac-scene--active.story-card--left .story-panel::after {
+  background: linear-gradient(
+    270deg,
+    rgba(244, 234, 210, 0.55),
+    rgba(197, 160, 89, 0.45) 45%,
+    transparent 100%
+  );
 }
 
 body.senac-reading-flow .story-panel::before {
@@ -216,8 +345,9 @@ body.senac-reading-flow .story-panel p:not(.story-date):not(.senac-fact-kicker):
   line-height: 1.82;
   max-width: var(--senac-measure);
   color: var(--senac-read-line);
-  text-align: start;
+  text-align: justify;
   text-wrap: pretty;
+  hyphens: auto;
 }
 
 body.senac-reading-flow .story-panel p:not(.story-date):not(.senac-fact-kicker):not(.senac-fact-detail):not(
@@ -237,7 +367,8 @@ body.senac-reading-flow .story-panel .senac-fact-detail {
   line-height: 1.78;
   max-width: var(--senac-measure);
   color: var(--senac-read-muted);
-  text-align: start;
+  text-align: justify;
+  hyphens: auto;
 }
 
 body.senac-reading-flow .story-panel .senac-fact-detail:empty {
@@ -298,8 +429,8 @@ body.senac-reading-flow .story-panel > * {
   opacity: 0;
   transform: translate3d(0, 10px, 0);
   transition:
-    opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    opacity var(--senac-text-in-dur, 1.05s) var(--senac-text-in-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+    transform var(--senac-text-in-dur-move, 1.35s) var(--senac-text-in-ease, cubic-bezier(0.22, 1, 0.36, 1));
 }
 
 /* Annule marges héritées du parchemin principal en mode lecture */
@@ -310,28 +441,35 @@ body.senac-reading-flow .chapter-two .story-date {
   border-bottom: none;
 }
 
-body.senac-reading-flow .story-card.is-visible .story-panel > * {
+body.senac-reading-flow .story-card.is-visible .story-panel > *,
+body.senac-reading-flow .story-card.senac-scene--active .story-panel > * {
   opacity: 1;
   transform: translate3d(0, 0, 0);
 }
 
-body.senac-reading-flow .story-card.is-visible .story-panel > *:nth-child(1) {
-  transition-delay: 0.06s;
+body.senac-reading-flow .story-card.is-visible .story-panel > *:nth-child(1),
+body.senac-reading-flow .story-card.senac-scene--active .story-panel > *:nth-child(1) {
+  transition-delay: calc(var(--senac-text-in-step, 0.16s) * 1);
 }
-body.senac-reading-flow .story-card.is-visible .story-panel > *:nth-child(2) {
-  transition-delay: 0.12s;
+body.senac-reading-flow .story-card.is-visible .story-panel > *:nth-child(2),
+body.senac-reading-flow .story-card.senac-scene--active .story-panel > *:nth-child(2) {
+  transition-delay: calc(var(--senac-text-in-step, 0.16s) * 2);
 }
-body.senac-reading-flow .story-card.is-visible .story-panel > *:nth-child(3) {
-  transition-delay: 0.18s;
+body.senac-reading-flow .story-card.is-visible .story-panel > *:nth-child(3),
+body.senac-reading-flow .story-card.senac-scene--active .story-panel > *:nth-child(3) {
+  transition-delay: calc(var(--senac-text-in-step, 0.16s) * 3);
 }
-body.senac-reading-flow .story-card.is-visible .story-panel > *:nth-child(4) {
-  transition-delay: 0.24s;
+body.senac-reading-flow .story-card.is-visible .story-panel > *:nth-child(4),
+body.senac-reading-flow .story-card.senac-scene--active .story-panel > *:nth-child(4) {
+  transition-delay: calc(var(--senac-text-in-step, 0.16s) * 4);
 }
-body.senac-reading-flow .story-card.is-visible .story-panel > *:nth-child(5) {
-  transition-delay: 0.3s;
+body.senac-reading-flow .story-card.is-visible .story-panel > *:nth-child(5),
+body.senac-reading-flow .story-card.senac-scene--active .story-panel > *:nth-child(5) {
+  transition-delay: calc(var(--senac-text-in-step, 0.16s) * 5);
 }
-body.senac-reading-flow .story-card.is-visible .story-panel > *:nth-child(6) {
-  transition-delay: 0.36s;
+body.senac-reading-flow .story-card.is-visible .story-panel > *:nth-child(6),
+body.senac-reading-flow .story-card.senac-scene--active .story-panel > *:nth-child(6) {
+  transition-delay: calc(var(--senac-text-in-step, 0.16s) * 6);
 }
 
 /* -- Citations : centrées + coupure du fil stellaire -- */
@@ -394,8 +532,8 @@ body.senac-reading-flow .quote-break--one-line .senac-quote-stack {
   left: auto;
   right: auto;
   transform: none;
-  width: 100%;
-  max-width: min(92vw, 40rem);
+  width: fit-content;
+  max-width: min(96vw, 100%);
   margin-inline: auto;
   align-items: center;
   justify-content: center;
@@ -415,10 +553,29 @@ body.senac-reading-flow .quote-break--one-line .senac-quote-stack blockquote {
   margin-inline: auto !important;
   padding-inline: clamp(0.25rem, 2vw, 0.75rem) !important;
   text-align: center !important;
-  text-wrap: balance;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  letter-spacing: 0.08em;
+}
+
+body.senac-reading-flow .quote-break--one-line .senac-quote-one-line {
+  display: inline-block;
+  width: auto;
+  max-width: 100%;
+  margin-inline: auto;
+  padding-inline: 0;
+  text-align: center;
+  text-wrap: nowrap !important;
+  white-space: nowrap !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+  hyphens: manual !important;
+  font-family: var(--da-ui, "Inter", system-ui, sans-serif);
+  font-style: normal;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: var(--senac-type-quote);
+  line-height: 1.22;
+  color: rgba(244, 234, 210, 0.94);
+  text-shadow: 0 0 18px rgba(0, 0, 0, 0.78);
 }
 
 body.senac-reading-flow .quote-break--one-line .senac-quote-stack cite {
@@ -436,6 +593,27 @@ body.senac-reading-flow .quote-break--one-line .senac-quote-stack .sq-word--quot
   display: inline;
   transform: none !important;
   filter: none !important;
+}
+
+/** Citations mot-par-mot (titres / breaks) — rythme aligné sur la frise */
+body.senac-reading-flow .sq-word {
+  transition:
+    opacity calc(var(--senac-text-in-dur, 1.05s) * 1.15) var(--senac-text-in-ease, cubic-bezier(0.22, 1, 0.36, 1))
+      calc(180ms + var(--wi, 0) * 110ms),
+    transform calc(var(--senac-text-in-dur-move, 1.35s) * 1.1) var(--senac-text-in-ease, cubic-bezier(0.22, 1, 0.36, 1))
+      calc(180ms + var(--wi, 0) * 110ms),
+    filter calc(var(--senac-text-in-dur, 1.05s) * 0.95) var(--senac-text-in-ease, cubic-bezier(0.22, 1, 0.36, 1))
+      calc(180ms + var(--wi, 0) * 110ms);
+}
+
+body.senac-reading-flow .sq-word--quote {
+  transition:
+    opacity calc(var(--senac-text-in-dur, 1.05s) * 1.35) var(--senac-text-in-ease, cubic-bezier(0.22, 1, 0.36, 1))
+      calc(260ms + var(--wi, 0) * 150ms),
+    transform calc(var(--senac-text-in-dur-move, 1.35s) * 1.25) var(--senac-text-in-ease, cubic-bezier(0.22, 1, 0.36, 1))
+      calc(260ms + var(--wi, 0) * 150ms),
+    filter calc(var(--senac-text-in-dur, 1.05s) * 1.1) var(--senac-text-in-ease, cubic-bezier(0.22, 1, 0.36, 1))
+      calc(260ms + var(--wi, 0) * 150ms);
 }
 
 /** Masque le fil vertical au centre pour laisser lire la citation. */
@@ -478,8 +656,8 @@ body.senac-reading-flow .quote-break:not(.quote-break--one-line) blockquote {
   opacity: 0;
   transform: translate3d(0, 14px, 0);
   transition:
-    opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+    opacity var(--senac-text-in-dur, 1.05s) var(--senac-text-in-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+    transform var(--senac-text-in-dur-move, 1.35s) var(--senac-text-in-ease, cubic-bezier(0.22, 1, 0.36, 1));
 }
 
 body.senac-reading-flow .quote-break:not(.quote-break--title) cite {
@@ -501,8 +679,10 @@ body.senac-reading-flow .quote-break:not(.quote-break--title) cite {
   opacity: 0;
   transform: translate3d(0, 10px, 0);
   transition:
-    opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.12s,
-    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.12s;
+    opacity var(--senac-text-in-dur, 1.05s) var(--senac-text-in-ease, cubic-bezier(0.22, 1, 0.36, 1))
+      calc(var(--senac-text-in-step, 0.16s) * 2),
+    transform var(--senac-text-in-dur-move, 1.35s) var(--senac-text-in-ease, cubic-bezier(0.22, 1, 0.36, 1))
+      calc(var(--senac-text-in-step, 0.16s) * 2);
 }
 
 body.senac-reading-flow .quote-break.is-visible blockquote,
@@ -528,8 +708,10 @@ body.senac-reading-flow .quote-break--title cite {
   opacity: 0;
   transform: translate3d(0, 10px, 0);
   transition:
-    opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.12s,
-    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.12s;
+    opacity var(--senac-text-in-dur, 1.05s) var(--senac-text-in-ease, cubic-bezier(0.22, 1, 0.36, 1))
+      calc(var(--senac-text-in-step, 0.16s) * 2),
+    transform var(--senac-text-in-dur-move, 1.35s) var(--senac-text-in-ease, cubic-bezier(0.22, 1, 0.36, 1))
+      calc(var(--senac-text-in-step, 0.16s) * 2);
 }
 
 body.senac-reading-flow .quote-break.is-visible cite,
@@ -559,14 +741,10 @@ body.senac-reading-flow .quote-break--title blockquote {
 
 body.senac-reading-flow .quote-break--one-line blockquote {
   width: 100%;
-  max-width: min(92vw, 40rem);
+  max-width: 100%;
   margin: 0 auto !important;
   padding-inline: clamp(0.25rem, 2vw, 0.75rem) !important;
   text-align: center !important;
-  text-wrap: balance;
-  white-space: normal;
-  line-height: 1.15;
-  letter-spacing: 0.08em;
 }
 
 body.senac-reading-flow .quote-break--one-line:not(.quote-break--title) cite {
@@ -592,8 +770,14 @@ body.senac-reading-flow .quote-break.is-visible::after {
   transform: translateX(-50%) scaleX(1);
 }
 
-body.senac-reading-flow .chapter-two .quote-break blockquote,
+body.senac-reading-flow .chapter-two .quote-break:not(.quote-break--one-line) blockquote,
 body.senac-reading-flow .chapter-two .quote-break cite {
+  text-align: center;
+  margin-inline: auto;
+}
+
+body.senac-reading-flow .chapter-two .quote-break--one-line blockquote,
+body.senac-reading-flow .chapter-two .quote-break--one-line .senac-quote-one-line {
   text-align: center;
   margin-inline: auto;
 }
@@ -626,8 +810,8 @@ body.senac-reading-flow .senac-scene--reliquary .archive-media {
   opacity: 0;
   transform: scale(0.94);
   transition:
-    opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+    opacity calc(var(--senac-text-in-dur, 1.05s) * 1.15) var(--senac-text-in-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+    transform calc(var(--senac-text-in-dur-move, 1.35s) * 1.1) var(--senac-text-in-ease, cubic-bezier(0.22, 1, 0.36, 1));
 }
 
 body.senac-reading-flow .senac-scene--reliquary.is-visible .archive-media,
@@ -733,6 +917,14 @@ html[dir="rtl"] body.senac-reading-flow .quote-break cite {
   text-align: center;
 }
 
+html[dir="rtl"] body.senac-reading-flow .quote-break--one-line .senac-quote-one-line,
+html[lang="ar-DZ"] body.senac-reading-flow .quote-break--one-line .senac-quote-one-line {
+  font-family: "Noto Naskh Arabic", Georgia, serif;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
 @media (max-width: 840px) {
   body.senac-reading-flow .senac-scene--card.story-card {
     grid-template-columns: 1fr;
@@ -799,17 +991,21 @@ html[dir="rtl"] body.senac-reading-flow .quote-break cite {
     width: min(100%, var(--senac-quote-axis-gap-w, 40rem));
   }
 
-  body.senac-reading-flow .quote-break blockquote,
+  body.senac-reading-flow .quote-break:not(.quote-break--one-line) blockquote,
   body.senac-reading-flow .quote-break cite {
     margin-inline: auto;
     max-width: min(100%, var(--senac-quote-measure, 34rem));
   }
+
+  body.senac-reading-flow .quote-break--one-line .senac-quote-one-line {
+    max-width: 100%;
+  }
 }
 
 @media (max-width: 520px) {
-  body.senac-reading-flow .quote-break--one-line blockquote {
-    font-size: clamp(0.95rem, 3.8vw, 1.35rem);
-    letter-spacing: 0.06em;
+  body.senac-reading-flow .quote-break--one-line .senac-quote-one-line {
+    font-size: clamp(0.64rem, 2.45vw, 0.92rem) !important;
+    letter-spacing: 0.08em;
   }
 
   body.senac-reading-flow .senac-scene--card .date-ghost {
@@ -833,4 +1029,16 @@ html[dir="rtl"] body.senac-reading-flow .quote-break cite {
     transform: none;
     opacity: 1;
   }
+}
+
+/** Une ligne : priorité finale (frise lecture + chapitre II). */
+body.senac-reading-flow .quote-break--one-line .senac-quote-stack {
+  width: max-content !important;
+  max-width: min(100%, 100vw) !important;
+}
+
+body.senac-reading-flow .quote-break--one-line .senac-quote-one-line,
+.chapter-two .quote-break--one-line .senac-quote-one-line {
+  white-space: nowrap !important;
+  text-wrap: nowrap !important;
 }

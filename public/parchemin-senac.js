@@ -2473,6 +2473,75 @@
    * Acte II : DOM observatoire + révélations CSS (IntersectionObserver).
    * Pas de ScrollTrigger par scène (blur/stagger = lag en iframe).
    */
+  let senacGardeScrollCueReady = false;
+
+  /** Flèche pied de garde Acte II : scroll vers le hero + masquage après défilement. */
+  function initAct2GardeScrollCue() {
+    if (senacGardeScrollCueReady) return;
+    const garde = document.querySelector(".senac-act2-garde");
+    const cue = document.querySelector(".senac-act2-garde__scroll-cue");
+    if (!(garde instanceof HTMLElement) || !(cue instanceof HTMLButtonElement)) return;
+    senacGardeScrollCueReady = true;
+
+    const hero = document.querySelector("header.hero");
+    let dismissed = false;
+
+    function dismiss() {
+      if (dismissed) return;
+      dismissed = true;
+      cue.classList.add("is-hidden");
+    }
+
+    function scrollToContent() {
+      const target =
+        hero instanceof HTMLElement
+          ? hero
+          : document.querySelector("#timeline-start") || document.querySelector(".chapter-two header.hero");
+      const y =
+        target instanceof HTMLElement
+          ? Math.max(0, target.offsetTop - 8)
+          : Math.max(0, garde.offsetHeight * 0.92);
+      const lenis = yearGaugeLenis;
+      if (lenis && typeof lenis.scrollTo === "function") {
+        lenis.scrollTo(y, { duration: reducedMotion ? 0 : 1.15, easing: (t) => 1 - (1 - t) ** 3 });
+      } else {
+        window.scrollTo({ top: y, behavior: reducedMotion ? "auto" : "smooth" });
+      }
+      dismiss();
+    }
+
+    cue.addEventListener("click", () => scrollToContent());
+
+    function onWheel(/** @type {WheelEvent} */ e) {
+      if (e.deltaY > 0.5) dismiss();
+    }
+
+    function onScroll() {
+      const y = getScrollY();
+      const threshold = Math.max(48, garde.offsetHeight * 0.12);
+      if (y > threshold) dismiss();
+    }
+
+    let lastTouchY = /** @type {number | null} */ (null);
+
+    function onTouchStart(/** @type {TouchEvent} */ e) {
+      lastTouchY = e.touches[0] ? e.touches[0].clientY : null;
+    }
+
+    function onTouchMove(/** @type {TouchEvent} */ e) {
+      if (lastTouchY == null || !e.touches[0]) return;
+      const dy = lastTouchY - e.touches[0].clientY;
+      lastTouchY = e.touches[0].clientY;
+      if (dy > 4) dismiss();
+    }
+
+    window.addEventListener("wheel", onWheel, { passive: true });
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    onScroll();
+  }
+
   function initSenacAct2ScrollMotion() {
     if (senacAct2MotionReady) return;
 
@@ -2485,6 +2554,7 @@
     }
 
     initRevealFallback();
+    initAct2GardeScrollCue();
     refreshSenacStellarScenes();
     recordObservatorySceneMeta();
     updateSenacStellarFocus(getScrollY());
@@ -3039,7 +3109,7 @@
     window.addEventListener("keydown", onKeydownCinemaLock);
 
     /**
-     * Appel après init Lenis ou à chaque besoin ? Lenis ignore overflow:hidden tant qu'il roule au RAF :
+     * Appel après init Lenis ou à chaque besoin : Lenis ignore overflow:hidden tant qu'il roule au RAF :
      * on stop() tant que l'overlay bloque encore la navigation.
      */
     function freezeLenisIfOverlayBlocks() {

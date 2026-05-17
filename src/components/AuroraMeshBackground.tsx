@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import SplashCursor from './SplashCursor';
 import DesertDustParticles from './DesertDustParticles';
 import { useCursorPrefsStore } from '../stores/cursorPrefsStore';
@@ -39,20 +39,42 @@ export default function AuroraMeshBackground({
   const target = useRef({ x: 0.5, y: 0.5 });
   const current = useRef({ x: 0.5, y: 0.5 });
   const rafId = useRef(0);
+  /** Position en % du viewport — mise à jour via transform (évite le CLS Lighthouse). */
+  const haloX = useRef(50);
+  const haloY = useRef(50);
+  const haloSlowX = useRef(50);
+  const haloSlowY = useRef(55);
+
+  const applyHaloTransforms = useCallback(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const mx = haloX.current;
+    const my = haloY.current;
+    const mxSlow = haloSlowX.current;
+    const mySlow = haloSlowY.current;
+    const normX = mx / 100;
+    el.style.setProperty('--hue-shift', `${(normX * 5 - 2.5).toFixed(2)}`);
+    el.style.setProperty(
+      '--halo-tx',
+      `translate(calc(${mx} * 1vw - 50vw), calc(${my} * 1vh - 50vh))`,
+    );
+    el.style.setProperty(
+      '--halo-tx-slow',
+      `translate(calc(${mxSlow} * 1vw - 50vw), calc(${mySlow} * 1vh - 50vh))`,
+    );
+    el.style.setProperty(
+      '--halo-tx-mirror',
+      `translate(calc(${100 - mx} * 1vw - 50vw), calc(${100 - my} * 1vh - 50vh))`,
+    );
+  }, []);
+
+  useLayoutEffect(() => {
+    applyHaloTransforms();
+  }, [applyHaloTransforms]);
 
   useEffect(() => {
     const lerp = 0.045;
     const converge = 0.00035;
-
-    const applyStyles = (x: number, y: number) => {
-      const el = rootRef.current;
-      if (!el) return;
-      el.style.setProperty('--mx', `${x * 100}%`);
-      el.style.setProperty('--my', `${y * 100}%`);
-      el.style.setProperty('--mx-slow', `${(x * 0.65 + 0.175) * 100}%`);
-      el.style.setProperty('--my-slow', `${(y * 0.55 + 0.225) * 100}%`);
-      el.style.setProperty('--hue-shift', `${x * 5 - 2.5}`);
-    };
 
     const tick = () => {
       const dx = target.current.x - current.current.x;
@@ -61,14 +83,22 @@ export default function AuroraMeshBackground({
       if (Math.hypot(dx, dy) < converge) {
         current.current.x = target.current.x;
         current.current.y = target.current.y;
-        applyStyles(current.current.x, current.current.y);
+        haloX.current = current.current.x * 100;
+        haloY.current = current.current.y * 100;
+        haloSlowX.current = (current.current.x * 0.65 + 0.175) * 100;
+        haloSlowY.current = (current.current.y * 0.55 + 0.225) * 100;
+        applyHaloTransforms();
         rafId.current = 0;
         return;
       }
 
       current.current.x += dx * lerp;
       current.current.y += dy * lerp;
-      applyStyles(current.current.x, current.current.y);
+      haloX.current = current.current.x * 100;
+      haloY.current = current.current.y * 100;
+      haloSlowX.current = (current.current.x * 0.65 + 0.175) * 100;
+      haloSlowY.current = (current.current.y * 0.55 + 0.225) * 100;
+      applyHaloTransforms();
 
       rafId.current = requestAnimationFrame(tick);
     };
@@ -98,7 +128,7 @@ export default function AuroraMeshBackground({
       document.removeEventListener('visibilitychange', onVisibility);
       if (rafId.current) cancelAnimationFrame(rafId.current);
     };
-  }, []);
+  }, [applyHaloTransforms]);
 
   const pos = fillContainer ? 'absolute inset-0' : 'fixed inset-0';
 
@@ -108,11 +138,10 @@ export default function AuroraMeshBackground({
       className={`${pos} overflow-hidden pointer-events-none ${className}`}
       style={
         {
-          '--mx': '50%',
-          '--my': '50%',
-          '--mx-slow': '50%',
-          '--my-slow': '50%',
           '--hue-shift': '0',
+          '--halo-tx': 'translate(0, 0)',
+          '--halo-tx-slow': 'translate(0, 0)',
+          '--halo-tx-mirror': 'translate(0, 0)',
         } as CSSProperties
       }
     >
@@ -141,35 +170,31 @@ export default function AuroraMeshBackground({
 
       {/* Halo « soleil bas » / sable doré qui suit le curseur */}
       <div
-        className="absolute w-[min(135vmin,1400px)] h-[min(135vmin,1400px)] rounded-full -translate-x-1/2 -translate-y-1/2 blur-[72px] sm:blur-[100px] opacity-[0.88]"
+        className="pointer-events-none absolute left-1/2 top-1/2 h-[min(135vmin,1400px)] w-[min(135vmin,1400px)] rounded-full blur-[72px] sm:blur-[100px] opacity-[0.88] will-change-transform"
         style={{
-          left: 'var(--mx)',
-          top: 'var(--my)',
           background:
             'radial-gradient(circle at 42% 38%, rgba(213, 175, 110, 0.55) 0%, rgba(197, 160, 89, 0.38) 28%, rgba(140, 95, 48, 0.22) 52%, transparent 74%)',
+          transform: 'var(--halo-tx)',
         }}
       />
 
       {/* Ocre / terre cuite - chaleur maghrébine */}
       <div
-        className="absolute w-[min(115vmin,1200px)] h-[min(115vmin,1200px)] rounded-full -translate-x-1/2 -translate-y-1/2 blur-[88px] sm:blur-[120px] opacity-[0.82]"
+        className="pointer-events-none absolute left-1/2 top-1/2 h-[min(115vmin,1200px)] w-[min(115vmin,1200px)] rounded-full blur-[88px] sm:blur-[120px] opacity-[0.82] will-change-transform"
         style={{
-          left: 'var(--mx-slow)',
-          top: 'var(--my-slow)',
           background:
             'radial-gradient(circle at 52% 48%, rgba(155, 72, 42, 0.62) 0%, rgba(95, 42, 28, 0.45) 40%, rgba(45, 28, 18, 0.35) 58%, transparent 78%)',
+          transform: 'var(--halo-tx-slow)',
         }}
       />
 
       {/* Contre-jour : ombre chaude + reflet crème (souvenir de dune) */}
       <div
-        className="absolute w-[min(95vmin,1000px)] h-[min(95vmin,1000px)] rounded-full -translate-x-1/2 -translate-y-1/2 blur-[96px] sm:blur-[130px] opacity-[0.48]"
+        className="pointer-events-none absolute left-1/2 top-1/2 h-[min(95vmin,1000px)] w-[min(95vmin,1000px)] rounded-full blur-[96px] sm:blur-[130px] opacity-[0.48] will-change-transform"
         style={{
-          left: 'calc(100% - var(--mx))',
-          top: 'calc(100% - var(--my))',
-          transform: 'translate(-50%, -50%)',
           background:
             'radial-gradient(circle, rgba(253, 250, 246, 0.12) 0%, rgba(245, 235, 215, 0.08) 35%, rgba(60, 42, 28, 0.18) 62%, transparent 72%)',
+          transform: 'var(--halo-tx-mirror)',
         }}
       />
 

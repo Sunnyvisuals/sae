@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useCallback, useState, type Mutable
 import { motion, useReducedMotion } from 'motion/react';
 import gsap from 'gsap';
 import { useAppCopy } from '../../hooks/useAppCopy';
+import type { VoyageCreditsBlock } from '../../lib/appCopy';
 import { useLanguageStore } from '../../stores/languageStore';
 import ShootingStars from '../ShootingStars';
 import VoyageCreditsAmbient from './VoyageCreditsAmbient';
@@ -19,7 +20,11 @@ import {
 } from '../../lib/voyageCreditsDa';
 
 /** Durée totale du défilement (secondes). Augmenter si contenu plus long / typo plus grande. */
-const SCROLL_DURATION_S = 52;
+const SCROLL_DURATION_S = 88;
+/** Fondu noir après la fin du générique (secondes). */
+const FINALE_FADE_TO_BLACK_S = 1.35;
+/** Délai avant le bouton Fermer, après le fondu (secondes). */
+const FINALE_BTN_DELAY_S = 0.28;
 
 /** Logo institutionnel - PNG « blanc sur noir » sans alpha : rendu via masque luminance + dégradé (fond noir ignoré). */
 const MMI_LOGO_SRC = `${import.meta.env.BASE_URL}images/logo-mmi.png`;
@@ -54,25 +59,32 @@ export default function VoyageCreditsOverlay({
   const creditsProgressRef = useRef(0);
   const creditsImmersion = useCreditsDaScroll(open, fromAct3Finale, creditsProgressRef);
 
-  const [done, setDone] = useState(false);
+  const [scrollDone, setScrollDone] = useState(false);
+  const [showClose, setShowClose] = useState(false);
   const eyebrow =
     'font-sans text-[11px] font-medium uppercase tracking-[0.48em] text-solar-gold/55 [text-shadow:0_0_12px_rgba(0,0,0,0.82)] sm:text-[12px]';
   const body =
-    'font-sans text-[16px] font-normal leading-[1.82] tracking-[0.02em] text-[rgba(253,250,246,0.48)] [text-shadow:0_0_10px_rgba(0,0,0,0.72)] sm:text-[17px] sm:leading-[1.84]';
+    'font-sans text-[15px] font-normal leading-[1.76] tracking-[0.02em] text-[rgba(253,250,246,0.48)] [text-shadow:0_0_10px_rgba(0,0,0,0.72)] sm:text-[16px] sm:leading-[1.78]';
   const sectionHead = eyebrow;
+  const creditsLead =
+    'mt-5 font-sans text-[17px] font-medium leading-snug tracking-[0.03em] text-[rgba(253,250,246,0.78)] [text-shadow:0_0_12px_rgba(0,0,0,0.75)] sm:text-[18px]';
+  const creditsGroupLabel =
+    'mt-7 font-sans text-[10px] font-medium uppercase tracking-[0.42em] text-solar-gold/42 first:mt-5 sm:text-[11px]';
+  const creditsList =
+    `mx-auto mt-3 max-w-[min(100%,24rem)] list-none space-y-2.5 pl-0 text-center ${body} text-balance [text-wrap:pretty]`;
 
   /* ── Défilement GSAP (réf PRM stable : évite de relancer l’effet si le hook change) ── */
   const startScroll = useCallback(() => {
     const el = trackRef.current;
     if (!el) {
-      setDone(true);
+      setScrollDone(true);
       return;
     }
     if (prefersReducedMotionRef.current) {
       tweenRef.current?.kill();
       tweenRef.current = null;
       gsap.set(el, { y: 0 });
-      setDone(true);
+      setScrollDone(true);
       return;
     }
     tweenRef.current?.kill();
@@ -88,7 +100,7 @@ export default function VoyageCreditsOverlay({
       },
       onComplete: () => {
         creditsProgressRef.current = 1;
-        setDone(true);
+        setScrollDone(true);
       },
     });
   }, []);
@@ -107,7 +119,8 @@ export default function VoyageCreditsOverlay({
       tweenRef.current?.kill();
       tweenRef.current = null;
       creditsProgressRef.current = 0;
-      setDone(false);
+      setScrollDone(false);
+      setShowClose(false);
       return;
     }
     if (skipScrollAnimation) {
@@ -116,7 +129,7 @@ export default function VoyageCreditsOverlay({
       const t = window.setTimeout(() => {
         const el = trackRef.current;
         if (!el) {
-          setDone(true);
+          setScrollDone(true);
           return;
         }
         const vh = window.innerHeight;
@@ -125,7 +138,7 @@ export default function VoyageCreditsOverlay({
         const dist = Math.max(0, el.scrollHeight - vh);
         gsap.set(el, { y: -dist });
         creditsProgressRef.current = 1;
-        setDone(true);
+        setScrollDone(true);
       }, 200);
       return () => window.clearTimeout(t);
     }
@@ -141,15 +154,27 @@ export default function VoyageCreditsOverlay({
     };
   }, [open, startScroll, skipScrollAnimation, fromAct3Finale]);
 
-  /* Échap = fermer (seulement quand les crédits sont finis) */
+  /* Fondu noir puis bouton Fermer */
   useEffect(() => {
-    if (!open || !done) return;
+    if (!open || !scrollDone) return;
+    if (reduceMotion) {
+      setShowClose(true);
+      return;
+    }
+    const delayMs = (FINALE_FADE_TO_BLACK_S + FINALE_BTN_DELAY_S) * 1000;
+    const id = window.setTimeout(() => setShowClose(true), delayMs);
+    return () => window.clearTimeout(id);
+  }, [open, scrollDone, reduceMotion]);
+
+  /* Échap = fermer (seulement quand le bouton est affiché) */
+  useEffect(() => {
+    if (!open || !showClose) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open, done, onClose]);
+  }, [open, showClose, onClose]);
 
   if (!open) return null;
 
@@ -204,19 +229,17 @@ export default function VoyageCreditsOverlay({
         ref={trackRef}
         dir={lang === 'ar-dz' ? 'rtl' : 'ltr'}
         className={
-          'absolute inset-x-0 top-0 z-[2] mx-auto w-full max-w-xl px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] pt-[max(12vh,4.5rem)] text-center sm:max-w-2xl ' +
+          'absolute inset-x-0 top-0 z-[2] mx-auto w-full max-w-2xl px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] pt-[max(12vh,4.5rem)] text-center sm:max-w-3xl ' +
           (!reduceMotion ? 'will-change-transform' : '')
         }
       >
         {/* Titre - Bahlull : interligne + marge pour éviter rognage (bg-clip-text + italique). */}
-        <motion.div
-          className="mx-auto w-full max-w-[min(100%,28ch)] overflow-visible px-1 py-4 sm:py-5"
-        >
+        <motion.div className="mx-auto flex w-full max-w-[min(100%,44rem)] justify-center overflow-visible px-3 py-5 text-center sm:px-4 sm:py-6">
           <h1
             className={
               lang === 'ar-dz'
-                ? 'mx-auto max-w-[min(100%,22ch)] font-arabic-ui text-[clamp(2.2rem,7.4vw,4.25rem)] font-normal leading-[1.12] tracking-[0.02em] text-da-parchment/92 [text-shadow:0_0_22px_rgba(197,160,89,0.22)]'
-                : 'font-bahlull mx-auto box-border overflow-visible text-[clamp(2.35rem,7.6vw,4.85rem)] italic leading-[1.18] tracking-[-0.02em] text-transparent [padding-block:0.14em] bg-clip-text'
+                ? 'mx-auto max-w-[min(100%,28ch)] font-arabic-ui text-[clamp(2.2rem,7.4vw,4.25rem)] font-normal leading-[1.12] tracking-[0.02em] text-da-parchment/92 [text-shadow:0_0_22px_rgba(197,160,89,0.22)]'
+                : 'font-bahlull mx-auto box-border w-fit max-w-full overflow-visible text-[clamp(2.35rem,7.6vw,4.85rem)] italic leading-[1.18] tracking-[-0.02em] text-transparent [padding-block:0.18em] [padding-inline:0.08em] bg-clip-text'
             }
             style={
               lang === 'ar-dz'
@@ -255,16 +278,16 @@ export default function VoyageCreditsOverlay({
         <div className="mx-auto my-16 h-px w-20 bg-solar-gold/22" aria-hidden />
 
         {/* Blocs */}
-        <div className="space-y-16">
+        <div className="mx-auto max-w-[min(100%,28rem)] space-y-16 text-center">
           {copy.voyageCreditsBlocks.map((block) => (
-            <section key={block.heading}>
-              <h2 className={sectionHead}>{block.heading}</h2>
-              <ul className={`mt-5 space-y-3 ${body}`}>
-                {block.lines.map((line) => (
-                  <li key={line}>{line}</li>
-                ))}
-              </ul>
-            </section>
+            <CreditsBlockSection
+              key={block.heading}
+              block={block}
+              sectionHead={sectionHead}
+              creditsLead={creditsLead}
+              creditsGroupLabel={creditsGroupLabel}
+              creditsList={creditsList}
+            />
           ))}
         </div>
 
@@ -272,7 +295,7 @@ export default function VoyageCreditsOverlay({
         <div className="mx-auto my-16 h-px w-20 bg-solar-gold/22" aria-hidden />
         <p
           className={
-            'font-sans text-[clamp(1.08rem,3vw,1.42rem)] font-normal leading-[1.65] tracking-[0.04em] ' +
+            'mx-auto max-w-[min(100%,24rem)] text-center font-sans text-[clamp(1.08rem,3vw,1.42rem)] font-normal uppercase leading-[1.65] tracking-[0.14em] ' +
             'text-[rgba(212,197,176,0.72)] [text-shadow:0_0_10px_rgba(0,0,0,0.72)]'
           }
         >
@@ -308,20 +331,83 @@ export default function VoyageCreditsOverlay({
         <div className="h-[55vh]" aria-hidden />
       </div>
 
-      {/* Bouton Fermer - visible uniquement quand les crédits sont terminés */}
-      {done && (
+      {/* Fondu au noir quand le défilement est terminé */}
+      <motion.div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-[62] bg-[#050508]"
+        initial={false}
+        animate={{ opacity: scrollDone ? 1 : 0 }}
+        transition={{
+          duration: reduceMotion ? 0 : FINALE_FADE_TO_BLACK_S,
+          ease: [0.22, 1, 0.36, 1],
+        }}
+      />
+
+      {/* Bouton Fermer - après le fondu */}
+      {showClose && (
         <motion.button
           type="button"
           onClick={onClose}
           className={skipBtn}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          transition={{
+            duration: reduceMotion ? 0 : 0.65,
+            ease: [0.22, 1, 0.36, 1],
+          }}
         >
           {copy.voyageCreditsClose}
         </motion.button>
       )}
     </motion.div>
+  );
+}
+
+function CreditsLinesList({
+  lines,
+  className,
+}: {
+  lines: string[];
+  className: string;
+}) {
+  return (
+    <ul className={className}>
+      {lines.map((line) => (
+        <li key={line} className="leading-[1.76]">
+          {line}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function CreditsBlockSection({
+  block,
+  sectionHead,
+  creditsLead,
+  creditsGroupLabel,
+  creditsList,
+}: {
+  block: VoyageCreditsBlock;
+  sectionHead: string;
+  creditsLead: string;
+  creditsGroupLabel: string;
+  creditsList: string;
+}) {
+  return (
+    <section className="text-center">
+      <h2 className={`${sectionHead} text-center`}>{block.heading}</h2>
+      {block.lead ? <p className={creditsLead}>{block.lead}</p> : null}
+      {block.lines ? (
+        <CreditsLinesList lines={block.lines} className={creditsList} />
+      ) : null}
+      {block.groups?.map((group) => (
+        <div key={group.label}>
+          <h3 className={creditsGroupLabel}>{group.label}</h3>
+          <CreditsLinesList lines={group.lines} className={creditsList} />
+        </div>
+      ))}
+    </section>
   );
 }
 

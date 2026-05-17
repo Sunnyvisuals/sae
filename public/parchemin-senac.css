@@ -2141,7 +2141,7 @@ html[dir="rtl"] .senac-cross-nav--compact {
   text-shadow: 0 0 24px rgba(90, 168, 255, 0.16);
 }
 
-.quote-break blockquote {
+.quote-break:not(.quote-break--one-line) blockquote {
   margin: 0;
   font-family: "Bahlull", "Playfair Display", serif;
   font-size: clamp(2.8rem, 7.5vw, 6.2rem);
@@ -2157,6 +2157,13 @@ html[dir="rtl"] .senac-cross-nav--compact {
   position: relative;
   z-index: 1;
   max-width: min(900px, 85vw);
+}
+
+.quote-break--one-line blockquote {
+  margin: 0;
+  position: relative;
+  z-index: 1;
+  text-align: center;
 }
 
 .quote-break cite {
@@ -2980,7 +2987,7 @@ html[lang="ar-DZ"] .voyage-credits-main-title {
   }
 
   .chapter-two .hero-subtitle {
-    font-size: clamp(1.1rem, 2.2vmin, 1.5rem);
+    font-size: clamp(0.72rem, 0.9vw, 0.92rem);
   }
 
   .scroll-cue {
@@ -4504,17 +4511,18 @@ body.senac-night .scroll-mode-toggle.senac-highlight-explore .smt-btn--explore {
   transition: filter 0.45s var(--ease);
 }
 
+/* Sous-titre hero = même micro-typo que le rideau « Choisissez votre mode… » */
 .chapter-two .hero-subtitle {
-  margin-top: clamp(0.45rem, 1.2vmin, 0.65rem);
-  font-family: "Bahlull", "Playfair Display", serif;
-  font-style: italic;
+  margin-top: clamp(0.65rem, 1.8vh, 1rem);
+  font-family: "Inter", sans-serif;
+  font-size: clamp(0.68rem, 0.84vw, 0.88rem);
   font-weight: 400;
-  text-transform: none;
-  letter-spacing: 0.04em;
-  font-size: clamp(1.05rem, 2.6vw, 1.55rem);
+  font-style: normal;
+  text-transform: uppercase;
+  letter-spacing: var(--da-curtain-track, 0.34em);
   line-height: 1.35;
-  color: rgba(232, 212, 164, 0.78);
-  text-shadow: 0 1px 16px rgba(0, 0, 0, 0.82);
+  color: rgba(212, 197, 176, 0.72);
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.72);
   transition: color 0.45s var(--ease);
 }
 
@@ -4529,8 +4537,13 @@ html[lang="ar-DZ"] .chapter-two .hero h1 {
 html[dir="rtl"] .chapter-two .hero-subtitle,
 html[lang="ar-DZ"] .chapter-two .hero-subtitle {
   font-family: "Noto Naskh Arabic", Georgia, serif;
+  font-size: clamp(0.82rem, 1.02vw, 0.96rem);
+  font-weight: 500;
+  font-style: normal;
   text-transform: none;
   letter-spacing: 0.06em;
+  line-height: 1.45;
+  color: rgba(244, 234, 210, 0.78);
 }
 
 .chapter-two .hero-copy,
@@ -4781,7 +4794,7 @@ html[lang="ar-DZ"] .chapter-two .story-panel h2 {
   text-shadow: none;
 }
 
-.chapter-two .quote-break blockquote {
+.chapter-two .quote-break:not(.quote-break--one-line) blockquote {
   font-family: "Inter", sans-serif;
   font-style: normal;
   font-weight: 500;
@@ -4794,7 +4807,9 @@ html[lang="ar-DZ"] .chapter-two .story-panel h2 {
 }
 
 html[dir="rtl"] .chapter-two .quote-break blockquote,
-html[lang="ar-DZ"] .chapter-two .quote-break blockquote {
+html[lang="ar-DZ"] .chapter-two .quote-break blockquote,
+html[dir="rtl"] .chapter-two .quote-break--one-line .senac-quote-one-line,
+html[lang="ar-DZ"] .chapter-two .quote-break--one-line .senac-quote-one-line {
   font-family: "Noto Naskh Arabic", Georgia, serif;
   font-weight: 400;
   text-transform: none;
@@ -4812,30 +4827,46 @@ html[lang="ar-DZ"] .chapter-two .quote-break blockquote {
   font-size: clamp(1.65rem, 4.8vw, 3.35rem);
 }
 
-.chapter-two .quote-break--one-line blockquote {
-  width: 100%;
-  max-width: min(92vw, 40rem);
+.chapter-two .quote-break--one-line blockquote,
+.chapter-two .quote-break--one-line .senac-quote-one-line {
+  display: inline-block;
+  width: auto;
+  max-width: 100%;
   margin-inline: auto;
   text-align: center;
-  text-wrap: balance;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  letter-spacing: 0.08em;
+  text-wrap: nowrap;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: manual;
+  font-family: var(--da-ui, "Inter", system-ui, sans-serif);
+  font-style: normal;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
   font-size: clamp(1.65rem, 4.8vw, 3.35rem);
+  line-height: 1.22;
+  color: rgba(244, 234, 210, 0.94);
+  text-shadow: 0 0 18px rgba(0, 0, 0, 0.78);
+}
+
+.chapter-two .quote-break--one-line blockquote {
+  display: block;
+  width: 100%;
 }
 
 .chapter-two .quote-break--one-line .senac-quote-stack {
-  width: 100%;
-  max-width: min(92vw, 40rem);
+  width: fit-content;
+  max-width: min(96vw, 100%);
   margin-inline: auto;
   text-align: center;
   align-items: center;
 }
 
 @media (max-width: 520px) {
-  .chapter-two .quote-break--one-line blockquote {
-    font-size: clamp(0.95rem, 3.8vw, 1.35rem);
-    letter-spacing: 0.06em;
+  .chapter-two .quote-break--one-line .senac-quote-one-line {
+    font-size: clamp(0.72rem, 2.75vw, 1.05rem);
+    letter-spacing: 0.08em;
   }
 }
 

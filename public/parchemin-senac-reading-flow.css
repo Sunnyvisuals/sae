@@ -25,6 +25,18 @@ body.senac-reading-flow {
   --senac-date-nudge: 0px;
   /* Décalage date fantôme depuis la gauche (vers le fil, sans coller au texte) */
   --senac-ghost-date-inset: clamp(7.75rem, 18vw, 12.5rem);
+  /** Colonne droite (cartes texte à gauche) : recentrer la date fantôme */
+  --senac-ghost-date-right-pad: clamp(2.5rem, 9vw, 6.5rem);
+  /** Décalage horizontal des dates fantômes (cartes --left, colonne libre à droite). */
+  --senac-ghost-left-nudge: -1.85rem;
+  --senac-ghost-left-nudge-word: -3.5rem;
+  --senac-ghost-left-nudge-soleils: -5rem;
+  --senac-ghost-left-nudge-corps: -4.35rem;
+  --senac-ghost-left-nudge-legs: -4.35rem;
+  /** Cartes --right : glyphe dans la colonne libre à gauche. */
+  --senac-ghost-right-nudge: -1.35rem;
+  --senac-ghost-right-nudge-word: -2.1rem;
+  --senac-ghost-right-nudge-radio: -2.85rem;
 
   /* -- Espacement typo -- */
   --senac-text-stack: 0.65rem;
@@ -43,15 +55,21 @@ body.senac-reading-flow {
   --senac-type-body: clamp(1rem, 0.95rem + 0.35vw, 1.1rem);
   --senac-type-detail: clamp(0.94rem, 0.9rem + 0.3vw, 1.04rem);
   --senac-type-nav: clamp(0.8rem, 0.78rem + 0.25vw, 0.88rem);
-  --senac-type-quote: clamp(1.85rem, 1.35rem + 2.1vw, 3.35rem);
-  --senac-type-quote-cite: clamp(0.88rem, 0.82rem + 0.42vw, 1.05rem);
-  --senac-type-quote-title: clamp(2rem, 1.5rem + 2.6vw, 3.85rem);
+  --senac-type-quote: clamp(1.58rem, 1.12rem + 1.72vw, 2.85rem);
+  --senac-type-quote-cite: clamp(0.78rem, 0.72rem + 0.34vw, 0.92rem);
+  --senac-type-quote-title: clamp(1.72rem, 1.28rem + 2.15vw, 3.25rem);
   --senac-quote-measure: min(38rem, 92vw);
   --senac-quote-axis-gap-w: clamp(22rem, 56vw, 44rem);
   --senac-quote-axis-mask: #05080f;
   --senac-type-caption: clamp(0.72rem, 0.7rem + 0.2vw, 0.82rem);
   --senac-type-date-ghost: clamp(3.5rem, 2.5rem + 8vw, 8.5rem);
   --senac-type-date-ghost-m: clamp(2.25rem, 1.5rem + 10vw, 3.75rem);
+
+  /* Apparition texte (frise lecture) */
+  --senac-text-in-dur: 2s;
+  --senac-text-in-dur-move: 2.55s;
+  --senac-text-in-step: 0.32s;
+  --senac-text-in-ease: cubic-bezier(0.18, 1, 0.34, 1);
 }
 
 body.senac-reading-flow header.hero.senac-hero-portal.senac-hero-stack {
@@ -121,8 +139,8 @@ body.senac-reading-flow .story-card::before {
     --senac-beat-pad: clamp(1.35rem, 4.5vh, 2.75rem);
     --senac-type-title: clamp(1.18rem, 1.05rem + 1.5vw, 1.52rem);
     --senac-type-body: clamp(0.98rem, 0.94rem + 0.4vw, 1.06rem);
-    --senac-type-quote: clamp(1.55rem, 1.2rem + 4.5vw, 2.65rem);
-    --senac-type-quote-title: clamp(1.65rem, 1.25rem + 5vw, 2.85rem);
+    --senac-type-quote: clamp(1.32rem, 1rem + 3.6vw, 2.22rem);
+    --senac-type-quote-title: clamp(1.45rem, 1.1rem + 4.2vw, 2.45rem);
   }
 
   body.senac-reading-flow .chapter-two {

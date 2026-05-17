@@ -1676,10 +1676,21 @@ export default function App() {
         />
       )}
 
-      {/* Rep?re zoom ? acte I ? masqu? d?s que le zoom carte est acquis */}
+      {/* Repère zoom — acte I : masqué dès que le zoom carte est acquis */}
       {phase === "act1" && !systemMenuOpen && !introVideoOpen && !act1Quest.zoom && (
         <ScrollNudge key="zoom-nudge-act1" />
       )}
+
+      {/* Même repère (chevron + « Zoom vers le haut ») — acte II : masqué au premier scroll iframe */}
+      {phase === "act2" &&
+        !systemMenuOpen &&
+        !introVideoOpen &&
+        !act2ScrollModeChoiceOpen &&
+        !act2VoyageCreditsOpen &&
+        !act23BridgeOpen &&
+        (act2ScrollFillRatio === undefined || act2ScrollFillRatio < 0.04) && (
+          <ScrollNudge key="zoom-nudge-act2" act2 iframeScrollRatio={act2ScrollFillRatio} />
+        )}
 
       <main
         className={
