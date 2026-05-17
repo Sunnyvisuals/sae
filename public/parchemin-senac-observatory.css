@@ -1,9 +1,9 @@
 /**
- * Al Rihla · Acte II — Observatoire (stations scroll, constellation)
+ * Al Rihla · Acte II - Observatoire (stations scroll, constellation)
  * Fond 3D / ciel inchangés ; grammaire visuelle des scènes biographiques.
  */
 
-/* Traits verticaux très légers — grille graphique (1px fixes, pas de repeating-gradient). */
+/* Traits verticaux très légers - grille graphique (1px fixes, pas de repeating-gradient). */
 .night-gradient::after {
   content: "";
   position: absolute;
@@ -94,6 +94,12 @@ html.senac-in-iframe .night-gradient::after {
   #timeline-start.timeline.senac-constellation-track > .senac-scene--chamber {
     min-height: 0;
   }
+
+  body.senac-reading-flow
+    #timeline-start.timeline.senac-constellation-track
+    > .senac-scene--chamber.quote-break--one-line {
+    min-height: min(100svh, 100dvh);
+  }
 }
 
 #timeline-start.timeline.senac-constellation-track > :not(.quote-break) {
@@ -135,16 +141,21 @@ body.senac-reading-flow #timeline-start.timeline.senac-constellation-track > :no
     transform-origin: 82% 50%;
   }
 
-  .senac-scene--active.story-card--right .date-ghost {
+  body:not(.senac-reading-flow) .senac-scene--active.story-card--right .date-ghost {
     transform: translateX(6%) translateY(-6px) scale(1.03);
   }
 
-  .senac-scene--active.story-card--left .date-ghost {
+  body:not(.senac-reading-flow) .senac-scene--active.story-card--left .date-ghost {
     transform: translateX(-6%) translateY(-6px) scale(1.03);
+  }
+
+  body.senac-reading-flow .senac-scene--active.story-card--right .date-ghost,
+  body.senac-reading-flow .senac-scene--active.story-card--left .date-ghost {
+    transform: translate3d(0, 0, 0) scale(1.02);
   }
 }
 
-/* Reliquaire — archive comme passage */
+/* Reliquaire - archive comme passage */
 .senac-scene--reliquary.archive-window {
   min-height: auto;
   display: flex;
@@ -178,7 +189,7 @@ body.senac-reading-flow #timeline-start.timeline.senac-constellation-track > :no
   opacity: 1;
 }
 
-/* Chambre citation — déjà plein écran ; renforce le vide */
+/* Chambre citation - déjà plein écran ; renforce le vide */
 .senac-scene--chamber.quote-break {
   isolation: isolate;
 }
@@ -188,7 +199,7 @@ body.senac-reading-flow #timeline-start.timeline.senac-constellation-track > :no
   opacity: 1;
 }
 
-/* Hero portail — moins « carte blog », plus observatoire */
+/* Hero portail - moins « carte blog », plus observatoire */
 .chapter-two header.hero.senac-hero-portal:not(.senac-hero-stack) {
   min-height: min(100vh, 100dvh);
   padding-bottom: clamp(3rem, 8vh, 5rem);

@@ -61,55 +61,58 @@
       hero_curtain_ar: "التواريخ تصبح كوكبات",
       hero_curtain_fr: "Chronologie et archives",
       hero_kicker: "Acte II - Nuits sahariennes",
+      act2_garde_act: "Acte II",
+      act2_garde_title: "La vie de Jean Sénac",
       hero_eyebrow: "Chronologie et archives · Acte II",
       hero_title: "Al Rihla",
       hero_subtitle: "La traversée",
-      hero_copy: "Jean Sénac — dates, archives, constellations.",
+      hero_copy: "Jean Sénac - dates, archives, constellations.",
       cross_nav_status_kicker: "Al Rihla · suite du parcours",
       cross_nav_group_aria: "Raccourcis facultatifs",
       cross_nav_lede: "La frise commence ici.",
       cross_nav_chip_video: "Vidéo",
       cross_nav_chip_map: "Carte",
       cross_nav_hint: "Facultatif · Acte I parcouru",
+      cross_nav_hint_locked: "Termine l'Acte I pour déverrouiller",
       cross_nav_act1_birth_html:
         'Carte-mémoire : <button type="button" class="senac-cross-nav__link" data-senac-navigate="act1-map" data-nav-picto="star">fragment « Naissance »</button>',
       cross_nav_act1_poetry_html:
         'Carte-mémoire : <button type="button" class="senac-cross-nav__link" data-senac-navigate="act1-map" data-nav-picto="dune">vers du désert (Acte I)</button>',
       cross_nav_act3_html:
-        'Acte III — réécrire le voyage : <button type="button" class="senac-cross-nav__link" data-senac-navigate="act3-writing" data-nav-picto="quill">Poésie interactive</button>',
+        'Acte III - réécrire le voyage : <button type="button" class="senac-cross-nav__link" data-senac-navigate="act3-writing" data-nav-picto="quill">Poésie interactive</button>',
       hero_img_alt: "Jean Sénac assis sur des rochers, face à la mer.",
       scroll_cue_aria: "Faire défiler vers la frise narrative",
       scroll_cue_label: "Molette · vers le bas",
       timeline_aria: "Frise narrative Jean Sénac",
       didyouknow_kicker: "Saviez-vous",
-      s1926_date: "29 novembre - Alger, Belcourt",
+      s1926_date: "29 novembre, Alger, Belcourt",
       s1926_h2: "Naissance",
       s1926_p:
-        "Jean Sénac naît le 29 novembre 1926 à Alger, quartier de Belcourt. Fils d'instituteur, il grandit entre la Casbah, la mer et les langues mêlées — arabe, berbère, français — qui feront de lui un passeur culturel avant d'être poète.",
+        "Jean Sénac naît le 29 novembre 1926 à Alger, quartier de Belcourt. Fils d'instituteur, il grandit entre la Casbah, la mer et les langues mêlées, arabe, berbère, français, qui feront de lui un passeur culturel avant d'être poète.",
       s1926_p2:
         "Belcourt, c'est le bidonville lumineux, les terrasses, le port tout proche. Plus tard, il dira que sa poésie est née de ce croisement de soleils et de mots, longtemps avant qu'il prenne la plume au sérieux.",
       fig1_alt: "Jean Sénac au bord de la mer.",
-      fig1_cap: "Jeunesse à Alger - mer, rochers, premiers horizons",
+      fig1_cap: "Jeunesse à Alger, mer, rochers, premiers horizons",
       s1940_date: "Années sombres",
       s1940_h2: "L'adolescence et la guerre",
       s1940_p:
         "Adolescent pendant la Seconde Guerre mondiale et les années de privation, Sénac découvre la lecture comme respiration : Rimbaud, Lautréamont, puis les poètes français d'outre-mer. Il écrit déjà, en secret, des textes brûlants.",
       s1940_p2:
         "À Alger, il fréquente le lycée et les cafés où l'on débat de politique et de littérature. La guerre lui apprend la faim du monde ; la poésie, l'exigence d'une parole qui ne triche pas.",
-      quote1_html: "Je parle avec l'accent<br />de ma solitude.",
+      quote1_html: "«&nbsp;Je parle avec l'accent de ma solitude.&nbsp;»",
       quote1_cite: "Jean Sénac",
-      s1950_date: "1950 - 1960",
+      s1950_date: "1950-1960",
       s1950_h2: "L'engagement littéraire",
       s1950_p1:
         "Publications, revues, amitiés littéraires : Sénac trace une trajectoire d'écrivain engagé, entre Alger et Paris, portant haut l'idée d'une littérature algérienne de langue française, libre et exigeante.",
       s1950_p2:
-        "À la radio comme à la plume, il défend la parole poétique comme lieu de vérité — jamais décor, jamais poudre aux yeux.",
+        "À la radio comme à la plume, il défend la parole poétique comme lieu de vérité, jamais décor, jamais poudre aux yeux.",
       s1950_p3:
         "Il côtoie Camus, Charlot, de nombreux écrivains du Maghreb. Sénac revendique une « algérianité » de la littérature : écrire en français depuis l'Afrique, sans renier la terre ni le peuple.",
       fig2_alt: "Vue d'Alger et de son port, photographie d'archive.",
-      fig2_cap: "Alger, années 1950-1960 - scène littéraire et engagement",
+      fig2_cap: "Alger, années 1950-1960, scène littéraire et engagement",
       ghost_soleils: "Soleils",
-      s_soleils_date: "1949 - livre",
+      s_soleils_date: "1949, livre",
       s_soleils_h2: "Soleils séparés",
       s_soleils_p_html:
         "Paru en 1949, <em>Soleils séparés</em> est souvent lu comme le livre-fondation : une voix qui assume le désir, la guerre d'Algérie déjà latente, et l'impossible partage entre l'Europe et le Sud.",
@@ -136,15 +139,15 @@
       s_corps_p2:
         "Ses textes célèbrent la beauté masculine, la fraternité, la révolte. Pour lui, libérer le désir et libérer l'Algérie sont deux faces d'une même lutte contre le mensonge.",
       fig3_alt: "Jean Sénac à son bureau, lisant un manuscrit.",
-      fig3_cap: "Sénac à son bureau - le poète au travail",
-      s1973_date: "30 août - Alger",
+      fig3_cap: "Sénac à son bureau, le poète au travail",
+      s1973_date: "30 août, Alger",
       s1973_h2: "La mort à Alger",
       s1973_p:
         "Le 30 août 1973, Jean Sénac est retrouvé mort chez lui, rue Monticelli à Alger. L'assassinat reste non élucidé ; la rumeur et l'absence d'enquête nourrissent encore le deuil collectif.",
       s1973_p2:
         "Son testament spirituel, c'est une œuvre intacte : des dizaines de livres, des milliers d'auditeurs marqués par sa voix à la radio, une génération d'écrivains algériens qu'il a encouragés.",
       fig4_alt: "Jean Sénac, souvenir photographique.",
-      fig4_cap: "Mémoire de Sénac - derniers feux d'une voix libre",
+      fig4_cap: "Mémoire de Sénac, derniers feux d'une voix libre",
       ghost_legs: "Legs",
       s_legs_date: "Aujourd'hui",
       s_legs_h2: "La trace vive",
@@ -152,19 +155,19 @@
         "Poète, animateur culturel, passeur entre les rives méditerranéennes, Sénac reste une figure tutélaire de la modernité algérienne. Son nom est lié à la librairie, aux festivals, aux jeunes auteurs.",
       s_legs_p2:
         "Des rues d'Alger aux bibliothèques de France, son œuvre continue d'interroger : comment habiter deux mondes, comment aimer sans renoncer, comment écrire libre.",
-      s_belcourt_date: "1947 — jeunesse",
+      s_belcourt_date: "1947, jeunesse",
       s_belcourt_h2: "Le groupe de Belcourt",
       s_belcourt_p:
         "Dans les années 1947, Sénac fonde avec des amis le groupe littéraire de Belcourt. On y lit, on s'affiche, on invente une scène poétique algérienne avant la lettre.",
       s_belcourt_p2:
         "Ce n'est pas un salon parisien : c'est la rue, le thé, la mer. Une culture populaire et lettrée qui annonce les indépendances culturelles du Maghreb.",
-      s_radio_date: "1962 — voix publique",
+      s_radio_date: "1962, voix publique",
       s_radio_h2: "La radio, le peuple",
       s_radio_p:
         "À la Chaîne II d'Alger, Sénac devient une voix familière : émissions sur la poésie, la chanson, la littérature maghrébine. On l'écoute comme un grand frère.",
       s_radio_p2:
         "Il fait entendre des auteurs rarement invités ailleurs, donne des nouvelles aux jeunes, explique pourquoi la poésie peut accompagner un peuple en marche vers la liberté.",
-      s_peuple_date: "1964 — anthologie",
+      s_peuple_date: "1964, anthologie",
       s_peuple_h2: "Préface pour un peuple",
       s_peuple_p_html:
         "En 1964 paraît <em>Préface pour un peuple en marche</em>, anthologie de la poésie algérienne de langue française. Sénac y trace une généalogie : de la colonisation à l'indépendance.",
@@ -173,7 +176,7 @@
       s_arch_date: "Descente de l'arche",
       s_arch_h2: "Le portail du voyage",
       s_arch_p:
-        "En continuant à défiler, vous approchez de l'arche — passage vers l'Acte III. Le modèle 3D descend avec votre lecture : monument imaginaire, seuil entre mémoire et écriture.",
+        "En continuant à défiler, vous approchez de l'arche, passage vers l'Acte III. Le modèle 3D descend avec votre lecture : monument imaginaire, seuil entre mémoire et écriture.",
       s_arch_p2:
         "Jean Sénac croyait que chaque lecteur franchit un seuil. Cette arche est la vôtre : un instant pour regarder, respirer, puis réécrire le voyage en poésie.",
       ch3_kicker: "Suite du voyage",
@@ -233,10 +236,12 @@
       hero_curtain_ar: "التواريخ تصبح كوكبات",
       hero_curtain_fr: "Chronologie et archives",
       hero_kicker: "الجزء الثاني - ليالٍ صحراوية",
+      act2_garde_act: "الجزء الثاني",
+      act2_garde_title: "حياة جان سنّاك",
       hero_eyebrow: "أرشيف وزمن · الجزء الثاني",
       hero_title: "الرحلة",
       hero_subtitle: "المسيرة",
-      hero_copy: "جان سنّاك — تواريخ، أرشيف، كواكب.",
+      hero_copy: "جان سنّاك - تواريخ، أرشيف، كواكب.",
       cross_nav_chip_video: "فيديو",
       cross_nav_chip_map: "خريطة",
       cross_nav_hint: "اختياري · الجزء الأول مكمّل",
@@ -246,57 +251,58 @@
       cross_nav_chip_video: "فيديو المقدمة",
       cross_nav_chip_map: "خريطة الذاكرة",
       cross_nav_hint: "اختياري · الجزء الأول مكمّل",
+      cross_nav_hint_locked: "أكمّل الجزء الأول باش تفتح الاختصارات",
       cross_nav_act1_birth_html:
         'خريطة الذاكرة : <button type="button" class="senac-cross-nav__link" data-senac-navigate="act1-map" data-nav-picto="star">قطعة « الميلاد »</button>',
       cross_nav_act1_poetry_html:
         'خريطة الذاكرة : <button type="button" class="senac-cross-nav__link" data-senac-navigate="act1-map" data-nav-picto="dune">الشعر فالصحرا (الجزء الأول)</button>',
       cross_nav_act3_html:
-        'الجزء الثالث — إعادة كتابة الرحلة : <button type="button" class="senac-cross-nav__link" data-senac-navigate="act3-writing" data-nav-picto="quill">شعر تفاعلي</button>',
+        'الجزء الثالث - إعادة كتابة الرحلة : <button type="button" class="senac-cross-nav__link" data-senac-navigate="act3-writing" data-nav-picto="quill">شعر تفاعلي</button>',
       hero_img_alt: "جان سنّاك قاعد على صخور، ورا البحر.",
       scroll_cue_aria: "مرّر باش توصل للخط الزمني",
       scroll_cue_label: "زيد تنزّل",
       timeline_aria: "الخط الزمني - جان سنّاك",
       didyouknow_kicker: "هل تعلم؟",
-      s1926_date: "٢٩ نوفمبر - الجزائر، بلكور",
+      s1926_date: "٢٩ نوفمبر، الجزائر، بلكور",
       s1926_h2: "الميلاد",
       s1926_p:
-        "ولد جان سنّاك في 29 نوفمبر 1926 بالجزائر، حيّ بلكور. ابن معلّم، نشأ بين القصبة والبحر والألسنة المختلطة — عربي، أمازيغي، فرنسي — فصار جسرًا ثقافيًا قبل أن يصير شاعرًا.",
+        "ولد جان سنّاك في 29 نوفمبر 1926 بالجزائر، حيّ بلكور. ابن معلّم، نشأ بين القصبة والبحر والألسنة المختلطة، عربي، أمازيغي، فرنسي، فصار جسرًا ثقافيًا قبل أن يصير شاعرًا.",
       s1926_p2:
         "بلكور: أزقة مضيئة، شرفات، ميناء قريب. لاحقًا سيقول إن شعره وُلد من تقاطع الشموس والكلمات، قبل أن يأخذ القلم على محمل الجدّ.",
       fig1_alt: "جان سنّاك على شاطئ البحر.",
-      fig1_cap: "شباب بالجزائر - بحر، صخور، أولى الأفق",
+      fig1_cap: "شباب بالجزائر، بحر، صخور، أولى الأفق",
       s1940_date: "سنوات مظلمة",
       s1940_h2: "المراهقة والحرب",
       s1940_p:
         "مراهق أثناء الحرب العالمية وسنوات الشحّ، يكتشف سنّاك القراءة كتنفّس: رامبو، لوتريامون، ثم شعراء ما وراء البحار. يكتب سرًا نصوصًا ملتهبة.",
       s1940_p2:
         "بالجزائر، يرتاد الثانوية والمقاهي حيث تُناقش السياسة والأدب. الحرب تعلّمه جوع العالم؛ الشعر يعلّمه كلمة لا تغشّ.",
-      quote1_html: "أنا نهضر بلكنت<br />وحدتي.",
+      quote1_html: "«&nbsp;أنا نهضر بلكنت وحدتي.&nbsp;»",
       quote1_cite: "جان سنّاك",
-      s1950_date: "١٩٥٠ - ١٩٦٠",
+      s1950_date: "١٩٥٠-١٩٦٠",
       s1950_h2: "الانخراط الأدبي",
       s1950_p1:
         "إصدارات، مجلات، صداقات أدبية: سنّاك يرسم مسار كاتب متورّط، بين الجزائر وباريس، يعلي فكرة أدب جزائري بالفرنسية حرّ وصارم.",
       s1950_p2:
-        "بالإذاعة وبالمقلم، يدافع على الكلمة الشعرية كمحلّ للحقيقة — موش زينة، ولا سحب عين.",
+        "بالإذاعة وبالمقلم، يدافع على الكلمة الشعرية كمحلّ للحقيقة، موش زينة، ولا سحب عين.",
       s1950_p3:
         "يخالط كامو وشارلو وكثيرًا من كتّاب المغرب. يرفع سنّاك راية «جزائرية» الأدب: الكتابة بالفرنسية من أفريقيا، بلا إنكار للأرض والشعب.",
-      s_belcourt_date: "1947 — شباب",
+      s_belcourt_date: "1947، شباب",
       s_belcourt_h2: "جماعة بلكور",
       s_belcourt_p:
         "في أواخر الأربعينيات، يؤسّس سنّاك مع أصدقاء جماعة بلكور الأدبية. يقرؤون، يعلنون، يخترعون مشهدًا شعريًا جزائريًا قبل الأوان.",
       s_belcourt_p2:
         "ليست صالونًا باريسيًا: إنها الشارع والشاي والبحر. ثقافة شعبية ومثقفة تبشّر باستقلالات ثقافية في المغرب.",
       fig2_alt: "منظر للجزائر ومينائها، صورة أرشيفية.",
-      fig2_cap: "الجزائر، الستينات - مشهد أدبي وانخراط",
+      fig2_cap: "الجزائر، الستينات، مشهد أدبي وانخراط",
       ghost_soleils: "شموس",
-      s_soleils_date: "١٩٤٩ - كتاب",
+      s_soleils_date: "١٩٤٩، كتاب",
       s_soleils_h2: "شموس متفرّقة",
       s_soleils_p_html:
         "صدر عام 1949، يُقرأ <em>شموس متفرّقة</em> غالبًا كتابًا مؤسّسًا: صوت يعترف بالرغبة، بحرب الجزائر الكامنة، وباستحالة القسمة بين أوروبا والجنوب.",
       s_soleils_p2:
         "العنوان برنامج: شموس لا تلتقي، هويات متعددة. يخترع سنّاك حسّية سياسية ما زالت تزعج النقد المحافظ.",
-      s_radio_date: "1962 — صوت علني",
+      s_radio_date: "1962، صوت علني",
       s_radio_h2: "الإذاعة والشعب",
       s_radio_p:
         "في إذاعة الجزائر الثانية، يصبح سنّاك صوتًا مألوفًا: برامج عن الشعر والأغنية والأدب المغاربي. يُستمع إليه كأخ كبير.",
@@ -322,22 +328,22 @@
         "مثليّ معترف بيه في سياق رقابة ورفض، يجسّد وضوحًا نادرًا. يرفض الخزانة: الجسد وحبّ الرجال وحبّ الشعب في نفس التفعيلة.",
       s_corps_p2:
         "نصوصه تحتفي بالجمال الذكوري والأخوة والثورة. عنده، تحرير الرغبة وتحرير الجزائر وجهان لنضال واحد ضد الكذب.",
-      s_peuple_date: "1964 — مختارات",
+      s_peuple_date: "1964، مختارات",
       s_peuple_h2: "مقدّمة لشعب",
       s_peuple_p_html:
         "في 1964 يصدر <em>مقدّمة لشعب في سير</em>، مختارات للشعر الجزائري بالفرنسية. يرسم سنّاك نسبًا: من الاستعمار إلى الاستقلال.",
       s_peuple_p2:
         "يؤكّد الكتاب أن أمةً يمكنها أن تفكّر حداثتها بلغة موروثة، محوّلة، مُستردّة. فعل سياسي بقدر ما هو جمالي.",
       fig3_alt: "جان سنّاك في مكتبو، يقرا مخطوطة.",
-      fig3_cap: "سنّاك في مكتبو - الشاعر والشغل",
-      s1973_date: "٣٠ أوت - الجزائر",
+      fig3_cap: "سنّاك في مكتبو، الشاعر والشغل",
+      s1973_date: "٣٠ أوت، الجزائر",
       s1973_h2: "الوفاة بالجزائر",
       s1973_p:
         "في 30 أوت 1973، يُعثر على جان سنّاك ميتًا في بيته بشارع مونتيسيلي بالجزائر. الجريمة بلا حلّ؛ الشائعات وغياب التحقيق يغذّيان الحداد الجماعي.",
       s1973_p2:
         "وصيته الروحية عمل سليم: عشرات الكتب، آلاف مستمعين بصوته في الإذاعة، جيل من الكتّاب الجزائريين شجّعهم.",
       fig4_alt: "جان سنّاك، صورة تذكارية.",
-      fig4_cap: "ذاكرة سنّاك - بقايا صوت حرّ",
+      fig4_cap: "ذاكرة سنّاك، بقايا صوت حرّ",
       ghost_legs: "أثر",
       s_legs_date: "اليوم",
       s_legs_h2: "الأثر الحيّ",
@@ -348,7 +354,7 @@
       s_arch_date: "نزول القوس",
       s_arch_h2: "بوابة الرحلة",
       s_arch_p:
-        "بمواصلة التمرير تقتربون من القوس — ممرّ نحو الفصل الثالث. النموذج ثلاثي الأبعاد ينزل مع قراءتكم: نصب خيالي، عتبة بين الذاكرة والكتابة.",
+        "بمواصلة التمرير تقتربون من القوس، ممرّ نحو الفصل الثالث. النموذج ثلاثي الأبعاد ينزل مع قراءتكم: نصب خيالي، عتبة بين الذاكرة والكتابة.",
       s_arch_p2:
         "كان سنّاك يؤمن أن كل قارئ يعبر عتبة. هذا القوس لكم: لحظة للنظر والتنفّس، ثم إعادة كتابة الرحلة شعرًا.",
       ch3_kicker: "تتمة الرحلة",

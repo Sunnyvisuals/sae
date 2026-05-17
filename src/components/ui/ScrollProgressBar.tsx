@@ -166,7 +166,7 @@ type Props = {
   aboveChrome?: boolean;
 };
 
-/** Acte II : ratio iframe — lissage léger, proche du scroll natif (aligné voile blanc). */
+/** Acte II : ratio iframe - lissage léger, proche du scroll natif (aligné voile blanc). */
 const IFRAME_BAR_LERP = 0.2;
 
 export default function ScrollProgressBar({ tone, iframeFillRatio, aboveChrome }: Props) {

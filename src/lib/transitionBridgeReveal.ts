@@ -25,12 +25,12 @@ export const LANG_GATE_TIMELINE_OVERLAP_S = 1.45;
 
 /**
  * Après complétion de la carte mémoire (fin acte I) : court délai avant montage du pont WebM.
- * Trop long = impression « attente sur la carte » sans transi ; 1,5–2,5 s garde un battement lisible.
+ * Trop long = impression « attente sur la carte » sans transi ; 1,5-2,5 s garde un battement lisible.
  */
 export const ACT12_POST_MAP_COMPLETE_DELAY_MS = 1_700;
 
 /**
- * Part du clip (0–1) après laquelle on monte l’acte II sous la WebM.
+ * Part du clip (0-1) après laquelle on monte l’acte II sous la WebM.
  * Plus bas = parchemin plus tôt sous le pont ; ~0,43 = léger recul pour un peu plus de pont carte+vidéo avant la queue sur l’acte II.
  */
 export const ACT12_SWAP_TO_ACT2_RAW_RATIO = 0.00;

@@ -140,3 +140,17 @@ export function getHydratedActSave(): ActSaveState {
     act3Unlocked: true,
   };
 }
+
+/** Drapeaux pour les raccourcis iframe (hero + frise) - alignés sur le rail Parcours. */
+export function getSenacCrossNavFlags(): {
+  act1Completed: boolean;
+  act3Unlocked: boolean;
+} {
+  const s = getHydratedActSave();
+  const journeyReplay = readJourneyReplayUnlocked();
+  const act1Completed = journeyReplay || s.act1.completed;
+  return {
+    act1Completed,
+    act3Unlocked: journeyReplay || Boolean(s.act3Unlocked) || act1Completed,
+  };
+}

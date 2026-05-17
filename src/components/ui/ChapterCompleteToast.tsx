@@ -18,7 +18,7 @@ type Props = {
 };
 
 const easeEntrance = DA_MOTION_EASE;
-/** Sortie douce — chaque ligne part avant la suivante (pas de chevauchement). */
+/** Sortie douce - chaque ligne part avant la suivante (pas de chevauchement). */
 const easeExit = [0.55, 0, 0.38, 1] as const;
 
 /**

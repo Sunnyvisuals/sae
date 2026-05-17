@@ -98,6 +98,15 @@
   }
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  /** Pause les RAF ambiance (ciel / brume / temporal) quand l’onglet est masqué. */
+  let senacAmbientPaused = document.hidden;
+  document.addEventListener(
+    "visibilitychange",
+    () => {
+      senacAmbientPaused = document.hidden;
+    },
+    { passive: true },
+  );
 
   function markSenacBootReady() {
     root.classList.remove("senac-booting");
@@ -112,12 +121,6 @@
   }
   /** Ambiance locale chapitre II (copiée dans /public). */
   const SENAC_AMBIENCE_SRC_PUBLIC = "/Emotional%20Arabian%20Oud.mp3";
-  /** `a.scroll-cue` hero - évite flash avant GSAP (entrée puis disparition au scroll). */
-  const scrollCueEarly = document.querySelector("header.hero a.scroll-cue");
-  if (scrollCueEarly instanceof HTMLAnchorElement) {
-    scrollCueEarly.style.opacity = "0";
-  }
-
   /** Pavé tactile / souris : Ctrl+molette (ou meta) ne doit pas zoomer tout le navigateur - garde le défilement Lenis. */
   document.addEventListener(
     "wheel",
@@ -147,6 +150,8 @@
   const friseEl = document.getElementById("timeline-start");
   /** Lenis (scroll lissé) ; null si indisponible (reduced-motion ou échec import). */
   let yearGaugeLenis = null;
+  /** Précharge Lenis tôt (évite d’attendre la fin du boot avant la molette). */
+  let senacLenisInitPromise = /** @type {Promise<boolean> | null} */ (null);
   let senacLenisWheelSnapTimer = 0;
   /** @type {((time: number) => void) | null} */
   let senacLenisGsapTickerFn = null;
@@ -184,7 +189,7 @@
 
 
   /**
-   * Coller au repère utilisé par Lenis (`scrollHeight − clientHeight` sur `html`, pas `innerHeight`)
+   * Coller au repère utilisé par Lenis (`scrollHeight - clientHeight` sur `html`, pas `innerHeight`)
    * pour éviter un écart vite / scrollbar / arche. Compare aussi `body` si plus haut que `documentElement`.
    */
   function getScrollMax() {
@@ -241,7 +246,7 @@
   }
 
   /**
-   * Ratio strict scrollY / max — aligné sur la barre native et la barre de progression (0 en haut, 1 en bas).
+   * Ratio strict scrollY / max - aligné sur la barre native et la barre de progression (0 en haut, 1 en bas).
    * @param {number} scrollY
    */
   function senacScrollRatioVisual(scrollY) {
@@ -428,6 +433,8 @@
   }
 
   let lastPostedScrollProgressRatio = -1;
+  let lastPostedScrollProgressAt = 0;
+  const SCROLL_PROGRESS_POST_MS = 120;
 
   function updateSenacScrollProgressFill() {
     let y = getScrollY();
@@ -453,15 +460,22 @@
 
     /** SPA : barre du haut = `ScrollProgressBar` parent (iframe ne rend plus #senac-scroll-progress). */
     if (window.parent !== window) {
-      if (Math.abs(displayRatio - lastPostedScrollProgressRatio) > 0.0025) {
-        lastPostedScrollProgressRatio = displayRatio;
-        try {
-          window.parent.postMessage(
-            { type: "senac-scroll-progress", ratio: displayRatio },
-            window.location.origin,
-          );
-        } catch {
-          /* ignore */
+      const delta = Math.abs(displayRatio - lastPostedScrollProgressRatio);
+      if (delta > 0.0025) {
+        const now = performance.now();
+        if (delta < 0.02 && now - lastPostedScrollProgressAt < SCROLL_PROGRESS_POST_MS) {
+          /* throttle léger : moins de setState React parent */
+        } else {
+          lastPostedScrollProgressRatio = displayRatio;
+          lastPostedScrollProgressAt = now;
+          try {
+            window.parent.postMessage(
+              { type: "senac-scroll-progress", ratio: displayRatio },
+              window.location.origin,
+            );
+          } catch {
+            /* ignore */
+          }
         }
       }
     }
@@ -488,17 +502,24 @@
   let senacArchApi = /** @type {{ sync: () => void; dispose: () => void } | null} */ (null);
   let senacArchInitScheduled = false;
 
+  function senacArchModelUrl() {
+    const pathSeg = window.location.pathname.replace(/[^/]+$/, "");
+    const base = pathSeg.endsWith("/") ? pathSeg : pathSeg + "/";
+    return new URL("models/model.glb", window.location.origin + base).href;
+  }
+  let senacColorFluidStarted = false;
+
   function scheduleSenacArchScene() {
     if (senacArchInitScheduled) return;
     const canvas = document.getElementById("senac-arch-canvas");
     if (!(canvas instanceof HTMLCanvasElement)) return;
     senacArchInitScheduled = true;
-    import("./parchemin-arch-scene.mjs?v=42")
+    import("./parchemin-arch-scene.mjs?v=44")
       .then((mod) =>
         mod.initSenacArchScene({
           canvas,
           reducedMotion,
-          modelUrl: new URL("models/model.glb", window.location.href).href,
+          modelUrl: senacArchModelUrl(),
           getScrollRatio() {
             let y = getScrollY();
             if (yearGaugeLenis && typeof yearGaugeLenis.scroll === "number") {
@@ -652,6 +673,8 @@
 
   let senacScrollApplyPending = false;
   let senacScrollApplyLastY = 0;
+  /** Iframe SPA : sync arche 3D une frame sur deux pendant le scroll. */
+  let senacArchSyncFrameSkip = 0;
 
   function updateSenacArchAmbient(scrollY) {
     const pageP = senacScrollRatioVisual(scrollY);
@@ -669,8 +692,17 @@
     updateArchWhiteout(scrollY);
     updateSenacStellarFocus(scrollY);
     scheduleSenacArchScene();
+    maybeInitSenacColorFluid();
     if (senacArchApi && typeof senacArchApi.sync === "function") {
-      senacArchApi.sync();
+      const archVis = Number.parseFloat(root.style.getPropertyValue("--senac-arch-visibility").trim() || "0");
+      if (archVis >= 0.02) {
+        if (suppressScrollProgressChrome) {
+          senacArchSyncFrameSkip ^= 1;
+          if (senacArchSyncFrameSkip === 0) senacArchApi.sync();
+        } else {
+          senacArchApi.sync();
+        }
+      }
     }
   }
 
@@ -704,7 +736,7 @@
     scheduleSenacScrollTriggerEffects();
   }
 
-  /** Resize Lenis + waypoints cinéma (sans ScrollTrigger — trop lourd sur l’iframe). */
+  /** Resize Lenis + waypoints cinéma (sans ScrollTrigger - trop lourd sur l’iframe). */
   function scheduleSenacScrollTriggerEffects() {
     if (yearGaugeScrollTriggerInitScheduled) {
       return;
@@ -796,15 +828,20 @@
     }
 
     function tick(now) {
+      if (senacAmbientPaused) {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
       const t = (now - t0) * 0.001;
       const phaseP = (t / cyclePresence) % 1;
       const phaseM = (t / cycleMotion) % 1;
       const waveP = 0.5 + 0.5 * Math.sin(phaseP * Math.PI * 2);
       const waveM = 0.5 + 0.5 * Math.sin(phaseM * Math.PI * 2 + 0.55);
 
-      const presence = smooth01((waveP - 0.18) / 0.52);
-      let motion = smooth01((waveM - 0.34) / 0.38);
-      motion *= smooth01(1 - Math.max(0, (waveM - 0.78) / 0.22));
+      /** Plancher : éviter disparition totale des particules (ciel / brume / glyphes). */
+      const presence = 0.62 + 0.38 * smooth01((waveP - 0.18) / 0.52);
+      let motion = 0.55 + 0.45 * smooth01((waveM - 0.34) / 0.38);
+      motion *= 0.72 + 0.28 * smooth01(1 - Math.max(0, (waveM - 0.78) / 0.22));
 
       root.style.setProperty("--senac-time-phase", phaseP.toFixed(4));
       root.style.setProperty("--senac-presence-gate", presence.toFixed(4));
@@ -830,41 +867,58 @@
     return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 1;
   }
 
-  /** Fenêtre locale par particule (slot 0–1) : chaque élément n’est actif qu’un court instant du cycle. */
+  /** Variation douce par particule (jamais à 0 : le fond reste vivant en continu). */
   function senacParticleTemporalGate(slot) {
     const presence = readSenacPresenceGate();
     const motion = readSenacMotionGate();
     const phase = Number.parseFloat(root.style.getPropertyValue("--senac-time-phase").trim());
     const p = ((Number.isFinite(phase) ? phase : 0) + (slot % 1)) % 1;
-    const band = 0.28;
-    let local = 0;
-    if (p < band) local = p / band;
-    else if (p > 1 - band * 0.45) local = (1 - p) / (band * 0.45);
+    const band = 0.38;
+    let local = 0.55;
+    if (p < band) local = 0.55 + (0.45 * p) / band;
+    else if (p > 1 - band * 0.5) local = 0.55 + (0.45 * (1 - p)) / (band * 0.5);
+    else local = 1;
     const c = Math.min(1, Math.max(0, local));
     const localSmooth = c * c * (3 - 2 * c);
-    return presence * motion * localSmooth;
+    return Math.max(0.42, presence * motion * (0.58 + 0.42 * localSmooth));
   }
 
-  /** Budget étoiles / brume selon surface écran (mobile plafonné). */
+  /** Budget étoiles / brume selon surface écran (mobile plafonné, ~−30 % en compact). */
   function computeSenacParticleCounts(width, height) {
     const area = width * height;
     const compact = width < 768 || area < 480000;
     return {
       stars: Math.round(
-        Math.min(compact ? 340 : 520, Math.max(compact ? 210 : 320, area / 4000)),
+        Math.min(compact ? 250 : 520, Math.max(compact ? 165 : 320, area / 5200)),
       ),
       motes: Math.round(
-        Math.min(compact ? 300 : 460, Math.max(compact ? 165 : 250, area / 1650)),
+        Math.min(compact ? 210 : 460, Math.max(compact ? 120 : 250, area / 2200)),
       ),
       puffs: Math.round(
-        Math.min(compact ? 62 : 92, Math.max(compact ? 38 : 52, area / 17000)),
+        Math.min(compact ? 44 : 92, Math.max(compact ? 28 : 52, area / 22000)),
       ),
     };
   }
 
-  function initSky() {
+  /**
+   * Ciel + brume sur un seul canvas (#sky-canvas) — une boucle RAF au lieu de deux.
+   * #fog-canvas masqué (même stack visuelle via composite 2D).
+   */
+  function initAtmosphereCanvas() {
     const canvas = document.getElementById("sky-canvas");
-    if (!(canvas instanceof HTMLCanvasElement) || reducedMotion) return;
+    const fogCanvas = document.getElementById("fog-canvas");
+    if (!(canvas instanceof HTMLCanvasElement)) return;
+
+    if (fogCanvas instanceof HTMLCanvasElement) {
+      fogCanvas.style.display = "none";
+      fogCanvas.setAttribute("aria-hidden", "true");
+    }
+    root.classList.add("senac-atmosphere-merged");
+
+    if (reducedMotion) {
+      if (fogCanvas instanceof HTMLCanvasElement) fogCanvas.style.opacity = "0.38";
+      return;
+    }
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
@@ -874,7 +928,11 @@
     let dpr = 1;
     let stars = [];
     let comets = [];
-    /** Défilement lissé - parallax étoiles / traînées sans à-coups. */
+    /** @type {{ x: number; y: number; rx: number; ry: number; rot: number; vx: number; vy: number; vr: number; phase: number; layer: number; baseA: number }[]} */
+    let puffs = [];
+    /** @type {{ x: number; y: number; r: number; vx: number; vy: number; tw: number; phase: number; gold: boolean; pz: number; temporalSlot: number }[]} */
+    let motes = [];
+    /** Défilement lissé - parallax étoiles / brume. */
     let scrollParallaxSmooth = getScrollY();
 
     /** Décalage écran depuis le scroll ; `pz` 0 = loin, 1 = plus proche (bouge davantage). */
@@ -945,6 +1003,39 @@
         });
       }
       scrollParallaxSmooth = getScrollY();
+      puffs = [];
+      motes = [];
+      const { puffs: np, motes: nm } = computeSenacParticleCounts(width, height);
+      for (let i = 0; i < np; i += 1) {
+        puffs.push({
+          x: rand(-width * 0.18, width * 1.15),
+          y: rand(-height * 0.12, height * 1.1),
+          rx: rand(72, 290),
+          ry: rand(54, 230),
+          rot: rand(0, Math.PI * 2),
+          vx: rand(-0.42, 0.42),
+          vy: rand(-0.2, 0.14),
+          vr: rand(-0.0018, 0.0018),
+          phase: rand(0, Math.PI * 2),
+          layer: Math.random(),
+          baseA: rand(0.038, 0.105),
+        });
+      }
+      for (let i = 0; i < nm; i += 1) {
+        const fine = Math.random() > 0.48;
+        motes.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          r: fine ? rand(0.28, 1.15) : rand(0.55, 2.45),
+          vx: rand(-0.28, 0.28),
+          vy: rand(-0.52, -0.06),
+          tw: rand(0.007, 0.023),
+          phase: rand(0, Math.PI * 2),
+          gold: Math.random() > 0.58,
+          pz: Math.random(),
+          temporalSlot: Math.random(),
+        });
+      }
     }
 
     function spawnComet() {
@@ -959,7 +1050,69 @@
       });
     }
 
+    function drawAtmosphereFog(time, sp, imm) {
+      const motionG = readSenacMotionGate();
+      const presenceG = readSenacPresenceGate();
+      const rMist = Math.round(238 - imm * 105);
+      const gMist = Math.round(208 + imm * 28);
+      const bMist = Math.round(155 + imm * 95);
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      for (let i = 0; i < puffs.length; i += 1) {
+        const p = puffs[i];
+        p.rot += p.vr;
+        p.x += (p.vx + Math.sin(time * 0.00032 + p.phase) * 0.26) * motionG;
+        p.y += (p.vy + Math.cos(time * 0.00026 + p.phase * 1.2) * 0.18) * motionG;
+        if (p.x < -p.rx * 2.2) p.x += width + p.rx * 3;
+        if (p.x > width + p.rx * 2.2) p.x -= width + p.rx * 3;
+        if (p.y < -p.ry * 2) p.y += height + p.ry * 2.5;
+        if (p.y > height + p.ry * 2) p.y -= height + p.ry * 2.5;
+        const cx = p.x + sp * (-0.016 - p.layer * 0.058);
+        const cy = p.y + sp * (-0.048 - p.layer * 0.13);
+        const a0 = p.baseA * (0.82 + imm * 0.35) * (0.45 + presenceG * 0.55);
+        ctx.globalAlpha = 0.55 + 0.45 * presenceG;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(p.rot);
+        ctx.scale(p.rx / 100, p.ry / 100);
+        const grd = ctx.createRadialGradient(0, 0, 0, 0, 0, 100);
+        grd.addColorStop(0, `rgba(${rMist}, ${gMist}, ${bMist}, ${a0})`);
+        grd.addColorStop(0.42, `rgba(${rMist}, ${gMist}, ${bMist}, ${a0 * 0.42})`);
+        grd.addColorStop(1, "rgba(8, 14, 28, 0)");
+        ctx.fillStyle = grd;
+        ctx.beginPath();
+        ctx.arc(0, 0, 100, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      ctx.globalCompositeOperation = "lighter";
+      for (let i = 0; i < motes.length; i += 1) {
+        const m = motes[i];
+        const gate = senacParticleTemporalGate(m.temporalSlot ?? 0);
+        if (gate < 0.1) continue;
+        const twinkle = 0.62 + Math.sin(time * m.tw + m.phase) * 0.24 * gate;
+        m.x += (m.vx * 0.09 + Math.sin(time * 0.0004 + m.phase) * 0.06) * gate;
+        m.y += m.vy * 0.07 * gate;
+        if (m.y < -6) m.y = height + 6;
+        if (m.x < -4) m.x = width + 4;
+        if (m.x > width + 4) m.x = -4;
+        const sx = m.x + sp * (-0.011 - m.pz * 0.048);
+        const sy = m.y + sp * (-0.038 - m.pz * 0.09);
+        const alpha = Math.max(0.04, Math.min(0.72, twinkle * (0.52 + imm * 0.38) * gate));
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = m.gold ? `rgba(236, 212, 168, ${alpha})` : `rgba(165, 210, 255, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(sx, sy, m.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
     function draw(time) {
+      if (senacAmbientPaused) {
+        requestAnimationFrame(draw);
+        return;
+      }
       ctx.clearRect(0, 0, width, height);
 
       const scrollTarget = getScrollY();
@@ -991,7 +1144,7 @@
           if (dist > 115) continue;
           const linkGate =
             senacParticleTemporalGate(a.temporalSlot ?? 0) * senacParticleTemporalGate(b.temporalSlot ?? 0);
-          if (linkGate < 0.06) continue;
+          if (linkGate < 0.12) continue;
           const alpha = (1 - dist / 115) * 0.12 * linkGate;
           ctx.strokeStyle = `rgba(139, 213, 255, ${alpha})`;
           ctx.lineWidth = 0.7;
@@ -1005,7 +1158,7 @@
 
       for (const star of stars) {
         const gate = senacParticleTemporalGate(star.temporalSlot ?? 0);
-        if (gate < 0.04) continue;
+        if (gate < 0.08) continue;
 
         const twinkle =
           star.a * (0.35 + gate * 0.65) + Math.sin(time * star.tw + star.phase) * 0.14 * gate;
@@ -1053,6 +1206,7 @@
         }
       }
 
+      drawAtmosphereFog(time, sp, ht);
       requestAnimationFrame(draw);
     }
 
@@ -1062,10 +1216,10 @@
   }
 
   /**
-   * Brume / fumée diffuse + poussière lumineuse - calque plein cadre, sous le texte (z-index CSS),
-   * parallax lié au scroll (comme le ciel), teinte ambre → bleu avec l’immersion.
+   * Brume legacy (#fog-canvas) — ignoré si fusionné dans #sky-canvas.
    */
   function initFog() {
+    if (root.classList.contains("senac-atmosphere-merged")) return;
     const canvas = document.getElementById("fog-canvas");
     if (!(canvas instanceof HTMLCanvasElement)) return;
 
@@ -1178,8 +1332,8 @@
         const cx = p.x + ox;
         const cy = p.y + oy;
 
-        const a0 = p.baseA * (0.82 + imm * 0.35) * (0.25 + presenceG * 0.75);
-        ctx.globalAlpha = 0.92 * presenceG;
+        const a0 = p.baseA * (0.82 + imm * 0.35) * (0.45 + presenceG * 0.55);
+        ctx.globalAlpha = 0.55 + 0.45 * presenceG;
         ctx.save();
         ctx.translate(cx, cy);
         ctx.rotate(p.rot);
@@ -1199,7 +1353,7 @@
       for (let i = 0; i < motes.length; i += 1) {
         const m = motes[i];
         const gate = senacParticleTemporalGate(m.temporalSlot ?? 0);
-        if (gate < 0.05) continue;
+        if (gate < 0.1) continue;
 
         const twinkle = 0.62 + Math.sin(time * m.tw + m.phase) * 0.24 * gate;
         const pa = sp * (-0.011 - m.pz * 0.048);
@@ -1245,7 +1399,7 @@
 
     const compact = window.innerWidth < 768;
     const inIframe = window.parent !== window;
-    const count = inIframe ? (compact ? 48 : 72) : compact ? 64 : 104;
+    const count = inIframe ? (compact ? 36 : 60) : compact ? 52 : 88;
 
     for (let i = 0; i < count; i += 1) {
       const mote = document.createElement("span");
@@ -1275,7 +1429,16 @@
     host.appendChild(layer);
   }
 
-  /** Fluide coloré WebGL (or → bleu nuit) — calque sous la brume. */
+  function maybeInitSenacColorFluid() {
+    if (senacColorFluidStarted || reducedMotion) return;
+    const ht = Number.parseFloat(root.style.getPropertyValue("--hero-t").trim() || "0");
+    const ft = Number.parseFloat(root.style.getPropertyValue("--frise-t").trim() || "0");
+    if (ht < 0.1 && ft < 0.06) return;
+    senacColorFluidStarted = true;
+    void initSenacColorFluid();
+  }
+
+  /** Fluide coloré WebGL (or → bleu nuit) - calque sous la brume. */
   async function initSenacColorFluid() {
     if (reducedMotion) return;
     const mount = document.getElementById("senac-color-fluid");
@@ -1507,6 +1670,8 @@
     const finePointer =
       typeof window.matchMedia === "function" &&
       window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    /** SPA : losange = CustomCursor parent (relais senac-pointer). */
+    const spaParentCursor = suppressScrollProgressChrome;
 
     /* ── Curseur losange (identique à CustomCursor.tsx React) - non monté sur tactile ── */
     const cursorEl = document.createElement("div");
@@ -1556,7 +1721,7 @@
     shapeEl.appendChild(svg);
     cursorEl.appendChild(haloEl);
     cursorEl.appendChild(shapeEl);
-    if (finePointer) {
+    if (finePointer && !spaParentCursor) {
       document.body.appendChild(cursorEl);
     }
 
@@ -1599,7 +1764,7 @@
       arrow.setAttribute("stroke", tailC);
       haloEl.style.background = halo;
     }
-    applyColors(0);
+    if (!spaParentCursor) applyColors(0);
 
     /* Positions : rapide pour le losange, souple pour le halo */
     let rawX = -200, rawY = -200;
@@ -1644,7 +1809,7 @@
       hx += (rawX - hx) * 0.065;
       hy += (rawY - hy) * 0.065;
 
-      if (finePointer && cursorEl && haloEl) {
+      if (finePointer && cursorEl && haloEl && !spaParentCursor) {
         cursorEl.style.transform = `translate(${lx.toFixed(1)}px, ${ly.toFixed(1)}px)`;
         haloEl.style.left = `${(hx - lx).toFixed(1)}px`;
         haloEl.style.top = `${(hy - ly).toFixed(1)}px`;
@@ -1653,7 +1818,7 @@
       /* Couleurs selon immersion */
       const ht = parseFloat(root.style.getPropertyValue("--hero-t")  || "0");
       const ft = parseFloat(root.style.getPropertyValue("--frise-t") || "0");
-      applyColors(Math.min(1, ht + ft * 0.42));
+      if (!spaParentCursor) applyColors(Math.min(1, ht + ft * 0.42));
 
       /* Portrait tilt */
       crx += (prx - crx) * LERP_TILT;
@@ -1679,15 +1844,21 @@
     requestAnimationFrame(loop);
   }
 
+  function ensureLenisInit() {
+    if (!senacLenisInitPromise) senacLenisInitPromise = initLenis();
+    return senacLenisInitPromise;
+  }
+
   async function initLenis() {
     if (reducedMotion) return false;
+    if (yearGaugeLenis) return true;
     try {
       const { default: Lenis } = await import("https://esm.sh/lenis@1.1.18");
       const lenis = new Lenis({
-        /** Inertie douce mais réactive à la molette classique (évite le « surf » à 1.4×). */
-        lerp: 0.095,
+        /** SPA : scroll un peu plus vif ; page seule : inertie douce. */
+        lerp: suppressScrollProgressChrome ? 0.16 : 0.12,
         smoothWheel: true,
-        wheelMultiplier: 0.82,
+        wheelMultiplier: suppressScrollProgressChrome ? 1.02 : 0.96,
         touchMultiplier: 1.12,
         syncTouch: false,
         smoothTouch: false,
@@ -1733,7 +1904,8 @@
    * Entrée (GSAP) + disparition après premier défilement (scroll / molette / tactile).
    * @param {import('gsap').GSAP|null} gsap
    */
-  function initScrollCue(gsap) {
+  function initScrollCue(_gsap) {
+    return;
     const cue = document.querySelector("header.hero a.scroll-cue");
     if (!(cue instanceof HTMLAnchorElement)) return;
 
@@ -2276,9 +2448,13 @@
     senacObservatoryScenes.sort((a, b) => a.scrollY - b.scrollY);
   }
 
-  /** Waypoints mode Cinéma : hero puis chaque station de la frise. */
+  /** Waypoints mode Cinéma : garde, hero puis chaque station de la frise. */
   function getSenacCinemaWaypoints() {
     const points = /** @type {{ y: number, holdMs: number }[]} */ ([]);
+    const garde = document.querySelector(".senac-act2-garde");
+    if (garde instanceof HTMLElement) {
+      points.push({ y: Math.max(0, garde.offsetTop), holdMs: 2000 });
+    }
     const hero = document.querySelector("header.hero");
     if (hero instanceof HTMLElement) {
       points.push({ y: Math.max(0, hero.offsetTop), holdMs: 1400 });
@@ -2343,6 +2519,43 @@
     return icons[k] || icons.compass;
   }
 
+  /** Dernière sauvegarde parent (Acte I / III) pour les raccourcis `[data-senac-navigate]`. */
+  let senacCrossNavSave = { act1Completed: false, act3Unlocked: false };
+
+  function isSenacNavTargetLocked(/** @type {string} */ target) {
+    if (target === "intro-video" || target === "act1-map") return !senacCrossNavSave.act1Completed;
+    if (target === "act3-writing") return !senacCrossNavSave.act3Unlocked;
+    return false;
+  }
+
+  function applySenacCrossNavSave(/** @type {Record<string, unknown> | undefined} */ flags) {
+    if (flags && typeof flags === "object") {
+      senacCrossNavSave = {
+        act1Completed: flags.act1Completed === true,
+        act3Unlocked: flags.act3Unlocked === true,
+      };
+    }
+    document.querySelectorAll("[data-senac-navigate]").forEach((node) => {
+      if (!(node instanceof HTMLButtonElement)) return;
+      const target = node.getAttribute("data-senac-navigate") || "";
+      const locked = isSenacNavTargetLocked(target);
+      node.disabled = locked;
+      node.classList.toggle("is-save-locked", locked);
+      if (locked) node.setAttribute("aria-disabled", "true");
+      else node.removeAttribute("aria-disabled");
+    });
+
+    const heroHint = document.querySelector(
+      ".senac-cross-nav-wrap--hero .senac-cross-nav__hint",
+    );
+    if (heroHint instanceof HTMLElement) {
+      const key = senacCrossNavSave.act1Completed ? "cross_nav_hint" : "cross_nav_hint_locked";
+      heroHint.setAttribute("data-i18n", key);
+      const label = typeof window.SENAC_T === "function" ? window.SENAC_T(key) : "";
+      if (label) heroHint.textContent = label;
+    }
+  }
+
   function enhanceSenacNavPictos() {
     document.querySelectorAll("[data-senac-navigate]").forEach((node) => {
       if (!(node instanceof HTMLButtonElement)) return;
@@ -2384,6 +2597,7 @@
         ) {
           return;
         }
+        if (isSenacNavTargetLocked(raw)) return;
         e.preventDefault();
         const origin = window.location.origin;
         if (raw === "act3-writing") {
@@ -2774,6 +2988,22 @@
       return choiceOverlayScrollLock;
     }
 
+    /** Scroll document autorisé dès le clic (le fondu visuel continue sans bloquer la molette). */
+    function unlockParcheminDocumentScroll() {
+      choiceOverlayScrollLock = false;
+      document.documentElement.classList.remove("senac-choice-pending");
+      document.body.classList.remove("senac-choice-pending");
+      if (yearGaugeLenis && typeof yearGaugeLenis.start === "function") {
+        yearGaugeLenis.start();
+      } else {
+        void ensureLenisInit().then((ok) => {
+          if (ok && yearGaugeLenis && typeof yearGaugeLenis.start === "function") {
+            yearGaugeLenis.start();
+          }
+        });
+      }
+    }
+
     function onWheelCinemaLock(e) {
       if (!scrollGuardActive()) return;
       e.preventDefault();
@@ -2930,6 +3160,7 @@
     }
 
     function showScrollNudge() {
+      return;
       /* Cache le scroll-cue du hero pour éviter le doublon */
       const heroCue = document.querySelector("a.scroll-cue");
       if (heroCue instanceof HTMLElement) {
@@ -3057,11 +3288,16 @@
       wire(/** @type {HTMLButtonElement} */ (exploreBtn), vExp);
     }
 
-    /** Une seule frame d’entrée : hero + portrait depuis le haut (GSAP ou fallback). */
+    /** Une seule frame d’entrée : garde sans blur ; hero + portrait (GSAP ou fallback). */
     function revealActTwoEntryNow() {
+      const garde = document.querySelector(".senac-act2-garde[data-reveal]");
       const heroTargets = document.querySelectorAll(
         "header.hero [data-reveal], header.hero[data-reveal], header.hero .hero-portrait",
       );
+      if (garde instanceof HTMLElement) {
+        garde.style.setProperty("--stagger", "0");
+        garde.classList.add("is-visible");
+      }
       heroTargets.forEach((el) => {
         el.style.setProperty("--stagger", "0");
       });
@@ -3074,7 +3310,7 @@
       }
 
       const gsapRef = yearGaugeGsap;
-      if (gsapRef) {
+      if (gsapRef && heroTargets.length) {
         gsapRef.killTweensOf(heroTargets);
         gsapRef.fromTo(
           heroTargets,
@@ -3163,6 +3399,7 @@
     function dismissChoice(chosen) {
       pauseScrollModeDemoVideos();
       document.documentElement.setAttribute("data-senac-mode-chosen", "1");
+      unlockParcheminDocumentScroll();
       document.documentElement.classList.add("senac-choice-leaving");
       if (backdropEl) {
         backdropEl.classList.add("is-leaving");
@@ -3176,9 +3413,6 @@
       );
       const cinemaScrollDelay = Math.round(unlockMs * 0.72);
 
-      if (yearGaugeLenis && typeof yearGaugeLenis.start === "function") {
-        yearGaugeLenis.start();
-      }
       setMode(chosen, true, {
         deferAutoScrollMs: chosen === "cinema" ? cinemaScrollDelay : 0,
       });
@@ -3186,7 +3420,6 @@
       window.setTimeout(revealActTwoChromeEarly, heroRevealMs);
 
       window.setTimeout(() => {
-        choiceOverlayScrollLock = false;
         if (backdropEl) {
           backdropEl.classList.remove("is-visible", "is-leaving");
           backdropEl.style.display = "none";
@@ -3281,6 +3514,8 @@
       document.body.classList.add("senac-choice-pending");
     }
 
+    void ensureLenisInit();
+
     choiceShowRaf = requestAnimationFrame(() => {
       choiceShowRaf = requestAnimationFrame(() => {
         choiceShowRaf = 0;
@@ -3290,19 +3525,23 @@
   }
 
   setRevealStagger();
-  scheduleSenacArchScene();
+  void ensureLenisInit();
   root.style.setProperty("--senac-arch-visibility", "0");
   initSenacTemporalAmbience();
   initPointerGlow();
-  initSky();
+  initAtmosphereCanvas();
+  void scheduleSenacArchScene();
+  if (typeof requestIdleCallback === "function") {
+    requestIdleCallback(() => scheduleSenacArchScene(), { timeout: 2400 });
+  } else {
+    setTimeout(() => scheduleSenacArchScene(), 500);
+  }
   initSenacGlyphDust();
-  initSenacColorFluid();
   initSmokeShader().then((ok) => {
     if (!ok) {
       document.body.classList.remove("senac-smoke-shader-active");
       document.body.classList.add("senac-smoke-fallback");
     }
-    initFog();
   });
   initSenacParentNavigateBridge();
   enhanceSenacNavPictos();
@@ -3377,7 +3616,7 @@
       splitNode(h2);
     });
 
-    document.querySelectorAll(".quote-break blockquote").forEach((bq) => {
+    document.querySelectorAll(".quote-break:not(.quote-break--one-line) blockquote").forEach((bq) => {
       const nodes = Array.from(bq.childNodes);
       bq.innerHTML = "";
       let wordIndex = 0;
@@ -3463,6 +3702,7 @@
       if (label) node.textContent = label;
     });
     enhanceSenacNavPictos();
+    applySenacCrossNavSave(senacCrossNavSave);
   }
 
   window.AL_RIHLA_REFRESH_SENAC_DOM = refreshSenacI18nDom;
@@ -3474,12 +3714,16 @@
       const d = event.data;
       if (d && d.type === "senac-language") {
         refreshSenacI18nDom();
+        return;
+      }
+      if (d && d.type === "senac-cross-nav-save") {
+        applySenacCrossNavSave(d);
       }
     },
     false,
   );
 
-  initLenis().then((lenisOk) => {
+  ensureLenisInit().then((lenisOk) => {
     if (!lenisOk) {
       if (!reducedMotion) initImmersionFromWindowScroll();
       else applyScrollDerivedState(getScrollY());

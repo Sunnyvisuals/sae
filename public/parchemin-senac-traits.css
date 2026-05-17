@@ -1,5 +1,5 @@
 /**
- * Acte II — traits décoratifs (colonnes intérieures, horizontales, obliques).
+ * Acte II - traits décoratifs (colonnes intérieures, horizontales, obliques).
  * Complète senac-scroll-pillars + senac-scroll-glyphs.
  */
 
@@ -51,6 +51,41 @@
   animation-delay: -3s;
 }
 
+/* Mode lecture : un seul fil vertical = axe constellation (évite doublon à ~26 %) */
+body.senac-reading-flow .senac-scroll-trait--v {
+  opacity: calc(
+    (0.05 + var(--senac-pillar-glow, 0.35) * 0.08) * (0.15 + var(--senac-presence-gate, 1) * 0.45)
+  );
+}
+
+body.senac-reading-flow .senac-scroll-trait--v1 {
+  left: var(--senac-stellar-axis, clamp(30%, 38vw, 42%));
+  transform: translateX(-50%);
+  opacity: calc(
+    (0.14 + var(--senac-pillar-glow, 0.35) * 0.12) * (0.3 + var(--senac-presence-gate, 1) * 0.6)
+  );
+  -webkit-mask-image: radial-gradient(
+    circle at var(--senac-stellar-axis, 50%) var(--senac-portrait-ring-y, 58vh),
+    transparent 0,
+    transparent var(--senac-portrait-ring-r, 12rem),
+    #000 calc(var(--senac-portrait-ring-r, 12rem) + 1.5px)
+  );
+  mask-image: radial-gradient(
+    circle at var(--senac-stellar-axis, 50%) var(--senac-portrait-ring-y, 58vh),
+    transparent 0,
+    transparent var(--senac-portrait-ring-r, 12rem),
+    #000 calc(var(--senac-portrait-ring-r, 12rem) + 1.5px)
+  );
+}
+
+body.senac-reading-flow .senac-scroll-trait--v2,
+body.senac-reading-flow .senac-scroll-trait--v3,
+body.senac-reading-flow .senac-scroll-trait--v4,
+body.senac-reading-flow .senac-scroll-trait--v5,
+body.senac-reading-flow .senac-scroll-trait--v6 {
+  opacity: 0.03;
+}
+
 .senac-scroll-trait--v2 {
   left: 36%;
   animation-delay: -11s;
@@ -82,7 +117,16 @@
   animation-delay: -5s;
 }
 
-/* Horizontaux — filets de constellation */
+/* Lecture Acte II : pas de filets horizontaux dorés (croisement avec l’axe vertical) */
+body.senac-reading-flow .senac-scroll-trait--h,
+body.senac-reading-flow .senac-scroll-trait--h1,
+body.senac-reading-flow .senac-scroll-trait--h2,
+body.senac-reading-flow .senac-scroll-trait--h3,
+body.senac-reading-flow .senac-scroll-trait--h4 {
+  display: none !important;
+}
+
+/* Horizontaux - filets de constellation */
 .senac-scroll-trait--h {
   left: 8%;
   right: 8%;
@@ -122,7 +166,7 @@
   );
 }
 
-/* Obliques — traits traversants */
+/* Obliques - traits traversants */
 .senac-scroll-trait--d {
   left: 50%;
   top: 50%;
@@ -223,19 +267,24 @@ body.senac-temporal-rest .senac-scroll-trait--h {
 }
 
 @media (max-width: 840px) {
-  .senac-scroll-trait--v1 {
+  body:not(.senac-reading-flow) .senac-scroll-trait--v1 {
     left: 18%;
   }
 
-  .senac-scroll-trait--v2 {
+  body.senac-reading-flow .senac-scroll-trait--v1 {
+    left: var(--senac-stellar-axis, 50%);
+    transform: translateX(-50%);
+  }
+
+  body:not(.senac-reading-flow) .senac-scroll-trait--v2 {
     left: 30%;
   }
 
-  .senac-scroll-trait--v3 {
+  body:not(.senac-reading-flow) .senac-scroll-trait--v3 {
     right: 30%;
   }
 
-  .senac-scroll-trait--v4 {
+  body:not(.senac-reading-flow) .senac-scroll-trait--v4 {
     right: 18%;
   }
 

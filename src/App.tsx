@@ -71,6 +71,7 @@ import { PARCHEMIN_STATIC_QUERY } from "./lib/parcheminAssetVersion";
 import {
   ACT_SAVE_STORAGE_KEY,
   getHydratedActSave,
+  getSenacCrossNavFlags,
   JOURNEY_REPLAY_STORAGE_KEY,
   patchActSave,
   readJourneyReplayUnlocked,
@@ -257,6 +258,8 @@ export default function App() {
   );
   const act2ScrollPersistTimerRef = useRef(0);
   const act2ScrollPersistRatioRef = useRef<number | null>(null);
+  const act2ScrollUiLastAt = useRef(0);
+  const act2ScrollUiLastRatio = useRef(-1);
 
   const pendingAct2 = useRef(false);
   /** DerniÃ¨re valeur importÃ©e : Ã©vite un `useCallback([])` figÃ© au premier rendu (HMR / tweak du dÃ©lai). */
@@ -316,7 +319,7 @@ export default function App() {
     setCursorMode(cursorExperience === "fluid" ? "default" : "stylus");
   }, [cursorExperience, setCursorMode]);
 
-  /** Mode basique : masquer le losange CSS global — seul le cercle React reste visible (pas sur le shell acte II). */
+  /** Mode basique : masquer le losange CSS global - seul le cercle React reste visible (pas sur le shell acte II). */
   useEffect(() => {
     const html = document.documentElement;
     const basic = finePointer && cursorExperience === "basic";
@@ -963,17 +966,19 @@ export default function App() {
     }));
   }, []);
 
-  /** Acte I carte : Lenis sans lissage molette (zoom molette pr?cis sur le canvas). Autres phases : glide doux. */
+  /** Acte I carte : Lenis sans lissage molette. Acte II : scroll dans l’iframe uniquement (pas de double Lenis). */
   const lenisOptions = useMemo(
     () =>
-      phase === "act1" || act23BridgeOpen
-        ? { lerp: 0.12, duration: 1.2, smoothWheel: false }
-        : {
-            lerp: 0.068,
-            duration: 1.82,
-            smoothWheel: true,
-            wheelMultiplier: 0.92,
-          },
+      phase === "act2"
+        ? { lerp: 1, duration: 0.01, smoothWheel: false, syncTouch: false }
+        : phase === "act1" || act23BridgeOpen
+          ? { lerp: 0.12, duration: 1.2, smoothWheel: false }
+          : {
+              lerp: 0.068,
+              duration: 1.82,
+              smoothWheel: true,
+              wheelMultiplier: 0.92,
+            },
     [phase, act23BridgeOpen]
   );
 
@@ -1076,6 +1081,20 @@ export default function App() {
     const onMsg = (e: MessageEvent) => {
       if (e.origin !== expectedOrigin) return;
       const d = e.data as Record<string, unknown>;
+      if (d?.type === "senac-parchemin-ready") {
+        if (phaseRef.current !== "act2") return;
+        const iframe = document.querySelector('iframe[src*="parchemin-senac"]');
+        if (!(iframe instanceof HTMLIFrameElement) || e.source !== iframe.contentWindow) return;
+        try {
+          iframe.contentWindow?.postMessage(
+            { type: "senac-cross-nav-save", ...getSenacCrossNavFlags() },
+            expectedOrigin,
+          );
+        } catch {
+          /* ignore */
+        }
+        return;
+      }
       if (d?.type === "senac-pointer") {
         if (phaseRef.current !== "act2") return;
         const iframe = document.querySelector('iframe[src*="parchemin-senac"]');
@@ -1150,6 +1169,16 @@ export default function App() {
         const ratio = e.data.ratio as number;
         if (typeof ratio === "number" && Number.isFinite(ratio)) {
           const clamped = Math.min(1, Math.max(0, ratio));
+          const now = performance.now();
+          const lastAt = act2ScrollUiLastAt.current;
+          const lastRatio = act2ScrollUiLastRatio.current;
+          const delta = Math.abs(clamped - lastRatio);
+          if (delta < 0.02 && now - lastAt < 120) {
+            act2ScrollPersistRatioRef.current = clamped;
+            return;
+          }
+          act2ScrollUiLastAt.current = now;
+          act2ScrollUiLastRatio.current = clamped;
           setAct2ScrollFillRatio(clamped);
           act2ScrollPersistRatioRef.current = clamped;
           window.clearTimeout(act2ScrollPersistTimerRef.current);
@@ -1176,7 +1205,9 @@ export default function App() {
       }
       if (d?.type === "senac-navigate") {
         const target = typeof d.target === "string" ? d.target : "";
+        const crossNav = getSenacCrossNavFlags();
         if (target === "act3-writing") {
+          if (!crossNav.act3Unlocked) return;
           beginActIIIEntrance(true);
           return;
         }
@@ -1184,10 +1215,12 @@ export default function App() {
         const iframe = document.querySelector('iframe[src*="parchemin-senac"]');
         if (!(iframe instanceof HTMLIFrameElement) || e.source !== iframe.contentWindow) return;
         if (target === "intro-video") {
+          if (!crossNav.act1Completed) return;
           openIntroVideoOverlayRef.current();
           return;
         }
         if (target === "act1-map") {
+          if (!crossNav.act1Completed) return;
           setPhase("act1");
           return;
         }
@@ -1213,6 +1246,39 @@ export default function App() {
       act2ScrollPersistTimerRef.current = 0;
     };
   }, [phase, beginActIIIEntrance]);
+
+  /** Acte II : synchronise Vidéo / Carte / Acte III avec la sauvegarde session (hero + frise). */
+  useEffect(() => {
+    if (phase !== "act2") return;
+
+    const send = () => {
+      const iframe = document.querySelector('iframe[src*="parchemin-senac"]');
+      if (!(iframe instanceof HTMLIFrameElement) || !iframe.contentWindow) return;
+      try {
+        iframe.contentWindow.postMessage(
+          { type: "senac-cross-nav-save", ...getSenacCrossNavFlags() },
+          window.location.origin,
+        );
+      } catch {
+        /* ignore */
+      }
+    };
+
+    send();
+    const iframeEl = document.querySelector('iframe[src*="parchemin-senac"]');
+    if (iframeEl instanceof HTMLIFrameElement) {
+      iframeEl.addEventListener("load", send, { once: true });
+    }
+    const t = window.setTimeout(send, 520);
+    const t2 = window.setTimeout(send, 1700);
+    return () => {
+      window.clearTimeout(t);
+      window.clearTimeout(t2);
+      if (iframeEl instanceof HTMLIFrameElement) {
+        iframeEl.removeEventListener("load", send);
+      }
+    };
+  }, [phase, act2UnlockedAfterBridge, act3RailUnlocked, journeyReplayUnlocked, revelationCount]);
 
   /** R?hydrate le parchemin (scroll + mode d?entr?e) apr?s un premier passage ; premier rendu garde le choix Cin?ma / Exploration. */
   useEffect(() => {
@@ -1723,8 +1789,11 @@ export default function App() {
 
       </main>
 
-      {/* Fluide WebGL : toutes les phases (pointer-events: none, ne bloque pas l'iframe). */}
-      {finePointer && splashWebglReady && useFluidCursorExperience && (
+      {/* Fluide WebGL : intro / acte I / III (désactivé acte II : scroll + curseur dans l’iframe). */}
+      {finePointer &&
+        splashWebglReady &&
+        useFluidCursorExperience &&
+        phase !== "act2" && (
         <div
           style={{
             pointerEvents: "none",
@@ -1794,26 +1863,20 @@ export default function App() {
       {act23BridgeOpen && phase === "act2" ? (
         <ChapterAct23Bridge open onComplete={handleAct23BridgeComplete} />
       ) : null}
-      {/* Acte II : losange dans l’iframe ; curseur système sur le shell. React seulement pour modales / pont / crédits. */}
-      {finePointer &&
-        (phase !== "act2" ||
-          systemMenuOpen ||
-          introVideoOpen ||
-          introGateOpen ||
-          act2VoyageCreditsOpen ||
-          isLanguageMorphing ||
-          act23BridgeOpen) && (
-          <CustomCursor
-            overlayOpen={
-              systemMenuOpen ||
-              introVideoOpen ||
-              introGateOpen ||
-              act2VoyageCreditsOpen ||
-              isLanguageMorphing ||
-              act23BridgeOpen
-            }
-          />
-        )}
+      {/* Acte II : losange parent + relais `senac-pointer` (pas de doublon dans l’iframe). */}
+      {finePointer && (
+        <CustomCursor
+          iframeRelay={phase === "act2"}
+          overlayOpen={
+            systemMenuOpen ||
+            introVideoOpen ||
+            introGateOpen ||
+            act2VoyageCreditsOpen ||
+            isLanguageMorphing ||
+            act23BridgeOpen
+          }
+        />
+      )}
     </>
   );
 }

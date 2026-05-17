@@ -1,6 +1,128 @@
 /**
- * Acte II — hero : une colonne, lisible (tailles + rythme + responsive).
+ * Acte II - page de garde + hero (portrait, raccourcis).
  */
+
+/* -- Page de garde : même DA que l’écran langue (Intro) -- */
+/** Pas de blur / zoom d’entrée (évite le voile noir composite au boot). */
+.senac-act2-garde[data-reveal],
+.senac-act2-garde[data-reveal]:not(.is-visible),
+.senac-act2-garde[data-reveal].is-visible {
+  opacity: 1;
+  transform: none;
+  filter: none;
+  transition: none;
+}
+
+html.senac-choice-pending:not(.senac-choice-entered) .senac-act2-garde {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+html.senac-in-iframe.senac-choice-entered .senac-act2-garde[data-reveal] {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+  filter: none !important;
+  transition: none !important;
+}
+
+body.senac-reading-flow .senac-act2-garde {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: max(100svh, 100dvh);
+  min-height: max(calc(var(--senac-beat, 100svh) * 1.02), 100svh);
+  margin: 0;
+  padding:
+    max(calc(env(safe-area-inset-top, 0px) + 1.5rem), clamp(3.5rem, 12vh, 6rem))
+    max(var(--senac-fact-pad, clamp(1.75rem, 5vw, 3.5rem)), env(safe-area-inset-right, 0px))
+    clamp(2.5rem, 8vh, 4.5rem)
+    max(var(--senac-fact-pad, clamp(1.75rem, 5vw, 3.5rem)), env(safe-area-inset-left, 0px));
+  text-align: center;
+  isolation: isolate;
+  background: transparent;
+}
+
+body.senac-reading-flow .senac-act2-garde::before,
+body.senac-reading-flow .senac-act2-garde::after {
+  display: none !important;
+  content: none !important;
+}
+
+body.senac-reading-flow .senac-act2-garde__frame {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(1.35rem, 3.2vh, 1.75rem);
+  max-width: min(36rem, 92vw);
+}
+
+/** Sourcil — équivalent `.da-eyebrow` */
+body.senac-reading-flow .senac-act2-garde__act {
+  margin: 0;
+  font-family: var(--da-ui, "Inter", system-ui, sans-serif);
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.55;
+  letter-spacing: 0.48em;
+  text-transform: uppercase;
+  color: rgba(197, 160, 89, 0.55);
+  text-shadow: 0 0 12px rgba(0, 0, 0, 0.82);
+}
+
+/** Titre — équivalent `.da-display-title` (une ligne) */
+body.senac-reading-flow .senac-act2-garde__title {
+  margin: 0;
+  font-family: var(--da-ui, "Inter", system-ui, sans-serif);
+  font-size: clamp(1.8rem, 4.6vw, 3rem);
+  font-weight: 500;
+  font-style: normal;
+  line-height: 1.12;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  text-wrap: nowrap;
+  white-space: nowrap;
+  color: rgba(212, 197, 176, 0.92);
+  text-shadow: 0 0 18px rgba(0, 0, 0, 0.78);
+}
+
+/** Filet — équivalent `.da-title-rule` */
+body.senac-reading-flow .senac-act2-garde__rule {
+  display: block;
+  width: 3rem;
+  height: 1px;
+  margin: 0;
+  background: rgba(197, 160, 89, 0.38);
+  box-shadow: none;
+}
+
+html[dir="rtl"] body.senac-reading-flow .senac-act2-garde__act {
+  font-family: "Noto Naskh Arabic", "Segoe UI", system-ui, sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+}
+
+html[dir="rtl"] body.senac-reading-flow .senac-act2-garde__title {
+  font-family: "Noto Naskh Arabic", "Segoe UI", system-ui, sans-serif;
+  font-weight: 300;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  white-space: normal;
+  text-wrap: balance;
+}
+
+@media (max-width: 520px) {
+  body.senac-reading-flow .senac-act2-garde__title {
+    font-size: clamp(1.05rem, 4.2vw, 1.65rem);
+    letter-spacing: 0.14em;
+  }
+}
 
 .chapter-two header.hero.senac-hero-stack {
   --senac-hero-col: min(38rem, 94vw);
@@ -34,25 +156,13 @@
 }
 
 .chapter-two header.hero.senac-hero-stack .hero-intro-block,
-.chapter-two header.hero.senac-hero-stack .senac-cross-nav-wrap--hero,
-.chapter-two header.hero.senac-hero-stack .hero-portrait,
-.chapter-two header.hero.senac-hero-stack .scroll-cue {
-  width: 100%;
-  max-width: var(--senac-hero-col);
-  margin: 0;
-  padding: 0;
+.chapter-two header.hero.senac-hero-stack a.scroll-cue,
+.senac-scroll-nudge {
+  display: none !important;
 }
 
 .chapter-two header.hero.senac-hero-stack .hero-intro-block {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--senac-hero-gap);
-  background: none;
-  border: none;
-  box-shadow: none;
-  overflow: visible;
-  padding-top: 0.35rem;
+  display: none !important;
 }
 
 .chapter-two header.hero.senac-hero-stack .hero-intro-header,
@@ -223,6 +333,10 @@
 
 .senac-cross-nav-wrap--hero .senac-hero-link:hover .senac-nav-picto {
   transform: none;
+}
+
+.senac-cross-nav-wrap--hero .senac-hero-link.is-save-locked {
+  text-decoration-color: rgba(197, 160, 89, 0.22);
 }
 
 .senac-cross-nav-wrap--hero .senac-cross-nav__hint {

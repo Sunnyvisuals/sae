@@ -25,8 +25,11 @@ function reparentCursorPortalToBodyEnd() {
 export default function CustomCursor({
   /** Menu pause / vidéo intro : on remonte le portail pour qu’il ne soit pas masqué par le dialogue. */
   overlayOpen = false,
+  /** Acte II : pointeur relayé depuis l’iframe → ressorts plus secs (compense 1 frame de latence). */
+  iframeRelay = false,
 }: {
   overlayOpen?: boolean;
+  iframeRelay?: boolean;
 }) {
   const [mounted, setMounted] = useState(false);
   /** Après 5 s sans mouvement/clic : halo + losange invisibles ; tout mouvement rouvre. */
@@ -55,8 +58,10 @@ export default function CustomCursor({
         ? basicLeadSpring
         : overlayOpen
           ? { damping: 40, stiffness: 420, mass: 0.45 }
-          : { damping: 28, stiffness: 300, mass: 0.5 },
-    [overlayOpen, isBasicExperience, basicLeadSpring]
+          : iframeRelay
+            ? { damping: 34, stiffness: 520, mass: 0.38 }
+            : { damping: 28, stiffness: 300, mass: 0.5 },
+    [overlayOpen, iframeRelay, isBasicExperience, basicLeadSpring]
   );
   const haloSpring = useMemo(
     () =>
@@ -292,7 +297,7 @@ export default function CustomCursor({
         </motion.div>
       )}
 
-      {/* Losange + « queue » — mode fluide uniquement (pas en basique). */}
+      {/* Losange + « queue » - mode fluide uniquement (pas en basique). */}
       {showDiamond && (
         <motion.div
           className="pointer-events-none fixed will-change-transform"

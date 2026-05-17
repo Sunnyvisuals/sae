@@ -18,7 +18,7 @@ type AuroraProps = {
   hideShootingStars?: boolean;
   /** Moins de grains DOM (DesertDust) - carte acte I ; intro inchangée si omis */
   compactDust?: boolean;
-  /** Acte I : le SplashCursor principal (App) suffit — évite une 2ᵉ sim WebGL en fond. */
+  /** Acte I : le SplashCursor principal (App) suffit - évite une 2ᵉ sim WebGL en fond. */
   suppressBackgroundFluid?: boolean;
 };
 

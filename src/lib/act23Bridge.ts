@@ -14,9 +14,6 @@ export const ACT23_BRIDGE_MP4_LEGACY = `${prefix}transitions/trans2-alpha.mp4`;
 /** Repli audible / visible (même fichier que le prologue). */
 export const ACT23_BRIDGE_MP4_FALLBACK = `${prefix}al-rihla.mp4`;
 
-/** @deprecated Préfetch unique — préférer les constantes ci-dessus dans le lecteur. */
-export const ACT23_BRIDGE_SRC = ACT23_BRIDGE_WEBM_LEGACY;
-
 let act23VideoPrefetched = false;
 
 export function prefetchAct23BridgeVideo(): void {

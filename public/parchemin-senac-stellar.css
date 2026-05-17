@@ -1,5 +1,5 @@
 /**
- * Acte II — fil stellaire minimal (2026 sahara × 2036 nuit).
+ * Acte II - fil stellaire minimal (2026 sahara × 2036 nuit).
  * Guide l’œil : axe → fait à droite ; centre libre pour archives & arche 3D.
  */
 
@@ -28,7 +28,10 @@ body.senac-reading-flow .senac-scroll-glyphs__spark {
 }
 
 body.senac-reading-flow .senac-scroll-glyphs__dust-mote {
-  opacity: calc(var(--senac-dust-a0, 0.35) * (0.35 + var(--senac-presence-gate, 1) * 0.75));
+  opacity: calc(
+    var(--senac-dust-a0, 0.35) *
+      (0.35 + max(var(--senac-presence-floor, 0.62), var(--senac-presence-gate, 1)) * 0.65)
+  );
 }
 
 /* Traits : grille saharienne très fine */
@@ -42,9 +45,8 @@ body.senac-reading-flow .senac-scroll-trait--v {
   );
 }
 
-/* —— Fil de constellation (frise) —— */
+/* -- Fil de constellation (frise) -- */
 body.senac-reading-flow #timeline-start.timeline.senac-constellation-track {
-  --senac-stellar-axis: clamp(14%, 22vw, 26%);
   --senac-stellar-progress: 0;
   position: relative;
 }
@@ -52,7 +54,7 @@ body.senac-reading-flow #timeline-start.timeline.senac-constellation-track {
 body.senac-reading-flow #timeline-start.timeline.senac-constellation-track::before {
   content: "";
   position: absolute;
-  left: var(--senac-stellar-axis);
+  left: var(--senac-stellar-axis, 50%);
   top: 0;
   bottom: 0;
   width: 1px;
@@ -76,7 +78,7 @@ body.senac-reading-flow #timeline-start.timeline.senac-constellation-track::befo
 body.senac-reading-flow #timeline-start.timeline.senac-constellation-track::after {
   content: "";
   position: absolute;
-  left: var(--senac-stellar-axis);
+  left: var(--senac-stellar-axis, 50%);
   top: 0;
   width: 1px;
   height: calc(var(--senac-stellar-progress, 0) * 100%);
@@ -98,46 +100,17 @@ body.senac-reading-flow #timeline-start.timeline > .senac-scene {
   z-index: 2;
 }
 
-/* Nœud stellaire sur l’axe */
+/* Nœuds stellaires sur l’axe - désactivés (fil seul) */
 body.senac-reading-flow #timeline-start.timeline > .senac-scene::before {
-  content: "";
-  position: absolute;
-  left: var(--senac-stellar-axis);
-  top: 50%;
-  width: 5px;
-  height: 5px;
-  margin: -2.5px 0 0 -2.5px;
-  border-radius: 50%;
-  background: rgba(197, 160, 89, 0.55);
-  box-shadow:
-    0 0 0 1px rgba(197, 160, 89, 0.25),
-    0 0 12px rgba(197, 160, 89, 0.2);
-  opacity: 0.45;
-  transform: scale(0.85);
-  transition:
-    opacity 0.45s ease,
-    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.55s ease;
-  pointer-events: none;
-  z-index: 1;
+  display: none !important;
+  content: none !important;
 }
 
-body.senac-reading-flow #timeline-start.timeline > .senac-scene.is-visible::before {
-  opacity: 0.72;
-  transform: scale(1);
-}
-
-body.senac-reading-flow #timeline-start.timeline > .senac-scene.senac-scene--active::before {
-  width: 7px;
-  height: 7px;
-  margin: -3.5px 0 0 -3.5px;
-  background: rgba(244, 234, 210, 0.92);
-  box-shadow:
-    0 0 0 1px rgba(197, 160, 89, 0.65),
-    0 0 20px rgba(197, 160, 89, 0.45),
-    0 0 36px rgba(139, 213, 255, 0.22);
-  opacity: 1;
-  transform: scale(1.15);
+body.senac-reading-flow #timeline-start.timeline .pin,
+body.senac-reading-flow #timeline-start.timeline .pin::after,
+body.senac-reading-flow .quote-break .pin {
+  display: none !important;
+  content: none !important;
 }
 
 /* Reliquaires : halo central (images) */
@@ -167,9 +140,9 @@ body.senac-reading-flow .senac-scene--reliquary.senac-scene--active::after {
   box-shadow: 0 0 48px rgba(139, 213, 255, 0.12);
 }
 
-/* Arche 3D — au-dessus du ciel, sous la brume quand elle s’éclaircit */
+/* Arche 3D - au-dessus du ciel, sous la brume quand elle s’éclaircit */
 #senac-arch-canvas {
-  z-index: 7;
+  z-index: 8;
   pointer-events: none;
   opacity: calc(0.14 + var(--senac-arch-visibility, 0) * 0.88);
   transition: opacity 0.85s cubic-bezier(0.22, 1, 0.36, 1);
@@ -219,17 +192,107 @@ body.senac-reading-flow .senac-arch-scroll-tail::before {
 }
 
 html[dir="rtl"] body.senac-reading-flow #timeline-start.timeline.senac-constellation-track {
-  --senac-stellar-axis: clamp(74%, 78vw, 86%);
+  --senac-stellar-axis: 50%;
 }
 
-@media (max-width: 840px) {
-  body.senac-reading-flow #timeline-start.timeline.senac-constellation-track {
-    --senac-stellar-axis: 12%;
-  }
+/* -- Hero : fil → cercle autour du portrait -- */
+body.senac-reading-flow .senac-scroll-glyphs__layer--arcs::before,
+body.senac-reading-flow .senac-scroll-glyphs__layer--arcs::after {
+  top: var(--senac-portrait-ring-y, 58vh);
+  left: var(--senac-stellar-axis, 50%);
+  width: calc(var(--senac-portrait-ring-r, 12rem) * 2.12);
+  height: calc(var(--senac-portrait-ring-r, 12rem) * 2.12);
+}
 
-  body.senac-reading-flow #timeline-start.timeline > .senac-scene::before {
-    top: 18%;
-  }
+body.senac-reading-flow .chapter-two header.hero.senac-hero-stack .hero-portrait {
+  position: relative;
+  z-index: 2;
+}
+
+body.senac-reading-flow .chapter-two header.hero.senac-hero-stack .hero-portrait-frame {
+  position: relative;
+}
+
+body.senac-reading-flow .chapter-two header.hero.senac-hero-stack .hero-portrait-frame::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 104%;
+  aspect-ratio: 1;
+  height: auto;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 1px solid rgba(197, 160, 89, 0.38);
+  background: transparent;
+  box-shadow:
+    0 0 22px rgba(139, 213, 255, calc(0.1 + var(--frise-t, 0) * 0.14)),
+    0 0 40px rgba(197, 160, 89, 0.12),
+    inset 0 0 28px rgba(139, 213, 255, 0.05);
+  pointer-events: none;
+  z-index: 4;
+  opacity: calc(0.5 + var(--senac-presence-gate, 1) * 0.4);
+}
+
+body.senac-reading-flow .chapter-two header.hero.senac-hero-stack .hero-portrait-frame img {
+  position: relative;
+  z-index: 2;
+  border-radius: 50%;
+  object-fit: cover;
+  aspect-ratio: 1;
+}
+
+/* --senac-stellar-axis par palier : reading-flow.css */
+
+/** Fil central unique : pas de grille ni filets horizontaux au croisement. */
+body.senac-reading-flow .senac-scroll-traits {
+  display: none !important;
+}
+
+body.senac-reading-flow .chapter-two {
+  position: relative;
+}
+
+body.senac-reading-flow .chapter-two::before {
+  content: "";
+  position: absolute;
+  left: var(--senac-stellar-axis, 50%);
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(197, 160, 89, 0.26) 6%,
+    rgba(139, 213, 255, calc(0.18 + var(--frise-t, 0) * 0.4)) 50%,
+    rgba(197, 160, 89, 0.22) 94%,
+    transparent 100%
+  );
+  box-shadow:
+    0 0 22px rgba(139, 213, 255, calc(0.05 + var(--frise-t, 0) * 0.1)),
+    0 0 30px rgba(197, 160, 89, 0.05);
+  opacity: clamp(0.36, calc(0.46 + var(--senac-stellar-progress, 0) * 0.3), 0.7);
+  pointer-events: none;
+  z-index: 1;
+}
+
+body.senac-reading-flow #timeline-start.timeline.senac-constellation-track::before,
+body.senac-reading-flow #timeline-start.timeline.senac-constellation-track::after {
+  display: none !important;
+  content: none !important;
+}
+
+body.senac-reading-flow .senac-scene--card .story-panel::after,
+body.senac-reading-flow .story-card.is-visible .story-panel::after,
+body.senac-reading-flow .story-card.senac-scene--active .story-panel::after {
+  display: none !important;
+  content: none !important;
+}
+
+body.senac-reading-flow .quote-break::after {
+  display: none !important;
+  content: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

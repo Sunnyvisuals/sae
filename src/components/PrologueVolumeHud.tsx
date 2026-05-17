@@ -2,7 +2,7 @@ import { motion } from "motion/react";
 
 const HUD_EASE = [0.22, 1, 0.36, 1] as const;
 
-/** Aligné bande dorée droite — tutoriel + vidéo prologue. */
+/** Aligné bande dorée droite - tutoriel + vidéo prologue. */
 export const PROLOGUE_VOLUME_HUD_POSITION =
   "pointer-events-none absolute top-1/2 -translate-y-1/2 text-right " +
   "right-[max(2.75rem,calc(env(safe-area-inset-right,0px)+1.35rem))]";
@@ -21,7 +21,7 @@ function volumeLevel(pct: number): VolumeLevel {
   return 2;
 }
 
-/** Pictogramme son plat — aligné sur le chiffre, sans relief ni halo. */
+/** Pictogramme son plat - aligné sur le chiffre, sans relief ni halo. */
 function PrologueVolumeHudIcon({ level }: { level: VolumeLevel }) {
   const stroke = level === 0 ? "rgba(244, 234, 210, 0.38)" : "rgba(244, 234, 210, 0.62)";
 

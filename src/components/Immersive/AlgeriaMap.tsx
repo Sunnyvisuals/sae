@@ -375,7 +375,7 @@ export default function AlgeriaMap({
   const lastMousePaintRef = useRef({ x: -9999, y: -9999 });
   const forcePaintUntilRef = useRef(0);
   const canvasFontCacheRef = useRef(new Map<string, string>());
-  /** Masque silhouette (coords normalisées 0–1 dans le carré carte). */
+  /** Masque silhouette (coords normalisées 0-1 dans le carré carte). */
   const territoryMaskRef = useRef<TerritoryMask | null>(null);
   /** Index canvas du mot-révélation planté (un par mot du parcours). */
   const revelationParticleIdxRef = useRef<Partial<Record<RevelationWord, number>>>({});

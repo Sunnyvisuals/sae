@@ -1,5 +1,5 @@
 /**
- * Acte II — voile graphique : traits fins, aurores dorées / bleu nuit, déesse / constellation.
+ * Acte II - voile graphique : traits fins, aurores dorées / bleu nuit, déesse / constellation.
  */
 
 .chapter-two {
@@ -25,7 +25,7 @@
   will-change: transform;
 }
 
-/* Rideaux verticaux — 3 voiles seulement, très diffus */
+/* Rideaux verticaux - 3 voiles seulement, très diffus */
 .senac-scroll-glyphs__layer--veils {
   transform: translate3d(0, calc(var(--senac-glyph-y) * -0.032), 0);
   opacity: clamp(0.05, calc(0.07 + var(--frise-t, 0) * 0.14), 0.22);
@@ -62,7 +62,7 @@
   animation: senac-glyph-aurora-veil 28s ease-in-out infinite alternate;
 }
 
-/* Voiles obliques type aurore — pas de grille */
+/* Voiles obliques type aurore - pas de grille */
 .senac-scroll-glyphs__layer--threads {
   transform: translate3d(calc(var(--senac-glyph-y) * 0.012), calc(var(--senac-glyph-y) * -0.06), 0)
     rotate(-0.2deg);
@@ -92,7 +92,12 @@
   animation: senac-glyph-aurora-thread 34s ease-in-out infinite alternate;
 }
 
-/* Deux lueurs horizontales — pas de repeating */
+/* Lecture Acte II : lueurs horizontales dorées désactivées */
+body.senac-reading-flow .senac-scroll-glyphs__layer--marks {
+  display: none !important;
+}
+
+/* Deux lueurs horizontales - pas de repeating */
 .senac-scroll-glyphs__layer--marks {
   transform: translate3d(calc(var(--senac-glyph-y) * -0.008), calc(var(--senac-glyph-y) * -0.09), 0);
   opacity: clamp(0.05, calc(0.08 + var(--hero-t, 0) * 0.08 + var(--frise-t, 0) * 0.1), 0.2);
@@ -119,7 +124,7 @@
   -webkit-mask-image: radial-gradient(ellipse 90% 55% at 50% 50%, black 10%, transparent 72%);
 }
 
-/* Halo circulaire — fine couronne */
+/* Halo circulaire - fine couronne */
 .senac-scroll-glyphs__layer--arcs {
   transform: translate3d(0, calc(var(--senac-glyph-y) * -0.04), 0);
   opacity: clamp(0.04, calc(0.07 + var(--frise-t, 0) * 0.12), 0.18);
@@ -395,7 +400,15 @@ html.senac-in-iframe .senac-scroll-glyphs__layer--veils {
 
 body.senac-reading-flow .senac-scroll-glyphs {
   mix-blend-mode: screen;
-  opacity: 0.9;
+  /* Opacité finale : stellar.css + temporal.css (éviter 0.38 qui éteint le fond). */
+}
+
+body.senac-reading-flow .senac-scroll-glyphs__layer--arcs {
+  display: none !important;
+}
+
+body.senac-reading-flow .senac-scroll-glyphs__spark {
+  opacity: 0.06;
 }
 
 @media (max-width: 840px) {

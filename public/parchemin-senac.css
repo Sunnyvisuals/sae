@@ -240,7 +240,7 @@ html.senac-in-iframe {
   overscroll-behavior-y: none;
 }
 
-/** Iframe Acte II (SPA) : losange #senac-diamond-cursor ; curseur OS masqué sur le body. */
+/** Iframe Acte II (SPA) : curseur losange parent ; body sans curseur OS. */
 html.senac-in-iframe body,
 html.senac-in-iframe body.senac-night {
   min-height: 100%;
@@ -277,8 +277,12 @@ html.senac-in-iframe #senac-pointer-aura {
   display: none !important;
 }
 
+html.senac-in-iframe #senac-diamond-cursor {
+  display: none !important;
+}
+
 /**
- * Hero (arche + Cinéma / Exploration) : dunes fixes en bas (`top: auto`, ~30–38vh),
+ * Hero (arche + Cinéma / Exploration) : dunes fixes en bas (`top: auto`, ~30-38vh),
  * animées avec --hero-t / --frise-t → bande(s) horizontale(s) au pied qui s’élargissent au scroll.
  */
 html.senac-in-iframe .dune-back,
@@ -386,7 +390,7 @@ body.senac-night::after {
   width: 100%;
   height: 100%;
   display: block;
-  z-index: 7;
+  z-index: 8;
   pointer-events: none;
   opacity: calc(0.14 + var(--senac-arch-visibility, 0) * 0.88);
 }
@@ -2045,6 +2049,11 @@ html[dir="rtl"] .senac-cross-nav--compact {
   isolation: isolate;
 }
 
+.quote-break--one-line {
+  min-height: min(100svh, 100dvh);
+  padding-inline: clamp(1.25rem, 5vw, 2.5rem);
+}
+
 /* Filets decoratifs courts, en haut et en bas - jamais full-bleed sur le texte */
 /* Halo radial centre qui pulse */
 .quote-break::before {
@@ -2098,8 +2107,8 @@ html[dir="rtl"] .senac-cross-nav--compact {
  * Guillemets français sur la carte citation (pas de <span> dédié : évite le style décoratif géant
  * prévu historiquement pour un autre motif).
  */
-.quote-break:not(.quote-break--title) blockquote::before,
-.quote-break:not(.quote-break--title) blockquote::after {
+.quote-break:not(.quote-break--title):not(.quote-break--one-line) blockquote::before,
+.quote-break:not(.quote-break--title):not(.quote-break--one-line) blockquote::after {
   font-family: "Playfair Display", "Georgia", serif;
   font-size: 0.72em;
   font-weight: 500;
@@ -2108,12 +2117,18 @@ html[dir="rtl"] .senac-cross-nav--compact {
   vertical-align: 0.04em;
 }
 
-.quote-break:not(.quote-break--title) blockquote::before {
+.quote-break:not(.quote-break--title):not(.quote-break--one-line) blockquote::before {
   content: "«\00a0";
 }
 
-.quote-break:not(.quote-break--title) blockquote::after {
+.quote-break:not(.quote-break--title):not(.quote-break--one-line) blockquote::after {
   content: "\00a0»";
+}
+
+.quote-break--one-line blockquote::before,
+.quote-break--one-line blockquote::after {
+  display: none !important;
+  content: none !important;
 }
 
 /** Carte « Soleils séparés » - glyphe discret type ref. DA */
@@ -2524,7 +2539,7 @@ figure.archive-window[data-reveal]:not(.is-visible) {
     drop-shadow(0 0 16px rgba(197, 160, 89, 0.16));
 }
 
-/** ─── Générique fin de voyage — DA alignée choix mode lecture (scroll-mode-choice) ─── */
+/** ─── Générique fin de voyage - DA alignée choix mode lecture (scroll-mode-choice) ─── */
 .voyage-credits {
   --credits-mx: 0.5;
   --credits-my: 0.5;
@@ -3063,25 +3078,25 @@ html[lang="ar-DZ"] .voyage-credits-main-title {
     max-width: min(30rem, 90vw);
   }
 
-  .story-card {
+  body:not(.senac-reading-flow) .story-card {
     display: block;
     min-height: auto;
     padding-inline: 0;
   }
 
-  .story-card::before {
+  body:not(.senac-reading-flow) .story-card::before {
     display: none;
   }
 
-  .story-card--right .story-panel,
-  .story-card--left .story-panel {
+  body:not(.senac-reading-flow) .story-card--right .story-panel,
+  body:not(.senac-reading-flow) .story-card--left .story-panel {
     margin-left: auto;
     margin-right: auto;
     width: 100%;
     max-width: 100%;
   }
 
-  .date-ghost {
+  body:not(.senac-reading-flow) .date-ghost {
     display: block;
     margin: 0 0 0.85rem;
     padding: 0 !important;
@@ -3089,22 +3104,22 @@ html[lang="ar-DZ"] .voyage-credits-main-title {
     font-size: clamp(3rem, 22vw, 5.5rem);
   }
 
-  .story-card--right .date-ghost,
-  .story-card--left .date-ghost {
+  body:not(.senac-reading-flow) .story-card--right .date-ghost,
+  body:not(.senac-reading-flow) .story-card--left .date-ghost {
     grid-column: auto;
     grid-row: auto;
     justify-self: center;
     text-align: center !important;
   }
 
-  .story-card--right .story-panel {
+  body:not(.senac-reading-flow) .story-card--right .story-panel {
     grid-column: auto;
     justify-self: center;
     margin-right: auto;
     margin-left: auto;
   }
 
-  .story-card--left .story-panel {
+  body:not(.senac-reading-flow) .story-card--left .story-panel {
     grid-column: auto;
     justify-self: center;
     margin-right: auto;
@@ -3117,7 +3132,7 @@ html[lang="ar-DZ"] .voyage-credits-main-title {
     transform: translate(-50%, -50%);
   }
 
-  .story-panel {
+  body:not(.senac-reading-flow) .story-panel {
     border-radius: 24px;
     backdrop-filter: blur(10px);
   }
@@ -3142,11 +3157,11 @@ html[lang="ar-DZ"] .voyage-credits-main-title {
     letter-spacing: 0.32em;
   }
 
-  .story-panel {
+  body:not(.senac-reading-flow) .story-panel {
     padding: 1.25rem;
   }
 
-  .story-panel p:not(.story-date) {
+  body:not(.senac-reading-flow) .story-panel p:not(.story-date) {
     font-size: 1rem;
   }
 }
@@ -3548,6 +3563,7 @@ html[lang="ar-DZ"] .smc-split-act-kicker {
  * Choix Cinéma / Exploration : le hero reste masqué tant que le volet est là
  * (évite le flash texte + portrait sur fond plat avant le ciel WebGL).
  */
+html.senac-choice-pending:not(.senac-choice-entered) .senac-act2-garde,
 html.senac-choice-pending:not(.senac-choice-entered) header.hero,
 html.senac-choice-pending:not(.senac-choice-entered) header.hero [data-reveal] {
   opacity: 0 !important;
@@ -3577,6 +3593,9 @@ html.senac-in-iframe.senac-choice-pending.senac-choice-leaving:not(.senac-choice
 
 html.senac-in-iframe.senac-choice-entered #sky-canvas,
 html.senac-in-iframe.senac-choice-entered #fog-canvas,
+html.senac-in-iframe.senac-choice-entered .chapter-two > .senac-scroll-glyphs,
+html.senac-in-iframe.senac-choice-entered .senac-scroll-traits,
+html.senac-in-iframe.senac-choice-entered #senac-color-fluid,
 html.senac-in-iframe.senac-choice-entered .night-gradient,
 html.senac-in-iframe.senac-choice-entered .celestial-rings,
 html.senac-in-iframe.senac-choice-entered .depth-lines,
@@ -4230,6 +4249,14 @@ html.senac-choice-pending {
   background-color: #050508;
 }
 
+/** Après choix Cinéma / Exploration : scroll autorisé pendant le fondu de sortie. */
+html.senac-choice-leaving,
+html.senac-choice-leaving body {
+  overflow: auto !important;
+  overscroll-behavior: auto;
+  touch-action: pan-y;
+}
+
 /* Mode Cinéma : pas de rubber-band hors du document */
 html.senac-cinema-mode {
   overscroll-behavior-y: none;
@@ -4372,7 +4399,7 @@ body.senac-night .scroll-mode-toggle.senac-highlight-explore .smt-btn--explore {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   DA « minimal sahara » — contenu textuel + graphismes (aligné choix Cinéma/Exploration)
+   DA « minimal sahara » - contenu textuel + graphismes (aligné choix Cinéma/Exploration)
    Calques 3D inchangés : ciel, fumée WebGL, dunes, arche, parallax ch. III.
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -4774,15 +4801,37 @@ html[lang="ar-DZ"] .chapter-two .quote-break blockquote {
   letter-spacing: 0.02em;
 }
 
-.chapter-two .quote-break--title blockquote {
-  letter-spacing: var(--da-display-track);
-  font-size: clamp(1.85rem, 5.5vw, 3.65rem);
+.chapter-two .quote-break--title blockquote,
+.chapter-two .quote-break--one-line blockquote {
+  width: max-content;
+  max-width: min(92vw, 42rem);
+  margin-inline: auto;
+  text-align: center;
+  text-wrap: nowrap;
+  white-space: nowrap;
+  letter-spacing: 0.08em;
+  font-size: clamp(1.65rem, 4.8vw, 3.35rem);
+}
+
+.chapter-two .quote-break--one-line .senac-quote-stack {
+  margin-inline: auto;
+  text-align: center;
+}
+
+@media (max-width: 520px) {
+  .chapter-two .quote-break--one-line blockquote {
+    font-size: clamp(0.68rem, 3.1vw, 0.95rem);
+    letter-spacing: 0.07em;
+  }
 }
 
 .chapter-two .quote-break cite {
-  color: rgba(197, 160, 89, 0.55);
-  letter-spacing: var(--da-eyebrow-track);
-  font-weight: 400;
+  font-size: clamp(0.82rem, 0.76rem + 0.38vw, 1rem);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  line-height: 1.35;
+  white-space: nowrap;
+  color: rgba(232, 212, 164, 0.88);
 }
 
 .chapter-two .sq-word--quote {

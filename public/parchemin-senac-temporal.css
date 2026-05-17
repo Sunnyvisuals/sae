@@ -1,5 +1,5 @@
 /**
- * Acte II — ambiance temporelle : vagues de présence / mouvement (pas de bruit continu).
+ * Acte II - ambiance temporelle : respiration légère (fond toujours visible).
  * Variables pilotées par initSenacTemporalAmbience() dans parchemin-senac.js.
  */
 
@@ -7,6 +7,8 @@
   --senac-time-phase: 0;
   --senac-motion-gate: 1;
   --senac-presence-gate: 1;
+  /** Plancher CSS (aligné sur le JS ~0.62) pour ne jamais éteindre ciel / brume / glyphes. */
+  --senac-presence-floor: 0.62;
 }
 
 #senac-color-fluid,
@@ -22,37 +24,50 @@
 #senac-color-fluid {
   opacity: calc(
     (0.22 + var(--hero-t, 0) * 0.1 + var(--frise-t, 0) * 0.14) *
-      (0.25 + var(--senac-presence-gate, 1) * 0.75)
+      (0.42 + max(var(--senac-presence-floor, 0.62), var(--senac-presence-gate, 1)) * 0.58)
   );
 }
 
 body.senac-smoke-shader-active #senac-color-fluid {
   opacity: calc(
     (0.18 + var(--hero-t, 0) * 0.08 + var(--frise-t, 0) * 0.12) *
-      (0.28 + var(--senac-presence-gate, 1) * 0.72)
+      (0.45 + max(var(--senac-presence-floor, 0.62), var(--senac-presence-gate, 1)) * 0.55)
   );
 }
 
-#fog-canvas {
+#fog-canvas,
+body.senac-reading-flow #fog-canvas {
   opacity: calc(
     (0.28 + var(--hero-t, 0) * 0.22 + var(--frise-t, 0) * 0.18) *
-      (0.2 + var(--senac-presence-gate, 1) * 0.8)
+      (0.35 + max(var(--senac-presence-floor, 0.62), var(--senac-presence-gate, 1)) * 0.65) *
+      (1 - var(--senac-arch-visibility, 0) * 0.38)
   );
 }
 
 body.senac-smoke-shader-active #fog-canvas {
   opacity: calc(
-    0.32 * (0.25 + var(--senac-presence-gate, 1) * 0.75) *
-      (0.85 + var(--senac-motion-gate, 1) * 0.15)
+    0.32 *
+      (0.25 + max(var(--senac-presence-floor, 0.62), var(--senac-presence-gate, 1)) * 0.75) *
+      (0.85 + var(--senac-motion-gate, 1) * 0.15) *
+      (1 - var(--senac-arch-visibility, 0) * 0.42)
   );
 }
 
 #sky-canvas {
-  opacity: calc(0.55 + var(--senac-presence-gate, 1) * 0.45);
+  opacity: calc(0.55 + max(var(--senac-presence-floor, 0.62), var(--senac-presence-gate, 1)) * 0.45);
 }
 
-.senac-scroll-glyphs {
-  opacity: calc(0.55 * (0.35 + var(--senac-presence-gate, 1) * 0.65));
+.senac-scroll-glyphs,
+body.senac-reading-flow .senac-scroll-glyphs {
+  opacity: calc(0.55 * (0.4 + max(var(--senac-presence-floor, 0.62), var(--senac-presence-gate, 1)) * 0.6));
+}
+
+body.senac-color-fluid-active #senac-color-fluid {
+  opacity: calc(
+    (0.22 + var(--hero-t, 0) * 0.1 + var(--frise-t, 0) * 0.14) *
+      (0.42 + max(var(--senac-presence-floor, 0.62), var(--senac-presence-gate, 1)) * 0.58) *
+      (1 - var(--senac-arch-visibility, 0) * 0.25)
+  );
 }
 
 body.senac-temporal-rest .senac-scroll-glyphs__layer--veils,
@@ -68,19 +83,19 @@ body.senac-temporal-rest .senac-scroll-trait--h {
 .senac-scroll-glyphs__layer--dust {
   opacity: calc(
     clamp(0.06, calc(0.1 + var(--frise-t, 0) * 0.12), 0.28) *
-      (0.15 + var(--senac-presence-gate, 1) * 0.85)
+      (0.35 + max(var(--senac-presence-floor, 0.62), var(--senac-presence-gate, 1)) * 0.65)
   );
 }
 
 .senac-scroll-glyphs__dust-mote {
   opacity: calc(
-    var(--senac-dust-a0, 0.35) * (0.12 + var(--senac-presence-gate, 1) * 0.88)
+    var(--senac-dust-a0, 0.35) * (0.35 + max(var(--senac-presence-floor, 0.62), var(--senac-presence-gate, 1)) * 0.65)
   );
-  animation-duration: calc(var(--senac-dust-dur, 18s) * (1.4 - var(--senac-motion-gate, 1) * 0.55));
+  animation-duration: calc(var(--senac-dust-dur, 18s) * (1.25 - var(--senac-motion-gate, 1) * 0.35));
 }
 
 .senac-scroll-glyphs__spark {
-  opacity: calc(0.06 + var(--senac-presence-gate, 1) * 0.1);
+  opacity: calc(0.08 + max(var(--senac-presence-floor, 0.62), var(--senac-presence-gate, 1)) * 0.12);
 }
 
 @media (prefers-reduced-motion: reduce) {

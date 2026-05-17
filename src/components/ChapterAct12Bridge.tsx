@@ -222,7 +222,7 @@ const ChapterAct12Bridge: FC<ChapterAct12BridgeProps> = ({
       exit={{ opacity: 0, transition: { duration: EXIT_DURATION_S, ease: [0.22, 1, 0.36, 1] } }}
     >
       {/*
-        Fond sous VP9 : plus léger que le pont langue — la WebM alpha laisse voir l’acte I puis le parchemin ;
+        Fond sous VP9 : plus léger que le pont langue - la WebM alpha laisse voir l’acte I puis le parchemin ;
         le MP4 (sans alpha) reste lisible grâce à un léger voile seulement.
       */}
       <div

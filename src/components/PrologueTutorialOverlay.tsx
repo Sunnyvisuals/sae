@@ -114,7 +114,7 @@ function TutorialStepGlyph({ active }: { active: boolean }) {
   );
 }
 
-/** Souris + molette — invite scroll volume (sans texte). */
+/** Souris + molette - invite scroll volume (sans texte). */
 function TutorialVolumeScrollMouse({
   prefersReducedMotion,
 }: {
@@ -158,7 +158,7 @@ function TutorialVolumeScrollMouse({
   );
 }
 
-/** Invite au scroll — même ancrage que le HUD volume (pas de chevauchement au changement). */
+/** Invite au scroll - même ancrage que le HUD volume (pas de chevauchement au changement). */
 function TutorialVolumeScrollCue({
   visible,
   ariaLabel,

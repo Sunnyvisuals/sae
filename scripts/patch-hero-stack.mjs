@@ -12,7 +12,7 @@ const newHero = `      <header class="hero senac-hero-stack" data-reveal>
           <p class="hero-eyebrow smc-da-kicker" data-i18n="hero_eyebrow">Chronologie et archives · Acte II</p>
           <h1 data-i18n="hero_title">Al Rihla</h1>
           <p class="hero-subtitle" data-i18n="hero_subtitle">La traversée</p>
-          <p class="hero-copy" data-i18n="hero_copy">Jean Sénac — dates, archives, constellations.</p>
+          <p class="hero-copy" data-i18n="hero_copy">Jean Sénac - dates, archives, constellations.</p>
         </${d}>
         <${nav}
           class="senac-cross-nav-wrap senac-cross-nav-wrap--hero"

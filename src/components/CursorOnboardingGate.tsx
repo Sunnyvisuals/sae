@@ -105,7 +105,7 @@ function CursorPanel({
   );
 }
 
-/** Volet curseur — split horizontal (haut / bas), textes selon la langue choisie. */
+/** Volet curseur - split horizontal (haut / bas), textes selon la langue choisie. */
 export default function CursorOnboardingGate({
   prefersReducedMotion,
   finePointer = false,

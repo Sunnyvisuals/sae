@@ -14,11 +14,11 @@ export default function Act2() {
   const parcheminSrc = `${prefix}parchemin-senac.html?${PARCHEMIN_STATIC_QUERY}`;
 
   return (
-    <div className="absolute inset-0 min-h-0 w-full overflow-hidden bg-da-depth-night">
+    <div className="absolute inset-0 min-h-0 w-full cursor-none overflow-hidden bg-da-depth-night">
       <iframe
         title={copy.act2IframeTitle}
         src={parcheminSrc}
-        className="absolute inset-0 z-0 block h-full min-h-0 w-full border-0 bg-[#05080f] outline-none ring-0 [transform:translateZ(0)]"
+        className="absolute inset-0 z-0 block h-full min-h-0 w-full cursor-none border-0 bg-[#05080f] outline-none ring-0 [transform:translateZ(0)]"
         loading="eager"
       />
     </div>

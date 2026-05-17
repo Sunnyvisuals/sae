@@ -514,9 +514,14 @@ export default function OrientationPanel({
       setCollapsedMinimal(false);
       return;
     }
+    /** Acte II : rail discret dès l’entrée (pas de label vertical illisible). */
+    if (phase === "act2") {
+      setCollapsedMinimal(true);
+      return;
+    }
     const id = window.setTimeout(() => setCollapsedMinimal(true), COLLAPSED_MINIMAL_AFTER_MS);
     return () => window.clearTimeout(id);
-  }, [expanded]);
+  }, [expanded, phase]);
 
   /* Synchronise contentOpen avec expanded en ajoutant un délai à la fermeture */
   useEffect(() => {
@@ -638,7 +643,8 @@ export default function OrientationPanel({
           />
           <span
             className={
-              'select-none text-[7px] font-semibold uppercase tracking-[0.38em] [writing-mode:vertical-rl] rotate-180 transition-[color,text-shadow] duration-[850ms] ease-out ' +
+              (phase === 'act2' ? 'sr-only ' : '') +
+              'select-none text-[9px] font-semibold uppercase tracking-[0.32em] [writing-mode:vertical-rl] rotate-180 transition-[color,text-shadow] duration-[850ms] ease-out ' +
               (quietCollapsed
                 ? nightRail
                   ? 'text-[rgba(234,215,164,0.88)] [text-shadow:0_0_14px_rgba(0,0,0,0.55),0_2px_12px_rgba(0,0,0,0.45)]'

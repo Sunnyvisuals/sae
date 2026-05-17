@@ -1,5 +1,5 @@
 /**
- * Acte II — fluide coloré plein écran (or / sable → bleu nuit au scroll).
+ * Acte II - fluide coloré plein écran (or / sable → bleu nuit au scroll).
  */
 
 /**

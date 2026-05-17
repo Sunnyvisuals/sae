@@ -1,19 +1,14 @@
 /**
- * Acte II — faits « Saviez-vous » à droite, centre libre (images / vide).
+ * Acte II - faits « Saviez-vous » à droite, centre libre (images / vide).
+ * Tokens responsive : parchemin-senac-reading-flow.css
  */
-
-body.senac-reading-flow {
-  --senac-fact-w: min(24rem, 36vw);
-  --senac-fact-pad: clamp(1.25rem, 4.5vw, 3.5rem);
-  --senac-read-line: rgba(244, 234, 210, 0.82);
-  --senac-read-muted: rgba(244, 234, 210, 0.58);
-}
 
 body.senac-reading-flow .chapter-two {
   width: 100%;
   max-width: none;
   margin-inline: 0;
-  padding-inline: var(--senac-fact-pad);
+  padding-inline: max(var(--senac-fact-pad), env(safe-area-inset-left, 0px))
+    max(var(--senac-fact-pad), env(safe-area-inset-right, 0px));
 }
 
 body.senac-reading-flow #timeline-start.timeline.senac-constellation-track {
@@ -40,28 +35,44 @@ body.senac-reading-flow .senac-scene--card.story-card[data-reveal]:not(.is-visib
   pointer-events: auto;
 }
 
-/* —— Cartes : date à gauche, fait à droite —— */
+/* -- Cartes : date à gauche, fait à droite -- */
 body.senac-reading-flow .senac-scene--card.story-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--senac-fact-w);
+  grid-template-columns:
+    minmax(0, 1fr)
+    var(--senac-fact-col, minmax(0, var(--senac-fact-w)))
+    var(--senac-gutter-ui, var(--senac-fact-margin-end, 3rem));
   grid-template-rows: 1fr;
   align-items: center;
-  gap: clamp(1rem, 4vw, 2.5rem);
+  gap: var(--senac-fact-gap);
   text-align: start;
 }
 
 body.senac-reading-flow .senac-scene--card .date-ghost {
   grid-column: 1;
   grid-row: 1;
-  justify-self: start;
-  align-self: center;
+  place-self: center start;
   margin: 0;
   padding: 0;
+  padding-inline-start: max(
+    calc(var(--senac-fact-pad) + var(--senac-ghost-date-inset, 0px)),
+    calc(env(safe-area-inset-left, 0px) + var(--senac-ghost-date-inset, 0px))
+  );
+  padding-inline-end: 0;
+  max-width: min(22rem, calc(50vw - var(--senac-fact-pad)));
   text-align: start;
-  font-size: clamp(3.5rem, 16vw, 8.5rem);
-  line-height: 0.88;
+  font-size: var(--senac-type-date-ghost);
+  line-height: 1;
   color: rgba(197, 160, 89, 0.1);
   pointer-events: none;
+  transform: none;
+}
+
+/* Centrage vertical avec le panneau « Saviez-vous » - pas de décalage vers le haut */
+body.senac-reading-flow .senac-scene--active.story-card--right .date-ghost,
+body.senac-reading-flow .senac-scene--active.story-card--left .date-ghost,
+body.senac-reading-flow .story-card.is-visible .date-ghost {
+  transform: translate3d(0, 0, 0) scale(1.02);
 }
 
 body.senac-reading-flow .senac-scene--card.is-visible .date-ghost,
@@ -69,17 +80,24 @@ body.senac-reading-flow .senac-scene--active.story-card .date-ghost {
   color: rgba(197, 160, 89, 0.14);
 }
 
-/* Panneau = typographie seule + trait vers l’axe stellaire */
+/* Panneau = colonne typographique + trait vers l’axe stellaire */
 body.senac-reading-flow .senac-scene--card .story-panel {
   position: relative;
   grid-column: 2;
   grid-row: 1;
-  justify-self: end;
+  justify-self: stretch;
   align-self: center;
+  box-sizing: border-box;
   width: 100%;
-  max-width: var(--senac-fact-w);
+  max-width: 100%;
+  min-width: 0;
   margin: 0;
-  padding: 0 0 0 clamp(0.5rem, 2vw, 1rem);
+  padding: var(--senac-panel-pad-block) var(--senac-panel-pad-inline);
+  padding-inline-start: var(--senac-axis-gap);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
   text-align: start;
   border: none;
   border-radius: 0;
@@ -88,7 +106,7 @@ body.senac-reading-flow .senac-scene--card .story-panel {
   backdrop-filter: none;
   overflow: visible;
   opacity: 0;
-  transform: translate3d(1.75rem, 0, 0);
+  transform: translate3d(0, 14px, 0);
   filter: none;
   transition:
     opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
@@ -101,14 +119,16 @@ body.senac-reading-flow .story-card.senac-scene--active .story-panel {
   transform: translate3d(0, 0, 0);
 }
 
+body.senac-reading-flow .chapter-two .senac-scene--card .story-panel::after,
 body.senac-reading-flow .senac-scene--card .story-panel::after {
+  display: none;
   content: "";
   position: absolute;
   right: 100%;
-  top: 1.35rem;
-  width: clamp(1.5rem, 6vw, 4.5rem);
+  top: clamp(3.6rem, 10vw, 4.75rem);
+  width: clamp(2.5rem, 14vw, 9rem);
   height: 1px;
-  margin-right: 0.35rem;
+  margin-right: 0.5rem;
   background: linear-gradient(
     90deg,
     rgba(197, 160, 89, calc(0.15 + var(--senac-presence-gate, 1) * 0.35)),
@@ -140,8 +160,7 @@ body.senac-reading-flow .story-card.senac-scene--active .story-panel::after {
   box-shadow: 0 0 12px rgba(197, 160, 89, 0.2);
 }
 
-body.senac-reading-flow .story-panel::before,
-body.senac-reading-flow .story-panel::after {
+body.senac-reading-flow .story-panel::before {
   display: none !important;
 }
 
@@ -151,61 +170,93 @@ body.senac-reading-flow .story-panel:hover {
   box-shadow: none;
 }
 
-body.senac-reading-flow .senac-fact-kicker {
-  margin: 0 0 0.65rem;
-  font-family: "Inter", system-ui, sans-serif;
-  font-size: clamp(0.62rem, 1.2vw, 0.72rem);
-  font-weight: 500;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-  color: rgba(197, 160, 89, 0.72);
+/* Bloc entête : date + titre */
+body.senac-reading-flow .senac-scene--card .story-panel > .story-date,
+body.senac-reading-flow .senac-scene--card .story-panel > h2 {
+  margin: 0;
+  max-width: var(--senac-measure);
 }
 
-body.senac-reading-flow .senac-fact-kicker::after {
-  content: " ·";
-  opacity: 0.45;
-  letter-spacing: 0;
+body.senac-reading-flow .senac-fact-kicker {
+  display: none !important;
 }
 
 body.senac-reading-flow .story-date {
-  margin-bottom: 0.55rem;
-  padding-bottom: 0.45rem;
-  border-bottom: 1px solid rgba(197, 160, 89, 0.16);
-  font-size: clamp(0.7rem, 1.4vw, 0.8rem);
+  order: 1;
+  text-align: start;
+  margin: 0;
+  padding: 0 0 var(--senac-text-stack-md);
+  border-bottom: none;
+  font-size: var(--senac-type-date);
+  line-height: 1.45;
+  letter-spacing: 0.06em;
+  margin-inline-start: 0;
 }
 
 body.senac-reading-flow .story-panel h2 {
-  font-size: clamp(1.35rem, 2.8vw, 1.75rem);
-  line-height: 1.18;
-  margin-bottom: 0.75rem;
-  text-transform: none;
-  letter-spacing: 0.02em;
+  order: 2;
+  text-align: start;
+  margin: 0;
+  padding: var(--senac-text-stack) 0 var(--senac-text-stack-lg);
+  font-size: var(--senac-type-title);
+  line-height: 1.2;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-body.senac-reading-flow .story-panel p:not(.story-date):not(.senac-fact-kicker):not(.senac-fact-detail) {
-  font-size: clamp(1rem, 1.55vw, 1.12rem);
-  line-height: 1.78;
-  max-width: 42ch;
-  margin-left: 0;
-  margin-right: 0;
+/* Corps : paragraphes principaux */
+body.senac-reading-flow .story-panel p:not(.story-date):not(.senac-fact-kicker):not(.senac-fact-detail):not(
+    .senac-cross-nav
+  ) {
+  order: 3;
+  margin: 0;
+  padding: 0;
+  font-size: var(--senac-type-body);
+  line-height: 1.82;
+  max-width: var(--senac-measure);
   color: var(--senac-read-line);
+  text-align: start;
   text-wrap: pretty;
 }
 
+body.senac-reading-flow .story-panel p:not(.story-date):not(.senac-fact-kicker):not(.senac-fact-detail):not(
+    .senac-cross-nav
+  )
+  + p:not(.story-date):not(.senac-fact-kicker):not(.senac-fact-detail):not(.senac-cross-nav) {
+  margin-top: var(--senac-text-stack-md);
+}
+
+/* Complément « Saviez-vous » */
 body.senac-reading-flow .story-panel .senac-fact-detail {
-  margin-top: 0.65rem;
-  font-size: clamp(0.92rem, 1.4vw, 1.02rem);
-  line-height: 1.72;
-  max-width: 44ch;
+  order: 4;
+  margin: var(--senac-text-stack-lg) 0 0;
+  padding: var(--senac-text-stack-md) 0 0;
+  border-top: none;
+  font-size: var(--senac-type-detail);
+  line-height: 1.78;
+  max-width: var(--senac-measure);
   color: var(--senac-read-muted);
+  text-align: start;
+}
+
+body.senac-reading-flow .story-panel .senac-fact-detail:empty {
+  display: none;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+body.senac-reading-flow .story-panel p:empty {
+  display: none;
 }
 
 body.senac-reading-flow .senac-scene--arch-portal .story-panel h2 {
-  font-size: clamp(1.45rem, 3vw, 1.85rem);
+  font-size: var(--senac-type-title-portal);
 }
 
 body.senac-reading-flow .senac-scene--arch-portal .date-ghost {
-  font-size: clamp(2.5rem, 12vw, 5rem);
+  font-size: var(--senac-type-date-ghost-m);
   opacity: 0.2;
 }
 
@@ -215,9 +266,32 @@ body.senac-reading-flow .story-card.senac-scene--active .story-panel h2 {
 }
 
 body.senac-reading-flow .story-panel .senac-cross-nav--compact {
-  margin-top: 1rem;
-  font-size: clamp(0.8rem, 1.35vw, 0.88rem);
+  order: 5;
+  margin: var(--senac-text-stack-lg) 0 0;
+  padding: var(--senac-text-stack-md) 0 0;
+  border-top: none;
+  font-size: var(--senac-type-nav);
+  line-height: 1.55;
+  max-width: var(--senac-measure);
   opacity: 0.65;
+  text-align: start;
+}
+
+body.senac-reading-flow .story-panel .senac-cross-nav--compact .senac-cross-nav__link,
+body.senac-reading-flow .story-panel .senac-cross-nav--compact .senac-cross-nav__chip {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  vertical-align: baseline;
+  text-align: start;
+}
+
+html[dir="rtl"] body.senac-reading-flow .story-panel .senac-cross-nav--compact {
+  text-align: end;
 }
 
 body.senac-reading-flow .story-panel > * {
@@ -226,6 +300,14 @@ body.senac-reading-flow .story-panel > * {
   transition:
     opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1),
     transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Annule marges héritées du parchemin principal en mode lecture */
+body.senac-reading-flow .chapter-two .story-panel h2,
+body.senac-reading-flow .chapter-two .story-panel p,
+body.senac-reading-flow .chapter-two .story-date {
+  margin-block: 0;
+  border-bottom: none;
 }
 
 body.senac-reading-flow .story-card.is-visible .story-panel > * {
@@ -252,36 +334,167 @@ body.senac-reading-flow .story-card.is-visible .story-panel > *:nth-child(6) {
   transition-delay: 0.36s;
 }
 
-/* —— Citations : colonne droite, pas de bloc plein écran —— */
+/* -- Citations : centrées + coupure du fil stellaire -- */
 body.senac-reading-flow .senac-scene--chamber.quote-break {
+  position: relative;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  padding-inline: var(--senac-fact-pad);
-  text-align: end;
+  padding-inline: max(var(--senac-fact-pad), env(safe-area-inset-left, 0px))
+    max(var(--senac-fact-pad), env(safe-area-inset-right, 0px));
+  text-align: center;
   min-height: max(calc(var(--senac-beat) - var(--senac-beat-pad)), 22rem);
+  isolation: isolate;
 }
 
-body.senac-reading-flow .quote-break blockquote {
-  max-width: min(22ch, var(--senac-fact-w));
-  margin-inline: 0 0;
-  margin-left: auto;
-  text-align: start;
-  font-size: clamp(1.2rem, 3vw, 1.55rem);
+/** Citation Jean Sénac : centre géométrique du viewport (pas la colonne « fait »). */
+body.senac-reading-flow .senac-scene--chamber.quote-break--one-line {
+  display: grid;
+  place-items: center;
+  justify-items: center;
+  width: 100%;
+  max-width: none;
+  min-height: min(82svh, var(--senac-beat));
+  padding-block: clamp(2.25rem, 9vh, 4.5rem);
+  padding-inline: max(var(--senac-fact-pad), env(safe-area-inset-left, 0px))
+    max(var(--senac-fact-pad), env(safe-area-inset-right, 0px));
+  box-sizing: border-box;
+  text-align: center;
+}
+
+body.senac-reading-flow #timeline-start.timeline.senac-constellation-track > .senac-scene.quote-break--one-line {
+  align-items: center;
+  justify-content: center;
+  justify-items: center;
+  text-align: center;
+}
+
+body.senac-reading-flow .senac-scene--chamber.quote-break--one-line::before {
+  left: 50%;
+  width: min(92vw, 36rem);
+  opacity: 0.92;
+}
+
+body.senac-reading-flow .senac-quote-stack {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--senac-text-stack-md);
+  width: 100%;
+  max-width: min(96vw, 44rem);
+  margin-inline: auto;
+  text-align: center;
+}
+
+body.senac-reading-flow .quote-break--one-line .senac-quote-stack {
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  width: fit-content;
+  max-width: min(92vw, 42rem);
+  margin: 0;
+  justify-self: center;
+  align-self: center;
+  text-align: center;
+}
+
+body.senac-reading-flow .senac-quote-stack blockquote,
+body.senac-reading-flow .senac-quote-stack cite {
+  margin: 0;
+  padding-inline: 0;
+}
+
+body.senac-reading-flow .quote-break--one-line .senac-quote-stack blockquote {
+  display: block;
+  width: fit-content;
+  max-width: min(92vw, 42rem);
+  margin-inline: auto !important;
+  padding-inline: 0.04em !important;
+  text-align: center;
+  letter-spacing: 0.08em;
+}
+
+body.senac-reading-flow .quote-break--one-line .senac-quote-stack cite {
+  display: block;
+  width: fit-content;
+  margin-inline: auto !important;
+  padding-inline: 0 !important;
+  text-align: center;
+}
+
+body.senac-reading-flow .quote-break--one-line .senac-quote-stack .sq-word,
+body.senac-reading-flow .quote-break--one-line .senac-quote-stack .sq-word--quote {
+  display: inline;
+  transform: none !important;
+  filter: none !important;
+}
+
+/** Masque le fil vertical au centre pour laisser lire la citation. */
+body.senac-reading-flow .senac-scene--chamber.quote-break::before {
+  content: "";
+  position: absolute;
+  left: var(--senac-stellar-axis, 50%);
+  top: 0;
+  bottom: 0;
+  width: var(--senac-quote-axis-gap-w, 40rem);
+  transform: translateX(-50%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--senac-quote-axis-mask, #05080f) 14%,
+    var(--senac-quote-axis-mask, #05080f) 86%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+body.senac-reading-flow .quote-break blockquote,
+body.senac-reading-flow .quote-break cite,
+body.senac-reading-flow .quote-break--title > span {
+  position: relative;
+  z-index: 1;
+}
+
+body.senac-reading-flow .quote-break:not(.quote-break--one-line) blockquote {
+  width: 100%;
+  max-width: var(--senac-quote-measure, min(38rem, 92vw));
+  margin: 0 auto var(--senac-text-stack-md);
+  padding-inline: clamp(0.75rem, 3vw, 1.5rem);
+  text-align: center;
+  text-wrap: balance;
+  font-size: var(--senac-type-quote);
+  line-height: 1.28;
+  letter-spacing: 0.1em;
   opacity: 0;
-  transform: translate3d(1.5rem, 0, 0);
+  transform: translate3d(0, 14px, 0);
   transition:
     opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
     transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-body.senac-reading-flow .quote-break cite {
-  max-width: min(24ch, var(--senac-fact-w));
-  margin-left: auto;
-  text-align: start;
+body.senac-reading-flow .quote-break:not(.quote-break--title) cite {
+  display: block;
+  width: max-content;
+  max-width: min(100%, var(--senac-quote-measure, min(38rem, 92vw)));
+  margin: var(--senac-text-stack-md) auto 0;
+  padding-inline: clamp(0.75rem, 3vw, 1.5rem);
+  text-align: center;
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: var(--senac-type-quote-cite);
+  font-style: normal;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  line-height: 1.35;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: rgba(232, 212, 164, 0.88);
   opacity: 0;
-  transform: translate3d(1.25rem, 0, 0);
+  transform: translate3d(0, 10px, 0);
   transition:
     opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.12s,
     transform 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.12s;
@@ -293,6 +506,27 @@ body.senac-reading-flow .quote-break.senac-scene--active blockquote {
   transform: translate3d(0, 0, 0);
 }
 
+body.senac-reading-flow .quote-break--title cite {
+  display: block;
+  width: 100%;
+  max-width: var(--senac-quote-measure, min(38rem, 92vw));
+  margin: var(--senac-text-stack-md) auto 0;
+  padding-inline: clamp(0.75rem, 3vw, 1.5rem);
+  text-align: center;
+  font-size: var(--senac-type-quote-cite);
+  line-height: 1.4;
+  white-space: normal;
+  letter-spacing: 0.06em;
+  text-transform: none;
+  font-weight: 400;
+  color: rgba(197, 160, 89, 0.78);
+  opacity: 0;
+  transform: translate3d(0, 10px, 0);
+  transition:
+    opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.12s,
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.12s;
+}
+
 body.senac-reading-flow .quote-break.is-visible cite,
 body.senac-reading-flow .quote-break.senac-scene--active cite {
   opacity: 1;
@@ -300,20 +534,79 @@ body.senac-reading-flow .quote-break.senac-scene--active cite {
 }
 
 body.senac-reading-flow .quote-break--title > span {
-  margin-left: auto;
+  display: block;
+  width: 100%;
+  max-width: var(--senac-quote-measure, min(38rem, 92vw));
+  margin-inline: auto;
+  text-align: center;
 }
 
-/* —— Archives : image au centre, légende discrète —— */
+body.senac-reading-flow .quote-break--title blockquote,
+body.senac-reading-flow .quote-break--one-line blockquote {
+  width: max-content;
+  max-width: min(92vw, 40rem);
+  margin: 0 auto !important;
+  padding-inline: 0 !important;
+  text-wrap: nowrap;
+  white-space: nowrap;
+  line-height: 1.15;
+  letter-spacing: 0.08em;
+}
+
+body.senac-reading-flow .quote-break--one-line:not(.quote-break--title) cite {
+  margin: 0 auto !important;
+  padding-inline: 0 !important;
+}
+
+body.senac-reading-flow .quote-break--title blockquote {
+  font-size: var(--senac-type-quote-title);
+}
+
+/* Filet doré bas de carte : centré sous la citation */
+body.senac-reading-flow .quote-break::after {
+  left: 50%;
+  transform: translateX(-50%) scaleX(0.12);
+}
+
+body.senac-reading-flow .quote-break--one-line::after {
+  bottom: clamp(2rem, 6vh, 4rem);
+}
+
+body.senac-reading-flow .quote-break.is-visible::after {
+  transform: translateX(-50%) scaleX(1);
+}
+
+body.senac-reading-flow .chapter-two .quote-break blockquote,
+body.senac-reading-flow .chapter-two .quote-break cite {
+  text-align: center;
+  margin-inline: auto;
+}
+
+/* -- Archives : image au centre, légende centrée dessous -- */
+body.senac-reading-flow #timeline-start.timeline.senac-constellation-track > .senac-scene.senac-scene--reliquary {
+  align-items: center;
+  justify-content: center;
+}
+
 body.senac-reading-flow .senac-scene--reliquary.archive-window {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding-inline: var(--senac-fact-pad);
+  width: 100%;
+  max-width: 100%;
+  margin-inline: auto;
+  padding-inline: max(var(--senac-fact-pad), env(safe-area-inset-left, 0px))
+    max(var(--senac-fact-pad), env(safe-area-inset-right, 0px));
+  text-align: center;
+  box-sizing: border-box;
 }
 
 body.senac-reading-flow .senac-scene--reliquary .archive-media {
+  width: min(100%, 40rem);
+  max-height: min(52vh, 26rem);
   margin-inline: auto;
+  overflow: hidden;
   opacity: 0;
   transform: scale(0.94);
   transition:
@@ -327,28 +620,86 @@ body.senac-reading-flow .senac-scene--reliquary.senac-scene--active .archive-med
   transform: scale(1);
 }
 
+body.senac-reading-flow .senac-scene--reliquary .archive-media img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: min(52vh, 26rem);
+  object-fit: cover;
+}
+
 body.senac-reading-flow .senac-scene--reliquary figcaption {
-  margin-top: 0.85rem;
+  display: block;
+  box-sizing: border-box;
+  width: min(100%, 40rem);
+  max-width: min(36rem, 92vw);
+  margin: clamp(0.85rem, 2.2vh, 1.25rem) auto 0;
+  padding-inline: clamp(0.5rem, 2vw, 1rem);
   text-align: center;
-  font-size: clamp(0.72rem, 1.2vw, 0.82rem);
-  opacity: 0.45;
-  max-width: 28ch;
+  text-wrap: balance;
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: var(--senac-type-caption);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  line-height: 1.45;
+  text-transform: uppercase;
+  color: rgba(197, 160, 89, 0.62);
+  opacity: 0.85;
+}
+
+body.senac-reading-flow .archive-window--round.senac-scene--reliquary figcaption {
+  width: clamp(13rem, 25vw, 18rem);
+  max-width: min(92vw, 20rem);
+}
+
+body.senac-reading-flow .archive-window--medium.senac-scene--reliquary figcaption {
+  width: clamp(11rem, 20vw, 15rem);
+  max-width: min(92vw, 18rem);
+}
+
+body.senac-reading-flow .archive-window--wide.senac-scene--reliquary figcaption {
+  width: min(100%, 40rem);
+  max-width: min(42rem, 92vw);
+}
+
+body.senac-reading-flow .chapter-two .archive-window figcaption {
+  letter-spacing: 0.12em;
+  text-align: center;
+  margin-inline: auto;
 }
 
 html[dir="rtl"] body.senac-reading-flow .senac-scene--card {
-  grid-template-columns: var(--senac-fact-w) minmax(0, 1fr);
+  grid-template-columns:
+    var(--senac-fact-margin-end, clamp(2.75rem, 7vw, 6rem))
+    var(--senac-fact-col, minmax(26rem, var(--senac-fact-w)))
+    minmax(0, 1fr);
 }
 
 html[dir="rtl"] body.senac-reading-flow .senac-scene--card .date-ghost {
-  grid-column: 2;
+  grid-column: 3;
+  justify-self: end;
+  padding: 0;
+  padding-inline-end: var(--senac-ghost-date-inset, 1.5rem);
   text-align: end;
+  transform: none;
+}
+
+html[dir="rtl"] body.senac-reading-flow .senac-scene--active.story-card--right .date-ghost,
+html[dir="rtl"] body.senac-reading-flow .senac-scene--active.story-card--left .date-ghost,
+html[dir="rtl"] body.senac-reading-flow .story-card.is-visible .date-ghost {
+  transform: translate3d(0, -6px, 0) scale(1.02);
+}
+
+html[dir="rtl"] body.senac-reading-flow .story-date {
+  margin-inline-start: var(--senac-date-nudge, 1.5rem);
 }
 
 html[dir="rtl"] body.senac-reading-flow .senac-scene--card .story-panel {
-  grid-column: 1;
-  justify-self: start;
+  grid-column: 2;
+  justify-self: stretch;
   text-align: end;
   transform: translate3d(-1.75rem, 0, 0);
+  padding: var(--senac-panel-pad-block) var(--senac-panel-pad-inline);
 }
 
 html[dir="rtl"] body.senac-reading-flow .story-card.is-visible .story-panel {
@@ -356,50 +707,104 @@ html[dir="rtl"] body.senac-reading-flow .story-card.is-visible .story-panel {
 }
 
 html[dir="rtl"] body.senac-reading-flow .senac-scene--chamber.quote-break {
-  align-items: flex-start;
-  text-align: start;
+  align-items: center;
+  text-align: center;
 }
 
 html[dir="rtl"] body.senac-reading-flow .quote-break blockquote,
 html[dir="rtl"] body.senac-reading-flow .quote-break cite {
-  margin-left: 0;
-  margin-right: auto;
+  margin-inline: auto;
+  text-align: center;
 }
 
 @media (max-width: 840px) {
-  body.senac-reading-flow {
-    --senac-fact-w: min(100%, 22rem);
-  }
-
   body.senac-reading-flow .senac-scene--card.story-card {
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
-    gap: 0.5rem;
+    gap: var(--senac-fact-gap);
   }
 
   body.senac-reading-flow .senac-scene--card .date-ghost {
     grid-column: 1;
     grid-row: 1;
-    font-size: clamp(2.5rem, 14vw, 4rem);
-    opacity: 0.35;
+    justify-self: start;
+    width: 100%;
+    max-width: none;
+    padding-inline-end: 0;
+    padding-inline-start: var(--senac-ghost-date-inset, 1rem);
+    text-align: start;
+    font-size: var(--senac-type-date-ghost-m);
+    line-height: 0.92;
+    opacity: 0.28;
+    transform: none;
+  }
+
+  body.senac-reading-flow .senac-scene--active.story-card--right .date-ghost,
+  body.senac-reading-flow .senac-scene--active.story-card--left .date-ghost,
+  body.senac-reading-flow .story-card.is-visible .date-ghost {
+    transform: translate3d(0, 0, 0) scale(1.01);
   }
 
   body.senac-reading-flow .senac-scene--card .story-panel {
     grid-column: 1;
     grid-row: 2;
     justify-self: stretch;
+    width: 100%;
+    max-width: none;
+    padding: var(--senac-panel-pad-block) var(--senac-panel-pad-inline);
+    transform: translate3d(0, 12px, 0);
+  }
+
+  body.senac-reading-flow .story-card.is-visible .story-panel,
+  body.senac-reading-flow .story-card.senac-scene--active .story-panel {
+    transform: translate3d(0, 0, 0);
+  }
+
+  body.senac-reading-flow .senac-scene--card .story-panel::after {
+    display: none;
+  }
+
+  body.senac-reading-flow .senac-scene--card .story-panel > .story-date,
+  body.senac-reading-flow .senac-scene--card .story-panel > h2,
+  body.senac-reading-flow .story-panel p:not(.senac-fact-detail),
+  body.senac-reading-flow .story-panel .senac-fact-detail,
+  body.senac-reading-flow .story-panel .senac-cross-nav--compact {
     max-width: none;
   }
 
   body.senac-reading-flow .senac-scene--chamber.quote-break {
-    align-items: stretch;
-    text-align: start;
+    align-items: center;
+    text-align: center;
+    padding-inline: max(var(--senac-fact-pad), env(safe-area-inset-left, 0px))
+      max(var(--senac-fact-pad), env(safe-area-inset-right, 0px));
+  }
+
+  body.senac-reading-flow .senac-scene--chamber.quote-break::before {
+    width: min(100%, var(--senac-quote-axis-gap-w, 40rem));
   }
 
   body.senac-reading-flow .quote-break blockquote,
   body.senac-reading-flow .quote-break cite {
-    margin-left: 0;
+    margin-inline: auto;
+    max-width: min(100%, var(--senac-quote-measure, 34rem));
   }
+}
+
+@media (max-width: 520px) {
+  body.senac-reading-flow .quote-break--one-line blockquote {
+    font-size: clamp(0.68rem, 3.1vw, 0.95rem);
+    letter-spacing: 0.07em;
+  }
+
+  body.senac-reading-flow .senac-scene--card .date-ghost {
+    font-size: var(--senac-type-date-ghost-m);
+    opacity: 0.22;
+  }
+
+  body.senac-reading-flow .story-panel h2 {
+    line-height: 1.22;
+  }
+
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -2,6 +2,6 @@
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "entry": ["src/main.tsx"],
   "project": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts"],
-  "ignoreDependencies": ["@turf/turf", "tailwindcss"],
-  "ignoreBinaries": ["ffmpeg", "netlify"]
+  "ignoreDependencies": ["@turf/turf", "tailwindcss", "sharp", "png-to-ico"],
+  "ignoreBinaries": ["ffmpeg", "netlify", "vercel"]
 }

@@ -1,5 +1,5 @@
 /**
- * Liens d’étape — puces picto ludiques (or / nuit saharienne).
+ * Liens d’étape - puces picto ludiques (or / nuit saharienne).
  */
 
 .senac-cross-nav-chips {
@@ -85,6 +85,26 @@
   outline-offset: 3px;
 }
 
+.senac-cross-nav__chip.is-save-locked,
+.senac-cross-nav__link.is-save-locked,
+.senac-hero-link.is-save-locked {
+  opacity: 0.38;
+  cursor: not-allowed;
+  pointer-events: none;
+  transform: none;
+  filter: grayscale(0.35);
+}
+
+.senac-cross-nav__chip.is-save-locked:hover,
+.senac-cross-nav__link.is-save-locked:hover,
+.senac-hero-link.is-save-locked:hover {
+  transform: none;
+  border-color: rgba(197, 160, 89, 0.38);
+  box-shadow: none;
+  color: rgba(244, 234, 210, 0.55);
+  text-decoration-color: rgba(197, 160, 89, 0.28);
+}
+
 .senac-nav-picto {
   flex-shrink: 0;
   width: 1.35rem;
@@ -113,7 +133,7 @@ html[dir="rtl"] .senac-cross-nav__hint {
   font-family: "Noto Naskh Arabic", Georgia, serif;
 }
 
-/* Dans les cartes frise — puce compacte */
+/* Dans les cartes frise - puce compacte */
 .senac-cross-nav--compact .senac-cross-nav__chip {
   padding: 0.32rem 0.62rem 0.32rem 0.5rem;
   font-size: clamp(0.74rem, 1.35vw, 0.82rem);
@@ -130,11 +150,15 @@ html[dir="rtl"] .senac-cross-nav__hint {
   text-align: center;
 }
 
+body.senac-reading-flow .story-panel .senac-cross-nav--compact {
+  text-align: start;
+}
+
 .story-panel .senac-cross-nav--compact .senac-cross-nav__chip {
   margin-top: 0.25rem;
 }
 
-/* Scroll vers la frise — pastille étoile */
+/* Scroll vers la frise - pastille étoile */
 .scroll-cue--journey .scroll-cue-mouse svg rect {
   stroke: rgba(197, 160, 89, 0.62);
 }

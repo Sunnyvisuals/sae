@@ -120,7 +120,7 @@ function MajesticButton({
   );
 }
 
-/** Curseur — souris fine uniquement ; placé avant le son dans le menu pause. */
+/** Curseur - souris fine uniquement ; placé avant le son dans le menu pause. */
 function PauseCursorPicker({ midnight }: { midnight: boolean }) {
   const copy = useAppCopy();
   const panelId = useId();
@@ -226,7 +226,7 @@ function PauseCursorPicker({ midnight }: { midnight: boolean }) {
                   type="button"
                   onClick={() => applyExperience('fluid')}
                   tabIndex={cursorOpen ? 0 : -1}
-                  aria-label={`${copy.cursorOptionFluid} — ${copy.cursorOptionFluidHint}`}
+                  aria-label={`${copy.cursorOptionFluid} - ${copy.cursorOptionFluidHint}`}
                   className={
                     optBase +
                     (!cursorOpen ? 'pointer-events-none opacity-40 ' : 'pointer-events-auto ') +
@@ -250,7 +250,7 @@ function PauseCursorPicker({ midnight }: { midnight: boolean }) {
                   type="button"
                   onClick={() => applyExperience('basic')}
                   tabIndex={cursorOpen ? 0 : -1}
-                  aria-label={`${copy.cursorOptionBasic} — ${copy.cursorOptionBasicHint}`}
+                  aria-label={`${copy.cursorOptionBasic} - ${copy.cursorOptionBasicHint}`}
                   className={
                     optBase +
                     (!cursorOpen ? 'pointer-events-none opacity-40 ' : 'pointer-events-auto ') +
@@ -870,8 +870,8 @@ export default function SystemMenu({
         transition={{ duration: 0.35, delay: 0.1 }}
         className={
           midnight
-            ? 'pointer-events-auto fixed z-[570] flex h-10 w-10 items-center justify-center rounded-[2px] border border-[rgba(139,213,255,0.32)] bg-[rgba(2,8,24,0.52)] text-[rgba(207,238,255,0.9)] shadow-[inset_0_1px_0_rgba(180,228,255,0.06),0_8px_28px_rgba(0,0,0,0.5)] backdrop-blur-sm transition-[color,border-color,background-color,box-shadow] duration-300 hover:border-[rgba(148,218,255,0.52)] hover:bg-[rgba(4,14,38,0.62)] hover:text-sky-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[rgba(90,168,255,0.42)] sm:h-11 sm:w-11 top-[max(1rem,calc(env(safe-area-inset-top)+0.5rem))] right-[max(1rem,calc(env(safe-area-inset-right)+0.5rem))] md:top-[max(1.25rem,calc(env(safe-area-inset-top)+0.75rem))] md:right-[max(1.25rem,calc(env(safe-area-inset-right)+0.75rem))]'
-            : 'pointer-events-auto fixed z-[570] flex h-10 w-10 items-center justify-center rounded-[2px] border border-solar-gold/35 bg-black/55 text-solar-gold/85 shadow-[inset_0_1px_0_rgba(253,248,238,0.05),0_8px_28px_rgba(0,0,0,0.45)] backdrop-blur-sm transition-[color,border-color,background-color,box-shadow] duration-300 hover:border-solar-gold/55 hover:bg-black/70 hover:text-solar-gold focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-solar-gold/40 sm:h-11 sm:w-11 top-[max(1rem,calc(env(safe-area-inset-top)+0.5rem))] right-[max(1rem,calc(env(safe-area-inset-right)+0.5rem))] md:top-[max(1.25rem,calc(env(safe-area-inset-top)+0.75rem))] md:right-[max(1.25rem,calc(env(safe-area-inset-right)+0.75rem))]'
+            ? 'pointer-events-auto fixed z-[570] flex h-10 w-10 items-center justify-center rounded-[2px] border border-[rgba(139,213,255,0.32)] bg-[rgba(2,8,24,0.52)] text-[rgba(207,238,255,0.9)] shadow-[inset_0_1px_0_rgba(180,228,255,0.06),0_8px_28px_rgba(0,0,0,0.5)] backdrop-blur-sm transition-[color,border-color,background-color,box-shadow] duration-300 hover:border-[rgba(148,218,255,0.52)] hover:bg-[rgba(4,14,38,0.62)] hover:text-sky-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[rgba(90,168,255,0.42)] sm:h-11 sm:w-11 top-[max(1.5rem,calc(env(safe-area-inset-top)+0.875rem))] right-[max(1.5rem,calc(env(safe-area-inset-right)+0.875rem))] md:top-[max(1.75rem,calc(env(safe-area-inset-top)+1rem))] md:right-[max(1.75rem,calc(env(safe-area-inset-right)+1rem))]'
+            : 'pointer-events-auto fixed z-[570] flex h-10 w-10 items-center justify-center rounded-[2px] border border-solar-gold/35 bg-black/55 text-solar-gold/85 shadow-[inset_0_1px_0_rgba(253,248,238,0.05),0_8px_28px_rgba(0,0,0,0.45)] backdrop-blur-sm transition-[color,border-color,background-color,box-shadow] duration-300 hover:border-solar-gold/55 hover:bg-black/70 hover:text-solar-gold focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-solar-gold/40 sm:h-11 sm:w-11 top-[max(1.5rem,calc(env(safe-area-inset-top)+0.875rem))] right-[max(1.5rem,calc(env(safe-area-inset-right)+0.875rem))] md:top-[max(1.75rem,calc(env(safe-area-inset-top)+1rem))] md:right-[max(1.75rem,calc(env(safe-area-inset-right)+1rem))]'
         }
       >
         <IconX className="h-5 w-5 sm:h-[22px] sm:w-[22px]" aria-hidden />
@@ -886,7 +886,7 @@ export default function SystemMenu({
           initial="hidden"
           animate="show"
         >
-          {/* Bloc encadré — centré viewport ; scroll sur le parent si contenu haut. */}
+          {/* Bloc encadré - centré viewport ; scroll sur le parent si contenu haut. */}
           <div
             dir={isArabic ? 'rtl' : 'ltr'}
             className={

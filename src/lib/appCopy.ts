@@ -160,7 +160,7 @@ type Copy = {
   introPrologueVolumeAuraAria: string;
   introProloguePausedAria: string;
   introProloguePlayingAria: string;
-  /** Suspense intro vidéo — même typo que l’écran langue (sourcil + titre + filet). */
+  /** Suspense intro vidéo - même typo que l’écran langue (sourcil + titre + filet). */
   introSuspenseEyebrow: string;
   introSuspenseTitle: string;
   introSuspenseProgressAria: string;
@@ -302,10 +302,10 @@ const FR: Copy = {
   menuAmbientVolume: "Volume du son",
   cursorSectionHeading: "Curseur",
   cursorOptionFluid: "Mirage",
-  cursorOptionFluidHint: "Brume de lumière qui suit le geste — losange du voyage et halos dorés.",
+  cursorOptionFluidHint: "Brume de lumière qui suit le geste - losange du voyage et halos dorés.",
   cursorOptionDefaultBadge: "voie d'accueil",
   cursorOptionBasic: "Signe",
-  cursorOptionBasicHint: "Point précis et léger — cercle sobre, sans brume animée.",
+  cursorOptionBasicHint: "Point précis et léger - cercle sobre, sans brume animée.",
   cursorOnboardingCurtainFr: "Choisissez votre curseur",
   cursorOnboardingCurtainAr: "اختر مؤشّرك",
   languageSectionHeading: "Langue",
@@ -403,8 +403,8 @@ const FR: Copy = {
   introVideoMuteOff: "Activer le son",
   introVideoVolumeRange: "Volume",
   introPrologueVolumeAuraAria:
-    "Volume du prologue : molette sur la bande lumineuse à droite — vers le haut augmente, vers le bas diminue. Flèches haut et bas quand la zone est sélectionnée.",
-  introProloguePausedAria: "Vidéo en pause — appuyez sur Espace pour reprendre.",
+    "Volume du prologue : molette sur la bande lumineuse à droite - vers le haut augmente, vers le bas diminue. Flèches haut et bas quand la zone est sélectionnée.",
+  introProloguePausedAria: "Vidéo en pause - appuyez sur Espace pour reprendre.",
   introProloguePlayingAria: "Lecture en cours.",
   introSuspenseEyebrow: "Prologue",
   introSuspenseTitle: "Le voyage va commencer",
@@ -433,7 +433,7 @@ const FR: Copy = {
     "Fais défiler la molette de la souris vers le haut pour régler le volume",
   introTutorialVolumeLabel: "Flamme sonore",
   introTutorialVolumeProgressAria: "Progression de la résonance",
-  introTutorialVolumeSuccess: "Le seuil est franchi — le prologue commence.",
+  introTutorialVolumeSuccess: "Le seuil est franchi - le prologue commence.",
   introTutorialVolumeLaunchCta: "Lancer la vidéo",
   introTutorialReviewMission1: "Reprendre l'accueil",
   act23BridgeVideoSkip: "Passer cette transition",
@@ -577,10 +577,10 @@ const AR: Copy = {
   menuAmbientVolume: "قوة الصوت المحيطي",
   cursorSectionHeading: "المؤشّر",
   cursorOptionFluid: "سراب",
-  cursorOptionFluidHint: "ضباب ضوء يتبع الحركة — معين الرحلة وهالات ذهبية.",
+  cursorOptionFluidHint: "ضباب ضوء يتبع الحركة - معين الرحلة وهالات ذهبية.",
   cursorOptionDefaultBadge: "طريق الاستقبال",
   cursorOptionBasic: "أثر",
-  cursorOptionBasicHint: "نقطة صافية وخفيفة — دائرة هادئة بلا ضباب متحرك.",
+  cursorOptionBasicHint: "نقطة صافية وخفيفة - دائرة هادئة بلا ضباب متحرك.",
   cursorOnboardingCurtainFr: "Choisissez votre curseur",
   cursorOnboardingCurtainAr: "اختر مؤشّرك",
   languageSectionHeading: "اللغة",
@@ -678,8 +678,8 @@ const AR: Copy = {
   introVideoMuteOff: "فعّل الصوت",
   introVideoVolumeRange: "مستوى الصوت",
   introPrologueVolumeAuraAria:
-    "صوت المقدّمة: عجلة الفأرة على الشريط المضيء يمين الشاشة — لفّة للأعلى ترفع، للأسفل تخفّض. أسهم للأعلى والأسفل عند التركيز على المنطقة.",
-  introProloguePausedAria: "الفيديو متوقّف — إضغط مسافة باش تكمل.",
+    "صوت المقدّمة: عجلة الفأرة على الشريط المضيء يمين الشاشة - لفّة للأعلى ترفع، للأسفل تخفّض. أسهم للأعلى والأسفل عند التركيز على المنطقة.",
+  introProloguePausedAria: "الفيديو متوقّف - إضغط مسافة باش تكمل.",
   introProloguePlayingAria: "التشغيل جاري.",
   introSuspenseEyebrow: "مقدّمة",
   introSuspenseTitle: "الرحلة غادي تبدا",
@@ -688,7 +688,7 @@ const AR: Copy = {
   introTutorialSkipEyebrow: "قبل الانطلاق",
   introTutorialSkipTitle: "الانغماس",
   introTutorialSkipBody:
-    "اعبر مرة إلى ملء الشاشة — يكفي عبور، ما تحتاجش تثبت فيه.\nالأفضل تسمع بالسمّاعات : الصحراء ما تهمس إلا لمن يستسلم ليها.",
+    "اعبر مرة إلى ملء الشاشة - يكفي عبور، ما تحتاجش تثبت فيه.\nالأفضل تسمع بالسمّاعات : الصحراء ما تهمس إلا لمن يستسلم ليها.",
   introTutorialSkipFullscreenHint:
     "اعبر ملء الشاشة مرة باش تكمل",
   introTutorialSkipCta: "التالي",
@@ -707,7 +707,7 @@ const AR: Copy = {
   introTutorialVolumeScrollAria: "دوّر عجلة الفأرة للأعلى لضبط مستوى الصوت",
   introTutorialVolumeLabel: "لهب الصوت",
   introTutorialVolumeProgressAria: "تقدّم الصدى",
-  introTutorialVolumeSuccess: "العتبة تجاوزت — المقدّمة تبدا.",
+  introTutorialVolumeSuccess: "العتبة تجاوزت - المقدّمة تبدا.",
   introTutorialVolumeLaunchCta: "شغّل الفيديو",
   introTutorialReviewMission1: "رجع للاستقبال",
   act23BridgeVideoSkip: "تخطّى الانتقال",

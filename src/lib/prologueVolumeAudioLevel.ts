@@ -104,7 +104,7 @@ function stopTickerIfIdle(): void {
   smoothed = 0;
 }
 
-/** Abonnement au niveau audio lissé (0–1) pour l’aurore. */
+/** Abonnement au niveau audio lissé (0-1) pour l’aurore. */
 export function subscribePrologueVolumeAudioLevel(
   listener: (level: number) => void
 ): () => void {

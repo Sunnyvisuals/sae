@@ -1,5 +1,5 @@
 /**
- * Fond générique de fin — aligné `.voyage-credits` / `scroll-mode-choice` (parchemin-senac.css).
+ * Fond générique de fin - aligné `.voyage-credits` / `scroll-mode-choice` (parchemin-senac.css).
  */
 
 import {
@@ -15,12 +15,12 @@ import {
 } from './act3NightSky';
 
 /** Socle chaud « mode lecture » (#050508 + or). */
-export const VOYAGE_CREDITS_BASE_BG =
+const VOYAGE_CREDITS_BASE_BG =
   'radial-gradient(ellipse 82% 58% at 50% 32%, rgba(197, 160, 89, 0.04) 0%, transparent 54%), ' +
   'linear-gradient(180deg, rgba(7, 5, 3, 0.985) 0%, rgba(5, 3, 2, 0.996) 42%, rgba(2, 1, 0, 1) 100%)';
 
 /** Calque `.voyage-credits::before`. */
-export const VOYAGE_CREDITS_HALO_OVERLAY =
+const VOYAGE_CREDITS_HALO_OVERLAY =
   'radial-gradient(ellipse 94% 72% at 50% 0%, rgba(255, 252, 245, 0.04), transparent 52%), ' +
   'radial-gradient(ellipse 58% 36% at 50% 82%, rgba(197, 160, 89, 0.06), transparent 70%)';
 
@@ -48,7 +48,7 @@ export const VOYAGE_CREDITS_BASE_BG_NIGHT =
   'radial-gradient(ellipse 82% 58% at 50% 28%, rgba(90, 168, 255, 0.055) 0%, transparent 54%), ' +
   'linear-gradient(180deg, rgba(5, 8, 18, 0.99) 0%, rgba(3, 5, 14, 0.996) 42%, rgba(1, 2, 10, 1) 100%)';
 
-export const VOYAGE_CREDITS_HALO_OVERLAY_NIGHT =
+const VOYAGE_CREDITS_HALO_OVERLAY_NIGHT =
   'radial-gradient(ellipse 94% 72% at 50% 0%, rgba(180, 210, 255, 0.05), transparent 52%), ' +
   'radial-gradient(ellipse 58% 36% at 50% 82%, rgba(90, 140, 220, 0.07), transparent 70%)';
 
@@ -57,7 +57,7 @@ function smoothstep01(x: number): number {
   return t * t * (3 - 2 * t);
 }
 
-/** 0 = chaud (désert) … 1 = nuit bleue — suit le défilement du générique. */
+/** 0 = chaud (désert) … 1 = nuit bleue - suit le défilement du générique. */
 export function creditsImmersionFromProgress(
   progress: number,
   fromAct3Finale: boolean,

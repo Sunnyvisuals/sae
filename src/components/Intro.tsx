@@ -285,7 +285,7 @@ function SuspenseOverlay({
   return (
     <div className="pointer-events-none absolute inset-0 z-[26] flex flex-col items-center justify-center gap-0 px-6 text-center">
 
-      {/* fond opaque — montée lente pour ne pas couper l’accueil d’un coup */}
+      {/* fond opaque - montée lente pour ne pas couper l’accueil d’un coup */}
       <motion.div
         aria-hidden
         className="absolute inset-0 bg-[#020100]"
@@ -357,7 +357,7 @@ function SuspenseOverlay({
         style={{ background: "radial-gradient(ellipse 80% 80% at 50% 50%, rgba(197,160,89,0.12) 0%, transparent 70%), linear-gradient(to bottom, transparent 60%, rgba(197,100,20,0.08) 100%)" }}
       />
 
-      {/* contenu centré — même DA que l’écran langue (sourcil, titre caps, filet) */}
+      {/* contenu centré - même DA que l’écran langue (sourcil, titre caps, filet) */}
       <motion.div
         dir={isArabic ? "rtl" : "ltr"}
         className="relative z-[2] flex flex-col items-center gap-6 px-4 text-center"
@@ -456,8 +456,6 @@ function SuspenseOverlay({
   );
 }
 
-export type { DevChapterJumps };
-
 interface IntroProps {
   onComplete: () => void;
   isExploring?: boolean;
@@ -514,7 +512,7 @@ export default function Intro({
   const [showInitialTitle, setShowInitialTitle] = useState(true);
   const [volume, setVolume] = useState(PROLOGUE_VIDEO_DEFAULT_VOLUME);
   const [isMuted, setIsMuted] = useState(false);
-  /** Prologue vidéo : indicateur 0–100 affiché à la molette, puis masqué. */
+  /** Prologue vidéo : indicateur 0-100 affiché à la molette, puis masqué. */
   const [prologueVolumeHudVisible, setPrologueVolumeHudVisible] = useState(false);
   const [prologueVideoPaused, setPrologueVideoPaused] = useState(false);
   const [prologuePlayMarkVisible, setProloguePlayMarkVisible] = useState(false);
@@ -526,7 +524,7 @@ export default function Intro({
   const [prologueTutorialStep, setPrologueTutorialStep] = useState<PrologueTutorialStep | null>(null);
   /** Évite double validation « Lancer la vidéo ». */
   const prologueTutorialVolumeDoneRef = useRef(false);
-  /** Volume validé à la fin du test sonore — conservé jusqu’au lancement vidéo. */
+  /** Volume validé à la fin du test sonore - conservé jusqu’au lancement vidéo. */
   const prologueChosenVolumeRef = useRef<number | null>(null);
   const introSuspenseFinishedRef = useRef(false);
   const [introHandoffBlackout, setIntroHandoffBlackout] = useState(false);
@@ -1409,7 +1407,7 @@ export default function Intro({
         (mutedScrollRef.current ? 0 : volumeScrollRef.current) * 100
       );
       const dy = e.deltaY;
-      /** Pas entiers 0–100 : ~1 % par cran de molette, max 2 % par événement. */
+      /** Pas entiers 0-100 : ~1 % par cran de molette, max 2 % par événement. */
       const deltaPct =
         -Math.sign(dy) * Math.max(1, Math.min(2, Math.round(Math.abs(dy) / 48)));
       const nextPct = Math.min(100, Math.max(0, currentPct + deltaPct));

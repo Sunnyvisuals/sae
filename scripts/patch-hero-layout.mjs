@@ -24,7 +24,7 @@ const newHero = `      <header class="hero" data-reveal>
           <h1 data-i18n="hero_title">Al Rihla</h1>
           <p class="hero-subtitle" data-i18n="hero_subtitle">La traversée</p>
           <p class="hero-copy" data-i18n="hero_copy">
-            Une frise où les dates deviennent constellations — Jean Sénac, chronologie et archives.
+            Une frise où les dates deviennent constellations - Jean Sénac, chronologie et archives.
           </p>
         </${d}>
         <${nav}

@@ -71,7 +71,7 @@
    * Classe posée sur `<html>` depuis App.tsx (`phase === "act1"`).
    */
   /**
-   * Intro / prologue vidéo : scène fixed plein écran — évite la barre crème du body sous la vidéo.
+   * Intro / prologue vidéo : scène fixed plein écran - évite la barre crème du body sous la vidéo.
    */
   html.phase-intro-root {
     overflow: hidden !important;
@@ -150,19 +150,10 @@
     html.phase-act2-root,
     html.phase-act2-root body,
     html.phase-act2-root #root,
-    html.phase-act2-root #root *:not(iframe) {
-      cursor: auto !important;
-    }
-
-    html.phase-act2-root.al-rihla-cursor-idle,
-    html.phase-act2-root.al-rihla-cursor-idle body,
-    html.phase-act2-root.al-rihla-cursor-idle #root,
-    html.phase-act2-root.al-rihla-cursor-idle #root *:not(iframe),
-    html.phase-act2-root.al-rihla-cursor-basic,
-    html.phase-act2-root.al-rihla-cursor-basic body,
-    html.phase-act2-root.al-rihla-cursor-basic #root,
-    html.phase-act2-root.al-rihla-cursor-basic #root *:not(iframe) {
-      cursor: auto !important;
+    html.phase-act2-root #root *,
+    html.phase-act2-root #root *::before,
+    html.phase-act2-root #root *::after {
+      cursor: none !important;
     }
   }
 
@@ -315,7 +306,7 @@
     text-shadow: 0 0 18px rgba(0, 0, 0, 0.78);
   }
 
-  /** Corps narratif — aligné sur `.story-panel p` (Acte II / frise). */
+  /** Corps narratif - aligné sur `.story-panel p` (Acte II / frise). */
   .da-act2-body {
     @apply font-sans font-normal;
     font-size: clamp(0.98rem, 1.5vw, 1.07rem);
@@ -612,7 +603,7 @@
     cursor: none !important;
   }
 
-  /** Curseur « basique » : pas de losange OS — uniquement le cercle du portail React. */
+  /** Curseur « basique » : pas de losange OS - uniquement le cercle du portail React. */
   html.al-rihla-cursor-basic,
   html.al-rihla-cursor-basic body,
   html.al-rihla-cursor-basic #root,

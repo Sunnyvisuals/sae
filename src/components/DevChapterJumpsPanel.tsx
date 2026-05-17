@@ -75,7 +75,7 @@ export default function DevChapterJumpsPanel({
             Pont I→II
           </p>
           <p className="m-0 text-[9px] tabular-nums text-solar-gold/75">
-            +{((jumps.devAct12ExtraPrefaceMs ?? 0) / 1000).toFixed(1)}s — total{" "}
+            +{((jumps.devAct12ExtraPrefaceMs ?? 0) / 1000).toFixed(1)}s - total{" "}
             {(
               ((jumps.devAct12BasePrefaceDelayMs ?? 0) + (jumps.devAct12ExtraPrefaceMs ?? 0)) /
               1000

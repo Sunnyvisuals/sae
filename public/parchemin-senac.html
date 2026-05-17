@@ -12,19 +12,19 @@
     <meta name="robots" content="noindex" />
     <link rel="icon" type="image/png" href="/favicon-camel.png" />
     <!-- v=62 : garder en phase avec src/lib/parcheminAssetVersion.ts (cache-bust) -->
-    <link rel="stylesheet" href="/parchemin-senac.css?v=78" />
+    <link rel="stylesheet" href="/parchemin-senac.css?v=87" />
     <link rel="stylesheet" href="/parchemin-senac-da-2026.css?v=5" />
-    <link rel="stylesheet" href="/parchemin-senac-observatory.css?v=9" />
-    <link rel="stylesheet" href="/parchemin-senac-glyphs.css?v=6" />
-    <link rel="stylesheet" href="/parchemin-senac-reading-flow.css?v=4" />
-    <link rel="stylesheet" href="/parchemin-senac-didyouknow.css?v=3" />
-    <link rel="stylesheet" href="/parchemin-senac-stellar.css?v=2" />
+    <link rel="stylesheet" href="/parchemin-senac-observatory.css?v=11" />
+    <link rel="stylesheet" href="/parchemin-senac-glyphs.css?v=9" />
+    <link rel="stylesheet" href="/parchemin-senac-reading-flow.css?v=32" />
+    <link rel="stylesheet" href="/parchemin-senac-didyouknow.css?v=34" />
+    <link rel="stylesheet" href="/parchemin-senac-stellar.css?v=13" />
     <link rel="stylesheet" href="/parchemin-senac-pillars.css?v=7" />
-    <link rel="stylesheet" href="/parchemin-senac-traits.css?v=1" />
-    <link rel="stylesheet" href="/parchemin-senac-hero-da.css?v=4" />
-    <link rel="stylesheet" href="/parchemin-senac-nav-pictos.css?v=1" />
+    <link rel="stylesheet" href="/parchemin-senac-traits.css?v=7" />
+    <link rel="stylesheet" href="/parchemin-senac-hero-da.css?v=11" />
+    <link rel="stylesheet" href="/parchemin-senac-nav-pictos.css?v=3" />
     <link rel="stylesheet" href="/parchemin-senac-color-fluid.css?v=2" />
-    <link rel="stylesheet" href="/parchemin-senac-temporal.css?v=2" />
+    <link rel="stylesheet" href="/parchemin-senac-temporal.css?v=3" />
     <script>
       (function () {
         var r = document.documentElement;
@@ -309,6 +309,19 @@
     </div>
 
     <main class="chapter chapter-two">
+      <section
+        class="senac-act2-garde senac-scene"
+        data-reveal
+        aria-labelledby="senac-act2-garde-title"
+      >
+        <div class="senac-act2-garde__frame">
+          <p class="senac-act2-garde__act" data-i18n="act2_garde_act">Acte II</p>
+          <h1 id="senac-act2-garde-title" class="senac-act2-garde__title" data-i18n="act2_garde_title">
+            La vie de Jean Sénac
+          </h1>
+          <span class="senac-act2-garde__rule" aria-hidden="true"></span>
+        </div>
+      </section>
       <div class="senac-scroll-glyphs" aria-hidden="true">
         <div class="senac-scroll-glyphs__layer senac-scroll-glyphs__layer--veils"></div>
         <div class="senac-scroll-glyphs__layer senac-scroll-glyphs__layer--threads"></div>
@@ -362,60 +375,13 @@
             />
           </div>
         </figure>
-        <a class="scroll-cue scroll-cue--journey" href="#timeline-start" data-i18n-aria="scroll_cue_aria" aria-label="Faire d�filer vers la frise narrative">
-          <span class="scroll-cue-mouse" aria-hidden="true">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="52"
-              height="52"
-              viewBox="0 0 48 48"
-              fill="none"
-              focusable="false"
-            >
-              <rect
-                x="4"
-                y="4"
-                width="40"
-                height="40"
-                rx="11"
-                fill="rgba(6, 8, 18, 0.78)"
-                stroke="rgba(234, 215, 164, 0.58)"
-                stroke-width="1.35"
-              />
-              <g
-                class="scroll-cue-chevrons-wrap"
-                fill="none"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path
-                  d="M24 10.5 L17 17.8 M24 10.5 L31 17.8"
-                  stroke="rgba(241, 223, 168, 0.96)"
-                  stroke-width="2.45"
-                />
-                <path
-                  d="M24 17 L17 24.3 M24 17 L31 24.3"
-                  stroke="rgba(234, 218, 175, 0.82)"
-                  stroke-width="2.45"
-                />
-                <path
-                  d="M24 23.5 L17 30.8 M24 23.5 L31 30.8"
-                  stroke="rgba(229, 206, 154, 0.62)"
-                  stroke-width="2.45"
-                />
-              </g>
-            </svg>
-          </span>
-          <span class="scroll-cue-label" data-i18n="scroll_cue_label">Molette � vers le bas</span>
-        </a>
-      </header>
+</header>
 
       <section id="timeline-start" class="timeline" data-i18n-aria="timeline_aria" aria-label="Frise narrative Jean S�nac">
         <article class="story-card story-card--right" data-reveal>
           <div class="date-ghost">1926</div>
           <div class="pin" aria-hidden="true"></div>
           <div class="story-panel">
-            <p class="senac-fact-kicker" data-i18n="didyouknow_kicker">Saviez-vous</p>
             <p class="story-date" data-i18n="s1926_date">29 novembre - Alger, Belcourt</p>
             <h2 data-i18n="s1926_h2">Naissance</h2>
             <p data-i18n="s1926_p">
@@ -449,7 +415,6 @@
           <div class="date-ghost">1940</div>
           <div class="pin" aria-hidden="true"></div>
           <div class="story-panel">
-            <p class="senac-fact-kicker" data-i18n="didyouknow_kicker">Saviez-vous</p>
             <p class="story-date" data-i18n="s1940_date">Ann�es sombres</p>
             <h2 data-i18n="s1940_h2">L'adolescence et la guerre</h2>
             <p data-i18n="s1940_p">
@@ -464,16 +429,17 @@
           </div>
         </article>
 
-        <section class="quote-break senac-fragment" data-reveal role="button" tabindex="0">
-          <blockquote data-i18n-html="quote1_html">Je parle avec l'accent<br />de ma solitude.</blockquote>
-          <cite data-i18n="quote1_cite">Jean S�nac</cite>
+        <section class="quote-break quote-break--one-line senac-fragment" data-reveal role="button" tabindex="0">
+          <div class="senac-quote-stack">
+            <blockquote data-i18n-html="quote1_html">Je parle avec l'accent de ma solitude.</blockquote>
+            <cite data-i18n="quote1_cite">Jean S�nac</cite>
+          </div>
         </section>
 
         <article class="story-card story-card--left" data-reveal>
           <div class="date-ghost">1947</div>
           <div class="pin" aria-hidden="true"></div>
           <div class="story-panel">
-            <p class="senac-fact-kicker" data-i18n="didyouknow_kicker">Saviez-vous</p>
             <p class="story-date" data-i18n="s_belcourt_date">1947 � jeunesse</p>
             <h2 data-i18n="s_belcourt_h2">Le groupe de Belcourt</h2>
             <p data-i18n="s_belcourt_p"></p>
@@ -484,7 +450,6 @@
           <div class="date-ghost">1950</div>
           <div class="pin" aria-hidden="true"></div>
           <div class="story-panel">
-            <p class="senac-fact-kicker" data-i18n="didyouknow_kicker">Saviez-vous</p>
             <p class="story-date" data-i18n="s1950_date">1950 - 1960</p>
             <h2 data-i18n="s1950_h2">L'engagement litt�raire</h2>
             <p data-i18n="s1950_p1">
@@ -519,7 +484,6 @@
           <div class="date-ghost">Radio</div>
           <div class="pin" aria-hidden="true"></div>
           <div class="story-panel">
-            <p class="senac-fact-kicker" data-i18n="didyouknow_kicker">Saviez-vous</p>
             <p class="story-date" data-i18n="s_radio_date">1962 � voix publique</p>
             <h2 data-i18n="s_radio_h2">La radio, le peuple</h2>
             <p data-i18n="s_radio_p"></p>
@@ -531,7 +495,6 @@
           <div class="date-ghost date-ghost--word" data-i18n="ghost_soleils">Soleils</div>
           <div class="pin" aria-hidden="true"></div>
           <div class="story-panel">
-            <p class="senac-fact-kicker" data-i18n="didyouknow_kicker">Saviez-vous</p>
             <p class="story-date" data-i18n="s_soleils_date">1949 - livre</p>
             <h2 data-i18n="s_soleils_h2">Soleils s�par�s</h2>
             <p data-i18n-html="s_soleils_p_html">
@@ -544,7 +507,6 @@
         </article>
 
         <section class="quote-break quote-break--title senac-fragment" data-reveal role="button" tabindex="0">
-          <span aria-hidden="true">?</span>
           <blockquote data-i18n="quote2_bq">Soleils s�par�s</blockquote>
           <cite data-i18n="quote2_cite">un titre comme une constellation</cite>
         </section>
@@ -553,7 +515,6 @@
           <div class="date-ghost">1964</div>
           <div class="pin" aria-hidden="true"></div>
           <div class="story-panel">
-            <p class="senac-fact-kicker" data-i18n="didyouknow_kicker">Saviez-vous</p>
             <p class="story-date" data-i18n="s_peuple_date">1964 � anthologie</p>
             <h2 data-i18n="s_peuple_h2">Pr�face pour un peuple</h2>
             <p data-i18n-html="s_peuple_p_html"></p>
@@ -564,7 +525,6 @@
           <div class="date-ghost date-ghost--word" data-i18n="ghost_corps">Corps</div>
           <div class="pin" aria-hidden="true"></div>
           <div class="story-panel">
-            <p class="senac-fact-kicker" data-i18n="didyouknow_kicker">Saviez-vous</p>
             <p class="story-date" data-i18n="s_corps_date">Pr�sence assum�e</p>
             <h2 data-i18n="s_corps_h2">Engagement &amp; d�sir</h2>
             <p data-i18n="s_corps_p">
@@ -595,7 +555,6 @@
           <div class="date-ghost">1973</div>
           <div class="pin" aria-hidden="true"></div>
           <div class="story-panel">
-            <p class="senac-fact-kicker" data-i18n="didyouknow_kicker">Saviez-vous</p>
             <p class="story-date" data-i18n="s1973_date">30 ao�t - Alger</p>
             <h2 data-i18n="s1973_h2">La mort � Alger</h2>
             <p data-i18n="s1973_p">
@@ -626,7 +585,6 @@
           <div class="date-ghost date-ghost--word" data-i18n="ghost_legs">Legs</div>
           <div class="pin" aria-hidden="true"></div>
           <div class="story-panel">
-            <p class="senac-fact-kicker" data-i18n="didyouknow_kicker">Saviez-vous</p>
             <p class="story-date" data-i18n="s_legs_date">Aujourd'hui</p>
             <h2 data-i18n="s_legs_h2">La trace vive</h2>
             <p data-i18n="s_legs_p">
@@ -648,7 +606,6 @@
           <div class="date-ghost date-ghost--word" data-i18n="s_arch_date">Descente de l'arche</div>
           <div class="pin" aria-hidden="true"></div>
           <div class="story-panel">
-            <p class="senac-fact-kicker" data-i18n="didyouknow_kicker">Saviez-vous</p>
             <p class="story-date" data-i18n="s_arch_date">Descente de l'arche</p>
             <h2 data-i18n="s_arch_h2">Le portail du voyage</h2>
             <p data-i18n="s_arch_p"></p>
@@ -660,8 +617,8 @@
       </section>
     </main>
 
-    <script src="/static-i18n.js?v=115"></script>
-    <script type="module" src="/parchemin-senac.js?v=115"></script>
+    <script src="/static-i18n.js?v=121"></script>
+    <script type="module" src="/parchemin-senac.js?v=128"></script>
   </body>
 </html>
 

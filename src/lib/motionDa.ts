@@ -1,4 +1,4 @@
-/** Courbe DA commune — entrées texte lentes et douces. */
+/** Courbe DA commune - entrées texte lentes et douces. */
 export const DA_MOTION_EASE = [0.22, 1, 0.36, 1] as const;
 
 /** Crossfade corps de texte (exit complet avant enter avec AnimatePresence wait). */
@@ -29,7 +29,7 @@ export const DA_TUTORIAL_SHELL = {
   handoffReleaseMs: { reduced: 560, normal: 2280 },
 } as const;
 
-/** Étape I → II (volume) — aligné sur le corps central. */
+/** Étape I → II (volume) - aligné sur le corps central. */
 export const DA_VOLUME_STEP = {
   delay: { reduced: 0.14, normal: 0.62 },
   duration: { reduced: 0.4, normal: 1.15 },

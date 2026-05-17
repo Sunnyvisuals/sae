@@ -1,5 +1,5 @@
 /**
- * Arche 3D — source canonique (SPA crédits via Vite + iframe parchemin via `public/`).
+ * Arche 3D - source canonique (SPA crédits via Vite + iframe parchemin via `public/`).
  * Acte II iframe parchemin :
  * Modèle : public/models/model.glb - ratio = scrollY / scrollMax.
  *
@@ -22,7 +22,7 @@ const ARCH_ZOOM_BEGIN = 0.68;
  * @param {boolean} opts.reducedMotion
  * @param {string} opts.modelUrl
  * @param {() => number} opts.getScrollRatio 0-1
- * @param {() => { x: number, y: number }} [opts.getMouse01] pointeur 0–1 (x gauche→droite, y bas→haut)
+ * @param {() => { x: number, y: number }} [opts.getMouse01] pointeur 0-1 (x gauche→droite, y bas→haut)
  * @returns {Promise<{ dispose: () => void; sync: () => void }>}
  */
 export async function initSenacArchScene(opts) {
@@ -275,15 +275,26 @@ export async function initSenacArchScene(opts) {
   let rafId = 0;
   function tick() {
     if (disposed) return;
+    if (typeof document !== "undefined" && document.hidden) {
+      rafId = requestAnimationFrame(tick);
+      return;
+    }
     sync();
     rafId = requestAnimationFrame(tick);
   }
+  const onVisibilityChange = () => {
+    if (disposed || document.hidden) return;
+    sync();
+  };
+  document.addEventListener("visibilitychange", onVisibilityChange, { passive: true });
+
   rafId = requestAnimationFrame(tick);
 
   function dispose() {
     disposed = true;
     if (rafId) cancelAnimationFrame(rafId);
     window.removeEventListener("resize", onResize);
+    document.removeEventListener("visibilitychange", onVisibilityChange);
     try { renderer.dispose(); } catch { /* ignore */ }
   }
 

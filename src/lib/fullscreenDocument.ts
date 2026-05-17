@@ -21,7 +21,7 @@ export function getDocumentFullscreenElement(): Element | null {
   return document.fullscreenElement ?? d.webkitFullscreenElement ?? null;
 }
 
-export function isDocumentFullscreenActive(): boolean {
+function isDocumentFullscreenActive(): boolean {
   return !!getDocumentFullscreenElement();
 }
 

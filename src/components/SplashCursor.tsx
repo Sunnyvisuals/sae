@@ -104,6 +104,9 @@ function SplashCursor({
         ? { r: 0.03, g: 0.05, b: 0.1 }
         : { r: 0.17, g: 0.14, b: 0.12 });
 
+    const effectivePressureIterations =
+      typeof window !== "undefined" && window.innerWidth < 900 ? Math.min(PRESSURE_ITERATIONS, 14) : PRESSURE_ITERATIONS;
+
     let config = {
       SIM_RESOLUTION,
       DYE_RESOLUTION,
@@ -111,7 +114,7 @@ function SplashCursor({
       DENSITY_DISSIPATION,
       VELOCITY_DISSIPATION,
       PRESSURE,
-      PRESSURE_ITERATIONS,
+      PRESSURE_ITERATIONS: effectivePressureIterations,
       CURL,
       SPLAT_RADIUS,
       SPLAT_FORCE,

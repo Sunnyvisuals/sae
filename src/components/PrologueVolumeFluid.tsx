@@ -13,7 +13,7 @@ const HUD_EXIT_MS = 0.32;
 const HUD_EASE = [0.22, 1, 0.36, 1] as const;
 const AURORA_EASE = [0.45, 0, 0.55, 1] as const;
 
-/** Palette DA — or solaire, ocre, parchemin (cf. index.css / AuroraMeshBackground). */
+/** Palette DA - or solaire, ocre, parchemin (cf. index.css / AuroraMeshBackground). */
 const DA = {
   gold: "197, 160, 89",
   goldBright: "232, 213, 164",

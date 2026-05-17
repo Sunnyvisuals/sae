@@ -1,11 +1,57 @@
 /**
- * Acte II — rythme lecture : un écran par station (texte / image / citation).
- * Mise en page « Saviez-vous » : parchemin-senac-didyouknow.css
+ * Acte II - rythme lecture + tokens responsive (S ≤520, M ≤840, L ≥841).
+ * Layout « Saviez-vous » : parchemin-senac-didyouknow.css
  */
 
 body.senac-reading-flow {
+  /* -- Beat (un écran par station) -- */
   --senac-beat: min(100svh, 100dvh);
   --senac-beat-pad: clamp(1.75rem, 5.5vh, 3.75rem);
+
+  /* -- Grille lecture (axe 50 % + colonne texte + gouttière UI) -- */
+  --senac-fact-w: clamp(26rem, 32vw, 36rem);
+  --senac-fact-col: minmax(0, var(--senac-fact-w));
+  --senac-fact-pad: clamp(1.75rem, 5vw, 3.5rem);
+  --senac-fact-gap: clamp(1.25rem, 3vw, 2rem);
+  --senac-gutter-ui: clamp(3rem, 7.5vw, 5rem);
+  --senac-fact-margin-end: var(--senac-gutter-ui);
+  --senac-axis-gap: clamp(0.85rem, 2vw, 1.5rem);
+  --senac-stellar-axis: 50%;
+  --senac-portrait-ring-y: clamp(54vh, 58vh, 62vh);
+  --senac-portrait-ring-r: clamp(9rem, 24vw, 14rem);
+  --senac-panel-pad-block: clamp(0.35rem, 1vh, 0.65rem);
+  --senac-panel-pad-inline: 0px;
+  --senac-measure: min(36rem, 100%);
+  --senac-date-nudge: 0px;
+  /* Décalage date fantôme depuis la gauche (vers le fil, sans coller au texte) */
+  --senac-ghost-date-inset: clamp(7.75rem, 18vw, 12.5rem);
+
+  /* -- Espacement typo -- */
+  --senac-text-stack: 0.65rem;
+  --senac-text-stack-md: 1rem;
+  --senac-text-stack-lg: 1.35rem;
+
+  /* -- Couleurs lecture -- */
+  --senac-read-line: rgba(244, 234, 210, 0.84);
+  --senac-read-muted: rgba(244, 234, 210, 0.6);
+
+  /* -- Échelle typo (rem + vw borné) -- */
+  --senac-type-kicker: clamp(0.62rem, 0.7rem + 0.2vw, 0.72rem);
+  --senac-type-date: clamp(0.7rem, 0.78rem + 0.25vw, 0.82rem);
+  --senac-type-title: clamp(1.28rem, 1.1rem + 1.2vw, 1.72rem);
+  --senac-type-title-portal: clamp(1.38rem, 1.2rem + 1.4vw, 1.85rem);
+  --senac-type-body: clamp(1rem, 0.95rem + 0.35vw, 1.1rem);
+  --senac-type-detail: clamp(0.94rem, 0.9rem + 0.3vw, 1.04rem);
+  --senac-type-nav: clamp(0.8rem, 0.78rem + 0.25vw, 0.88rem);
+  --senac-type-quote: clamp(1.85rem, 1.35rem + 2.1vw, 3.35rem);
+  --senac-type-quote-cite: clamp(0.88rem, 0.82rem + 0.42vw, 1.05rem);
+  --senac-type-quote-title: clamp(2rem, 1.5rem + 2.6vw, 3.85rem);
+  --senac-quote-measure: min(38rem, 92vw);
+  --senac-quote-axis-gap-w: clamp(22rem, 56vw, 44rem);
+  --senac-quote-axis-mask: #05080f;
+  --senac-type-caption: clamp(0.72rem, 0.7rem + 0.2vw, 0.82rem);
+  --senac-type-date-ghost: clamp(3.5rem, 2.5rem + 8vw, 8.5rem);
+  --senac-type-date-ghost-m: clamp(2.25rem, 1.5rem + 10vw, 3.75rem);
 }
 
 body.senac-reading-flow header.hero.senac-hero-portal.senac-hero-stack {
@@ -27,12 +73,94 @@ body.senac-reading-flow #timeline-start.timeline.senac-constellation-track > :no
 
 body.senac-reading-flow .senac-scroll-glyphs {
   mix-blend-mode: screen;
-  opacity: 0.9;
 }
 
+/* Panneaux plats : le socle mobile (blur / radius) ne s’applique pas en lecture */
+body.senac-reading-flow .story-panel {
+  border-radius: 0;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: none;
+  box-shadow: none;
+}
+
+body.senac-reading-flow .story-card {
+  min-height: auto;
+  padding-inline: 0;
+}
+
+body.senac-reading-flow .story-card::before {
+  display: none;
+}
+
+@media (min-width: 1200px) {
+  body.senac-reading-flow {
+    --senac-fact-w: clamp(30rem, 32vw, 40rem);
+    --senac-fact-gap: clamp(2.25rem, 5vw, 4.5rem);
+  }
+}
+
+/* -- Palier M (tablette / mobile large) -- */
+@media (max-width: 840px) {
+  body.senac-reading-flow {
+    --senac-fact-w: min(100%, 34rem);
+    --senac-fact-col: minmax(0, 1fr);
+    --senac-fact-margin-end: 0px;
+    --senac-gutter-ui: 0px;
+    --senac-fact-pad: clamp(1.35rem, 5.5vw, 2.25rem);
+    --senac-fact-gap: 0.85rem;
+    --senac-axis-gap: 0px;
+    --senac-date-nudge: 0px;
+    --senac-ghost-date-inset: clamp(3.5rem, 12vw, 5.75rem);
+    --senac-stellar-axis: 50%;
+    --senac-portrait-ring-y: clamp(50vh, 54vh, 58vh);
+    --senac-portrait-ring-r: clamp(7.5rem, 38vw, 11rem);
+    --senac-panel-pad-inline: 0px;
+    --senac-panel-pad-block: clamp(0.75rem, 2vh, 1.15rem);
+    --senac-measure: 100%;
+    --senac-beat-pad: clamp(1.35rem, 4.5vh, 2.75rem);
+    --senac-type-title: clamp(1.18rem, 1.05rem + 1.5vw, 1.52rem);
+    --senac-type-body: clamp(0.98rem, 0.94rem + 0.4vw, 1.06rem);
+    --senac-type-quote: clamp(1.55rem, 1.2rem + 4.5vw, 2.65rem);
+    --senac-type-quote-title: clamp(1.65rem, 1.25rem + 5vw, 2.85rem);
+  }
+
+  body.senac-reading-flow .chapter-two {
+    padding-inline: max(var(--senac-fact-pad), env(safe-area-inset-left, 0px))
+      max(var(--senac-fact-pad), env(safe-area-inset-right, 0px));
+  }
+}
+
+/* -- Palier S (téléphone étroit) -- */
+@media (max-width: 520px) {
+  body.senac-reading-flow {
+    --senac-fact-pad: clamp(1.2rem, 5vw, 1.75rem);
+    --senac-panel-pad-inline: 0px;
+    --senac-panel-pad-block: clamp(0.75rem, 2vh, 1.1rem);
+    --senac-beat-pad: clamp(1.1rem, 4vh, 2rem);
+    --senac-text-stack-md: 0.75rem;
+    --senac-text-stack-lg: 1rem;
+    --senac-type-kicker: 0.62rem;
+    --senac-type-body: 1rem;
+    --senac-type-detail: 0.94rem;
+    --senac-type-date-ghost-m: clamp(1.85rem, 11vw, 2.75rem);
+  }
+
+  body.senac-reading-flow .senac-scene--card .story-panel::after {
+    width: clamp(1.25rem, 8vw, 3rem);
+  }
+
+  body.senac-reading-flow .senac-cross-nav__chip {
+    min-height: 44px;
+    padding: 0.55rem 1rem 0.55rem 0.85rem;
+  }
+}
+
+/* -- Hauteur courte (paysage / barre URL) -- */
 @media (max-height: 640px) {
   body.senac-reading-flow {
     --senac-beat-pad: clamp(0.85rem, 3vh, 1.5rem);
+    --senac-panel-pad-block: clamp(0.4rem, 1vh, 0.65rem);
   }
 
   body.senac-reading-flow header.hero.senac-hero-portal {
@@ -49,5 +177,12 @@ body.senac-reading-flow .senac-scroll-glyphs {
 
   body.senac-reading-flow .hero-portrait {
     width: min(100%, 11rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.senac-reading-flow .story-panel,
+  body.senac-reading-flow .story-panel > * {
+    transition: none;
   }
 }

@@ -18,7 +18,7 @@ type Props = {
 
 const MODEL_URL = `${import.meta.env.BASE_URL}models/model.glb`;
 
-/** Vidéo floutée, ciel, brume, fumée shader, arche 3D — comme `.voyage-credits` sur le parchemin. */
+/** Vidéo floutée, ciel, brume, fumée shader, arche 3D - comme `.voyage-credits` sur le parchemin. */
 export default function VoyageCreditsAmbient({
   fromAct3Finale,
   reduceMotion,

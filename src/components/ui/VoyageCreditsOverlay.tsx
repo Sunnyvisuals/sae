@@ -120,7 +120,7 @@ export default function VoyageCreditsOverlay({
           return;
         }
         const vh = window.innerHeight;
-        /* Aligner le bas du générique avec le bas du viewport (pas scrollHeight − 0.15vh),
+        /* Aligner le bas du générique avec le bas du viewport (pas scrollHeight - 0.15vh),
          * sinon la « fenêtre » tombe dans le grand padding vide sous le logo. */
         const dist = Math.max(0, el.scrollHeight - vh);
         gsap.set(el, { y: -dist });
@@ -184,18 +184,18 @@ export default function VoyageCreditsOverlay({
       {/* Masques haut / bas - dégradé doux pour ne pas rogner les capitales du titre */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-28 sm:h-32"
+        className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-20 sm:h-24"
         style={{
           background:
-            'linear-gradient(to bottom, rgba(5, 5, 8, 0.78) 0%, rgba(5, 5, 8, 0.2) 55%, transparent 100%)',
+            'linear-gradient(to bottom, rgba(5, 5, 8, 0.55) 0%, rgba(5, 5, 8, 0.12) 70%, transparent 100%)',
         }}
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] h-28 sm:h-32"
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] h-20 sm:h-24"
         style={{
           background:
-            'linear-gradient(to top, rgba(5, 5, 8, 0.78) 0%, rgba(5, 5, 8, 0.2) 55%, transparent 100%)',
+            'linear-gradient(to top, rgba(5, 5, 8, 0.55) 0%, rgba(5, 5, 8, 0.12) 70%, transparent 100%)',
         }}
       />
 
@@ -204,41 +204,49 @@ export default function VoyageCreditsOverlay({
         ref={trackRef}
         dir={lang === 'ar-dz' ? 'rtl' : 'ltr'}
         className={
-          'absolute inset-x-0 top-0 z-[2] mx-auto w-full max-w-xl px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] text-center sm:max-w-2xl ' +
+          'absolute inset-x-0 top-0 z-[2] mx-auto w-full max-w-xl px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] pt-[max(12vh,4.5rem)] text-center sm:max-w-2xl ' +
           (!reduceMotion ? 'will-change-transform' : '')
         }
       >
-        {/* Titre — Bahlull italique comme l’intro (pas caps Inter). */}
-        <h1
-          className={
-            lang === 'ar-dz'
-              ? 'mx-auto max-w-[min(100%,22ch)] font-arabic-ui text-[clamp(2.2rem,7.4vw,4.25rem)] font-normal leading-[1.08] tracking-[0.02em] text-da-parchment/92 [text-shadow:0_0_22px_rgba(197,160,89,0.22)]'
-              : 'font-bahlull mx-auto max-w-[min(100%,20ch)] box-border overflow-visible pb-1 pt-1 text-[clamp(2.5rem,7.8vw,5rem)] italic leading-[0.95] tracking-tighter text-transparent bg-clip-text'
-          }
-          style={
-            lang === 'ar-dz'
-              ? undefined
-              : midnight
-                ? {
-                    backgroundImage:
-                      'linear-gradient(165deg, #e8f6ff 0%, #94c8ff 38%, #5aa8ff 58%, #e0f4ff 100%)',
-                    WebkitBackgroundClip: 'text',
-                    backgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    filter: 'drop-shadow(0 0 22px rgba(90,168,255,0.24))',
-                  }
-                : {
-                    backgroundImage:
-                      'linear-gradient(165deg, #fdf8ee 0%, #e8d4a4 42%, #c5a059 92%)',
-                    WebkitBackgroundClip: 'text',
-                    backgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    filter: 'drop-shadow(0 0 22px rgba(197, 160, 89, 0.32))',
-                  }
-          }
+        {/* Titre - Bahlull : interligne + marge pour éviter rognage (bg-clip-text + italique). */}
+        <motion.div
+          className="mx-auto w-full max-w-[min(100%,28ch)] overflow-visible px-1 py-4 sm:py-5"
         >
-          {copy.voyageCreditsTitle}
-        </h1>
+          <h1
+            className={
+              lang === 'ar-dz'
+                ? 'mx-auto max-w-[min(100%,22ch)] font-arabic-ui text-[clamp(2.2rem,7.4vw,4.25rem)] font-normal leading-[1.12] tracking-[0.02em] text-da-parchment/92 [text-shadow:0_0_22px_rgba(197,160,89,0.22)]'
+                : 'font-bahlull mx-auto box-border overflow-visible text-[clamp(2.35rem,7.6vw,4.85rem)] italic leading-[1.18] tracking-[-0.02em] text-transparent [padding-block:0.14em] bg-clip-text'
+            }
+            style={
+              lang === 'ar-dz'
+                ? undefined
+                : midnight
+                  ? {
+                      backgroundImage:
+                        'linear-gradient(165deg, #e8f6ff 0%, #94c8ff 38%, #5aa8ff 58%, #e0f4ff 100%)',
+                      WebkitBackgroundClip: 'text',
+                      backgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      WebkitBoxDecorationBreak: 'clone',
+                      boxDecorationBreak: 'clone',
+                      filter: 'drop-shadow(0 0 20px rgba(90,168,255,0.22))',
+                    }
+                  : {
+                      backgroundImage:
+                        'linear-gradient(165deg, #fdf8ee 0%, #e8d4a4 42%, #c5a059 92%)',
+                      WebkitBackgroundClip: 'text',
+                      backgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      WebkitBoxDecorationBreak: 'clone',
+                      boxDecorationBreak: 'clone',
+                      filter: 'drop-shadow(0 0 20px rgba(197, 160, 89, 0.28))',
+                    }
+            }
+          >
+            {copy.voyageCreditsTitle}
+          </h1>
+        </motion.div>
         <p className={`mt-5 ${eyebrow}`}>
           {copy.voyageCreditsSubtitle}
         </p>
@@ -317,7 +325,7 @@ export default function VoyageCreditsOverlay({
   );
 }
 
-/** Fond plein écran — DA parchemin `.voyage-credits` (chaud) ou prolongation nuit acte III. */
+/** Fond plein écran - DA parchemin `.voyage-credits` (chaud) ou prolongation nuit acte III. */
 function CreditsDaBackground({
   fromAct3Finale,
   reduceMotion,

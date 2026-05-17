@@ -2,8 +2,8 @@ import type { Howl } from "howler";
 import { tapHowlerMasterForMeter } from "./prologueVolumeAudioLevel";
 import { primeSuspenseAudio } from "./suspenseLoadChime";
 
-/** Extrait « Zina » — test de niveau sonore du tutoriel prologue. */
-export const PROLOGUE_TUTORIAL_VOLUME_PROBE_SRC = "/zina.mp3";
+/** Extrait « Zina » - test de niveau sonore du tutoriel prologue. */
+const PROLOGUE_TUTORIAL_VOLUME_PROBE_SRC = "/zina.mp3";
 
 /** Plafond du volume test (piste musicale). */
 const GAIN_MAX = 0.58;
