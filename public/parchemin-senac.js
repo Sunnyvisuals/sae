@@ -218,6 +218,7 @@
 
   function scheduleSenacLenisWheelEndSnap() {
     if (!yearGaugeLenis) return;
+    if (senacScrollEntryMode === "cinema") return;
     window.clearTimeout(senacLenisWheelSnapTimer);
     senacLenisWheelSnapTimer = window.setTimeout(() => {
       senacLenisWheelSnapTimer = 0;
@@ -730,6 +731,16 @@
     []
   );
   let senacCinemaChainTimer = 0;
+  let senacCinemaRafId = 0;
+  /** Mode entrée actif (Cinéma / Exploration) — lu par les garde-fous Lenis globaux. */
+  let senacScrollEntryMode = /** @type {"cinema"|"explore"|null} */ (null);
+  let senacCinemaPaused = false;
+  let senacCinemaScrollGen = 0;
+  /** Waypoints cinéma figés entre deux recalculs (resize / démarrage tour). */
+  let senacCinemaWaypointsCache = /** @type {{ y: number, holdMs: number }[] | null} */ (null);
+  /** @type {(() => void) | null} */
+  let senacCinemaOnResize = null;
+  let senacCinemaLenisLerpSaved = /** @type {number | null} */ (null);
 
   function tryScheduleSenacScrollTriggerEffects() {
     if (!senacPostLenisReady) return;
@@ -754,6 +765,7 @@
           refreshSenacStellarScenes();
           recordObservatorySceneMeta();
         }
+        if (senacCinemaOnResize) senacCinemaOnResize();
       },
       { passive: true },
     );
@@ -2433,13 +2445,11 @@
     timeline.querySelectorAll(":scope > .senac-scene").forEach((node) => {
       if (!(node instanceof HTMLElement)) return;
       let kind = "card";
-      let holdMs = 950;
+      const holdMs = senacSceneCinemaHoldMs(node);
       if (node.classList.contains("senac-scene--chamber")) {
         kind = "chamber";
-        holdMs = 2600;
       } else if (node.classList.contains("senac-scene--reliquary")) {
         kind = "reliquary";
-        holdMs = 1300;
       }
 
       senacObservatoryScenes.push({ el: node, kind, holdMs, scrollY: node.offsetTop });
@@ -2448,25 +2458,111 @@
     senacObservatoryScenes.sort((a, b) => a.scrollY - b.scrollY);
   }
 
-  /** Waypoints mode Cinéma : garde, hero puis chaque station de la frise. */
+  /** holdMs cinéma selon le type de scène frise. */
+  function senacSceneCinemaHoldMs(/** @type {HTMLElement} */ node) {
+    if (node.classList.contains("senac-scene--chamber")) return 2200;
+    if (node.classList.contains("senac-scene--reliquary")) return 1100;
+    return 0;
+  }
+
+  /** Cible scroll : cadre le contenu au centre du viewport (pas le bord haut de chaque bloc). */
+  function senacCinemaTargetY(/** @type {HTMLElement} */ el) {
+    const maxY = getScrollMax();
+    const viewH = window.innerHeight || 800;
+    if (el.classList.contains("senac-act2-garde")) {
+      const slab = Math.max(el.offsetHeight, viewH);
+      const focus = el.offsetTop + slab * 0.5 - viewH * 0.5;
+      return Math.min(maxY, Math.max(0, focus));
+    }
+    const focus = el.offsetTop + el.offsetHeight * 0.38 - viewH * 0.4;
+    return Math.min(maxY, Math.max(0, focus));
+  }
+
+  function senacCinemaMinWaypointGap() {
+    return Math.max(100, (window.innerHeight || 700) * 0.14);
+  }
+
+  /**
+   * Waypoints Cinéma : garde, hero, chambres & reliquaires seulement (pas chaque carte).
+   * Défilement continu entre eux — pauses uniquement sur les temps forts.
+   */
   function getSenacCinemaWaypoints() {
-    const points = /** @type {{ y: number, holdMs: number }[]} */ ([]);
+    const raw = /** @type {{ y: number, holdMs: number }[]} */ ([]);
     const garde = document.querySelector(".senac-act2-garde");
     if (garde instanceof HTMLElement) {
-      points.push({ y: Math.max(0, garde.offsetTop), holdMs: 2000 });
+      raw.push({ y: senacCinemaTargetY(garde), holdMs: 1600 });
     }
     const hero = document.querySelector("header.hero");
     if (hero instanceof HTMLElement) {
-      points.push({ y: Math.max(0, hero.offsetTop), holdMs: 1400 });
+      raw.push({ y: senacCinemaTargetY(hero), holdMs: 1200 });
     }
-    senacObservatoryScenes.forEach((s) => {
-      points.push({ y: Math.max(0, s.scrollY), holdMs: s.holdMs });
-    });
+
+    const timeline = document.getElementById("timeline-start");
+    if (timeline) {
+      timeline.querySelectorAll(":scope > .senac-scene").forEach((node) => {
+        if (!(node instanceof HTMLElement)) return;
+        if (
+          !node.classList.contains("senac-scene--chamber") &&
+          !node.classList.contains("senac-scene--reliquary")
+        ) {
+          return;
+        }
+        const holdMs = senacSceneCinemaHoldMs(node);
+        if (holdMs < 1) return;
+        raw.push({ y: senacCinemaTargetY(node), holdMs });
+      });
+    } else {
+      senacObservatoryScenes.forEach((s) => {
+        if (s.kind !== "chamber" && s.kind !== "reliquary") return;
+        const el = s.el && s.el.isConnected ? s.el : null;
+        const y = el ? senacCinemaTargetY(el) : Math.max(0, s.scrollY);
+        raw.push({ y, holdMs: s.holdMs });
+      });
+    }
+
+    raw.sort((a, b) => a.y - b.y);
+
+    const gap = senacCinemaMinWaypointGap();
+    const points = /** @type {{ y: number, holdMs: number }[]} */ ([]);
+    let lastY = -Infinity;
+    for (const p of raw) {
+      if (p.y <= lastY + gap) continue;
+      points.push(p);
+      lastY = p.y;
+    }
+
     const maxY = getScrollMax();
     if (!points.length || points[points.length - 1].y < maxY - 24) {
-      points.push({ y: maxY, holdMs: 600 });
+      if (maxY > lastY + gap) {
+        points.push({ y: maxY, holdMs: 500 });
+      }
     }
     return points;
+  }
+
+  function refreshSenacCinemaWaypointsCache() {
+    senacCinemaWaypointsCache = getSenacCinemaWaypoints();
+  }
+
+  function getSenacCinemaWaypointsCached() {
+    if (!senacCinemaWaypointsCache) refreshSenacCinemaWaypointsCache();
+    return senacCinemaWaypointsCache;
+  }
+
+  function applyCinemaLenisProfile(/** @type {boolean} */ on) {
+    const lenis = yearGaugeLenis;
+    if (!lenis || !lenis.options) return;
+    if (on) {
+      if (senacCinemaLenisLerpSaved == null) {
+        senacCinemaLenisLerpSaved = lenis.options.lerp;
+      }
+      lenis.options.lerp = 1;
+      lenis.options.smoothWheel = false;
+    } else if (senacCinemaLenisLerpSaved != null) {
+      lenis.options.lerp = senacCinemaLenisLerpSaved;
+      lenis.options.smoothWheel = true;
+      senacCinemaLenisLerpSaved = null;
+    }
   }
 
   /**
@@ -2940,6 +3036,7 @@
     const exploreBtn= document.getElementById("smc-explore");
     const tmtCinema = document.getElementById("smt-cinema-btn");
     const tmtExplore= document.getElementById("smt-explore-btn");
+    const tmtCinemaPauseChip = document.getElementById("smt-cinema-pause-chip");
 
     if (!choiceEl || !toggleEl || !cinemaBtn || !exploreBtn || !tmtCinema || !tmtExplore) return;
 
@@ -2949,7 +3046,8 @@
     let choiceOverlayScrollLock = true;
     let retryTimer = 0;
     let cinemaExploreCalloutEl = /** @type {HTMLElement|null} */ (null);
-    const SPEED_PX_S = 44;
+    /** Vitesse du défilement auto Cinéma (px/s) — cruise RAF, régulier entre les pauses. */
+    const SPEED_PX_S = 26;
     const SCROLL_BLOCK_KEYS = new Set([
       "ArrowDown",
       "ArrowUp",
@@ -2961,10 +3059,57 @@
       "Spacebar",
     ]);
 
-    /* ── Cinéma : visite guidée station par station (observatoire) ── */
+    /* ── Cinéma : cruise RAF (vitesse constante) + pauses sur temps forts seulement ── */
     let cinemaWaypointIndex = 0;
+    /** @type {"scroll"|"hold"} */
+    let cinemaTourPhase = "scroll";
+    let cinemaHoldUntil = 0;
+    let cinemaLastFrameTs = 0;
+    let senacCinemaScrolling = false;
 
-    function startAutoScroll() {
+    function stopCinemaRaf() {
+      if (senacCinemaRafId) {
+        cancelAnimationFrame(senacCinemaRafId);
+        senacCinemaRafId = 0;
+      }
+      cinemaLastFrameTs = 0;
+      senacCinemaScrolling = false;
+    }
+
+    senacCinemaOnResize = () => {
+      if (mode !== "cinema") return;
+      refreshSenacCinemaWaypointsCache();
+      syncCinemaWaypointFromScroll();
+    };
+
+    function syncCinemaWaypointFromScroll() {
+      const lenis = yearGaugeLenis;
+      if (!lenis) return;
+      const waypoints = getSenacCinemaWaypointsCached();
+      if (!waypoints.length) {
+        cinemaWaypointIndex = 0;
+        return;
+      }
+      const scrollY = lenis.scroll;
+      let idx = 0;
+      while (idx < waypoints.length - 1 && waypoints[idx + 1].y <= scrollY + 16) {
+        idx += 1;
+      }
+      while (idx < waypoints.length && waypoints[idx].y < scrollY - 20) {
+        idx += 1;
+      }
+      cinemaWaypointIndex = Math.min(idx, waypoints.length - 1);
+    }
+
+    function haltCinemaLenisAnimation() {
+      senacCinemaScrollGen += 1;
+      const lenis = yearGaugeLenis;
+      if (lenis && typeof lenis.scrollTo === "function") {
+        lenis.scrollTo(lenis.scroll, { immediate: true, duration: 0 });
+      }
+    }
+
+    function clearCinemaTourTimers() {
       if (retryTimer) {
         window.clearTimeout(retryTimer);
         retryTimer = 0;
@@ -2973,6 +3118,110 @@
         window.clearTimeout(senacCinemaChainTimer);
         senacCinemaChainTimer = 0;
       }
+    }
+
+    function updateCinemaToggleUi() {
+      const paused = mode === "cinema" && senacCinemaPaused;
+      tmtCinema.classList.toggle("is-paused", paused);
+      document.documentElement.classList.toggle("senac-cinema-paused", paused);
+      document.body.classList.toggle("senac-cinema-paused", paused);
+      tmtCinema.setAttribute(
+        "aria-pressed",
+        mode === "cinema" && !paused ? "true" : "false",
+      );
+      const key = paused ? "smt_cinema_resume_title" : "smt_cinema_pause_title";
+      const fallback = paused ? "Reprendre le défilement Cinéma" : "Pause — défilement Cinéma";
+      const title =
+        typeof window.SENAC_T === "function" ? window.SENAC_T(key) : fallback;
+      tmtCinema.title = title || fallback;
+      if (tmtCinemaPauseChip) {
+        tmtCinemaPauseChip.hidden = !paused;
+        const chipKey = "smt_cinema_paused";
+        const chipFallback = "Pause";
+        const chipLabel =
+          typeof window.SENAC_T === "function" ? window.SENAC_T(chipKey) : chipFallback;
+        if (chipLabel) tmtCinemaPauseChip.textContent = chipLabel;
+      }
+    }
+
+    function cinemaTourFrame(/** @type {number} */ now) {
+      senacCinemaRafId = 0;
+      if (mode !== "cinema" || senacCinemaPaused) return;
+
+      const lenis = yearGaugeLenis;
+      if (!lenis || typeof lenis.scrollTo !== "function") {
+        senacCinemaRafId = requestAnimationFrame(cinemaTourFrame);
+        return;
+      }
+
+      const waypoints = getSenacCinemaWaypointsCached();
+      if (!waypoints.length || cinemaWaypointIndex >= waypoints.length) {
+        stopCinemaRaf();
+        showCinemaExploreCallout();
+        return;
+      }
+
+      const maxY = getScrollMax();
+      let curY = lenis.scroll;
+
+      /* Waypoints déjà dépassés (scroll manuel ou recalcul) : avancer sans bloquer. */
+      while (cinemaWaypointIndex < waypoints.length) {
+        const aheadY = Math.min(Math.max(0, waypoints[cinemaWaypointIndex].y), maxY);
+        if (aheadY >= curY - 12) break;
+        cinemaWaypointIndex += 1;
+        cinemaTourPhase = "scroll";
+      }
+      if (cinemaWaypointIndex >= waypoints.length) {
+        stopCinemaRaf();
+        showCinemaExploreCallout();
+        return;
+      }
+
+      const wp = waypoints[cinemaWaypointIndex];
+      const targetY = Math.min(Math.max(0, wp.y), maxY);
+      curY = lenis.scroll;
+
+      if (cinemaTourPhase === "hold") {
+        senacCinemaScrolling = false;
+        if (now < cinemaHoldUntil) {
+          senacCinemaRafId = requestAnimationFrame(cinemaTourFrame);
+          return;
+        }
+        cinemaWaypointIndex += 1;
+        cinemaTourPhase = "scroll";
+        cinemaLastFrameTs = 0;
+        senacCinemaRafId = requestAnimationFrame(cinemaTourFrame);
+        return;
+      }
+
+      const dist = targetY - curY;
+      if (dist < 5) {
+        senacCinemaScrolling = false;
+        lenis.scrollTo(targetY, { immediate: true, duration: 0 });
+        applyScrollDerivedState(targetY);
+        cinemaTourPhase = "hold";
+        cinemaHoldUntil = now + wp.holdMs;
+        senacCinemaRafId = requestAnimationFrame(cinemaTourFrame);
+        return;
+      }
+
+      const dt = cinemaLastFrameTs > 0 ? Math.min(50, now - cinemaLastFrameTs) : 16.7;
+      cinemaLastFrameTs = now;
+      const step = (SPEED_PX_S * dt) / 1000;
+      const nextY = Math.min(targetY, curY + Math.max(step, 0.5));
+      senacCinemaScrolling = true;
+      lenis.scrollTo(nextY, { immediate: true, duration: 0 });
+      applyScrollDerivedState(nextY);
+      senacCinemaRafId = requestAnimationFrame(cinemaTourFrame);
+    }
+
+    function startAutoScroll() {
+      clearCinemaTourTimers();
+      stopCinemaRaf();
+      senacCinemaPaused = false;
+      cinemaTourPhase = "scroll";
+      cinemaHoldUntil = 0;
+      updateCinemaToggleUi();
 
       const lenis = yearGaugeLenis;
       if (!lenis || typeof lenis.scrollTo !== "function") {
@@ -2980,69 +3229,48 @@
         return;
       }
 
-      const waypoints = getSenacCinemaWaypoints();
-      if (!waypoints.length) {
-        showCinemaExploreCallout();
-        return;
-      }
-
-      cinemaWaypointIndex = 0;
-      while (cinemaWaypointIndex < waypoints.length && waypoints[cinemaWaypointIndex].y < lenis.scroll - 8) {
-        cinemaWaypointIndex += 1;
-      }
-
-      function visitNextStation() {
+      requestAnimationFrame(() => {
         if (mode !== "cinema") return;
+        if (typeof lenis.resize === "function") lenis.resize();
+        if (senacAct2MotionReady) recordObservatorySceneMeta();
+        refreshSenacCinemaWaypointsCache();
+        syncCinemaWaypointFromScroll();
+        cinemaLastFrameTs = 0;
+        senacCinemaRafId = requestAnimationFrame(cinemaTourFrame);
+      });
+    }
 
-        if (cinemaWaypointIndex >= waypoints.length) {
-          showCinemaExploreCallout();
-          return;
-        }
+    function pauseCinemaTour() {
+      if (mode !== "cinema" || senacCinemaPaused) return;
+      senacCinemaPaused = true;
+      clearCinemaTourTimers();
+      stopCinemaRaf();
+      haltCinemaLenisAnimation();
+      updateCinemaToggleUi();
+    }
 
-        const wp = waypoints[cinemaWaypointIndex];
-        const curY = lenis.scroll;
-        const dist = Math.abs(wp.y - curY);
+    function resumeCinemaTour() {
+      if (mode !== "cinema" || !senacCinemaPaused) return;
+      senacCinemaPaused = false;
+      updateCinemaToggleUi();
+      syncCinemaWaypointFromScroll();
+      cinemaTourPhase = "scroll";
+      cinemaLastFrameTs = 0;
+      senacCinemaRafId = requestAnimationFrame(cinemaTourFrame);
+    }
 
-        if (dist < 6) {
-          senacCinemaChainTimer = window.setTimeout(() => {
-            senacCinemaChainTimer = 0;
-            cinemaWaypointIndex += 1;
-            visitNextStation();
-          }, wp.holdMs);
-          return;
-        }
-
-        const duration = Math.max(1.15, Math.min(5.2, dist / SPEED_PX_S));
-        lenis.scrollTo(wp.y, {
-          duration,
-          easing: (t) => t,
-          onComplete: () => {
-            if (mode !== "cinema") return;
-            senacCinemaChainTimer = window.setTimeout(() => {
-              senacCinemaChainTimer = 0;
-              cinemaWaypointIndex += 1;
-              visitNextStation();
-            }, wp.holdMs);
-          },
-        });
-      }
-
-      visitNextStation();
+    function toggleCinemaPause() {
+      if (senacCinemaPaused) resumeCinemaTour();
+      else pauseCinemaTour();
     }
 
     function stopAutoScroll() {
-      if (retryTimer) {
-        window.clearTimeout(retryTimer);
-        retryTimer = 0;
-      }
-      if (senacCinemaChainTimer) {
-        window.clearTimeout(senacCinemaChainTimer);
-        senacCinemaChainTimer = 0;
-      }
-      const lenis = yearGaugeLenis;
-      if (lenis && typeof lenis.scrollTo === "function") {
-        lenis.scrollTo(lenis.scroll, { immediate: true });
-      }
+      clearCinemaTourTimers();
+      stopCinemaRaf();
+      senacCinemaPaused = false;
+      cinemaTourPhase = "scroll";
+      haltCinemaLenisAnimation();
+      updateCinemaToggleUi();
     }
 
     /** Laisse passer clavier depuis boutons/champs interactifs uniquement */
@@ -3108,6 +3336,25 @@
     });
     window.addEventListener("keydown", onKeydownCinemaLock);
 
+    /** Molette en mode Cinéma : pause seulement pendant une pause sur image (pas en plein travel). */
+    function onWheelDuringCinema(/** @type {WheelEvent} */ e) {
+      if (choiceOverlayScrollLock || mode !== "cinema" || senacCinemaPaused) return;
+      if (senacCinemaScrolling) return;
+      if (Math.abs(e.deltaY) < 1.5) return;
+      pauseCinemaTour();
+    }
+    document.addEventListener("wheel", onWheelDuringCinema, { passive: true });
+
+    function onKeydownCinemaPause(/** @type {KeyboardEvent} */ e) {
+      if (mode !== "cinema" || choiceOverlayScrollLock || e.repeat) return;
+      if (e.key !== " " && e.key !== "Spacebar" && e.key !== "k" && e.key !== "K") return;
+      if (cinemaKeyTargetIsPassthrough(/** @type {Element} */ (e.target))) return;
+      if ((e.key === "k" || e.key === "K") && (e.ctrlKey || e.metaKey || e.altKey)) return;
+      if (e.key === " " || e.key === "Spacebar") e.preventDefault();
+      toggleCinemaPause();
+    }
+    window.addEventListener("keydown", onKeydownCinemaPause);
+
     /**
      * Appel après init Lenis ou à chaque besoin : Lenis ignore overflow:hidden tant qu'il roule au RAF :
      * on stop() tant que l'overlay bloque encore la navigation.
@@ -3140,6 +3387,7 @@
     /** Fin du cinéma : consigne + mise en avant du bouton Exploration (toggle bas-gauche). */
     function showCinemaExploreCallout() {
       if (mode !== "cinema") return;
+      pauseCinemaTour();
       hideCinemaExploreCallout();
 
       const callout = document.createElement("aside");
@@ -3172,6 +3420,7 @@
     function setMode(newMode, fromChoice, opts) {
       const wasCinema = mode === "cinema";
       mode = newMode;
+      senacScrollEntryMode = mode;
       const deferAutoScrollMs =
         opts && typeof opts.deferAutoScrollMs === "number" ? opts.deferAutoScrollMs : 0;
 
@@ -3184,6 +3433,9 @@
       tmtExplore.classList.toggle("is-active", mode === "explore");
 
       if (mode === "cinema") {
+        senacCinemaPaused = false;
+        applyCinemaLenisProfile(true);
+        updateCinemaToggleUi();
         if (deferAutoScrollMs > 0) {
           window.setTimeout(startAutoScroll, deferAutoScrollMs);
         } else {
@@ -3191,6 +3443,8 @@
         }
       } else {
         stopAutoScroll();
+        applyCinemaLenisProfile(false);
+        senacCinemaWaypointsCache = null;
       }
 
       if (mode === "explore" && wasCinema && !fromChoice) {
@@ -3573,8 +3827,16 @@
     });
 
     /* Toggle bas-gauche */
-    tmtCinema.addEventListener("click",  () => { if (mode !== "cinema")  setMode("cinema",  false); });
-    tmtExplore.addEventListener("click", () => { if (mode !== "explore") setMode("explore", false); });
+    tmtCinema.addEventListener("click", () => {
+      if (mode === "cinema") {
+        toggleCinemaPause();
+        return;
+      }
+      setMode("cinema", false);
+    });
+    tmtExplore.addEventListener("click", () => {
+      if (mode !== "explore") setMode("explore", false);
+    });
 
     /* Bloque tout de suite ; l'overlay s'affiche au prochain frame (Lenis ignore overflow:hidden tant qu'il n'est pas stoppé). */
     if (!document.documentElement.classList.contains("senac-choice-pending")) {

@@ -76,6 +76,9 @@ const LANDING_DIAMOND_ENTRANCE_DURATION_S = 0.85;
 
 const INTRO_CTA_WORDS_FR = ["Cliquer", "ou", "Entrée"] as const;
 const INTRO_CTA_WORDS_AR = ["إضغط", "أو", "إنتر"] as const;
+/** HUD volume prologue : durée visible après molette / touches. */
+const PROLOGUE_VOLUME_HUD_HOLD_MS = 1500;
+const PROLOGUE_TUTORIAL_VOLUME_HUD_HOLD_MS = 4000;
 
 type AnimatedTitleProps = {
   text?: string;
@@ -516,6 +519,9 @@ export default function Intro({
   const [isMuted, setIsMuted] = useState(false);
   /** Prologue vidéo : indicateur 0-100 affiché à la molette, puis masqué. */
   const [prologueVolumeHudVisible, setPrologueVolumeHudVisible] = useState(false);
+  /** Tutoriel volume : masque la souris avant l’apparition du HUD (évite le chevauchement). */
+  const [prologueVolumeScrollCueDismissed, setPrologueVolumeScrollCueDismissed] =
+    useState(false);
   const [prologueVideoPaused, setPrologueVideoPaused] = useState(false);
   const [prologuePlayMarkVisible, setProloguePlayMarkVisible] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -562,6 +568,8 @@ export default function Intro({
   const videoRef = useRef<HTMLVideoElement>(null);
   const volumeScrollRef = useRef(volume);
   const prologueVolumeAuraHideRef = useRef<number | null>(null);
+  const prologueVolumeHudShowRef = useRef<number | null>(null);
+  const prologueVolumeHudVisibleRef = useRef(false);
   const prologuePlayMarkHideRef = useRef<number | null>(null);
   const prologueWasPausedRef = useRef(false);
   const mutedScrollRef = useRef(isMuted);
@@ -596,15 +604,37 @@ export default function Intro({
   }, []);
 
   const pulsePrologueVolumeHud = useCallback(() => {
-    setPrologueVolumeHudVisible(true);
-    if (prologueVolumeAuraHideRef.current != null) {
-      window.clearTimeout(prologueVolumeAuraHideRef.current);
+    const holdMs =
+      prologueTutorialStep === "volume"
+        ? PROLOGUE_TUTORIAL_VOLUME_HUD_HOLD_MS
+        : PROLOGUE_VOLUME_HUD_HOLD_MS;
+    const armHide = () => {
+      if (prologueVolumeAuraHideRef.current != null) {
+        window.clearTimeout(prologueVolumeAuraHideRef.current);
+      }
+      prologueVolumeAuraHideRef.current = window.setTimeout(() => {
+        setPrologueVolumeHudVisible(false);
+        prologueVolumeHudVisibleRef.current = false;
+        prologueVolumeAuraHideRef.current = null;
+      }, holdMs);
+    };
+
+    if (prologueVolumeHudVisibleRef.current) {
+      armHide();
+      return;
     }
-    prologueVolumeAuraHideRef.current = window.setTimeout(() => {
-      setPrologueVolumeHudVisible(false);
-      prologueVolumeAuraHideRef.current = null;
-    }, 1500);
-  }, []);
+
+    if (prologueVolumeHudShowRef.current != null) {
+      window.clearTimeout(prologueVolumeHudShowRef.current);
+    }
+    /** Laisse la souris disparaître avant le pictogramme son + chiffre. */
+    prologueVolumeHudShowRef.current = window.setTimeout(() => {
+      prologueVolumeHudShowRef.current = null;
+      setPrologueVolumeHudVisible(true);
+      prologueVolumeHudVisibleRef.current = true;
+      armHide();
+    }, 130);
+  }, [prologueTutorialStep]);
 
   const shouldOfferFullscreenNow =
     offerFullscreenOnArrival &&
@@ -1216,6 +1246,12 @@ export default function Intro({
   useEffect(() => {
     if (prologueTutorialStep !== "volume") {
       setPrologueVolumeHudVisible(false);
+      prologueVolumeHudVisibleRef.current = false;
+      setPrologueVolumeScrollCueDismissed(false);
+      if (prologueVolumeHudShowRef.current != null) {
+        window.clearTimeout(prologueVolumeHudShowRef.current);
+        prologueVolumeHudShowRef.current = null;
+      }
       return;
     }
     volumeScrollRef.current = 0;
@@ -1223,6 +1259,8 @@ export default function Intro({
     setVolume(0);
     setIsMuted(true);
     setPrologueVolumeHudVisible(false);
+    prologueVolumeHudVisibleRef.current = false;
+    setPrologueVolumeScrollCueDismissed(false);
     const onWheel = (e: WheelEvent) => {
       const t = e.target;
       if (
@@ -1233,6 +1271,7 @@ export default function Intro({
         return;
       }
       e.preventDefault();
+      setPrologueVolumeScrollCueDismissed(true);
       const currentPct = Math.round(
         (mutedScrollRef.current ? 0 : volumeScrollRef.current) * 100
       );
@@ -1252,6 +1291,7 @@ export default function Intro({
       if (dir) {
         if (shouldIgnoreVolumeKeyboardTarget(e.target)) return;
         e.preventDefault();
+        setPrologueVolumeScrollCueDismissed(true);
         const { volume: v, muted: m } = applyVolumeKeyStep(
           dir,
           mutedScrollRef.current ? 0 : volumeScrollRef.current,
@@ -1281,6 +1321,10 @@ export default function Intro({
     return () => {
       window.removeEventListener("wheel", onWheel, { capture: true });
       window.removeEventListener("keydown", onKey, true);
+      if (prologueVolumeHudShowRef.current != null) {
+        window.clearTimeout(prologueVolumeHudShowRef.current);
+        prologueVolumeHudShowRef.current = null;
+      }
     };
   }, [prologueTutorialStep, completePrologueVolumeTutorial, pulsePrologueVolumeHud]);
 
@@ -1729,9 +1773,6 @@ export default function Intro({
                     style={{ background: "linear-gradient(to top, rgba(197,160,89,0.18), transparent)" }}
                   />
                   {/* Right border separator (hidden on mobile - center divider takes care of it) */}
-                  <div className="absolute right-0 top-[15%] bottom-[15%] w-px hidden sm:block"
-                    style={{ background: "linear-gradient(to bottom, transparent, rgba(197,160,89,0.32), transparent)" }}
-                  />
 
                   <div className="relative z-10 flex flex-col items-center gap-6 px-8">
                     <motion.span
@@ -1762,8 +1803,13 @@ export default function Intro({
                 </motion.button>
 
                 {/* ── CENTRE ── */}
-                <div className="pointer-events-none absolute inset-0 flex items-center justify-center sm:static sm:relative sm:inset-auto sm:w-0 sm:flex sm:items-center sm:justify-center">
-                  <div className="relative flex flex-col items-center gap-2 sm:absolute sm:left-1/2 sm:-translate-x-1/2 z-10">
+                <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center sm:static sm:relative sm:inset-auto sm:w-0 sm:flex sm:items-center sm:justify-center">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.92 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.42, duration: 1, ease: [0.22, 1, 0.36, 1] }}
+                    className="relative flex flex-col items-center gap-2 sm:absolute sm:left-1/2 sm:-translate-x-1/2"
+                  >
                     <motion.div
                       initial={{ scaleY: 0, opacity: 0 }}
                       animate={{ scaleY: 1, opacity: 1 }}
@@ -1775,7 +1821,8 @@ export default function Intro({
                       initial={{ opacity: 0, scale: 0.7 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: 0.5, duration: 1, ease: [0.22, 1, 0.36, 1] }}
-                      className="text-[#c5a059]/72 text-xl drop-shadow-[0_0_14px_rgba(0,0,0,0.8)] select-none"
+                      className="relative select-none text-lg leading-none text-[#c5a059]/70 drop-shadow-[0_0_12px_rgba(197,160,89,0.22)]"
+                      aria-hidden
                     >
                       ✦
                     </motion.span>
@@ -1791,7 +1838,7 @@ export default function Intro({
                       className="sm:hidden h-px w-24 my-1"
                       style={{ background: "linear-gradient(90deg, transparent, rgba(197,160,89,0.48), transparent)" }}
                     />
-                  </div>
+                  </motion.div>
                 </div>
 
                 {/* ── ARABIC ── */}
@@ -1821,9 +1868,6 @@ export default function Intro({
                     style={{ background: "linear-gradient(to top, rgba(197,160,89,0.18), transparent)" }}
                   />
                   {/* Left border separator */}
-                  <div className="absolute left-0 top-[15%] bottom-[15%] w-px hidden sm:block"
-                    style={{ background: "linear-gradient(to bottom, transparent, rgba(197,160,89,0.32), transparent)" }}
-                  />
 
                   <div className="relative z-10 flex flex-col items-center gap-6 px-8">
                     <motion.span
@@ -2271,6 +2315,7 @@ export default function Intro({
                   step={prologueTutorialStep}
                   volume01={isMuted ? 0 : volume}
                   volumeHudVisible={prologueVolumeHudVisible}
+                  volumeScrollCueDismissed={prologueVolumeScrollCueDismissed}
                   prefersReducedMotion={prefersReducedMotion ?? false}
                   isArabic={isArabic}
                   copy={copy}

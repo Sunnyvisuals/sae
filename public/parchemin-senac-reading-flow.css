@@ -29,14 +29,17 @@ body.senac-reading-flow {
   --senac-ghost-date-right-pad: clamp(2.5rem, 9vw, 6.5rem);
   /** Décalage horizontal des dates fantômes (cartes --left, colonne libre à droite). */
   --senac-ghost-left-nudge: -1.85rem;
+  --senac-ghost-left-nudge-1940: -6.35rem;
+  --senac-ghost-left-nudge-1950: -6.35rem;
   --senac-ghost-left-nudge-word: -3.5rem;
-  --senac-ghost-left-nudge-soleils: -5rem;
+  --senac-ghost-left-nudge-soleils: -8.25rem;
+  --senac-ghost-soleils-nudge-y: 1.75rem;
   --senac-ghost-left-nudge-corps: -4.35rem;
   --senac-ghost-left-nudge-legs: -4.35rem;
   /** Cartes --right : glyphe dans la colonne libre à gauche. */
   --senac-ghost-right-nudge: -1.35rem;
   --senac-ghost-right-nudge-word: -2.1rem;
-  --senac-ghost-right-nudge-radio: -2.85rem;
+  --senac-ghost-right-nudge-radio: -6.35rem;
 
   /* -- Espacement typo -- */
   --senac-text-stack: 0.65rem;

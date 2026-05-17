@@ -18,7 +18,7 @@ import ChapterAct12Bridge from "./components/ChapterAct12Bridge";
 import ChapterAct23Bridge from "./components/ChapterAct23Bridge";
 const AlgeriaMap = lazy(() => import("./components/Immersive/AlgeriaMap"));
 const Act2 = lazy(() => import("./components/Immersive/Act2"));
-const Act3Writing = lazy(() => import("./components/Immersive/Act3Writing"));
+const Act3Constellation = lazy(() => import("./components/Immersive/Act3Constellation"));
 
 const loadOrientationPanelMod = () => import("./components/ui/OrientationPanel");
 const OrientationPanel = lazy(() =>
@@ -90,6 +90,7 @@ import {
   SESSION_RESUME_ACT2,
 } from "./lib/appRoutes";
 import { ACT12_POST_MAP_COMPLETE_DELAY_MS } from "./lib/transitionBridgeReveal";
+import { clearConstellationVote } from "./lib/act3ConstellationVote";
 
 /** Page statique parchemin (ch. II / III) ; respecte `import.meta.env.BASE_URL` (d?ploiement sous sous-chemin). */
 function parcheminSenacHref(hash: string, options?: { previewCredits?: boolean }) {
@@ -216,11 +217,16 @@ export default function App() {
   const [introVideoOpen, setIntroVideoOpen] = useState(false);
   /** Volet langue / curseur (Intro) : curseur custom prioritaire au-dessus des overlays. */
   const [introGateOpen, setIntroGateOpen] = useState(false);
+  const [introCursorSuppressed, setIntroCursorSuppressed] = useState(false);
+
+  useEffect(() => {
+    if (phase !== "intro") setIntroCursorSuppressed(false);
+  }, [phase]);
   const [introVideoNonce, setIntroVideoNonce] = useState(0);
   /** Pont vid?o plein ?cran avant l?acte III (depuis l?acte II). */
   const [act23BridgeOpen, setAct23BridgeOpen] = useState(false);
   const act23ResumeRef = useRef(true);
-  const [act3KeywordGateOpen, setAct3KeywordGateOpen] = useState(false);
+  const act3KeywordGateOpen = false;
   const [chapterToast, setChapterToast] = useState(false);
   const [chapterDaTransition, setChapterDaTransition] = useState(false);
   /** Rï¿½vï¿½lation du toast chapitre I?II comme le volet langue (voir `transitionBridgeRevealFromTimeRatio`). */
@@ -272,6 +278,7 @@ export default function App() {
   const [act1PrefaceDevPending, setAct1PrefaceDevPending] = useState(false);
   /** Dev : ms en plus avant le pont Iâ†’II (voir panneau raccourcis sur lâ€™acte I). */
   const [devAct12ExtraPrefaceMs, setDevAct12ExtraPrefaceMs] = useState(0);
+  const [act3ParticipativeEpoch, setAct3ParticipativeEpoch] = useState(0);
   const devAct12ExtraPrefaceMsRef = useRef(0);
   devAct12ExtraPrefaceMsRef.current = showDevChapterJumps ? devAct12ExtraPrefaceMs : 0;
   const setCursorAmbient = useCursorStore((s) => s.setAmbient);
@@ -292,8 +299,9 @@ export default function App() {
   /** Overlay choix CinÃ©ma / Exploration (iframe) : masque le bouton menu du shell. */
   const [act2ScrollModeChoiceOpen, setAct2ScrollModeChoiceOpen] = useState(false);
 
+  /** Acte III : chrome doré (constellation) ; minuit réservé au parchemin acte II. */
   const act2AmbientMidnight =
-    (phase === "act2" && (act2ParcheminTone ?? "solar") === "midnight") || phase === "act3";
+    phase === "act2" && (act2ParcheminTone ?? "solar") === "midnight";
 
   /** Hydrate SplashCursor aprï¿½s 2 cadres paint : ï¿½vite de rivaliser avec FCP/LCP (rendu inchangï¿½ par la suite). */
   const [splashWebglReady, setSplashWebglReady] = useState(false);
@@ -316,8 +324,8 @@ export default function App() {
   const prefersReducedMotion = useReducedMotion();
   const introVideoPlaying = phase === "intro" && videoStarted;
 
-  /** Palettes du voile langue - align?es acte II minuit sinon dor? d?sert */
-  const languageMorphMidnight = (phase === "act2" && act2AmbientMidnight) || phase === "act3";
+  /** Palettes du voile langue - alignées acte II minuit sinon doré désert */
+  const languageMorphMidnight = phase === "act2" && act2AmbientMidnight;
 
   phaseRef.current = phase;
 
@@ -344,6 +352,14 @@ export default function App() {
     const html = document.documentElement;
     html.classList.remove("al-rihla-cursor-idle", "al-rihla-cursor-basic");
   }, [phase]);
+
+  /** Acte I carte : masquer le pointeur système (main blanche) — seul le portail React reste visible. */
+  useEffect(() => {
+    const html = document.documentElement;
+    const onMap = finePointer && phase === "act1";
+    html.classList.toggle("al-rihla-cursor-map", onMap);
+    return () => html.classList.remove("al-rihla-cursor-map");
+  }, [finePointer, phase]);
 
   /** Historique navigateur : une entr?e par transition de phase (sans changer l?URL). */
   const historyPhaseBootRef = useRef(false);
@@ -433,8 +449,11 @@ export default function App() {
 
     const base = import.meta.env.BASE_URL || "/";
     const prefix = base.endsWith("/") ? base : `${base}/`;
+    const favQs = "?v=202";
     const iconHref =
-      theme === "midnight" ? `${prefix}favicon-48-night.png` : `${prefix}favicon-48.png`;
+      theme === "midnight"
+        ? `${prefix}favicon-48-night.png${favQs}`
+        : `${prefix}favicon-48.png${favQs}`;
     let link = document.querySelector<HTMLLinkElement>("#app-favicon");
     if (!link) {
       link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
@@ -810,6 +829,10 @@ export default function App() {
     [goEnterActIII, prefersReducedMotion]
   );
 
+  const handleIntroVideoStart = useCallback(() => {
+    setVideoStarted(true);
+  }, []);
+
   const exitAct3ToCredits = useCallback(() => {
     act2VoyageCreditsOpenRef.current = true;
     setAct2VoyageCreditsOpen(true);
@@ -820,6 +843,14 @@ export default function App() {
     act2VoyageCreditsOpenRef.current = false;
     setAct2VoyageCreditsOpen(false);
     setCreditsSkipScroll(false);
+  }, []);
+
+  const resetParticipativeMode = useCallback(() => {
+    clearConstellationVote();
+    act2VoyageCreditsOpenRef.current = false;
+    setAct2VoyageCreditsOpen(false);
+    setCreditsSkipScroll(false);
+    setAct3ParticipativeEpoch((n) => n + 1);
   }, []);
 
   /** Panneau dev : générique SPA (VoyageCreditsOverlay), pas le parchemin ?previewCredits=1. */
@@ -848,6 +879,7 @@ export default function App() {
         beginActIIIEntrance(false);
       },
       previewCredits: openDevVoyageCredits,
+      resetParticipativeMode,
       devAct12AddPrefaceMs: (deltaMs: number) => {
         setDevAct12ExtraPrefaceMs((n) => Math.max(0, n + deltaMs));
       },
@@ -863,6 +895,7 @@ export default function App() {
     devAct12ExtraPrefaceMs,
     beginActIIIEntrance,
     openDevVoyageCredits,
+    resetParticipativeMode,
     launchAct12Bridge,
     act1PrefaceDevPending,
     phase,
@@ -980,7 +1013,7 @@ export default function App() {
   /** Acte I carte : Lenis sans lissage molette. Acte II : scroll dans l’iframe uniquement (pas de double Lenis). */
   const lenisOptions = useMemo(
     () =>
-      phase === "act2"
+      phase === "act2" || phase === "act3"
         ? { lerp: 1, duration: 0.01, smoothWheel: false, syncTouch: false }
         : phase === "act1" || act23BridgeOpen
           ? { lerp: 0.12, duration: 1.2, smoothWheel: false }
@@ -1479,9 +1512,8 @@ export default function App() {
                         phase={phase}
                         revelationCount={revelationCount}
                         parcoursRailMidnight={
-                          phase === "act2"
-                            ? (act2ParcheminTone ?? "solar") === "midnight"
-                            : phase === "act3"
+                          phase === "act2" &&
+                          (act2ParcheminTone ?? "solar") === "midnight"
                         }
                         act2VoyageCreditsOpen={
                           act2VoyageCreditsOpen && (phase === "act2" || phase === "act3")
@@ -1653,7 +1685,7 @@ export default function App() {
               expanded={parcoursOpen}
               onExpandedChange={setParcoursOpen}
               parcoursRailMidnight={
-                phase === "act2" ? (act2ParcheminTone ?? "solar") === "midnight" : phase === "act3"
+                phase === "act2" && (act2ParcheminTone ?? "solar") === "midnight"
               }
               act2VoyageCreditsOpen={
                 act2VoyageCreditsOpen && (phase === "act2" || phase === "act3")
@@ -1711,8 +1743,9 @@ export default function App() {
               <Intro
                 onComplete={() => setPhase("act1")}
                 isExploring={journeyReplayUnlocked}
-                onVideoStart={() => setVideoStarted(true)}
+                onVideoStart={handleIntroVideoStart}
                 onIntroGateOpenChange={setIntroGateOpen}
+                onIntroCursorSuppressChange={setIntroCursorSuppressed}
                 devChapterJumps={devChapterJumpsProps}
               />
             </motion.div>
@@ -1801,8 +1834,23 @@ export default function App() {
             key="act3"
             className="fixed inset-0 z-[25] min-h-0 overflow-hidden"
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.9, ease: "easeInOut" }}
+            animate={{
+              opacity:
+                act2VoyageCreditsOpen && phase === "act3" ? 0 : 1,
+            }}
+            transition={{
+              duration:
+                prefersReducedMotion === true
+                  ? 0.28
+                  : act2VoyageCreditsOpen
+                    ? 2.85
+                    : 0.9,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            style={{
+              pointerEvents:
+                act2VoyageCreditsOpen && phase === "act3" ? "none" : undefined,
+            }}
           >
             <Suspense
               fallback={
@@ -1813,9 +1861,9 @@ export default function App() {
                 />
               }
             >
-              <Act3Writing
+              <Act3Constellation
+                key={`act3-participative-${act3ParticipativeEpoch}`}
                 onContinueToCredits={exitAct3ToCredits}
-                onKeywordGateChange={setAct3KeywordGateOpen}
               />
             </Suspense>
           </motion.div>
@@ -1856,12 +1904,12 @@ export default function App() {
               }
               SIM_RESOLUTION={phase === "act1" || phase === "act2" ? 112 : 160}
               DYE_RESOLUTION={phase === "act1" ? 448 : phase === "act2" ? 640 : 720}
-              DENSITY_DISSIPATION={phase === "act1" ? 12 : 10}
-              VELOCITY_DISSIPATION={5}
+              DENSITY_DISSIPATION={phase === "act1" ? 12 : phase === "act3" ? 14 : 10}
+              VELOCITY_DISSIPATION={phase === "act3" ? 7.5 : 5}
               PRESSURE={0.1}
-              CURL={10}
-              SPLAT_RADIUS={0.05}
-              SPLAT_FORCE={phase === "act1" ? 9000 : 12000}
+              CURL={phase === "act3" ? 8 : 10}
+              SPLAT_RADIUS={phase === "act3" ? 0.038 : 0.05}
+              SPLAT_FORCE={phase === "act1" ? 9000 : phase === "act3" ? 7800 : 12000}
               COLOR_UPDATE_SPEED={10}
               iframeScrollRatio={phase === "act2" ? act2ScrollFillRatio : undefined}
             />
@@ -1873,7 +1921,11 @@ export default function App() {
         open={
           act2VoyageCreditsOpen && (phase === "act2" || phase === "act3")
         }
-        midnight={(act2ParcheminTone ?? "solar") === "midnight"}
+        midnight={
+          phase === "act3"
+            ? false
+            : (act2ParcheminTone ?? "solar") === "midnight"
+        }
         skipScrollAnimation={creditsSkipScroll}
         fromAct3Finale={phase === "act3"}
         onClose={restartExperience}
@@ -1901,6 +1953,8 @@ export default function App() {
       {finePointer && (
         <CustomCursor
           iframeRelay={phase === "act2"}
+          tightFollow={phase === "act3"}
+          forceHidden={phase === "intro" && introCursorSuppressed}
           overlayOpen={
             systemMenuOpen ||
             introVideoOpen ||

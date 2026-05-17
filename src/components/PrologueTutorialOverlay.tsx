@@ -165,12 +165,15 @@ function TutorialVolumeScrollCue({
   prefersReducedMotion,
   enterDelay = 0,
   enterDuration = 0.28,
+  instantExit = false,
 }: {
   visible: boolean;
   ariaLabel: string;
   prefersReducedMotion: boolean;
   enterDelay?: number;
   enterDuration?: number;
+  /** Dès que le volume bouge : pas de fondu sortie (même slot que le HUD). */
+  instantExit?: boolean;
 }) {
   return (
     <AnimatePresence mode="wait">
@@ -182,8 +185,12 @@ function TutorialVolumeScrollCue({
           aria-label={ariaLabel}
           initial={{ opacity: 0, y: 12, filter: "blur(5px)" }}
           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          exit={{ opacity: 0, y: 6, filter: "blur(3px)" }}
-          transition={{ duration: enterDuration, delay: enterDelay, ease: STEP_EASE }}
+          exit={{ opacity: 0, y: instantExit ? -4 : 6, filter: instantExit ? "blur(0px)" : "blur(3px)" }}
+          transition={{
+            duration: instantExit ? 0.07 : enterDuration,
+            delay: 0,
+            ease: STEP_EASE,
+          }}
           className={`${PROLOGUE_VOLUME_HUD_POSITION} z-[5]`}
         >
           <TutorialVolumeScrollMouse prefersReducedMotion={prefersReducedMotion} />
@@ -199,6 +206,8 @@ type Props = {
   step: PrologueTutorialStep;
   volume01: number;
   volumeHudVisible?: boolean;
+  /** Molette / clavier : masquer la souris avant le HUD volume. */
+  volumeScrollCueDismissed?: boolean;
   prefersReducedMotion: boolean;
   isArabic: boolean;
   copy: Copy;
@@ -500,6 +509,7 @@ export default function PrologueTutorialOverlay({
   step,
   volume01,
   volumeHudVisible = false,
+  volumeScrollCueDismissed = false,
   prefersReducedMotion,
   isArabic,
   copy,
@@ -553,7 +563,11 @@ export default function PrologueTutorialOverlay({
   }, [step, markFullscreenTested, revealFsCorner]);
 
   const canAckSkip = !fullscreenSupported || fullscreenTested;
-  const showVolumeScrollCue = step === "volume" && volumePct <= 0;
+  const showVolumeScrollCue =
+    step === "volume" &&
+    volumePct <= 0 &&
+    !volumeHudVisible &&
+    !volumeScrollCueDismissed;
   const stepIndex = step === "skip" ? 1 : 2;
   const headerSettledRef = useRef(false);
   if (step === "volume") headerSettledRef.current = true;
@@ -769,7 +783,7 @@ export default function PrologueTutorialOverlay({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.28, ease: STEP_EASE }}
+                  transition={{ duration: 0.16, ease: STEP_EASE }}
                 >
                   <PrologueVolumeFluid
                     visible
@@ -810,6 +824,9 @@ export default function PrologueTutorialOverlay({
                 prefersReducedMotion={prefersReducedMotion}
                 enterDelay={scrollCueEnterDelay}
                 enterDuration={scrollCueEnterDuration}
+                instantExit={
+                  volumeScrollCueDismissed || volumeHudVisible || volumePct > 0
+                }
               />
             </>
           ) : null}

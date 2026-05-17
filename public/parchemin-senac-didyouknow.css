@@ -7,6 +7,8 @@ body.senac-reading-flow .chapter-two {
   width: 100%;
   max-width: none;
   margin-inline: 0;
+  /* La garde Acte II occupe 100dvh : pas de padding-top ici (évite le décalage vertical). */
+  padding-top: 0;
   padding-inline: max(var(--senac-fact-pad), env(safe-area-inset-left, 0px))
     max(var(--senac-fact-pad), env(safe-area-inset-right, 0px));
 }
@@ -94,12 +96,12 @@ html:not([dir="rtl"])
   body.senac-reading-flow
   .senac-scene--card.story-card--right
   .date-ghost[data-i18n="ghost_radio"] {
-  transform: translate3d(var(--senac-ghost-right-nudge-radio, -2.85rem), 0, 0);
+  transform: translate3d(var(--senac-ghost-right-nudge-radio, -6.35rem), 0, 0);
 }
 
 html:not([dir="rtl"]) body.senac-reading-flow .senac-scene--active.story-card--right .date-ghost[data-i18n="ghost_radio"],
 html:not([dir="rtl"]) body.senac-reading-flow .story-card--right.is-visible .date-ghost[data-i18n="ghost_radio"] {
-  transform: translate3d(var(--senac-ghost-right-nudge-radio, -2.85rem), 0, 0) scale(1.02);
+  transform: translate3d(var(--senac-ghost-right-nudge-radio, -6.35rem), 0, 0) scale(1.02);
 }
 
 html:not([dir="rtl"]) body.senac-reading-flow .senac-scene--active.story-card--left .date-ghost,
@@ -131,12 +133,21 @@ html:not([dir="rtl"])
   body.senac-reading-flow
   .senac-scene--card.story-card--left
   .date-ghost[data-i18n="ghost_soleils"] {
-  transform: translate3d(var(--senac-ghost-left-nudge-soleils, -5rem), 0, 0);
+  transform: translate3d(
+    var(--senac-ghost-left-nudge-soleils, -8.25rem),
+    var(--senac-ghost-soleils-nudge-y, 1.75rem),
+    0
+  );
 }
 
 html:not([dir="rtl"]) body.senac-reading-flow .senac-scene--active.story-card--left .date-ghost[data-i18n="ghost_soleils"],
 html:not([dir="rtl"]) body.senac-reading-flow .story-card--left.is-visible .date-ghost[data-i18n="ghost_soleils"] {
-  transform: translate3d(var(--senac-ghost-left-nudge-soleils, -5rem), 0, 0) scale(1.02);
+  transform: translate3d(
+    var(--senac-ghost-left-nudge-soleils, -8.25rem),
+    var(--senac-ghost-soleils-nudge-y, 1.75rem),
+    0
+  )
+    scale(1.02);
 }
 
 html:not([dir="rtl"])
@@ -260,6 +271,24 @@ html:not([dir="rtl"]) body.senac-reading-flow .senac-scene--card.story-card--lef
   padding-inline-end: clamp(3.25rem, 11vw, 7.5rem);
   text-align: center;
   transform: translate3d(var(--senac-ghost-left-nudge, -1.85rem), 0, 0);
+}
+
+html:not([dir="rtl"]) body.senac-reading-flow .senac-scene--card.story-card--left .date-ghost--1940 {
+  transform: translate3d(var(--senac-ghost-left-nudge-1940, -6.35rem), 0, 0);
+}
+
+html:not([dir="rtl"]) body.senac-reading-flow .senac-scene--active.story-card--left .date-ghost--1940,
+html:not([dir="rtl"]) body.senac-reading-flow .story-card--left.is-visible .date-ghost--1940 {
+  transform: translate3d(var(--senac-ghost-left-nudge-1940, -6.35rem), 0, 0) scale(1.02);
+}
+
+html:not([dir="rtl"]) body.senac-reading-flow .senac-scene--card.story-card--left .date-ghost--1950 {
+  transform: translate3d(var(--senac-ghost-left-nudge-1950, -6.35rem), 0, 0);
+}
+
+html:not([dir="rtl"]) body.senac-reading-flow .senac-scene--active.story-card--left .date-ghost--1950,
+html:not([dir="rtl"]) body.senac-reading-flow .story-card--left.is-visible .date-ghost--1950 {
+  transform: translate3d(var(--senac-ghost-left-nudge-1950, -6.35rem), 0, 0) scale(1.02);
 }
 
 html:not([dir="rtl"]) body.senac-reading-flow .senac-scene--card.story-card--left .date-ghost--word {

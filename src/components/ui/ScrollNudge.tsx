@@ -109,14 +109,14 @@ export default function ScrollNudge({ act2 = false, iframeScrollRatio }: ScrollN
           exit={{ opacity: 0, y: 6 }}
           transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
         >
-          {/* Chevron vers le haut - invite au zoom sur la carte. */}
+          {/* Acte I : chevron haut (zoom carte). Acte II : chevron bas (défilement parchemin). */}
           <motion.svg
             width="44"
             height="44"
             viewBox="0 0 44 44"
             fill="none"
             aria-hidden
-            animate={{ y: [0, -5, 0] }}
+            animate={{ y: act2Mode ? [0, 5, 0] : [0, -5, 0] }}
             transition={{ duration: 2.8, repeat: Infinity, ease: [0.45, 0, 0.55, 1] }}
           >
             <motion.path
@@ -125,13 +125,13 @@ export default function ScrollNudge({ act2 = false, iframeScrollRatio }: ScrollN
               fill="none"
               stroke="rgba(197, 160, 89, 0.68)"
               strokeWidth="1.35"
-              d="M14 26.5 L22 18.5 L30 26.5"
+              d={act2Mode ? 'M14 17.5 L22 25 L30 17.5' : 'M14 26.5 L22 18.5 L30 26.5'}
               animate={{ opacity: [0.55, 0.95, 0.55] }}
               transition={{ duration: 2.2, repeat: Infinity, ease: [0.42, 0, 0.58, 1] }}
             />
           </motion.svg>
 
-          <p className="da-hint-micro">{copy.zoomNudge}</p>
+          <p className="da-hint-micro">{act2Mode ? copy.scrollNudge : copy.zoomNudge}</p>
         </motion.div>
       )}
     </AnimatePresence>

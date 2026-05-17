@@ -6,7 +6,7 @@ import ShootingStars from "../ShootingStars";
 import type { AppLanguage } from "../../stores/languageStore";
 import {
   ACT3_FINALE_HINT_DELAY_MS,
-  finaleAnswerMatches,
+  finaleCompletionReady,
   loadAct3FinaleGate,
   type Act3FinaleGateLocale,
 } from "../../lib/act3FinaleGate";
@@ -91,7 +91,7 @@ export default function Act3FinaleKeywordGate({
 
   const trySubmit = useCallback(() => {
     if (!cfg || exiting || solvedOnce.current) return;
-    if (finaleAnswerMatches(value, cfg.answers, arabicUi)) {
+    if (finaleCompletionReady(value, cfg.minLength)) {
       solvedOnce.current = true;
       setWrong(false);
       if (reduceMotion) {
@@ -103,19 +103,8 @@ export default function Act3FinaleKeywordGate({
       return;
     }
     setWrong(true);
-    inputRef.current?.select();
-  }, [arabicUi, cfg, exiting, onSolved, reduceMotion, value]);
-
-  /** Bon mot : validation sans Entrée (court délai pour afficher le dernier caractère). */
-  useEffect(() => {
-    if (!cfg || exiting) return;
-    const raw = value.trim();
-    if (!raw || !finaleAnswerMatches(raw, cfg.answers, arabicUi)) return;
-    const t = window.setTimeout(() => {
-      trySubmit();
-    }, 100);
-    return () => window.clearTimeout(t);
-  }, [arabicUi, cfg, exiting, trySubmit, value]);
+    inputRef.current?.focus();
+  }, [cfg, exiting, onSolved, reduceMotion, value]);
 
   useEffect(() => {
     if (!exiting || reduceMotion) return;
@@ -128,20 +117,15 @@ export default function Act3FinaleKeywordGate({
     return () => window.clearTimeout(t);
   }, [exiting, onSolved, reduceMotion]);
 
-  /** Lueur du vers (répétée sur chaque morceau : `text-shadow` n’est pas hérité). */
-  const verseGlowStrong =
-    "0 0 52px rgba(197,160,89,0.58), 0 0 104px rgba(197,160,89,0.34), 0 0 168px rgba(139,213,255,0.28), 0 0 8px rgba(255,250,235,0.5), 0 0 2px rgba(232,212,164,0.68), 0 4px 34px rgba(0,0,0,0.92)";
-  const verseGlowCalm =
-    "0 2px 22px rgba(0,0,0,0.84), 0 0 20px rgba(197,160,89,0.1)";
-
-  const verseTypography =
-    "mx-auto max-w-[min(40rem,92vw)] text-center text-balance font-serif text-[clamp(1.35rem,2.6vw,1.82rem)] leading-[1.8] text-solar-gold/88 " +
-    (arabicUi ? "font-arabic-ui not-italic" : "font-bahlull italic");
-
-  /** Vers du formulaire : pas de `text-balance` sur le `<p>` pour garder exactement 2 blocs-lignes. */
-  const verseFormTypography =
-    "mx-auto max-w-[min(40rem,92vw)] text-center font-serif text-[clamp(1.35rem,2.6vw,1.82rem)] leading-[1.8] text-solar-gold/88 " +
-    (arabicUi ? "font-arabic-ui not-italic" : "font-bahlull italic");
+  const curtainClass = arabicUi
+    ? "da-curtain-ar text-center"
+    : "da-curtain-fr text-center sm:tracking-[0.38em]";
+  const bodyClass = arabicUi
+    ? "da-act2-body-ar mx-auto max-w-[min(36ch,92vw)] text-center text-pretty"
+    : "da-act2-body mx-auto max-w-[min(34ch,92vw)] text-center text-pretty";
+  const inscriptionClass =
+    (arabicUi ? "da-act2-body-ar " : "da-act2-body ") +
+    "da-finale-inscription [field-sizing:content]";
 
   const verseLineEase = [0.22, 1, 0.36, 1] as const;
   const verseLineIn = reduceMotion
@@ -278,8 +262,7 @@ export default function Act3FinaleKeywordGate({
           {!cfg ? (
             <motion.p
               id="act3-finale-verse"
-              className={verseTypography + " opacity-45"}
-              style={{ textShadow: verseGlowStrong }}
+              className={curtainClass + " opacity-45"}
               aria-live="polite"
               initial={reduceMotion ? false : { opacity: 0, y: 8 }}
               animate={{ opacity: 0.45, y: 0 }}
@@ -293,18 +276,52 @@ export default function Act3FinaleKeywordGate({
                 e.preventDefault();
                 trySubmit();
               }}
-              className={"w-full" + (exiting ? " pointer-events-none" : "")}
+              className={"mx-auto w-full max-w-[min(30rem,92vw)]" + (exiting ? " pointer-events-none" : "")}
               dir={arabicUi ? "rtl" : "ltr"}
             >
-              <p id="act3-finale-verse" className={verseFormTypography}>
-                <motion.span
-                  className="block text-pretty"
-                  style={{ textShadow: verseGlowStrong }}
-                  initial={verseLineIn}
-                  animate={verseLineAnim}
-                  transition={verseLineTransition(0)}
-                >
-                  <span style={{ textShadow: verseGlowStrong }}>{cfg.before}</span>{" "}
+              <motion.div
+                className="mb-8 flex items-center gap-3 sm:gap-4"
+                aria-hidden
+                initial={verseLineIn}
+                animate={verseLineAnim}
+                transition={verseLineTransition(0)}
+              >
+                <span className="h-px flex-1 bg-gradient-to-r from-transparent via-solar-gold/35 to-transparent" />
+                <span className="h-[5px] w-[5px] shrink-0 rotate-45 border border-solar-gold/45 bg-black/40 shadow-[0_0_12px_rgba(197,160,89,0.2)]" />
+                <span className="h-px flex-1 bg-gradient-to-r from-transparent via-solar-gold/35 to-transparent" />
+              </motion.div>
+
+              <motion.p
+                className={curtainClass}
+                initial={verseLineIn}
+                animate={verseLineAnim}
+                transition={verseLineTransition(0.08)}
+              >
+                {cfg.kicker}
+              </motion.p>
+
+              <motion.p
+                className={(arabicUi ? "da-eyebrow-ar" : "da-eyebrow") + " mx-auto mt-5 max-w-[28ch] text-center opacity-80"}
+                initial={verseLineIn}
+                animate={verseLineAnim}
+                transition={verseLineTransition(0.16)}
+              >
+                {cfg.eyebrow}
+              </motion.p>
+
+              <motion.div
+                id="act3-finale-verse"
+                className="da-glass-moon relative mt-10 px-5 py-7 sm:mt-12 sm:px-8 sm:py-9"
+                initial={verseLineIn}
+                animate={verseLineAnim}
+                transition={verseLineTransition(FINALE_VERSE_LINE_STAGGER_SEC * 0.35)}
+              >
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-[rgb(139_213_255/0.28)] to-transparent sm:inset-x-8"
+                />
+                <p className={bodyClass}>{cfg.before}</p>
+                <div className="mt-5 sm:mt-6">
                   <input
                     ref={inputRef}
                     value={value}
@@ -312,6 +329,7 @@ export default function Act3FinaleKeywordGate({
                       setValue(e.target.value);
                       setWrong(false);
                     }}
+                    placeholder={cfg.placeholder}
                     aria-label={cfg.inputAria}
                     aria-invalid={wrong}
                     aria-describedby={
@@ -319,45 +337,40 @@ export default function Act3FinaleKeywordGate({
                         .filter(Boolean)
                         .join(" ") || undefined
                     }
-                    autoCapitalize="off"
+                    autoCapitalize="sentences"
                     autoCorrect="off"
                     spellCheck={false}
-                    maxLength={56}
+                    maxLength={140}
                     disabled={exiting}
-                    size={Math.max(value.length, 1)}
-                    style={{
-                      maxWidth: "100%",
-                      fontFamily: "inherit",
-                      fontSize: "inherit",
-                      fontStyle: "inherit",
-                      fontWeight: "inherit",
-                      letterSpacing: "inherit",
-                      lineHeight: "inherit",
-                      textShadow: verseGlowStrong,
-                    }}
+                    size={Math.max(value.length || cfg.placeholder.length, 14)}
                     data-cursor-text
-                    className="inline-block min-w-[1ch] border-0 bg-transparent px-0 py-0 align-baseline text-solar-gold/88 caret-solar-gold outline-none ring-0 [field-sizing:content]"
+                    className={inscriptionClass + (wrong ? " border-[rgba(255,186,186,0.45)]" : "")}
                   />
-                </motion.span>
-                <motion.span
-                  className="mt-[0.45em] block text-pretty"
-                  style={{ textShadow: verseGlowStrong }}
-                  initial={verseLineIn}
-                  animate={verseLineAnim}
-                  transition={verseLineTransition(FINALE_VERSE_LINE_STAGGER_SEC)}
-                >
-                  {cfg.after}
-                </motion.span>
-              </p>
+                </div>
+                {cfg.after.trim() ? (
+                  <p className={bodyClass + " mt-5 opacity-80"}>{cfg.after}</p>
+                ) : null}
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-6 bottom-0 h-px bg-gradient-to-r from-transparent via-solar-gold/22 to-transparent sm:inset-x-8"
+                />
+              </motion.div>
+
+              <motion.p
+                className="da-hint-micro mx-auto mt-9 max-w-[20rem] sm:mt-10"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: reduceMotion ? 0 : 1.2, duration: 0.8 }}
+              >
+                {enterHint}
+              </motion.p>
+
               {showTimedHint ? (
                 <motion.div
                   id="act3-finale-timed-hint"
-                  className="mx-auto mt-12 max-w-[min(38rem,90vw)] text-center sm:mt-16"
-                  style={{ textShadow: verseGlowCalm }}
+                  className="mx-auto mt-10 max-w-[min(32ch,90vw)] text-center sm:mt-12"
                   initial={{ opacity: 0 }}
-                  animate={
-                    reduceMotion ? { opacity: 1 } : { opacity: [0, 1, 0] }
-                  }
+                  animate={reduceMotion ? { opacity: 1 } : { opacity: [0, 1, 0] }}
                   transition={
                     reduceMotion
                       ? { duration: FINALE_HINT_APPEAR_REDUCED_SEC, ease: verseLineEase }
@@ -369,25 +382,19 @@ export default function Act3FinaleKeywordGate({
                         }
                   }
                 >
-                  <p className="font-sans text-[10px] font-semibold uppercase tracking-[0.32em] text-solar-gold/55">
-                    {timedHintKicker}
-                  </p>
-                  <p
-                    className={
-                      "mt-4 text-balance font-serif text-[clamp(0.95rem,1.85vw,1.08rem)] leading-relaxed text-solar-gold/78 " +
-                      (arabicUi ? "font-arabic-ui not-italic" : "italic")
-                    }
-                  >
+                  <p className={arabicUi ? "da-eyebrow-ar" : "da-eyebrow"}>{timedHintKicker}</p>
+                  <p className={bodyClass + " mt-3 text-[clamp(0.88rem,1.35vw,0.98rem)] opacity-85"}>
                     {cfg.timedHint}
                   </p>
                 </motion.div>
               ) : null}
+
               {wrong ? (
                 <p
                   id="act3-finale-wrong"
                   role="alert"
                   className={
-                    "mx-auto mt-4 max-w-[min(40rem,92vw)] text-center text-balance font-sans text-[11px] text-[rgba(255,186,186,0.85)] " +
+                    "mx-auto mt-4 max-w-[min(32ch,92vw)] text-center text-balance font-sans text-[10px] uppercase tracking-[0.22em] text-[rgba(255,186,186,0.88)] " +
                     (arabicUi ? "font-arabic-ui not-italic" : "")
                   }
                 >

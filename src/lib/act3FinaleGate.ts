@@ -1,37 +1,45 @@
 import type { AppLanguage } from "../stores/languageStore";
 
 export type Act3FinaleGateLocale = {
+  kicker: string;
+  eyebrow: string;
   prompt: string;
   before: string;
   after: string;
-  answers: readonly string[];
+  placeholder: string;
   inputAria: string;
-  /** Indice affiché après {@link ACT3_FINALE_HINT_DELAY_MS} si le mot n’est pas encore trouvé. */
+  /** Indice affiché après {@link ACT3_FINALE_HINT_DELAY_MS} si la phrase n’est pas encore scellée. */
   timedHint: string;
+  minLength: number;
 };
 
 /** Délai avant l’indice (ms), aligné sur le composant gate. */
-export const ACT3_FINALE_HINT_DELAY_MS = 38_000;
+export const ACT3_FINALE_HINT_DELAY_MS = 28_000;
 
 /** Secours si `public/data/act3-finale-gate.json` est absent ou invalide - garder aligné avec ce fichier. */
 const ACT3_FINALE_GATE_FALLBACK: Record<"fr" | "ar", Act3FinaleGateLocale> = {
   fr: {
-    prompt:
-      "Complétez le mot manquant du vers, puis validez avec Entrée.",
-    before: "Là où la carte devient constellation, ton",
-    after: "referme la nuit comme un rouleau, et la phrase tient encore le désert suspendu dans le bleu.",
-    answers: ["souffle"],
-    inputAria: "Mot manquant à compléter au clavier",
+    kicker: "Clôture du voyage",
+    eyebrow: "À compléter · sans bonne réponse",
+    prompt: "Complète ta phrase, puis Entrée pour sceller le voyage et ouvrir les crédits.",
+    before: "Chacun a sa traversée,",
+    after: "",
+    placeholder: "sa poésie de la vie",
+    inputAria: "Ta conclusion — finir la phrase à ta manière",
     timedHint:
-      "Pense au souffle du vivant : ce qui anime le corps et porte aussi la voix du vers (un seul mot).",
+      "Aucune bonne réponse imposée : un mot, un vers, une image — ce que le désert t’a laissé.",
+    minLength: 2,
   },
   ar: {
-    prompt: "كمّل الكلمة الناقصة من البيت، ثم اضغط مفتاح الإدخال (Enter) للتثبيت.",
-    before: "حيث تولّد الخريطة كواكب،",
-    after: "تقفَل الليل حال واحد مخطوف؛ والبيت بعدو يعلق الصحراء فالزرقة.",
-    answers: ["نفسك"],
-    inputAria: "الكلمة الناقصة تُكمَل من لوحة المفاتيح",
-    timedHint: "كلمة واحدة قريبة من النَفَس والحياة، كما يقول البيت عن الليل والجسد.",
+    kicker: "خاتمة الرحلة",
+    eyebrow: "أكمِل · بلا جواب واحد",
+    prompt: "أكمِل جملتك، ثم Enter لختم الرحلة وفتح التذييل.",
+    before: "لكلّ واحد مسيرته،",
+    after: "",
+    placeholder: "شعر حياته",
+    inputAria: "خاتمتك — أكمِل الجملة على طريقتك",
+    timedHint: "لا جواب واحد مطلوب : صورة، نفس، ما تركه الصحراء فيك.",
+    minLength: 2,
   },
 };
 
@@ -39,66 +47,61 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
 
-function parseLocale(v: unknown): (Omit<Act3FinaleGateLocale, "timedHint"> & { timedHint?: string }) | null {
+function parseLocale(v: unknown): Partial<Act3FinaleGateLocale> | null {
   if (!isRecord(v)) return null;
-  const prompt = v.prompt;
-  const before = v.before;
-  const after = v.after;
-  const answers = v.answers;
-  const inputAria = v.inputAria;
-  const timedHint = v.timedHint;
-  if (
-    typeof prompt !== "string" ||
-    typeof before !== "string" ||
-    typeof after !== "string" ||
-    typeof inputAria !== "string" ||
-    !Array.isArray(answers) ||
-    !answers.every((a) => typeof a === "string")
-  ) {
+  const out: Partial<Act3FinaleGateLocale> = {};
+  if (typeof v.kicker === "string") out.kicker = v.kicker.trim();
+  if (typeof v.eyebrow === "string") out.eyebrow = v.eyebrow.trim();
+  if (typeof v.prompt === "string") out.prompt = v.prompt;
+  if (typeof v.before === "string") out.before = v.before;
+  if (typeof v.after === "string") out.after = v.after;
+  if (typeof v.placeholder === "string") out.placeholder = v.placeholder;
+  if (typeof v.inputAria === "string") out.inputAria = v.inputAria;
+  if (typeof v.timedHint === "string") out.timedHint = v.timedHint.trim();
+  if (typeof v.minLength === "number" && Number.isFinite(v.minLength)) {
+    out.minLength = Math.max(1, Math.floor(v.minLength));
+  }
+  if (typeof out.before !== "string" || typeof out.prompt !== "string" || typeof out.inputAria !== "string") {
     return null;
   }
-  const base = { prompt, before, after, answers: answers as string[], inputAria };
-  if (typeof timedHint === "string" && timedHint.trim()) {
-    return { ...base, timedHint: timedHint.trim() };
-  }
-  return base;
+  return out;
+}
+
+function mergeLocale(
+  partial: Partial<Act3FinaleGateLocale> | null,
+  fb: Act3FinaleGateLocale
+): Act3FinaleGateLocale {
+  const p = partial ?? {};
+  return {
+    kicker: p.kicker ?? fb.kicker,
+    eyebrow: p.eyebrow ?? fb.eyebrow,
+    prompt: p.prompt ?? fb.prompt,
+    before: p.before ?? fb.before,
+    after: p.after ?? fb.after,
+    placeholder: p.placeholder ?? fb.placeholder,
+    inputAria: p.inputAria ?? fb.inputAria,
+    timedHint: p.timedHint ?? fb.timedHint,
+    minLength: p.minLength ?? fb.minLength,
+  };
 }
 
 export async function loadAct3FinaleGate(language: AppLanguage): Promise<Act3FinaleGateLocale> {
   const key: "fr" | "ar" = language === "ar-dz" ? "ar" : "fr";
+  const fb = ACT3_FINALE_GATE_FALLBACK[key];
   try {
     const prefix = import.meta.env.BASE_URL || "/";
     const base = prefix.endsWith("/") ? prefix : `${prefix}/`;
     const res = await fetch(`${base}data/act3-finale-gate.json`, { cache: "no-store" });
-    if (!res.ok) return ACT3_FINALE_GATE_FALLBACK[key];
+    if (!res.ok) return fb;
     const json: unknown = await res.json();
-    if (!isRecord(json)) return ACT3_FINALE_GATE_FALLBACK[key];
-    const loc = parseLocale(json[key]);
-    const fb = ACT3_FINALE_GATE_FALLBACK[key];
-    const merged = loc ?? fb;
-    return { ...merged, timedHint: merged.timedHint ?? fb.timedHint };
+    if (!isRecord(json)) return fb;
+    return mergeLocale(parseLocale(json[key]), fb);
   } catch {
-    return ACT3_FINALE_GATE_FALLBACK[key];
+    return fb;
   }
 }
 
-function normalizeFinaleAnswer(raw: string, arabicUi: boolean): string {
-  let s = raw.trim();
-  if (!arabicUi) {
-    return s
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/\p{M}/gu, "");
-  }
-  return s.normalize("NFC").replace(/\u0640/g, "");
-}
-
-export function finaleAnswerMatches(
-  raw: string,
-  answers: readonly string[],
-  arabicUi: boolean
-): boolean {
-  const n = normalizeFinaleAnswer(raw, arabicUi);
-  if (!n.length) return false;
-  return answers.some((a) => normalizeFinaleAnswer(a, arabicUi) === n);
+/** Toute conclusion non vide (après trim) scelle le voyage — pas de mot imposé. */
+export function finaleCompletionReady(raw: string, minLength: number): boolean {
+  return raw.trim().length >= minLength;
 }

@@ -186,12 +186,10 @@ export function ParcoursPanelInnerContent({
 }: Omit<Props, 'expanded' | 'onExpandedChange'> & { className?: string }) {
   const prefersReducedMotion = useReducedMotion();
   const copy = useAppCopy();
+  /** Acte II seul : bleu constellation ; acte III = or chaud (comme la carte devenue ciel). */
   const nightRail =
-    phase === 'act2'
-      ? typeof parcoursRailMidnight === 'boolean'
-        ? parcoursRailMidnight
-        : true
-      : phase === 'act3';
+    phase === 'act2' &&
+    (typeof parcoursRailMidnight === 'boolean' ? parcoursRailMidnight : true);
   const activeStep = PHASE_NAV_INDEX[phase];
 
   const lockedTitle = (p: TimelinePhase) =>
@@ -514,8 +512,8 @@ export default function OrientationPanel({
       setCollapsedMinimal(false);
       return;
     }
-    /** Acte I & II : rail replié = flèche seule (pas de label vertical). */
-    if (phase === "act1" || phase === "act2") {
+    /** Actes I–III : rail replié = flèche seule (pas de label vertical). */
+    if (phase === "act1" || phase === "act2" || phase === "act3") {
       setCollapsedMinimal(true);
       return;
     }
@@ -572,11 +570,8 @@ export default function OrientationPanel({
   }, [expandedW, expanded]);
 
   const nightRail =
-    phase === 'act2'
-      ? typeof parcoursRailMidnight === 'boolean'
-        ? parcoursRailMidnight
-        : true
-      : phase === 'act3';
+    phase === 'act2' &&
+    (typeof parcoursRailMidnight === 'boolean' ? parcoursRailMidnight : true);
 
   const quietCollapsed = !expanded && collapsedMinimal;
 
@@ -643,7 +638,7 @@ export default function OrientationPanel({
           />
           <span
             className={
-              (phase === 'act1' || phase === 'act2' ? 'sr-only ' : '') +
+              (phase === 'act1' || phase === 'act2' || phase === 'act3' ? 'sr-only ' : '') +
               'select-none text-[9px] font-semibold uppercase tracking-[0.32em] [writing-mode:vertical-rl] rotate-180 transition-[color,text-shadow] duration-[850ms] ease-out ' +
               (quietCollapsed
                 ? nightRail

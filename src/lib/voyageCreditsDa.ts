@@ -44,7 +44,7 @@ export const voyageCreditsDaFinale = {
 } as const;
 
 /** Socle nuit (fin de parcours / acte III). */
-export const VOYAGE_CREDITS_BASE_BG_NIGHT =
+const VOYAGE_CREDITS_BASE_BG_NIGHT =
   'radial-gradient(ellipse 82% 58% at 50% 28%, rgba(90, 168, 255, 0.055) 0%, transparent 54%), ' +
   'linear-gradient(180deg, rgba(5, 8, 18, 0.99) 0%, rgba(3, 5, 14, 0.996) 42%, rgba(1, 2, 10, 1) 100%)';
 

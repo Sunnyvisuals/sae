@@ -143,6 +143,8 @@ type Copy = {
   introAlRihlaSubtitle: string;
   introJeanSenacSubtitle: string;
   zoomNudge: string;
+  /** Acte II : invite au défilement du parchemin (pas au zoom carte). */
+  scrollNudge: string;
   chapterCompleteAria: string;
   hintTitles: { act1: string; act2: string };
   hintCloseAria: string;
@@ -207,26 +209,27 @@ type Copy = {
   voyageCreditsTitle: string;
   voyageCreditsSubtitle: string;
   voyageCreditsClose: string;
+  voyageCreditsCloseAria: string;
   voyageCreditsFin: string;
   voyageCreditsBlocks: VoyageCreditsBlock[];
   act3Aria: string;
-  act3Kicker: string;
-  act3Hint: string;
-  /** En-tête panneau liste (acte III) - typo consignes / HintPanel */
-  act3FragmentsPanelTitle: string;
-  act3FragmentsPanelSub: string;
-  act3CompositionPanelTitle: string;
-  act3CompositionPanelSub: string;
-  /** Zone vide - composition encore sans ligne */
-  act3CompositionEmptyBody: string;
-  act3ContinueCredits: string;
-  act3BackScroll: string;
-  act3FinaleWrong: string;
-  act3FinaleEnterHint: string;
-  act3FinaleLoading: string;
-  act3FinaleRedirecting: string;
-  /** Libellé court au-dessus de l’indice différé (gate finale acte III). */
-  act3FinaleTimedHintKicker: string;
+  act3IntroLine1: string;
+  act3IntroLine2: string;
+  act3IntroLine3: string;
+  act3SelectHint: string;
+  act3ConfirmIdentityPlaceholder: string;
+  act3ConfirmCta: string;
+  act3Submitting: string;
+  act3SubmitError: string;
+  act3LoadingStars: string;
+  act3YourStarHint: string;
+  act3ConstellationContinue: string;
+  act3ConstellationScrollCue: string;
+  act3ConstellationScrollLoading: string;
+  act3OutroLine1: string;
+  act3OutroLine2: string;
+  act3OutroLine3: string;
+  act3CreditsCta: string;
 };
 
 const FR: Copy = {
@@ -262,14 +265,14 @@ const FR: Copy = {
   menuHintDiscover: "Découvrir le passage",
   daKicker: "Changement de ciel",
   daTitle: "La nuit s'ouvre",
-  daSubtitle: "Le désert quitte l'or chaud. Le fil devient constellation.",
+  daSubtitle: "Là où la carte devient constellation.",
   act2IframeTitle: "Jean Sénac - frise narrative",
-  act2NavigateActIII: "Acte III - L’écriture",
+  act2NavigateActIII: "Acte III — Constellation",
   act2NavigateActIIIAria:
-    "Ouvre la poésie interactive sur une page dédiée ; vous pouvez ensuite revenir au rouleau d’ici.",
+    "Choisis un mot de Sénac et rejoins le ciel partagé ; vous pouvez revenir au rouleau d’ici.",
   lazySuspenseAct1: "Préparation de la carte-mémoire…",
   lazySuspenseAct2: "Ouverture du rouleau - chargement du parchemin…",
-  lazySuspenseAct3: "Ouverture de l’écriture - souffle et fragments…",
+  lazySuspenseAct3: "Ouverture du ciel — constellation…",
   orientationBreadcrumbAria: "Fil d'Ariane",
   orientationCreditsLabel: "Crédits",
   orientationCreditsSummary: "Générique de fin, remerciements et fermeture de ce voyage.",
@@ -282,14 +285,14 @@ const FR: Copy = {
   orientationPhaseIntroLabel: "Intro - Prologue",
   orientationPhaseAct1Label: "Acte I - L'algérie",
   orientationPhaseAct2Label: "Acte II - (suite)",
-  orientationPhaseAct3Label: "Acte III - L’écriture",
+  orientationPhaseAct3Label: "Acte III — Constellation",
   orientationSummaries: {
     intro: "Voix et paysage désert avant d'entrer dans la carte-mémoire.",
     act1: "Une carte où cinq fragments posent cinq vers du désert dans l’Algérie.",
     act2:
       "Le rouleau nocturne : le poème, les archives au fil du défilement dans le bleu.",
     act3:
-      "Une dernière feuille : les voix rencontrées se rassemblent en un même vers.",
+      "Choisis un mot de Sénac : il devient étoile dans le ciel partagé de tous les voyageurs.",
   },
   orientationFlux: "Flux",
   orientationFluxCredits:
@@ -355,6 +358,7 @@ const FR: Copy = {
   introAlRihlaSubtitle: "Jean Sénac",
   introJeanSenacSubtitle: "« La traversée »",
   zoomNudge: "Zoom vers le haut",
+  scrollNudge: "Molette · vers le bas",
   chapterCompleteAria: "révélation carte-mémoire",
   hintTitles: { act1: "Premiers gestes", act2: "Comment naviguer" },
   hintCloseAria: "Fermer les consignes",
@@ -406,7 +410,7 @@ const FR: Copy = {
     },
   ],
   introVideoAria: "Introduction - Al-Rihla",
-  introVideoSkip: "Passer l'introduction",
+  introVideoSkip: "Entrer dans la rumeur",
   introVideoMuteOn: "Couper le son",
   introVideoMuteOff: "Activer le son",
   introVideoVolumeRange: "Volume",
@@ -453,98 +457,98 @@ const FR: Copy = {
   act2FinaleSubmit: "Voir les crédits",
   voyageCreditsTitle: "Al Rihla",
   voyageCreditsSubtitle: "Hommage à Jean Sénac",
-  voyageCreditsClose: "Fermer (Échap)",
-  voyageCreditsFin: "Merci d’avoir traversé cette nuit.",
+  voyageCreditsClose: "Quitter la nuit",
+  voyageCreditsCloseAria: "Quitter la nuit (touche Échap)",
+  voyageCreditsFin: "Merci d’avoir mené cette traversée jusqu’au bout de la nuit.",
   voyageCreditsBlocks: [
     {
-      heading: "Conception & réalisation",
+      heading: "Réalisation",
       lead: "Yacine Bouabdallah",
       lines: [
-        "Direction artistique & développement",
-        "Carte mémoire, frise Jean Sénac, écriture, générique",
-        "React, TypeScript, Vite, GSAP, Motion",
-        "Tailwind, Lenis, Howler, Zustand",
-        "Aide IA : débugage, conception du site web",
-        "Toute la partie développement",
+        "Conception, direction artistique et développement",
+        "Carte mémoire · frise Jean Sénac · écriture interactive",
+        "Montage, générique et intégration",
       ],
     },
     {
-      heading: "Textes & citations",
+      heading: "Textes",
       lines: [
-        "Fragments et citations de Jean Sénac",
-        "Reproduction pédagogique (art. L.122-5 CPI)",
-        "Projet BUT MMI, usage non commercial",
+        "Jean Sénac · fragments et citations",
+        "Reproduction pédagogique (art. L. 122 5 CPI)",
+        "Projet BUT MMI · usage non commercial",
       ],
     },
     {
       heading: "Images & archives",
       lines: [
-        "Portraits et documents dans le parchemin",
-        "Archives photographiques du dossier pédagogique",
+        "Portraits et documents · dossier pédagogique",
+        "Archives photographiques",
       ],
     },
     {
       heading: "Musique",
       lines: [
-        "Raïna Raï, Zina",
-        "Switzerland, Thomas James White",
-        "Emotional Arabian Oud (Acte II)",
+        "« Zina » · Raïna Raï",
+        "« Switzerland » · Thomas James White",
+        "« Emotional Arabian Oud » · acte II",
       ],
     },
     {
-      heading: "Vidéo & son",
+      heading: "Image & son",
       lines: [
-        "Intro & transitions (al-rihla.mp4, ponts)",
-        "Tournage, montage et prologue par Yacine Bouabdallah",
-        "Plans sous licence Artlist",
-        "Effets whoosh & transitions (local)",
+        "Prologue et transitions · Yacine Bouabdallah",
+        "Plans additionnels · Artlist",
+        "Design sonore des transitions",
       ],
     },
     {
-      heading: "Technique & sources",
+      heading: "Avec l’aide de",
+      lines: ["Outils d’intelligence artificielle · débogage et conception"],
+    },
+    {
+      heading: "Technologies",
       groups: [
         {
-          label: "Création",
-          lines: ["Adobe CC, DaVinci Resolve, Blender"],
+          label: "Post production",
+          lines: ["Adobe Creative Cloud", "DaVinci Resolve", "Blender"],
         },
         {
-          label: "Web & 3D",
+          label: "Développement",
           lines: [
-            "Three.js, scène 3D de l’arche",
-            "Modèle public/models/model.glb",
-            "Turf.js, carte mémoire",
+            "React · TypeScript · Vite",
+            "GSAP · Motion · Three.js",
+            "Tailwind · Lenis · Howler · Zustand",
           ],
         },
         {
-          label: "Données & typo",
+          label: "Données & typographie",
           lines: [
-            "Natural Earth 50 m, contour Algérie",
-            "Google Fonts, Bahlull (locale)",
+            "Natural Earth · Turf.js",
+            "Google Fonts · Bahlull",
             "Bibliothèques open source",
           ],
         },
       ],
     },
   ],
-  act3Aria: "Acte III - poésie interactive, recomposition des fragments du voyage",
-  act3Kicker: "écriture",
-  act3Hint:
-    "Touchez les fragments retrouvés sur votre route (intro, carte, parchemin) pour les aligner ici, à la façon du bandeau du premier acte. L’ordre est libre : rassemblez-les tous pour que le dernier vers apparaisse.",
-  act3FragmentsPanelTitle: "Souvenirs du parcours",
-  act3FragmentsPanelSub:
-    "Introduction, lignes carte-mémoire et passages du rouleau : tout ce qui vous est déjà apparu dans le voyage.",
-  act3CompositionPanelTitle: "Vers recomposés",
-  act3CompositionPanelSub:
-    "Une ligne après l’autre, dans l’ordre que vous imposez jusqu’à la clôture du poème.",
-  act3CompositionEmptyBody:
-    "Touchez une première ligne à gauche pour qu’elle s’installe ici comme un vers central.",
-  act3ContinueCredits: "Voir les crédits",
-  act3BackScroll: "Retour au parchemin",
-  act3FinaleWrong: "Ce n’est pas le mot attendu, réessayez.",
-  act3FinaleEnterHint: "Entrée : valider le mot, le bon mot ouvre les crédits du voyage.",
-  act3FinaleLoading: "Préparation du dernier vers…",
-  act3FinaleRedirecting: "Ouverture des crédits…",
-  act3FinaleTimedHintKicker: "Indice",
+  act3Aria: "Acte III — la carte devient constellation",
+  act3IntroLine1: "Le voyage s’achève.",
+  act3IntroLine2: "Ou recommence.",
+  act3IntroLine3: "Quel mot de Sénac reste en toi ?",
+  act3SelectHint: "Touche un mot",
+  act3ConfirmIdentityPlaceholder: "Ton prénom ou ta ville",
+  act3ConfirmCta: "Rejoindre la constellation",
+  act3Submitting: "Ton étoile monte…",
+  act3SubmitError: "L’étoile n’a pas pu rejoindre le ciel. Réessaie dans un instant.",
+  act3LoadingStars: "Les étoiles apparaissent…",
+  act3YourStarHint: "Voici ton étoile",
+  act3ConstellationContinue: "Poursuivre",
+  act3ConstellationScrollCue: "Défiler pour charger la suite",
+  act3ConstellationScrollLoading: "Chargement…",
+  act3OutroLine1: "Jean Sénac est mort en 1973.",
+  act3OutroLine2: "Assassiné.",
+  act3OutroLine3: "Ses mots, eux, continuent de briller.",
+  act3CreditsCta: "Voir les crédits",
 };
 
 const AR: Copy = {
@@ -580,13 +584,13 @@ const AR: Copy = {
   menuHintDiscover: "اكتشف الممر",
   daKicker: "تبدّل السماء",
   daTitle: "الليل تنفتح",
-  daSubtitle: "الصحراء تخلّي الذهب الحار الخيط يولّي كواكب.",
+  daSubtitle: "حيث تولّي الخريطة كوكبة.",
   act2IframeTitle: "جان السنّاك - الزمن السردي",
-  act2NavigateActIII: "المشهد الثالث - الكتابة",
-  act2NavigateActIIIAria: "صفحة خاصّة لتجميع الشقوف كقصيدة؛ ترجع للرّقّ من هنا وقت ما تحب.",
+  act2NavigateActIII: "المشهد الثالث — الكوكبة",
+  act2NavigateActIIIAria: "اختار كلمة من سنّاك وانضمّ للسماء المشتركة؛ ترجع للرّقّ من هنا وقت ما تحب.",
   lazySuspenseAct1: "تجهيز خريطة الذاكرة…",
   lazySuspenseAct2: "فتح المخطوف وتحميل الرّقّ…",
-  lazySuspenseAct3: "فتح الكتابة - نَفَس وشقوف…",
+  lazySuspenseAct3: "فتح السماء — الكوكبة…",
   orientationBreadcrumbAria: "مسار الرحلة",
   orientationCreditsLabel: "التذييل",
   orientationCreditsSummary: "التذييل النهائي، شكر وهدايا، وكتامة الدرب.",
@@ -599,14 +603,14 @@ const AR: Copy = {
   orientationPhaseIntroLabel: "المقدمة - تمهيد",
   orientationPhaseAct1Label: "المشهد الأول - الجزائر",
   orientationPhaseAct2Label: "المشهد الثاني - مواصلة",
-  orientationPhaseAct3Label: "المشهد الثالث - الكتابة",
+  orientationPhaseAct3Label: "المشهد الثالث - الكوكبة",
   orientationSummaries: {
     intro: "صوت ومشهد صحر قبل ما تدخل لخريطة الذاكرة.",
     act1: "خريطة فيها خمس قطع تكمّل بيت ساناك ما بين أرض الجزائر.",
     act2:
       "الطبقة الليلانية: القصيدة والمحفوظات كلّها على التصفّر في الزّرقة.",
     act3:
-      "ورقة آخيرة: تجمع الأصوات اللي قطعتي معاكم وتولّد بيت وحيد.",
+      "اختار كلمة من سنّاك: تصير نجمة في سماء يشاركها كل المسافرين.",
   },
   orientationFlux: "التموّج",
   orientationFluxCredits:
@@ -672,6 +676,7 @@ const AR: Copy = {
   introAlRihlaSubtitle: "جان ساناك",
   introJeanSenacSubtitle: "« المسيرة »",
   zoomNudge: "لفوق · التكبير",
+  scrollNudge: "لتحت · الحرّاف",
   chapterCompleteAria: "كشوف خريطة الذاكرة",
   hintTitles: { act1: "أول خطوات", act2: "كيف تمشي في الموقع" },
   hintCloseAria: "سكر الإرشادات",
@@ -723,7 +728,7 @@ const AR: Copy = {
     },
   ],
   introVideoAria: "تمهيد الرحلة - الريحلة",
-  introVideoSkip: "دوز المقدّمة",
+  introVideoSkip: "الولوج إلى الهمس",
   introVideoMuteOn: "كمّ الصوت",
   introVideoMuteOff: "فعّل الصوت",
   introVideoVolumeRange: "مستوى الصوت",
@@ -769,98 +774,98 @@ const AR: Copy = {
   act2FinaleSubmit: "شوف التذييل",
   voyageCreditsTitle: "الرحلة",
   voyageCreditsSubtitle: "تحية لجان سنّاك",
-  voyageCreditsClose: "سكر (Esc)",
-  voyageCreditsFin: "شكرًا على اجتياز هاد الليل.",
+  voyageCreditsClose: "غادر الليل",
+  voyageCreditsCloseAria: "غادر الليل (Esc)",
+  voyageCreditsFin: "شكرًا لأنك كملت هاد المسيرة حتى كتامة الليل.",
   voyageCreditsBlocks: [
     {
-      heading: "الإعداد والإنجاز",
+      heading: "الإنجاز",
       lead: "ياسين بوعبد الله",
       lines: [
-        "الإخراج الفنّي والتطوير",
-        "خريطة الذاكرة، خط جان سنّاك، الكتابة، التذييل",
-        "React, TypeScript, Vite, GSAP, Motion",
-        "Tailwind, Lenis, Howler, Zustand",
-        "مساعدة الذكاء الاصطناعي : تصحيح، تصميم الموقع",
-        "جزء التطوير بالكامل",
+        "الإعداد، الإخراج الفنّي والتطوير",
+        "خريطة الذاكرة · خط جان سنّاك · كتابة تفاعلية",
+        "المونتاج، التذييل والدمج",
       ],
     },
     {
-      heading: "النصوص والاقتباسات",
+      heading: "النصوص",
       lines: [
-        "مقتطفات واقتباسات جان سنّاك",
-        "إعادة إنتاج تربوي (المادة 122-5)",
-        "مشروع BUT MMI، غير تجاري",
+        "جان سنّاك · مقتطفات واقتباسات",
+        "إعادة إنتاج تربوي (المادة 122 5)",
+        "مشروع BUT MMI · غير تجاري",
       ],
     },
     {
       heading: "الصور والأرشيف",
       lines: [
-        "صور ومستندات في الرّقّ",
-        "أرشيفات فوتوغرافية من الملفّ التربوي",
+        "صور ومستندات · ملفّ تربوي",
+        "أرشيفات فوتوغرافية",
       ],
     },
     {
       heading: "الموسيقى",
       lines: [
-        "Raïna Raï, Zina",
-        "Switzerland, Thomas James White",
-        "Emotional Arabian Oud (الجزء الثاني)",
+        "« Zina » · Raïna Raï",
+        "« Switzerland » · Thomas James White",
+        "« Emotional Arabian Oud » · الجزء الثاني",
       ],
     },
     {
-      heading: "الفيديو والصوت",
+      heading: "الصورة والصوت",
       lines: [
-        "مقدّمة وانتقالات (al-rihla.mp4، جسور)",
-        "تصوير ومونتاج وتمرين المقدّمة، ياسين بوعبد الله",
-        "لقطات برخصة Artlist",
-        "مؤثرات whoosh وانتقالات (محلي)",
+        "المقدّمة والانتقالات · ياسين بوعبد الله",
+        "لقطات إضافية · Artlist",
+        "تصميم صوتي للانتقالات",
       ],
     },
     {
-      heading: "التقنية والمصادر",
+      heading: "بمساعدة",
+      lines: ["أدوات الذكاء الاصطناعي · تصميم وتصحيح"],
+    },
+    {
+      heading: "التقنيات",
       groups: [
         {
-          label: "الإبداع",
-          lines: ["Adobe CC, DaVinci Resolve, Blender"],
+          label: "ما بعد الإنتاج",
+          lines: ["Adobe Creative Cloud", "DaVinci Resolve", "Blender"],
         },
         {
-          label: "الويب والثلاثي الأبعاد",
+          label: "التطوير",
           lines: [
-            "Three.js، مشهد القوس",
-            "نموذج public/models/model.glb",
-            "Turf.js، خريطة الذاكرة",
+            "React · TypeScript · Vite",
+            "GSAP · Motion · Three.js",
+            "Tailwind · Lenis · Howler · Zustand",
           ],
         },
         {
           label: "البيانات والخطوط",
           lines: [
-            "Natural Earth 50 m، حدود الجزائر",
-            "Google Fonts، Bahlull (محلي)",
-            "مكتبات المصدر المفتوح",
+            "Natural Earth · Turf.js",
+            "Google Fonts · Bahlull",
+            "مكتبات مفتوحة المصدر",
           ],
         },
       ],
     },
   ],
-  act3Aria: "المشهد الثالث - قصيدة تفاعلية، إعادة تجميع الشقوف",
-  act3Kicker: "الكتابة",
-  act3Hint:
-    "قطع وأبيات كانوا معاك في الطريق تظهرو كلهم كقطع مختارة؛ نقرة على وحدة وباش تطبّقها وسط الواجهة مثل خطّ البيت في الدخول الأول. الترتيب حر، لازم تجمع كلّ الشقايح قبل آخر لفظة الدرب.",
-  act3FragmentsPanelTitle: "أثر المسيرة",
-  act3FragmentsPanelSub:
-    "من المقدّمة وفيديو، من خريطة الذاكرة ومقاطع من الرّقّ: كل هادّي دار معاكم.",
-  act3CompositionPanelTitle: "بيت يتجمّع",
-  act3CompositionPanelSub:
-    "سطر فوق سطر؛ كي تكمّلي القائمة كلّها، تقفل القصيدة بنفس وحدة خطّ الأحرف.",
-  act3CompositionEmptyBody:
-    "ابدءي بنقلة على قطعة طرف « أثر المسيرة »؛ تزاد هنا وسط الواجهة كالبيت المركز.",
-  act3ContinueCredits: "شوف التذييل",
-  act3BackScroll: "ارجع للرّقّ",
-  act3FinaleWrong: "هاذي مش الكلمة المنتظرة، جرب من جديد.",
-  act3FinaleEnterHint: "Entrée (الدخول) يثبّت الكلمة، الكلمة الصحيحة تفتح تذييل الرحلة.",
-  act3FinaleLoading: "تجهيز البيت الأخير…",
-  act3FinaleRedirecting: "فتح التذييل…",
-  act3FinaleTimedHintKicker: "تلميح",
+  act3Aria: "المشهد الثالث — الخريطة تصير كوكبة",
+  act3IntroLine1: "الرحلة تكمل.",
+  act3IntroLine2: "أو تعاود من الأول.",
+  act3IntroLine3: "أشنوّا من كلمات سنّاك بقات فيك؟",
+  act3SelectHint: "المس كلمة",
+  act3ConfirmIdentityPlaceholder: "اسمك أو مدينتك",
+  act3ConfirmCta: "انضمّ للكوكبة",
+  act3Submitting: "نجمتك طالعة…",
+  act3SubmitError: "النجمة ما قدرتش توصل للسماء. عاود جرّب.",
+  act3LoadingStars: "النجوم تبان…",
+  act3YourStarHint: "هادي نجمتك",
+  act3ConstellationContinue: "كمّل",
+  act3ConstellationScrollCue: "حرّاف لتحت باش تكمّل التحميل",
+  act3ConstellationScrollLoading: "قاعد يتحمّل…",
+  act3OutroLine1: "جان سنّاك مات سنة 1973.",
+  act3OutroLine2: "اغتيل.",
+  act3OutroLine3: "كلامه، هو، يبان.",
+  act3CreditsCta: "شوف التذييل",
 };
 
 export function copyFor(language: AppLanguage): Copy {

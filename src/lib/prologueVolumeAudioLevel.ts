@@ -1,5 +1,3 @@
-import { Howler } from "howler";
-
 const SMOOTHING = 0.84;
 const FFT_SIZE = 512;
 
@@ -12,17 +10,22 @@ let videoSource: MediaElementAudioSourceNode | null = null;
 let videoTapElement: HTMLMediaElement | null = null;
 const listeners = new Set<(level: number) => void>();
 
-function getCtx(): AudioContext | null {
-  try {
-    return Howler.ctx;
-  } catch {
-    return null;
+type HowlerModule = typeof import("howler");
+let howlerMod: HowlerModule | null = null;
+let howlerLoad: Promise<HowlerModule> | null = null;
+
+function ensureHowler(): Promise<HowlerModule> {
+  if (howlerMod) return Promise.resolve(howlerMod);
+  if (!howlerLoad) {
+    howlerLoad = import("howler").then((m) => {
+      howlerMod = m;
+      return m;
+    });
   }
+  return howlerLoad;
 }
 
-function ensureAnalyser(): AnalyserNode | null {
-  const ctx = getCtx();
-  if (!ctx) return null;
+function ensureAnalyser(ctx: AudioContext): AnalyserNode {
   if (analyser) return analyser;
   analyser = ctx.createAnalyser();
   analyser.fftSize = FFT_SIZE;
@@ -36,42 +39,46 @@ function ensureAnalyser(): AnalyserNode | null {
 /** Route la sortie Howler vers l’analyseur (une seule fois). */
 export function tapHowlerMasterForMeter(): void {
   if (howlerMasterTapped) return;
-  const a = ensureAnalyser();
-  const ctx = getCtx();
-  if (!a || !ctx) return;
-  try {
-    Howler.masterGain.disconnect();
-    Howler.masterGain.connect(a);
-    a.connect(ctx.destination);
-    howlerMasterTapped = true;
-  } catch {
-    /* déjà câblé */
-  }
+  void ensureHowler().then(({ Howler }) => {
+    if (howlerMasterTapped) return;
+    const ctx = Howler.ctx;
+    const a = ensureAnalyser(ctx);
+    try {
+      Howler.masterGain.disconnect();
+      Howler.masterGain.connect(a);
+      a.connect(ctx.destination);
+      howlerMasterTapped = true;
+    } catch {
+      /* déjà câblé */
+    }
+  });
 }
 
 /** Analyse l’audio de la vidéo prologue (une seule fois par élément). */
 export function tapVideoElementForMeter(video: HTMLVideoElement): void {
   if (videoTapElement === video) return;
-  const ctx = getCtx();
-  const a = ensureAnalyser();
-  if (!ctx || !a) return;
-  try {
-    if (videoSource) {
-      try {
-        videoSource.disconnect();
-      } catch {
-        /* noop */
+  void ensureHowler().then(({ Howler }) => {
+    if (videoTapElement === video) return;
+    const ctx = Howler.ctx;
+    const a = ensureAnalyser(ctx);
+    try {
+      if (videoSource) {
+        try {
+          videoSource.disconnect();
+        } catch {
+          /* noop */
+        }
       }
+      videoSource = ctx.createMediaElementSource(video);
+      videoSource.connect(a);
+      if (!howlerMasterTapped) {
+        a.connect(ctx.destination);
+      }
+      videoTapElement = video;
+    } catch {
+      /* createMediaElementSource : déjà branché ailleurs */
     }
-    videoSource = ctx.createMediaElementSource(video);
-    videoSource.connect(a);
-    if (!howlerMasterTapped) {
-      a.connect(ctx.destination);
-    }
-    videoTapElement = video;
-  } catch {
-    /* createMediaElementSource : déjà branché ailleurs */
-  }
+  });
 }
 
 function readInstantLevel(): number {
@@ -106,7 +113,7 @@ function stopTickerIfIdle(): void {
 
 /** Abonnement au niveau audio lissé (0-1) pour l’aurore. */
 export function subscribePrologueVolumeAudioLevel(
-  listener: (level: number) => void
+  listener: (level: number) => void,
 ): () => void {
   listeners.add(listener);
   ensureTicker();

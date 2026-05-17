@@ -27,9 +27,15 @@ export default function CustomCursor({
   overlayOpen = false,
   /** Acte II : pointeur relayé depuis l’iframe → ressorts plus secs (compense 1 frame de latence). */
   iframeRelay = false,
+  /** Masquage immédiat (ex. tutoriel volume prologue : écouter Zina sans le cercle curseur). */
+  forceHidden = false,
+  /** Acte III constellation : halo synchronisé (pas de traînée de cercles). */
+  tightFollow = false,
 }: {
   overlayOpen?: boolean;
   iframeRelay?: boolean;
+  forceHidden?: boolean;
+  tightFollow?: boolean;
 }) {
   const [mounted, setMounted] = useState(false);
   /** Après 5 s sans mouvement/clic : halo + losange invisibles ; tout mouvement rouvre. */
@@ -65,16 +71,20 @@ export default function CustomCursor({
   );
   const haloSpring = useMemo(
     () =>
-      overlayOpen
-        ? { damping: 52, stiffness: 198, mass: 0.7 }
-        : { damping: 40, stiffness: 120, mass: 0.8 },
-    [overlayOpen]
+      tightFollow
+        ? { damping: 48, stiffness: 680, mass: 0.35 }
+        : overlayOpen
+          ? { damping: 52, stiffness: 198, mass: 0.7 }
+          : { damping: 40, stiffness: 120, mass: 0.8 },
+    [overlayOpen, tightFollow]
   );
 
   const sx = useSpring(mx, leadSpring);
   const sy = useSpring(my, leadSpring);
   const tx = useSpring(mx, haloSpring);
   const ty = useSpring(my, haloSpring);
+  const haloX = tightFollow ? sx : tx;
+  const haloY = tightFollow ? sy : ty;
 
   const move = (e: PointerEvent) => {
     mx.set(e.clientX);
@@ -188,27 +198,35 @@ export default function CustomCursor({
 
   const isHalo = mode === 'halo';
   const isFeather = mode === 'feather';
+  const isPointer = mode === 'pointer';
   const isDrag = mode === 'drag';
   const isStylus = mode === 'stylus' || isBasicExperience;
-  const showDiamond = !isBasicExperience && !isStylus && !isFeather && !isDrag;
+  const showDiamond =
+    !isBasicExperience && !isStylus && !isFeather && !isDrag && !isPointer;
+  const showActiveDiamond = isPointer && !isBasicExperience;
   /** Cercle basique : suivi direct (zéro inertie) ; fluide/losange garde le ressort. */
-  const circleX = isBasicExperience && isStylus && !isFeather && !isDrag ? mx : sx;
-  const circleY = isBasicExperience && isStylus && !isFeather && !isDrag ? my : sy;
+  const circleX =
+    isBasicExperience && isStylus && !isFeather && !isDrag && !isHalo ? mx : sx;
+  const circleY =
+    isBasicExperience && isStylus && !isFeather && !isDrag && !isHalo ? my : sy;
 
   const tree = (
     <motion.div
       className="pointer-events-none fixed inset-0"
       style={{ zIndex: 1, transform: 'translateZ(0)' }}
       aria-hidden
-      animate={{ opacity: idleHidden ? 0 : 1 }}
-      transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+      animate={{ opacity: idleHidden || forceHidden ? 0 : 1 }}
+      transition={{
+        duration: forceHidden ? 0 : 0.38,
+        ease: [0.22, 1, 0.36, 1],
+      }}
     >
-      {!isStylus && !isBasicExperience && (
+      {!isStylus && !isBasicExperience && !tightFollow && (
       <motion.div
         className="pointer-events-none fixed rounded-full will-change-transform"
         style={{
-          x: tx,
-          y: ty,
+          x: haloX,
+          y: haloY,
           translateX: '-50%',
           translateY: '-50%',
           zIndex: 1,
@@ -234,6 +252,50 @@ export default function CustomCursor({
       )}
 
       {/* Mode « basique » : un seul cercle (pas de halo fluide, pas de losange). */}
+      {showActiveDiamond && (
+        <motion.div
+          className="pointer-events-none fixed will-change-transform"
+          style={{
+            x: sx,
+            y: sy,
+            translateX: '-50%',
+            translateY: '-50%',
+            zIndex: 5,
+          }}
+          animate={{ opacity: 0.98, scale: 1.08 }}
+          transition={{ duration: 0.28 }}
+          aria-hidden
+        >
+          <svg width="26" height="34" viewBox="0 0 22 30" fill="none">
+            <polygon
+              points="11,1 21,11 11,21 1,11"
+              fill={night ? 'rgba(90,168,255,0.22)' : 'rgba(197,160,89,0.22)'}
+              stroke={night ? '#e8f4ff' : '#f0e4c8'}
+              strokeWidth="1.45"
+            />
+            <circle cx="11" cy="11" r="1.85" fill={night ? '#e8f4ff' : '#f0e4c8'} />
+            <line
+              x1="11"
+              y1="22"
+              x2="11"
+              y2="28"
+              stroke={night ? '#cce8ff' : '#e8d5a4'}
+              strokeWidth={1}
+              strokeOpacity={0.85}
+              strokeLinecap="round"
+            />
+            <polyline
+              points="8,25 11,29 14,25"
+              stroke={night ? '#cce8ff' : '#e8d5a4'}
+              strokeWidth={1}
+              strokeOpacity={0.85}
+              strokeLinejoin="round"
+              fill="none"
+            />
+          </svg>
+        </motion.div>
+      )}
+
       {isStylus && !isFeather && !isDrag && (
         <motion.div
           className="pointer-events-none fixed will-change-transform"
@@ -246,7 +308,12 @@ export default function CustomCursor({
           }}
           initial={false}
           animate={{
-            scale: isBasicExperience && basicPressed ? 0.84 : 1,
+            scale:
+              isBasicExperience && basicPressed
+                ? 0.84
+                : isHalo
+                  ? 1.14
+                  : 1,
             opacity: isBasicExperience && basicPressed ? 0.92 : 1,
           }}
           transition={{

@@ -110,7 +110,7 @@ export default function ActOnePhraseStrip({ revelationFound, chapterComplete, ha
                     initial="initial"
                     animate="animate"
                     exit="exit"
-                    className="text-center font-serif text-[18px] italic leading-[1.75] text-white sm:text-[20px] sm:leading-[1.85] md:text-[22px] md:leading-[1.9]"
+                    className="text-center font-serif text-[18px] italic leading-[1.75] text-white [text-wrap:balance] sm:text-[20px] sm:leading-[1.85] md:text-[22px] md:leading-[1.9]"
                     style={{
                       textShadow: "0 1px 2px rgba(0,0,0,0.4), 0 0 20px rgba(197,160,89,0.12)",
                     }}

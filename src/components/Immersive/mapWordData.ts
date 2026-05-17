@@ -133,6 +133,48 @@ const WORD_DATA: Record<string, WordEntry> = {
     fontRole: 'serifPoem',
     importance: 2,
   },
+  ombre: {
+    verse: 'L’ombre du soir s’allonge sur le sable',
+    poem: 'Sahara - solstice',
+    fontRole: 'sansNote',
+    importance: 1,
+  },
+  racine: {
+    verse: 'Des racines dans la terre, des étoiles dans la nuit',
+    poem: 'Sahara - solstice',
+    fontRole: 'serifPoem',
+    importance: 2,
+  },
+  cri: {
+    verse: 'Un cri de lumière dans l’immensité du désert',
+    poem: 'Sahara - solstice',
+    fontRole: 'sansNote',
+    importance: 2,
+  },
+  oasis: {
+    verse: 'Une oasis au creux du silence',
+    poem: 'Sahara - solstice',
+    fontRole: 'serifPoem',
+    importance: 2,
+  },
+  caravane: {
+    verse: 'La caravane trace un chemin de poussière et de feu',
+    poem: 'Sahara - solstice',
+    fontRole: 'sansNote',
+    importance: 1,
+  },
+  vague: {
+    verse: 'Chaque dune est une vague arrêtée dans son élan',
+    poem: 'Sahara - solstice',
+    fontRole: 'serifPoem',
+    importance: 1,
+  },
+  aurore: {
+    verse: 'Une terre nouvelle sous le rayon du lendemain',
+    poem: 'Sahara - solstice',
+    fontRole: 'serifPoem',
+    importance: 2,
+  },
 };
 
 /** Mots du parcours révélation : exclus du tirage aléatoire pour éviter des doublons illisibles sur la carte. */

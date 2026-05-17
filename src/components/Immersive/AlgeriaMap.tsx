@@ -22,7 +22,6 @@ import { useCursorPrefsStore } from '../../stores/cursorPrefsStore';
 import { useAppCopy } from '../../hooks/useAppCopy';
 import { revelationWordUISurface } from '../../lib/appCopy';
 import { arabicPoemWordLabel } from '../../lib/mapWordArabicDisplay';
-import { wordTooltipLines } from '../../lib/wordTooltipLocale';
 import { useLanguageStore } from '../../stores/languageStore';
 import type { Act1QuestProgress } from '../../components/ui/HintPanel';
 import ActOneAmbiance from './ActOneAmbiance';
@@ -233,7 +232,9 @@ const WORD_HIT_MIN_HALF_H = 18;
 const WORD_HIT_EXTRA_X = 1.38;
 const WORD_HIT_EXTRA_Y = 1.42;
 /** Clic toléré si le curseur était sur le mot au survol (léger décalage). */
-const WORD_CLICK_MAX_MOVE_PX = 20;
+const WORD_CLICK_MAX_MOVE_PX = 24;
+/** Déplacement minimal avant pan (évite de voler le clic sur un mot quand la carte est zoomée). */
+const MAP_PAN_DRAG_THRESHOLD_PX = 14;
 
 let poemMeasureCtx: CanvasRenderingContext2D | null = null;
 function getPoemMeasureCtx(): CanvasRenderingContext2D | null {
@@ -386,19 +387,6 @@ export default function AlgeriaMap({
   const dragStart  = useRef({ x: 0, y: 0, px: 0, py: 0 });
   const ready      = useRef(false);
 
-  const [tooltip, setTooltip] = useState<{
-    word: string; verse: string; poem: string; px: number; py: number;
-  } | null>(null);
-  const tooltipRafRef = useRef<number | null>(null);
-  const pendingTooltipRef = useRef<typeof tooltip>(null);
-  const queueTooltip = useCallback((next: typeof tooltip) => {
-    pendingTooltipRef.current = next;
-    if (tooltipRafRef.current != null) return;
-    tooltipRafRef.current = requestAnimationFrame(() => {
-      tooltipRafRef.current = null;
-      setTooltip(pendingTooltipRef.current);
-    });
-  }, []);
   const [revelationFound, setRevelationFound] = useState<string[]>(() =>
     completedReplay ? [...REVELATION_WORDS] : sanitizeInitialRevelations(initialRevelationWords)
   );
@@ -996,18 +984,47 @@ export default function AlgeriaMap({
     return best;
   }, [zoomSpring, panXSpring, panYSpring, poemLabel]);
 
+  const canvasCoordsFromClient = useCallback((clientX: number, clientY: number, canvas: HTMLCanvasElement) => {
+    const r = canvas.getBoundingClientRect();
+    const scaleX = r.width > 0 ? canvas.width / r.width : 1;
+    const scaleY = r.height > 0 ? canvas.height / r.height : 1;
+    return {
+      cx: (clientX - r.left) * scaleX,
+      cy: (clientY - r.top) * scaleY,
+      rect: r,
+    };
+  }, []);
+
+  /** Curseur carte : plume sur mot, drag seulement pendant un pan réel (pas « zoomé = déplacer »). */
+  const syncMapCursor = useCallback(
+    (clientX: number, clientY: number, canvas: HTMLCanvasElement, opts?: { dragging?: boolean }) => {
+      if (opts?.dragging || isDragging.current) {
+        setMode('drag');
+        return;
+      }
+      const { cx, cy } = canvasCoordsFromClient(clientX, clientY, canvas);
+      const hit = hitTestWord(cx, cy);
+      const need = activeWordTargetRef.current;
+      const blockOther = Boolean(need && hit?.p.isPoem && hit.p.word !== need);
+      if (blockOther) {
+        setMode(cursorIdle);
+        return;
+      }
+      if (hit?.p.isPoem) {
+        setMode('halo');
+      } else {
+        setMode(cursorIdle);
+      }
+    },
+    [canvasCoordsFromClient, hitTestWord, setMode, cursorIdle],
+  );
+
   // ── Mouse move ────────────────────────────────────────────────────────────
   const handleMouseMove = useCallback((e: ReactMouseEvent<HTMLCanvasElement>) => {
     bumpPaintPriority();
     if (tutorialActive) dismissTutorial();
     const canvas = e.currentTarget;
-    const r = canvas.getBoundingClientRect();
-    // Correction du scale CSS (parallax cover scale + perspective) : getBoundingClientRect
-    // renvoie les dimensions visuelles après transform, mais les coords canvas sont en espace layout.
-    const scaleX = r.width  > 0 ? canvas.width  / r.width  : 1;
-    const scaleY = r.height > 0 ? canvas.height / r.height : 1;
-    const cx = (e.clientX - r.left) * scaleX;
-    const cy = (e.clientY - r.top)  * scaleY;
+    const { cx, cy, rect: r } = canvasCoordsFromClient(e.clientX, e.clientY, canvas);
     mouse.current = { x: cx, y: cy };
 
     const rw = r.width;
@@ -1020,9 +1037,14 @@ export default function AlgeriaMap({
 
     if (downPt.current && panPending.current && zoomSpring.get() > 1.05) {
       const moved = Math.hypot(e.clientX - downPt.current.x, e.clientY - downPt.current.y);
-      if (moved > 10 && !isDragging.current) {
-        isDragging.current = true;
-        setMode('drag');
+      if (moved > MAP_PAN_DRAG_THRESHOLD_PX && !isDragging.current) {
+        const onWord = hitTestWord(cx, cy)?.p.isPoem;
+        if (!onWord) {
+          isDragging.current = true;
+          setMode('drag');
+        } else {
+          panPending.current = false;
+        }
       }
     }
 
@@ -1037,7 +1059,6 @@ export default function AlgeriaMap({
       return;
     }
 
-    const z = zoomSpring.get();
     const hit = hitTestWord(cx, cy);
 
     if (hit?.p.isPoem && onQuestStepComplete && !questDone.current.hover) {
@@ -1048,23 +1069,17 @@ export default function AlgeriaMap({
     const blockOtherWords = Boolean(activeWordTarget && hit?.p.isPoem && hit.p.word !== activeWordTarget);
     if (blockOtherWords) {
       hoveredIdx.current = -1;
-      queueTooltip(null);
-      setMode(z > 1.05 ? 'drag' : cursorIdle);
+      syncMapCursor(e.clientX, e.clientY, canvas);
       return;
     }
 
     hoveredIdx.current = hit ? hit.i : -1;
 
-    if (hit) {
-      const lines = wordTooltipLines(hit.p.word, arabicUi);
-      queueTooltip({ word: hit.p.word, verse: lines.verse, poem: lines.poem, px: e.clientX, py: e.clientY });
-      setMode('feather', hit.p.word);
-    } else {
-      queueTooltip(null);
-      setMode(z > 1.05 ? 'drag' : cursorIdle);
+    if (hit?.p.isPoem) {
+      panPending.current = false;
     }
+    syncMapCursor(e.clientX, e.clientY, canvas);
   }, [
-    setMode,
     mpanX,
     mpanY,
     zoomSpring,
@@ -1074,10 +1089,9 @@ export default function AlgeriaMap({
     onQuestStepComplete,
     activeWordTarget,
     applyMapParallax,
-    queueTooltip,
-    arabicUi,
-    cursorIdle,
     bumpPaintPriority,
+    canvasCoordsFromClient,
+    syncMapCursor,
   ]);
 
   // ── Wheel zoom centré curseur ─────────────────────────────────────────────
@@ -1118,13 +1132,17 @@ export default function AlgeriaMap({
 
   const handleMouseDown = useCallback(
     (e: ReactMouseEvent<HTMLCanvasElement>) => {
+      const canvas = e.currentTarget;
+      const { cx, cy } = canvasCoordsFromClient(e.clientX, e.clientY, canvas);
+      const onWord = hitTestWord(cx, cy)?.p.isPoem;
       downPt.current = { x: e.clientX, y: e.clientY };
-      panPending.current = zoomSpring.get() > 1.05;
+      const zoomed = zoomSpring.get() > 1.05;
+      panPending.current = zoomed && !onWord;
       if (panPending.current) {
         dragStart.current = { x: e.clientX, y: e.clientY, px: mpanX.get(), py: mpanY.get() };
       }
     },
-    [zoomSpring, mpanX, mpanY]
+    [zoomSpring, mpanX, mpanY, canvasCoordsFromClient, hitTestWord]
   );
 
   /** Clic sur un bon mot : valide la révélation sans panneau latéral (mécanique conservée). */
@@ -1154,7 +1172,6 @@ export default function AlgeriaMap({
         questDone.current.clickWord = true;
         onQuestStepComplete('clickWord');
       }
-      setTooltip(null);
       /** Toute occurrence du mot attendu compte (pas seulement la pastille « plantée »), pour éviter les doublons illisibles. */
       if (need && hit.p.word === need && isRevelationWord(need)) {
         setRevelationFound((prev) => (prev.includes(need) ? prev : [...prev, need]));
@@ -1184,9 +1201,9 @@ export default function AlgeriaMap({
           }
         }
       }
-      setMode(cursorIdle);
+      syncMapCursor(e.clientX, e.clientY, e.currentTarget);
     },
-    [setMode, tryRevealWordFromClick, cursorIdle]
+    [tryRevealWordFromClick, syncMapCursor]
   );
 
   const memoryAwake = revelationFound.length >= 5;
@@ -1253,13 +1270,10 @@ export default function AlgeriaMap({
             onMouseDown={handleMouseDown}
             onMouseUp={handleMouseUp}
             onMouseLeave={() => {
-              if (tooltipRafRef.current != null) {
-                cancelAnimationFrame(tooltipRafRef.current);
-                tooltipRafRef.current = null;
-              }
-              setTooltip(null);
               setMode(cursorIdle);
               isDragging.current = false;
+              panPending.current = false;
+              downPt.current = null;
               hoveredIdx.current = -1;
               mouse.current = { x: -9999, y: -9999 };
               applyMapParallax(0, 0);
@@ -1291,33 +1305,6 @@ export default function AlgeriaMap({
           aria-hidden
         />
       </div>
-
-      {/* ── Tooltip poétique (aperçu au survol) ── */}
-      <AnimatePresence>
-        {tooltip && (
-          <motion.div
-            key={tooltip.word}
-            className="fixed z-50 pointer-events-none"
-            style={{ left: Math.min(tooltip.px + 20, window.innerWidth - 320), top: Math.max(tooltip.py - 80, 20) }}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <div className="bg-[#120e0a]/92 backdrop-blur-xl border border-solar-gold/25 px-5 py-4 max-w-[300px]"
-              style={{ boxShadow: '0 0 40px rgba(197,160,89,0.08), inset 0 0 0 1px rgba(197,160,89,0.05)' }}>
-                <p className="text-[10px] font-medium uppercase tracking-[0.38em] text-solar-gold/72">{tooltip.poem}</p>
-              <p className="font-bahlull text-[1.1rem] italic text-white/90 leading-snug">
-                « {tooltip.verse} »
-              </p>
-              <div className="mt-3 flex items-center gap-3">
-                <div className="h-px flex-1 bg-solar-gold/20" />
-                <p className="text-[10px] font-medium tracking-widest text-solar-gold/70">{copy.introJeanSenacSubtitle}</p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* ── Consignes tutoriel : bas-gauche (anciennement + bandeau Acte / Sahara - retiré) ── */}
       {tutorialActive && (

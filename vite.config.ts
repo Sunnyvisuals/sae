@@ -21,6 +21,14 @@ export default defineConfig({
   build: {
     /** Navigateurs récents : moins de transpilation / polyfills → JS un peu plus léger. */
     target: 'es2022',
+    /** Ne pas précharger les chunks lazy (carte, actes, menu…) au premier paint. */
+    modulePreload: {
+      resolveDependencies(_filename, deps) {
+        const defer =
+          /PoetryGame|AlgeriaMap|Act2|Act3Writing|SystemMenu|IntroVideoOverlay|OrientationPanel|wordTooltipLocale|algeriaOutlinePath/i;
+        return deps.filter((dep) => !defer.test(dep));
+      },
+    },
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -42,6 +50,9 @@ export default defineConfig({
           }
           if (id.includes('lenis')) {
             return 'lenis';
+          }
+          if (id.includes('howler')) {
+            return 'howler';
           }
         },
       },

@@ -22,6 +22,7 @@
     "assets:favicons": "node scripts/generate-favicons.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.105.4",
     "gsap": "^3.14.2",
     "howler": "^2.2.4",
     "lenis": "^1.3.21",

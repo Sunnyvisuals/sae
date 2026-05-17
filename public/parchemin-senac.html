@@ -10,18 +10,20 @@
     <title>Al Rihla · Acte II - Frise Jean Sénac</title>
     <meta name="description" content="Al Rihla, La traversée - Acte II : frise narrative Jean Sénac, entre archives et nuit saharienne. Choisis ton rythme et poursuis le parcours." />
     <meta name="robots" content="noindex" />
-    <link rel="icon" type="image/png" href="/favicon-camel.png" />
+    <link rel="icon" type="image/svg+xml" href="/favicon-yaya-white.svg?v=202" />
+    <link rel="icon" type="image/png" href="/favicon-48.png?v=202" sizes="48x48" />
+    <link rel="icon" href="/favicon.ico?v=202" sizes="any" />
     <!-- v=62 : garder en phase avec src/lib/parcheminAssetVersion.ts (cache-bust) -->
     <link rel="stylesheet" href="/parchemin-senac.css?v=93" />
     <link rel="stylesheet" href="/parchemin-senac-da-2026.css?v=5" />
     <link rel="stylesheet" href="/parchemin-senac-observatory.css?v=11" />
     <link rel="stylesheet" href="/parchemin-senac-glyphs.css?v=9" />
-    <link rel="stylesheet" href="/parchemin-senac-reading-flow.css?v=45" />
-    <link rel="stylesheet" href="/parchemin-senac-didyouknow.css?v=52" />
+    <link rel="stylesheet" href="/parchemin-senac-reading-flow.css?v=52" />
+    <link rel="stylesheet" href="/parchemin-senac-didyouknow.css?v=60" />
     <link rel="stylesheet" href="/parchemin-senac-stellar.css?v=13" />
     <link rel="stylesheet" href="/parchemin-senac-pillars.css?v=7" />
     <link rel="stylesheet" href="/parchemin-senac-traits.css?v=7" />
-    <link rel="stylesheet" href="/parchemin-senac-hero-da.css?v=16" />
+    <link rel="stylesheet" href="/parchemin-senac-hero-da.css?v=20" />
     <link rel="stylesheet" href="/parchemin-senac-nav-pictos.css?v=3" />
     <link rel="stylesheet" href="/parchemin-senac-color-fluid.css?v=2" />
     <link rel="stylesheet" href="/parchemin-senac-temporal.css?v=3" />
@@ -224,18 +226,19 @@
             <span class="smc-split-side-wash" aria-hidden="true"></span>
             <span class="smc-split-side-bottom" aria-hidden="true"></span>
             <span class="smc-split-side-edge smc-split-side-edge--right" aria-hidden="true"></span>
-            <!-- Dmos survol : remplacer par de courts clips ddis (ex. /videos/smc-cinema-demo.webm) ; ici transition en attendant. -->
-            <video
-              class="smc-split-demo-video"
-              muted
-              playsinline
-              loop
-              preload="metadata"
-              tabindex="-1"
-              aria-hidden="true"
-            >
-              <source src="/transitions/trans2-alpha.webm" type="video/webm" />
-            </video>
+            <span class="smc-split-demo-frame" aria-hidden="true">
+              <video
+                class="smc-split-demo-video"
+                muted
+                playsinline
+                loop
+                preload="metadata"
+                tabindex="-1"
+                aria-hidden="true"
+              >
+                <source src="/videos/mode-explore.mp4" type="video/mp4" />
+              </video>
+            </span>
             <span class="smc-split-stack">
               <span class="smc-split-eyebrow" data-i18n="smc_mode_eyebrow">Mode</span>
               <span class="smc-split-icon" aria-hidden="true">
@@ -252,7 +255,6 @@
 
           <div class="smc-split-center" aria-hidden="true">
             <span class="smc-split-center-line smc-split-center-line--top"></span>
-            <span class="smc-split-diamond">?</span>
             <span class="smc-split-center-line smc-split-center-line--bottom"></span>
           </div>
 
@@ -261,18 +263,19 @@
             <span class="smc-split-side-wash" aria-hidden="true"></span>
             <span class="smc-split-side-bottom" aria-hidden="true"></span>
             <span class="smc-split-side-edge smc-split-side-edge--left" aria-hidden="true"></span>
-            <!-- Mme logique que Cinma : source ddie conseille (ex. /videos/smc-explore-demo.webm). -->
-            <video
-              class="smc-split-demo-video"
-              muted
-              playsinline
-              loop
-              preload="metadata"
-              tabindex="-1"
-              aria-hidden="true"
-            >
-              <source src="/transitions/trans2-alpha-act12.webm" type="video/webm" />
-            </video>
+            <span class="smc-split-demo-frame" aria-hidden="true">
+              <video
+                class="smc-split-demo-video"
+                muted
+                playsinline
+                loop
+                preload="metadata"
+                tabindex="-1"
+                aria-hidden="true"
+              >
+                <source src="/videos/mode-cinema.mp4" type="video/mp4" />
+              </video>
+            </span>
             <span class="smc-split-stack">
               <span class="smc-split-eyebrow" data-i18n="smc_mode_eyebrow">Mode</span>
               <span class="smc-split-icon" aria-hidden="true">
@@ -292,12 +295,21 @@
 
     <!-- Toggle mode permanent (bas gauche) -->
     <div id="scroll-mode-toggle" class="scroll-mode-toggle" data-i18n-aria="smt_aria" aria-label="Mode de défilement" hidden>
-      <button type="button" id="smt-cinema-btn" class="smt-btn smt-btn--cinema" data-i18n-title="smt_cinema_title" title="Mode Cinma (dfilement auto)">
-        <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-          <polygon points="5,2 14,8 5,14" fill="currentColor" opacity="0.9"/>
-          <line x1="1" y1="2" x2="1" y2="14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-        </svg>
-        <span data-i18n="smt_cinema">Cinéma</span>
+      <button type="button" id="smt-cinema-btn" class="smt-btn smt-btn--cinema" data-i18n-title="smt_cinema_title" title="Mode Cinéma (défilement auto)">
+        <span class="smt-cinema-icon smt-cinema-icon--run" aria-hidden="true">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+            <polygon points="5,2 14,8 5,14" fill="currentColor" opacity="0.9" />
+            <line x1="1" y1="2" x2="1" y2="14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+          </svg>
+        </span>
+        <span class="smt-cinema-icon smt-cinema-icon--hold" aria-hidden="true">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+            <rect x="3.5" y="2.5" width="3.2" height="11" rx="0.6" fill="currentColor" />
+            <rect x="9.3" y="2.5" width="3.2" height="11" rx="0.6" fill="currentColor" />
+          </svg>
+        </span>
+        <span class="smt-cinema-label" data-i18n="smt_cinema">Cinéma</span>
+        <span class="smt-cinema-pause-chip" id="smt-cinema-pause-chip" data-i18n="smt_cinema_paused" hidden>Pause</span>
       </button>
       <button type="button" id="smt-explore-btn" class="smt-btn smt-btn--explore" data-i18n-title="smt_explore_title" title="Mode Exploration (manuel)">
         <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
@@ -310,7 +322,7 @@
 
     <main class="chapter chapter-two">
       <section
-        class="senac-act2-garde senac-scene"
+        class="senac-act2-garde"
         data-reveal
         aria-labelledby="senac-act2-garde-title"
       >
@@ -422,7 +434,7 @@
         </figure>
 
         <article class="story-card story-card--left" data-reveal>
-          <div class="date-ghost">1940</div>
+          <div class="date-ghost date-ghost--1940">1940</div>
           <div class="pin" aria-hidden="true"></div>
           <div class="story-panel">
             <p class="story-date" data-i18n="s1940_date">Années sombres</p>
@@ -454,7 +466,7 @@
           </div>
         </article>
         <article class="story-card story-card--left" data-reveal>
-          <div class="date-ghost">1950</div>
+          <div class="date-ghost date-ghost--1950">1950</div>
           <div class="pin" aria-hidden="true"></div>
           <div class="story-panel">
             <p class="story-date" data-i18n="s1950_date">1950-1960</p>

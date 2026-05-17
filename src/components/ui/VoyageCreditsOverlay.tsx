@@ -21,10 +21,15 @@ import {
 
 /** Durée totale du défilement (secondes). Augmenter si contenu plus long / typo plus grande. */
 const SCROLL_DURATION_S = 88;
-/** Fondu noir après la fin du générique (secondes). */
-const FINALE_FADE_TO_BLACK_S = 1.35;
-/** Délai avant le bouton Fermer, après le fondu (secondes). */
-const FINALE_BTN_DELAY_S = 0.28;
+/** Déclenche fondu + bouton dès que le bas du générique entre dans le cadre (pas à 100 %). */
+/** ~6 s plus tard qu’à 81 % (défilement 88 s) — fondu quand le bas du générique est bien entré. */
+const FINALE_SCROLL_PROGRESS = 0.88;
+/** Fondu noir de clôture (secondes). */
+const FINALE_FADE_TO_BLACK_S = 3.85;
+/** Bouton Fermer : peu après le début du fondu (pas après la fin du fondu). */
+const FINALE_BTN_DELAY_S = 1.2;
+/** Fondu entrant depuis l’acte III (croisé avec le fondu sortant de la scène). */
+const ACT3_FINALE_ENTER_FADE_S = 2.85;
 
 /** Logo institutionnel - PNG « blanc sur noir » sans alpha : rendu via masque luminance + dégradé (fond noir ignoré). */
 const MMI_LOGO_SRC = `${import.meta.env.BASE_URL}images/logo-mmi.png`;
@@ -55,6 +60,7 @@ export default function VoyageCreditsOverlay({
   prefersReducedMotionRef.current = reduceMotion;
   const trackRef = useRef<HTMLDivElement>(null);
   const tweenRef = useRef<gsap.core.Tween | null>(null);
+  const finaleTriggeredRef = useRef(false);
   /** 0→1 : pilote parallaxe ciel / brume / fumée / arche pendant le défilement GSAP. */
   const creditsProgressRef = useRef(0);
   const creditsImmersion = useCreditsDaScroll(open, fromAct3Finale, creditsProgressRef);
@@ -88,19 +94,27 @@ export default function VoyageCreditsOverlay({
       return;
     }
     tweenRef.current?.kill();
+    finaleTriggeredRef.current = false;
     creditsProgressRef.current = 0;
     const dist = Math.max(0, el.scrollHeight - window.innerHeight * 0.15);
     gsap.set(el, { y: '100vh' });
+    const triggerFinale = () => {
+      if (finaleTriggeredRef.current) return;
+      finaleTriggeredRef.current = true;
+      setScrollDone(true);
+    };
     tweenRef.current = gsap.to(el, {
       y: -dist,
       duration: SCROLL_DURATION_S,
       ease: 'none',
       onUpdate() {
-        creditsProgressRef.current = this.progress();
+        const p = this.progress();
+        creditsProgressRef.current = p;
+        if (p >= FINALE_SCROLL_PROGRESS) triggerFinale();
       },
       onComplete: () => {
         creditsProgressRef.current = 1;
-        setScrollDone(true);
+        triggerFinale();
       },
     });
   }, []);
@@ -118,6 +132,7 @@ export default function VoyageCreditsOverlay({
     if (!open) {
       tweenRef.current?.kill();
       tweenRef.current = null;
+      finaleTriggeredRef.current = false;
       creditsProgressRef.current = 0;
       setScrollDone(false);
       setShowClose(false);
@@ -161,7 +176,7 @@ export default function VoyageCreditsOverlay({
       setShowClose(true);
       return;
     }
-    const delayMs = (FINALE_FADE_TO_BLACK_S + FINALE_BTN_DELAY_S) * 1000;
+    const delayMs = FINALE_BTN_DELAY_S * 1000;
     const id = window.setTimeout(() => setShowClose(true), delayMs);
     return () => window.clearTimeout(id);
   }, [open, scrollDone, reduceMotion]);
@@ -191,11 +206,15 @@ export default function VoyageCreditsOverlay({
       aria-label={copy.orientationCreditsLabel}
       className={`fixed inset-0 z-[525] ${reduceMotion ? 'overflow-y-auto' : 'overflow-hidden'}`}
       style={{ backgroundColor: creditsRootBgColor(creditsImmersion) }}
-      initial={fromAct3Finale ? false : { opacity: 0 }}
+      initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{
-        duration: fromAct3Finale ? 0 : 0.65,
+        duration: fromAct3Finale
+          ? reduceMotion
+            ? 0.28
+            : ACT3_FINALE_ENTER_FADE_S
+          : 0.65,
         ease: [0.22, 1, 0.36, 1],
       }}
     >
@@ -348,6 +367,7 @@ export default function VoyageCreditsOverlay({
         <motion.button
           type="button"
           onClick={onClose}
+          aria-label={copy.voyageCreditsCloseAria}
           className={skipBtn}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
