@@ -13,6 +13,7 @@ import { flushSync } from "react-dom";
 import gsap from "gsap";
 const PoetryGame = lazy(() => import("./PoetryGame"));
 import AuroraMeshBackground from "./AuroraMeshBackground";
+import { useShellRuntimeStore } from "../stores/shellRuntimeStore";
 import {
   LANG_GATE_HOLD_AFTER_TIMELINE_S,
   LANG_GATE_TIMELINE_OVERLAP_S,
@@ -478,6 +479,7 @@ export default function Intro({
   const offerFullscreenOnArrival = useFullscreenPrefsStore((s) => s.offerFullscreenOnArrival);
   const isArabic = language === "ar-dz";
   const copy = useAppCopy();
+  const suppressIntroBackgroundFluid = useShellRuntimeStore((s) => s.fluidHandoff);
   const introCtaWords = isArabic ? INTRO_CTA_WORDS_AR : INTRO_CTA_WORDS_FR;
   const ui = isArabic
     ? {
@@ -1967,7 +1969,7 @@ export default function Intro({
                 className="absolute inset-0 z-[-1]"
                 >
                 <div ref={backgroundRevealRef} className="absolute inset-0 will-change-transform">
-                  <AuroraMeshBackground />
+                  <AuroraMeshBackground suppressBackgroundFluid={suppressIntroBackgroundFluid} />
                 </div>
                 <div
                   ref={sunRevealRef}

@@ -276,7 +276,7 @@ export async function initSenacArchScene(opts) {
   function tick() {
     if (disposed) return;
     if (typeof document !== "undefined" && document.hidden) {
-      rafId = requestAnimationFrame(tick);
+      rafId = 0;
       return;
     }
     sync();
@@ -285,6 +285,7 @@ export async function initSenacArchScene(opts) {
   const onVisibilityChange = () => {
     if (disposed || document.hidden) return;
     sync();
+    if (!rafId) rafId = requestAnimationFrame(tick);
   };
   document.addEventListener("visibilitychange", onVisibilityChange, { passive: true });
 

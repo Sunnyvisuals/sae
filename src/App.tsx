@@ -46,6 +46,7 @@ import type { Act1QuestProgress, Act2QuestProgress } from "./components/ui/HintP
 import type { Act1QuestStep } from "./components/Immersive/AlgeriaMap";
 import { useCursorStore } from "./hooks/useCursorContext";
 import { useCursorPrefsStore } from "./stores/cursorPrefsStore";
+import { useShellRuntimeStore } from "./stores/shellRuntimeStore";
 import { useMediaQuery } from "./hooks/useMediaQuery";
 import {
   useLanguageStore,
@@ -64,6 +65,7 @@ import {
   attachAct1MapPrefetchOnFirstUserGesture,
   prefetchAct2TransitionAssets,
   runWhenIdle,
+  runWhenIdleAfterMinDelay,
   scheduleIdleAct1MapPrefetchAfterLoad,
 } from "./lib/actTransitionPrefetch";
 import { prefetchAct23BridgeVideo } from "./lib/act23Bridge";
@@ -296,6 +298,14 @@ export default function App() {
   /** Hydrate SplashCursor aprï¿½s 2 cadres paint : ï¿½vite de rivaliser avec FCP/LCP (rendu inchangï¿½ par la suite). */
   const [splashWebglReady, setSplashWebglReady] = useState(false);
   const splashWebglMountedRef = useRef(false);
+  const setFluidHandoff = useShellRuntimeStore((s) => s.setFluidHandoff);
+  /** Cache layout iframe acte II — évite reflow forcé à chaque `senac-pointer`. */
+  const senacIframeRectRef = useRef<{
+    el: HTMLIFrameElement;
+    left: number;
+    top: number;
+    at: number;
+  } | null>(null);
 
   const mdUp = useMediaQuery("(min-width: 768px)");
   /** `(any-pointer: fine)` inclut souris/stylus/trackpad m?me si `(hover:hover)` est faux sur hybrides. */
@@ -481,11 +491,11 @@ export default function App() {
     };
     window.addEventListener("pointerdown", onMenuGesture, { passive: true, capture: true });
     window.addEventListener("keydown", onMenuGesture, { capture: true });
-    const cancelIdlePanel = runWhenIdle(() => {
+    const cancelIdlePanel = runWhenIdleAfterMinDelay(() => {
       if (cancelled) return;
       void loadOrientationPanelMod();
-    }, 12000);
-    const cancelIdleMenu = runWhenIdle(prefetchMenuChunks, 18000);
+    }, 9000, 12000);
+    const cancelIdleMenu = runWhenIdleAfterMinDelay(prefetchMenuChunks, 12000, 18000);
     return () => {
       cancelled = true;
       window.removeEventListener("pointerdown", onMenuGesture, true);
@@ -527,8 +537,9 @@ export default function App() {
       if (splashWebglMountedRef.current) return;
       splashWebglMountedRef.current = true;
       setSplashWebglReady(true);
+      setFluidHandoff(true);
     }, 3200);
-  }, [finePointer]);
+  }, [finePointer, setFluidHandoff]);
 
   /** Carte : pendant le jeu, pr?pare bundle acte II + HTML parchemin + vid?os de pont (I?II, II?III). */
   useEffect(() => {
@@ -1101,9 +1112,21 @@ export default function App() {
         if (!(iframe instanceof HTMLIFrameElement) || e.source !== iframe.contentWindow) return;
         const cx = typeof d.clientX === "number" && Number.isFinite(d.clientX) ? d.clientX : 0;
         const cy = typeof d.clientY === "number" && Number.isFinite(d.clientY) ? d.clientY : 0;
-        const r = iframe.getBoundingClientRect();
-        const x = r.left + cx;
-        const y = r.top + cy;
+        const now = performance.now();
+        let left: number;
+        let top: number;
+        const cached = senacIframeRectRef.current;
+        if (cached?.el === iframe && now - cached.at < 48) {
+          left = cached.left;
+          top = cached.top;
+        } else {
+          const r = iframe.getBoundingClientRect();
+          left = r.left;
+          top = r.top;
+          senacIframeRectRef.current = { el: iframe, left, top, at: now };
+        }
+        const x = left + cx;
+        const y = top + cy;
         if (d.down === true) {
           window.dispatchEvent(
             new PointerEvent("pointerdown", { clientX: x, clientY: y, bubbles: true, cancelable: false }),

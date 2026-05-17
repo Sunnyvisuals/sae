@@ -628,7 +628,7 @@ export default function OrientationPanel({
           />
           <IconChevronLeft
             className={
-              'relative h-4 w-4 shrink-0 transition-[color,transform,filter] duration-[850ms] ease-out group-hover:-translate-x-px ' +
+              'relative h-6 w-6 shrink-0 transition-[color,transform,filter] duration-[850ms] ease-out group-hover:-translate-x-0.5 ' +
               (quietCollapsed
                 ? nightRail
                   ? 'text-[rgba(139,213,255,0.88)] drop-shadow-[0_1px_10px_rgba(0,0,0,0.65)] group-hover:text-[#ead7a4]'
@@ -638,7 +638,7 @@ export default function OrientationPanel({
                     ? 'text-[rgba(139,213,255,0.72)] group-hover:text-[#ead7a4]'
                     : 'text-solar-gold/70 group-hover:text-solar-gold'))
             }
-            strokeWidth={1.35}
+            strokeWidth={1.75}
             aria-hidden
           />
           <span

@@ -74,6 +74,7 @@ export default function AuroraMeshBackground({
     };
 
     const onMove = (e: MouseEvent) => {
+      if (document.visibilityState === 'hidden') return;
       target.current = {
         x: e.clientX / window.innerWidth,
         y: e.clientY / window.innerHeight,
@@ -82,10 +83,19 @@ export default function AuroraMeshBackground({
         rafId.current = requestAnimationFrame(tick);
       }
     };
+    const onVisibility = () => {
+      if (document.visibilityState !== 'hidden') return;
+      if (rafId.current) {
+        cancelAnimationFrame(rafId.current);
+        rafId.current = 0;
+      }
+    };
     window.addEventListener('mousemove', onMove, { passive: true });
+    document.addEventListener('visibilitychange', onVisibility, { passive: true });
 
     return () => {
       window.removeEventListener('mousemove', onMove);
+      document.removeEventListener('visibilitychange', onVisibility);
       if (rafId.current) cancelAnimationFrame(rafId.current);
     };
   }, []);

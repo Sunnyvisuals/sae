@@ -16,6 +16,34 @@ export function runWhenIdle(task: () => void, timeoutMs = 2800): () => void {
   return () => window.clearTimeout(tid);
 }
 
+/**
+ * N’exécute la tâche qu’après `minDelayMs`, puis via `runWhenIdle`.
+ * Évite qu’un premier « idle » très tôt (~700 ms) lance des imports lourds pendant FCP/TBT.
+ */
+export function runWhenIdleAfterMinDelay(
+  task: () => void,
+  minDelayMs: number,
+  idleTimeoutMs = 2800,
+): () => void {
+  if (typeof window === "undefined") {
+    task();
+    return () => {};
+  }
+  let cancelled = false;
+  let cancelIdle: (() => void) | undefined;
+  const minTimer = window.setTimeout(() => {
+    if (cancelled) return;
+    cancelIdle = runWhenIdle(() => {
+      if (!cancelled) task();
+    }, idleTimeoutMs);
+  }, minDelayMs);
+  return () => {
+    cancelled = true;
+    window.clearTimeout(minTimer);
+    cancelIdle?.();
+  };
+}
+
 /** Chunk lazy `AlgeriaMap` - à précharger pendant l’intro pour un passage acte I sans attente. */
 function prefetchAct1MapChunk(): Promise<unknown> {
   return import("../components/Immersive/AlgeriaMap");

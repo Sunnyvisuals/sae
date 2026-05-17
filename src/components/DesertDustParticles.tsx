@@ -61,6 +61,7 @@ export default function DesertDustParticles({ compact = false }: { compact?: boo
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
+      if (document.visibilityState === 'hidden') return;
       const x = e.clientX;
       const y = e.clientY;
       cursorRef.current = { x, y };
@@ -69,6 +70,7 @@ export default function DesertDustParticles({ compact = false }: { compact?: boo
       if (rafMove.current) return;
       rafMove.current = requestAnimationFrame(() => {
         rafMove.current = 0;
+        if (document.visibilityState === 'hidden') return;
         setCursor({ ...cursorRef.current });
       });
     };

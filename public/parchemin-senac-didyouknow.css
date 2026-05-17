@@ -349,30 +349,29 @@ body.senac-reading-flow .senac-scene--chamber.quote-break {
 }
 
 /** Citation Jean Sénac : centre géométrique du viewport (pas la colonne « fait »). */
-body.senac-reading-flow .senac-scene--chamber.quote-break--one-line {
-  display: grid;
-  place-items: center;
-  justify-items: center;
+body.senac-reading-flow .senac-scene--chamber.quote-break--one-line,
+body.senac-reading-flow #timeline-start.timeline.senac-constellation-track > .senac-scene.quote-break--one-line {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center !important;
+  justify-content: center !important;
   width: 100%;
-  max-width: none;
-  min-height: min(82svh, var(--senac-beat));
-  padding-block: clamp(2.25rem, 9vh, 4.5rem);
+  max-width: 100%;
+  min-height: min(100svh, 100dvh);
+  margin-inline: 0;
+  padding-block: clamp(1.5rem, 4vh, 2.5rem);
   padding-inline: max(var(--senac-fact-pad), env(safe-area-inset-left, 0px))
     max(var(--senac-fact-pad), env(safe-area-inset-right, 0px));
   box-sizing: border-box;
-  text-align: center;
-}
-
-body.senac-reading-flow #timeline-start.timeline.senac-constellation-track > .senac-scene.quote-break--one-line {
-  align-items: center;
-  justify-content: center;
-  justify-items: center;
-  text-align: center;
+  text-align: center !important;
+  overflow-x: clip;
 }
 
 body.senac-reading-flow .senac-scene--chamber.quote-break--one-line::before {
   left: 50%;
+  right: auto;
   width: min(92vw, 36rem);
+  transform: translateX(-50%);
   opacity: 0.92;
 }
 
@@ -392,13 +391,14 @@ body.senac-reading-flow .senac-quote-stack {
 
 body.senac-reading-flow .quote-break--one-line .senac-quote-stack {
   position: relative;
-  left: 50%;
-  transform: translateX(-50%);
-  width: fit-content;
-  max-width: min(92vw, 42rem);
-  margin: 0;
-  justify-self: center;
-  align-self: center;
+  left: auto;
+  right: auto;
+  transform: none;
+  width: 100%;
+  max-width: min(92vw, 40rem);
+  margin-inline: auto;
+  align-items: center;
+  justify-content: center;
   text-align: center;
 }
 
@@ -410,20 +410,25 @@ body.senac-reading-flow .senac-quote-stack cite {
 
 body.senac-reading-flow .quote-break--one-line .senac-quote-stack blockquote {
   display: block;
-  width: fit-content;
-  max-width: min(92vw, 42rem);
+  width: 100%;
+  max-width: 100%;
   margin-inline: auto !important;
-  padding-inline: 0.04em !important;
-  text-align: center;
+  padding-inline: clamp(0.25rem, 2vw, 0.75rem) !important;
+  text-align: center !important;
+  text-wrap: balance;
+  white-space: normal;
+  overflow-wrap: anywhere;
   letter-spacing: 0.08em;
 }
 
 body.senac-reading-flow .quote-break--one-line .senac-quote-stack cite {
   display: block;
-  width: fit-content;
+  width: 100%;
+  max-width: 100%;
   margin-inline: auto !important;
   padding-inline: 0 !important;
-  text-align: center;
+  text-align: center !important;
+  white-space: normal;
 }
 
 body.senac-reading-flow .quote-break--one-line .senac-quote-stack .sq-word,
@@ -541,14 +546,25 @@ body.senac-reading-flow .quote-break--title > span {
   text-align: center;
 }
 
-body.senac-reading-flow .quote-break--title blockquote,
-body.senac-reading-flow .quote-break--one-line blockquote {
+body.senac-reading-flow .quote-break--title blockquote {
   width: max-content;
   max-width: min(92vw, 40rem);
   margin: 0 auto !important;
   padding-inline: 0 !important;
   text-wrap: nowrap;
   white-space: nowrap;
+  line-height: 1.15;
+  letter-spacing: 0.08em;
+}
+
+body.senac-reading-flow .quote-break--one-line blockquote {
+  width: 100%;
+  max-width: min(92vw, 40rem);
+  margin: 0 auto !important;
+  padding-inline: clamp(0.25rem, 2vw, 0.75rem) !important;
+  text-align: center !important;
+  text-wrap: balance;
+  white-space: normal;
   line-height: 1.15;
   letter-spacing: 0.08em;
 }
@@ -792,8 +808,8 @@ html[dir="rtl"] body.senac-reading-flow .quote-break cite {
 
 @media (max-width: 520px) {
   body.senac-reading-flow .quote-break--one-line blockquote {
-    font-size: clamp(0.68rem, 3.1vw, 0.95rem);
-    letter-spacing: 0.07em;
+    font-size: clamp(0.95rem, 3.8vw, 1.35rem);
+    letter-spacing: 0.06em;
   }
 
   body.senac-reading-flow .senac-scene--card .date-ghost {

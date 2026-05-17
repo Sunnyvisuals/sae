@@ -82,6 +82,7 @@ export default function ShootingStars({
 
     const tick = () => {
       rafId = 0;
+      if (document.visibilityState === 'hidden') return;
       ctx.clearRect(0, 0, w, h);
 
       // Spawn
@@ -154,13 +155,28 @@ export default function ShootingStars({
       }
       if (rafId === 0) scheduleFrame();
     };
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = 0;
+        if (idleTimer) {
+          window.clearTimeout(idleTimer);
+          idleTimer = 0;
+        }
+        return;
+      }
+      if (rafId === 0 && idleTimer === 0) scheduleFrame();
+    };
+
     window.addEventListener('resize', resize, { passive: true });
+    document.addEventListener('visibilitychange', onVisibility, { passive: true });
 
     scheduleFrame();
     return () => {
       cancelAnimationFrame(rafId);
       if (idleTimer) window.clearTimeout(idleTimer);
       window.removeEventListener('resize', resize);
+      document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [prefersReducedMotion, intense]);
 
