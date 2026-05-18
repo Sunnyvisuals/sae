@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
     "start": "vite --port=3000 --host=0.0.0.0",
-    "build": "node scripts/verify-prologue-asset.mjs && vite build",
+    "build": "node scripts/verify-prologue-asset.mjs && vite build && node scripts/copy-prologue-to-dist.mjs",
     "assets:prologue:web": "node scripts/build-prologue-web.mjs",
     "assets:lang-bridge-mp4": "ffmpeg -y -i public/transitions/trans2-alpha.webm -an -c:v libx264 -pix_fmt yuv420p -profile:v high -movflags +faststart public/transitions/trans2-alpha.mp4",
     "assets:act12-bridge-mp4": "ffmpeg -y -i public/transitions/trans2-alpha-act12.webm -an -c:v libx264 -pix_fmt yuv420p -profile:v high -movflags +faststart public/transitions/trans2-alpha-act12.mp4",
