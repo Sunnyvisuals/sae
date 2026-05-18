@@ -46,9 +46,7 @@ import { ensureCustomCursorAwake } from "../lib/customCursorPortal";
 import PrologueVolumeFluid from "./PrologueVolumeFluid";
 import PrologueVolumeHud from "./PrologueVolumeHud";
 import DevChapterJumpsPanel, { type DevChapterJumps } from "./DevChapterJumpsPanel";
-import { INTRO_VIDEO_SRC, INTRO_VIDEO_CROSS_ORIGIN } from "../lib/act1IntroBridge";
-import { attachIntroVideoMedia } from "../lib/introVideoMedia";
-import { useIntroVideoAttach } from "../hooks/useIntroVideoAttach";
+import { INTRO_VIDEO_SRC } from "../lib/act1IntroBridge";
 import { useLanguageStore } from "../stores/languageStore";
 import { useFullscreenPrefsStore } from "../stores/fullscreenPrefsStore";
 import { useCursorPrefsStore, type CursorExperienceMode } from "../stores/cursorPrefsStore";
@@ -1458,29 +1456,51 @@ export default function Intro({
     syncPrologueTutorialVolumeProbe(volume, isMuted);
   }, [prologueTutorialStep, volume, isMuted]);
 
-  /** Précharge la vidéo prologue pendant l’overlay « Le voyage va commencer ». */
+  /** Précharge le MP4 Bunny pendant l’overlay « Le voyage va commencer ». */
   useEffect(() => {
     if (!isStarting || introPrefetchDone || videoStarted) return;
     const v = document.createElement("video");
     v.preload = "auto";
     v.muted = true;
     v.playsInline = true;
-    const detach = attachIntroVideoMedia(v, INTRO_VIDEO_SRC, {
-      crossOrigin: INTRO_VIDEO_CROSS_ORIGIN,
-    });
+    v.src = INTRO_VIDEO_SRC;
     v.load();
     return () => {
-      detach();
+      v.removeAttribute("src");
+      v.load();
     };
   }, [isStarting, introPrefetchDone, videoStarted]);
 
-  useIntroVideoAttach(
-    videoRef,
-    INTRO_VIDEO_SRC,
-    videoStarted,
-    INTRO_VIDEO_CROSS_ORIGIN,
-    playPrologueWhenReady,
-  );
+  /** Lecture dès que le flux est prêt (MP4 natif, sans crossOrigin). */
+  useEffect(() => {
+    if (!videoStarted) return;
+    const v = videoRef.current;
+    if (!v) return;
+
+    const start = () => playPrologueWhenReady(v);
+
+    if (v.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
+      start();
+    } else {
+      v.addEventListener("canplay", start, { once: true });
+    }
+
+    const onErr = () => {
+      console.warn("[intro] erreur vidéo:", v.error?.code, INTRO_VIDEO_SRC);
+      setHasError(true);
+    };
+    v.addEventListener("error", onErr);
+
+    if (!v.src) {
+      v.src = INTRO_VIDEO_SRC;
+      v.load();
+    }
+
+    return () => {
+      v.removeEventListener("canplay", start);
+      v.removeEventListener("error", onErr);
+    };
+  }, [videoStarted, playPrologueWhenReady]);
 
   const hideProloguePlayMark = useCallback(() => {
     if (prologuePlayMarkHideRef.current != null) {
@@ -2488,8 +2508,10 @@ export default function Intro({
             />
             <video
               ref={videoRef}
+              src={INTRO_VIDEO_SRC}
+              preload="auto"
+              playsInline
               onEnded={handleVideoEnd}
-              onError={() => setHasError(true)}
               onPlay={() => {
                 setPrologueVideoPaused(false);
                 if (prologueWasPausedRef.current) {
@@ -2506,7 +2528,6 @@ export default function Intro({
               }}
               className="absolute inset-0 z-[1] h-full w-full cursor-none object-cover"
               muted={isMuted}
-              playsInline
             />
             <AnimatePresence>
               {prologueVideoPaused ? (

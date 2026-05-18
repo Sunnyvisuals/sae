@@ -5,9 +5,10 @@ export function isIntroVideoHlsSrc(src: string): boolean {
 }
 
 export type IntroVideoAttachOptions = {
+  /** Laisser false pour Bunny (Referer). */
   crossOrigin?: boolean;
-  /** Appelé quand la première image est prête (canplay / manifest HLS). */
   onReady?: (video: HTMLVideoElement) => void;
+  onError?: (video: HTMLVideoElement) => void;
 };
 
 function whenCanPlay(
@@ -33,15 +34,23 @@ function attachMp4(
   src: string,
   crossOrigin: boolean,
   onReady: IntroVideoAttachOptions["onReady"],
+  onError: IntroVideoAttachOptions["onError"],
 ): () => void {
   if (crossOrigin) {
     video.crossOrigin = "anonymous";
   } else {
     video.removeAttribute("crossorigin");
   }
+
+  const onErr = () => onError?.(video);
+  video.addEventListener("error", onErr);
+
   video.src = src;
+  video.load();
   whenCanPlay(video, onReady);
+
   return () => {
+    video.removeEventListener("error", onErr);
     video.removeAttribute("src");
     video.load();
   };
@@ -52,25 +61,21 @@ function attachHls(
   src: string,
   crossOrigin: boolean,
   onReady: IntroVideoAttachOptions["onReady"],
+  onError: IntroVideoAttachOptions["onError"],
 ): () => void {
   let cancelled = false;
-  let cleanupMp4: (() => void) | null = null;
-  let destroyHls: (() => void) | null = null;
+  let cleanup: (() => void) | null = null;
 
   const finish = () => {
-    destroyHls?.();
-    destroyHls = null;
-    cleanupMp4?.();
-    cleanupMp4 = null;
-    video.removeAttribute("src");
-    video.load();
+    cleanup?.();
+    cleanup = null;
   };
 
   if (video.canPlayType("application/vnd.apple.mpegurl")) {
-    cleanupMp4 = attachMp4(video, src, crossOrigin, onReady);
+    cleanup = attachMp4(video, src, crossOrigin, onReady, onError);
     return () => {
       cancelled = true;
-      cleanupMp4?.();
+      finish();
     };
   }
 
@@ -78,38 +83,34 @@ function attachHls(
     .then(({ default: Hls }) => {
       if (cancelled) return;
       if (!Hls.isSupported()) {
-        cleanupMp4 = attachMp4(video, src, crossOrigin, onReady);
+        cleanup = attachMp4(video, PROLOGUE_CDN_URL, false, onReady, onError);
         return;
       }
 
-      const hls = new Hls({ enableWorker: true, lowLatencyMode: false });
+      const hls = new Hls({ enableWorker: true });
 
-      const tryMp4Fallback = () => {
-        const mp4 = PROLOGUE_CDN_URL;
-        if (!mp4 || isIntroVideoHlsSrc(mp4) || src === mp4) return false;
+      const tryMp4 = () => {
+        if (!PROLOGUE_CDN_URL || src === PROLOGUE_CDN_URL) return false;
         hls.destroy();
-        destroyHls = null;
-        cleanupMp4 = attachMp4(video, mp4, crossOrigin, onReady);
+        cleanup = attachMp4(video, PROLOGUE_CDN_URL, false, onReady, onError);
         return true;
       };
 
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        whenCanPlay(video, onReady);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => whenCanPlay(video, onReady));
+      hls.on(Hls.Events.ERROR, (_e, data) => {
+        if (data.fatal && !tryMp4()) onError?.(video);
       });
-      hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (!data.fatal) return;
-        if (tryMp4Fallback()) return;
-        console.error("[intro-video] HLS fatal:", data.type, data.details);
-      });
-
       hls.loadSource(src);
       hls.attachMedia(video);
-      destroyHls = () => hls.destroy();
+      cleanup = () => {
+        hls.destroy();
+        video.removeAttribute("src");
+        video.load();
+      };
     })
-    .catch((err) => {
-      console.error("[intro-video] hls.js:", err);
+    .catch(() => {
       if (!cancelled) {
-        cleanupMp4 = attachMp4(video, PROLOGUE_CDN_URL || src, crossOrigin, onReady);
+        cleanup = attachMp4(video, PROLOGUE_CDN_URL, false, onReady, onError);
       }
     });
 
@@ -119,7 +120,7 @@ function attachHls(
   };
 }
 
-/** Branche MP4 ou HLS (Bunny Stream) sur un `<video>`. Retourne un cleanup. */
+/** Branche MP4 ou HLS sur `<video>`. */
 export function attachIntroVideoMedia(
   video: HTMLVideoElement,
   src: string,
@@ -127,7 +128,7 @@ export function attachIntroVideoMedia(
 ): () => void {
   const opts: IntroVideoAttachOptions =
     typeof options === "boolean" ? { crossOrigin: options } : options;
-  const { crossOrigin = false, onReady } = opts;
+  const { crossOrigin = false, onReady, onError } = opts;
 
   if (!src?.trim()) {
     console.error("[intro-video] source vide");
@@ -135,10 +136,10 @@ export function attachIntroVideoMedia(
   }
 
   if (isIntroVideoHlsSrc(src)) {
-    return attachHls(video, src, crossOrigin, onReady);
+    return attachHls(video, src, crossOrigin, onReady, onError);
   }
 
-  return attachMp4(video, src, crossOrigin, onReady);
+  return attachMp4(video, src, crossOrigin, onReady, onError);
 }
 
 export { PROLOGUE_CDN_HLS_URL };

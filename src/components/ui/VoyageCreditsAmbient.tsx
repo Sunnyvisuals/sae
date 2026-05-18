@@ -1,9 +1,5 @@
 import { useEffect, useRef, type MutableRefObject, type RefObject } from "react";
-import {
-  INTRO_VIDEO_CROSS_ORIGIN,
-  INTRO_VIDEO_SRC,
-} from "../../lib/act1IntroBridge";
-import { useIntroVideoAttach } from "../../hooks/useIntroVideoAttach";
+import { INTRO_VIDEO_SRC } from "../../lib/act1IntroBridge";
 import {
   creditsHeroFriseFromImmersion,
   creditsVideoFilter,
@@ -41,6 +37,20 @@ export default function VoyageCreditsAmbient({
   immersionRef.current = immersion;
   const getImmersion = () => immersionRef.current;
   const getScrollY = () => creditsProgressRef.current * 4200;
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || reduceMotion) return;
+    video.muted = true;
+    video.playsInline = true;
+    video.loop = true;
+    const play = () => void video.play().catch(() => {});
+    if (video.readyState >= HTMLMediaElement.HAVE_METADATA) play();
+    else video.addEventListener("loadeddata", play, { once: true });
+    return () => {
+      video.pause();
+    };
+  }, [reduceMotion]);
 
   useEffect(() => {
     const sky = skyRef.current;
@@ -173,27 +183,6 @@ function CreditsVideoLayer({
   videoRef: RefObject<HTMLVideoElement | null>;
   immersion: number;
 }) {
-  useIntroVideoAttach(
-    videoRef,
-    INTRO_VIDEO_SRC,
-    !reduceMotion,
-    INTRO_VIDEO_CROSS_ORIGIN,
-    (video) => {
-      video.muted = true;
-      video.playsInline = true;
-      video.loop = true;
-      void video.play().catch(() => {});
-    },
-  );
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || reduceMotion) return;
-    return () => {
-      video.pause();
-    };
-  }, [reduceMotion, videoRef]);
-
   return (
     <div
       className="pointer-events-none absolute inset-[-4%_-4%_0] z-0 overflow-hidden"
@@ -205,6 +194,7 @@ function CreditsVideoLayer({
         style={{
           filter: creditsVideoFilter(immersion, reduceMotion),
         }}
+        src={INTRO_VIDEO_SRC}
         preload="metadata"
         muted
         playsInline

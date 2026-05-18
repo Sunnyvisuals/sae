@@ -15,7 +15,6 @@ import {
   shouldIgnoreVolumeKeyboardTarget,
 } from "../lib/volumeKeyboard";
 import { useAppCopy } from "../hooks/useAppCopy";
-import { INTRO_VIDEO_CROSS_ORIGIN } from "../lib/act1IntroBridge";
 import { isIntroVideoHlsSrc } from "../lib/introVideoMedia";
 import {
   ACT23_BRIDGE_MP4,
@@ -376,7 +375,7 @@ export default function ChapterAct23Bridge({ open, onComplete }: Props) {
     const el = videoRef.current;
     if (!el) return;
     return attachIntroVideoMedia(el, ACT23_BRIDGE_MP4_FALLBACK, {
-      crossOrigin: INTRO_VIDEO_CROSS_ORIGIN,
+      crossOrigin: false,
     });
   }, [open, sourceMode]);
 

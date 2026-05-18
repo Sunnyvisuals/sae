@@ -7,11 +7,7 @@ import {
   shouldIgnoreVolumeKeyboardTarget,
 } from '../../lib/volumeKeyboard';
 import { useAppCopy } from '../../hooks/useAppCopy';
-import {
-  INTRO_VIDEO_CROSS_ORIGIN,
-  INTRO_VIDEO_SRC,
-} from '../../lib/act1IntroBridge';
-import { useIntroVideoAttach } from '../../hooks/useIntroVideoAttach';
+import { INTRO_VIDEO_SRC } from '../../lib/act1IntroBridge';
 
 type Props = {
   /** Retour à l’expérience (carte / acte) - ne recharge rien */
@@ -51,17 +47,6 @@ export default function IntroVideoOverlay({ onClose }: Props) {
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
   }, []);
-
-  useIntroVideoAttach(
-    videoRef,
-    INTRO_VIDEO_SRC,
-    true,
-    INTRO_VIDEO_CROSS_ORIGIN,
-    (v) => {
-      v.currentTime = 0;
-      void v.play().catch(() => {});
-    },
-  );
 
   useEffect(() => {
     const showTimer = window.setTimeout(() => setShowSkip(true), 4000);
@@ -120,10 +105,18 @@ export default function IntroVideoOverlay({ onClose }: Props) {
       >
         <video
           ref={videoRef}
+          src={INTRO_VIDEO_SRC}
           className="h-full w-full cursor-none object-cover"
           playsInline
+          preload="auto"
           muted={isMuted}
           onEnded={handleVideoEnd}
+          onLoadedData={() => {
+            const v = videoRef.current;
+            if (!v) return;
+            v.currentTime = 0;
+            void v.play().catch(() => {});
+          }}
           onError={() => {}}
         />
       </motion.div>
