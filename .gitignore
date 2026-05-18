@@ -13,4 +13,4 @@ coverage/
 
 # Ancien prologue (remplacé par public/Prologue.mp4)
 public/al-rihla.mp4
-# Version web HQ (~81 Mo) : commitée en Git LFS pour Vercel (Bunny Stream renvoie 403 en direct).
+# Prologue.web.mp4 (~81 Mo) : versionné en git normal (<100 Mo) pour Vercel sans LFS.

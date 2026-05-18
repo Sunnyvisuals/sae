@@ -20,7 +20,9 @@ export function viteCopyProloguePlugin() {
     name: "al-rihla-copy-prologue",
     apply: "build",
     closeBundle() {
-      if (process.env.VITE_INTRO_VIDEO_URL?.trim()) {
+      const skipForCdn =
+        process.env.VERCEL !== "1" && process.env.VITE_INTRO_VIDEO_URL?.trim();
+      if (skipForCdn) {
         console.log("[prologue] VITE_INTRO_VIDEO_URL → pas de copie locale dans dist/");
         return;
       }

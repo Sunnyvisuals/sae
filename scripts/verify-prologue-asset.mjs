@@ -20,7 +20,8 @@ function findLocalPrologue() {
   });
 }
 
-const envUrl = process.env.VITE_INTRO_VIDEO_URL?.trim();
+const envUrl =
+  onVercel ? "" : (process.env.VITE_INTRO_VIDEO_URL?.trim() ?? "");
 
 if (envUrl) {
   if (!/^https:\/\//i.test(envUrl)) {

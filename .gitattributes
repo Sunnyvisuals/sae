@@ -1,3 +1,2 @@
-# Prologue master (~340 Mo) + version web (~81 Mo) — Git LFS.
+# Master prologue (~340 Mo) — Git LFS. Prologue.web.mp4 (~81 Mo) : git normal pour Vercel.
 public/Prologue.mp4 filter=lfs diff=lfs merge=lfs -text
-public/Prologue.web.mp4 filter=lfs diff=lfs merge=lfs -text
