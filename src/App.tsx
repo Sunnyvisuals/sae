@@ -70,14 +70,13 @@ import {
 } from "./lib/actTransitionPrefetch";
 import { PARCHEMIN_STATIC_QUERY } from "./lib/parcheminAssetVersion";
 import {
-  ACT_SAVE_STORAGE_KEY,
   getHydratedActSave,
   getSenacCrossNavFlags,
-  JOURNEY_REPLAY_STORAGE_KEY,
   patchActSave,
   readJourneyReplayUnlocked,
   setSessionJourneyReplayUnlocked,
 } from "./lib/actSave";
+import { restartExperienceFromScratch } from "./lib/resetExperience";
 import { REVELATION_WORDS } from "./components/Immersive/mapWordData";
 import {
   canonicalizeLegacyActIIIUrlIfNeeded,
@@ -710,6 +709,17 @@ export default function App() {
     pendingAct2.current = false;
     setChapterDaTransition(false);
     setAct12BridgeReveal01(1);
+    patchActSave((s) => ({
+      ...s,
+      act1: {
+        ...s.act1,
+        completed: true,
+        answers: {
+          ...s.act1.answers,
+          revelationWords: [...REVELATION_WORDS],
+        },
+      },
+    }));
   }, []);
 
   /** S?curit? : d?bloquer si la WebM ne se termine jamais (erreur rare). */
@@ -739,7 +749,7 @@ export default function App() {
     patchActSave((s) => ({
       ...s,
       act1: {
-        completed: true,
+        ...s.act1,
         answers: {
           ...s.act1.answers,
           revelationWords: [...REVELATION_WORDS],
@@ -754,7 +764,6 @@ export default function App() {
     window.clearTimeout(act12PrefaceTimerRef.current);
     if (showDevChapterJumps) {
       setAct1PrefaceDevPending(true);
-      return;
     }
     act12PrefaceTimerRef.current = window.setTimeout(() => {
       launchAct12Bridge();
@@ -783,13 +792,7 @@ export default function App() {
   openIntroVideoOverlayRef.current = openIntroVideoOverlay;
 
   const restartExperience = useCallback(() => {
-    try {
-      window.localStorage.removeItem(JOURNEY_REPLAY_STORAGE_KEY);
-      window.localStorage.removeItem(ACT_SAVE_STORAGE_KEY);
-    } catch {
-      /* ignore */
-    }
-    window.location.reload();
+    restartExperienceFromScratch();
   }, []);
 
   /** Acte III dans la SPA : m?me URL que le voyage (sans `/act3`). */
@@ -999,17 +1002,13 @@ export default function App() {
 
   const onAct1RevelationWords = useCallback((words: string[]) => {
     setRevelationCount(words.length);
-    patchActSave((s) => {
-      const completed = words.length >= 5 || s.act1.completed;
-      return {
-        ...s,
-        act1: {
-          ...s.act1,
-          completed,
-          answers: { ...s.act1.answers, revelationWords: [...words] },
-        },
-      };
-    });
+    patchActSave((s) => ({
+      ...s,
+      act1: {
+        ...s.act1,
+        answers: { ...s.act1.answers, revelationWords: [...words] },
+      },
+    }));
   }, []);
 
   const onAct1ConsignesDismissed = useCallback(() => {
@@ -1808,7 +1807,8 @@ export default function App() {
                 onRevelationWordsChange={onAct1RevelationWords}
                 onMemoryMapComplete={handleMemoryMapComplete}
                 onQuestStepComplete={onAct1QuestStep}
-                completedReplay={journeyReplayUnlocked || (act1Persist?.completed ?? false)}
+                completedReplay={journeyReplayUnlocked}
+                act1BridgeDone={act1Persist?.completed ?? false}
                 initialRevelationWords={act1Persist?.answers.revelationWords}
                 initialQuestProgress={act1Persist?.answers.quest}
                 initialHasZoomed={act1Persist?.answers.hasZoomed}

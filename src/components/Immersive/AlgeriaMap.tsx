@@ -221,9 +221,11 @@ const LS_CONSIGNES_KEY = 'al-rihla-consignes-vues';
 
 /** Après ce nombre de clics sans ouvrir le bon mot, surbrillance d’indice sur la carte. */
 const WORD_HINT_AFTER_MISS_CLICKS = 2;
-/** Surbrillance d’indice : léger zoom pulsé (canvas). */
-const HINT_GLOW_SCALE_MIN = 1.07;
-const HINT_GLOW_SCALE_AMP = 0.12;
+/** Surbrillance d’indice : zoom + halo (canvas). */
+const HINT_GLOW_SCALE_PEAK = 1.24;
+const HINT_GLOW_SCALE_AMP = 0.11;
+const HINT_GLOW_HIT_PAD = 1.28;
+const HINT_INTRO_MS = 880;
 /** Zone cliquable : padding + minimum (petits mots / italiques). */
 const WORD_HIT_PAD_X = 12;
 const WORD_HIT_PAD_Y = 10;
@@ -242,6 +244,79 @@ function getPoemMeasureCtx(): CanvasRenderingContext2D | null {
   if (typeof document === 'undefined') return null;
   poemMeasureCtx = document.createElement('canvas').getContext('2d');
   return poemMeasureCtx;
+}
+
+function hintIntroEase01(activatedAt: number | null, nowMs: number): number {
+  if (activatedAt == null) return 1;
+  const t = Math.min(1, Math.max(0, (nowMs - activatedAt) / HINT_INTRO_MS));
+  return 1 - (1 - t) ** 3;
+}
+
+/** Indice carte : halo radial + passes de lueur + texte lumineux. */
+function drawMapWordHintGlow(
+  ctx: CanvasRenderingContext2D,
+  p: Particle,
+  label: string,
+  font: string,
+  fontHover: string,
+  c: { r: number; g: number; b: number },
+  z: number,
+  t: number,
+  idx: number,
+  intro01: number,
+) {
+  const hintBreath = 0.5 + 0.5 * Math.sin(t * 2.2 + idx * 0.13);
+  const hintBeacon = 0.5 + 0.5 * Math.sin(t * 1.35 + 0.55);
+  const hintTwinkle =
+    0.4 + 0.6 * Math.sin(t * 4.6 + idx * 0.17) * Math.sin(t * 2.05 + 0.9);
+  const scalePulse = HINT_GLOW_SCALE_PEAK + HINT_GLOW_SCALE_AMP * hintBreath;
+  const hintScale = 1 + (scalePulse - 1) * intro01;
+  const glowA = intro01 * (0.62 + 0.38 * hintBreath);
+
+  const { halfW, halfH } = poemWordHitHalfExtents(p, label, font, 1);
+  const haloR = Math.max(halfW, halfH) * 2.65;
+
+  ctx.save();
+  ctx.translate(p.cx, p.cy);
+  ctx.scale(hintScale, hintScale);
+  ctx.translate(-p.cx, -p.cy);
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const grad = ctx.createRadialGradient(p.cx, p.cy, 0, p.cx, p.cy, haloR);
+  grad.addColorStop(0, `rgba(253, 248, 238, ${0.26 * glowA * (0.7 + 0.3 * hintBeacon)})`);
+  grad.addColorStop(0.32, `rgba(197, 160, 89, ${0.16 * glowA})`);
+  grad.addColorStop(0.62, `rgba(197, 160, 89, ${0.06 * glowA * hintBeacon})`);
+  grad.addColorStop(1, 'rgba(197, 160, 89, 0)');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(p.cx, p.cy, haloR, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.font = font;
+  ctx.shadowColor = `rgba(253, 248, 238, ${0.42 * glowA})`;
+  ctx.shadowBlur = (52 + 22 * hintBeacon) / z;
+  ctx.fillStyle = `rgba(253, 248, 238, ${0.14 * glowA})`;
+  ctx.fillText(label, p.cx, p.cy);
+
+  ctx.shadowColor = `rgba(${GOLD.r}, ${GOLD.g}, ${GOLD.b}, ${0.72 * glowA})`;
+  ctx.shadowBlur = (34 + 16 * hintTwinkle) / z;
+  const br = Math.min(255, Math.round(c.r + (CREAM.r - c.r) * (0.52 + 0.4 * hintTwinkle)));
+  const bg = Math.min(255, Math.round(c.g + (CREAM.g - c.g) * (0.48 + 0.36 * hintTwinkle)));
+  const bb = Math.min(255, Math.round(c.b + (CREAM.b - c.b) * (0.4 + 0.32 * hintTwinkle)));
+  ctx.fillStyle = `rgb(${br},${bg},${bb})`;
+  ctx.fillText(label, p.cx, p.cy);
+
+  ctx.font = fontHover;
+  ctx.shadowColor = `rgba(253, 248, 238, ${0.92 * glowA})`;
+  ctx.shadowBlur = (12 + 10 * hintTwinkle) / z;
+  ctx.fillStyle = `rgb(${Math.min(255, br + 18)},${Math.min(255, bg + 16)},${Math.min(255, bb + 12)})`;
+  ctx.fillText(label, p.cx, p.cy);
+
+  ctx.shadowBlur = 0;
+  ctx.shadowColor = 'transparent';
+  ctx.restore();
 }
 
 function poemWordHitHalfExtents(
@@ -335,6 +410,8 @@ type AlgeriaMapProps = {
   onQuestStepComplete?: (step: Act1QuestStep) => void;
   /** Mode revisite après traversée complète : carte déjà éveillée, sans auto-transition vers l'acte II. */
   completedReplay?: boolean;
+  /** Pont I→II déjà joué (sauvegarde) : ne pas relancer la transition automatiquement. */
+  act1BridgeDone?: boolean;
   /** État carte restauré depuis la sauvegarde (sans forcément avoir terminé la traversée globale). */
   initialRevelationWords?: string[];
   initialQuestProgress?: Act1QuestProgress;
@@ -352,6 +429,7 @@ export default function AlgeriaMap({
   onRevelationWordsChange,
   onQuestStepComplete,
   completedReplay = false,
+  act1BridgeDone = false,
   initialRevelationWords,
   initialQuestProgress,
   initialHasZoomed = false,
@@ -419,9 +497,7 @@ export default function AlgeriaMap({
 
   const revelRef = useRef(0);
   const mapAwakenedRef = useRef(false);
-  const awakenNotify = useRef(
-    completedReplay || sanitizeInitialRevelations(initialRevelationWords).length >= 5
-  );
+  const awakenNotify = useRef(completedReplay || act1BridgeDone);
   const hoveredIdx = useRef(-1);
   const questDone = useRef({
     hover:
@@ -509,9 +585,11 @@ export default function AlgeriaMap({
   /** Indice visuel : surbrillance après N clics sans succès sur le mot attendu. */
   const showWordHintRef = useRef(false);
   const missClicksForHintRef = useRef(0);
+  const hintActivatedAtRef = useRef<number | null>(null);
   useEffect(() => {
     showWordHintRef.current = false;
     missClicksForHintRef.current = 0;
+    hintActivatedAtRef.current = null;
   }, [activeWordTarget]);
 
   /** Tutoriel consignes + voile - false si déjà vu (localStorage) */
@@ -849,6 +927,9 @@ export default function AlgeriaMap({
       const hintOn = Boolean(need && showWordHintRef.current);
       const hintIdx =
         hintOn && need ? revelationParticleIdxRef.current[need as RevelationWord] : undefined;
+      const hintIntro01 = hintOn
+        ? hintIntroEase01(hintActivatedAtRef.current, performance.now())
+        : 0;
       const territory = territoryMaskRef.current;
 
       for (let idx = 0; idx < arr.length; idx++) {
@@ -890,15 +971,16 @@ export default function AlgeriaMap({
         const c = lerpC(GOLD, p.isPoem ? CREAM : SAND, p.colorT);
         const isHover = p.isPoem && idx === hi;
         const isHintGlow = p.isPoem && hintIdx === idx;
-        /** Respiration douce + léger scintillement (DA or / crème, pas halo orangé). */
-        const hintBreath = 0.5 + 0.5 * Math.sin(t * 3.05 + idx * 0.11);
-        const hintTwinkle =
-          0.45 +
-          0.55 * Math.sin(t * 5.9 + idx * 0.19) * Math.sin(t * 2.4 + 0.85);
         let drawA = p.alpha * (
-          isHover ? 1.22
-            : isHintGlow ? 1.12 + 0.14 * hintBreath
-            : revel < 3 ? 1.06 : 1
+          isHover
+            ? 1.22
+            : isHintGlow
+              ? 1.28 + 0.22 * hintIntro01
+              : hintOn && p.isPoem
+                ? 0.52
+                : revel < 3
+                  ? 1.06
+                  : 1
         );
         drawA = Math.min(1, drawA);
         ctx.globalAlpha = drawA;
@@ -914,20 +996,18 @@ export default function AlgeriaMap({
             ctx.fillStyle = `rgb(${Math.round(c.r)},${Math.round(c.g)},${Math.round(c.b)})`;
             ctx.fillText(poemLabel(p), p.cx, p.cy);
           } else if (isHintGlow) {
-            const hintScalePulse = HINT_GLOW_SCALE_MIN + HINT_GLOW_SCALE_AMP * hintBreath;
-            ctx.translate(p.cx, p.cy);
-            ctx.scale(hintScalePulse, hintScalePulse);
-            ctx.translate(-p.cx, -p.cy);
-            ctx.font = canvasFontCached(p, false);
-            ctx.shadowColor = `rgba(${GOLD.r}, ${GOLD.g}, ${GOLD.b}, ${0.28 + 0.22 * hintBreath})`;
-            ctx.shadowBlur = (12 + 8 * hintTwinkle) / z;
-            const br = Math.min(255, Math.round(c.r + (CREAM.r - c.r) * (0.4 + 0.35 * hintTwinkle)));
-            const bg = Math.min(255, Math.round(c.g + (CREAM.g - c.g) * (0.32 + 0.28 * hintTwinkle)));
-            const bb = Math.min(255, Math.round(c.b + (CREAM.b - c.b) * (0.26 + 0.22 * hintTwinkle)));
-            ctx.fillStyle = `rgb(${br},${bg},${bb})`;
-            ctx.fillText(poemLabel(p), p.cx, p.cy);
-            ctx.shadowBlur = 0;
-            ctx.shadowColor = 'transparent';
+            drawMapWordHintGlow(
+              ctx,
+              p,
+              poemLabel(p),
+              canvasFontCached(p, false),
+              canvasFontCached(p, true),
+              c,
+              z,
+              t,
+              idx,
+              hintIntro01,
+            );
           } else {
             ctx.font = canvasFontCached(p, false);
             ctx.fillStyle = `rgb(${Math.round(c.r)},${Math.round(c.g)},${Math.round(c.b)})`;
@@ -965,11 +1045,13 @@ export default function AlgeriaMap({
       needHit && showWordHintRef.current
         ? revelationParticleIdxRef.current[needHit as RevelationWord]
         : undefined;
+    const hintPadScale =
+      hintIdxHit !== undefined ? HINT_GLOW_SCALE_PEAK + HINT_GLOW_SCALE_AMP : 1;
     for (let k = 0; k < poemIndices.length; k++) {
       const i = poemIndices[k]!;
       const p = arr[i]!;
       const label = poemLabel(p);
-      const hintPad = hintIdxHit === i ? HINT_GLOW_SCALE_MIN + HINT_GLOW_SCALE_AMP : 1;
+      const hintPad = hintIdxHit === i ? hintPadScale * HINT_GLOW_HIT_PAD : 1;
       const font = canvasFontForParticle(p, false);
       const { halfW, halfH } = poemWordHitHalfExtents(p, label, font, hintPad);
       const dx = mx2 - p.cx;
@@ -1197,7 +1279,11 @@ export default function AlgeriaMap({
         if (!opened && need && !showWordHintRef.current) {
           missClicksForHintRef.current += 1;
           if (missClicksForHintRef.current >= WORD_HINT_AFTER_MISS_CLICKS) {
-            showWordHintRef.current = true;
+            if (!showWordHintRef.current) {
+              showWordHintRef.current = true;
+              hintActivatedAtRef.current = performance.now();
+              bumpPaintPriority();
+            }
           }
         }
       }

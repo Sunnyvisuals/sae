@@ -44,6 +44,12 @@ const EMPTY_ACT2_QUEST: Act2QuestProgress = { scroll: false };
 let sessionSave: ActSaveState | null = null;
 let sessionJourneyReplayUnlocked = false;
 
+/** Remise à zéro de la progression en mémoire (menu « Recommencer »). */
+export function resetSessionProgress(): void {
+  sessionSave = null;
+  sessionJourneyReplayUnlocked = false;
+}
+
 if (typeof window !== "undefined") {
   try {
     window.localStorage.removeItem(ACT_SAVE_STORAGE_KEY);

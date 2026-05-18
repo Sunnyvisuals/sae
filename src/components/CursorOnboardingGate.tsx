@@ -1,9 +1,11 @@
 import type { ReactNode } from "react";
+import { useLayoutEffect } from "react";
 import { motion } from "motion/react";
 import type { CursorExperienceMode } from "../stores/cursorPrefsStore";
 import { useLanguageStore } from "../stores/languageStore";
 import { useAppCopy } from "../hooks/useAppCopy";
 import { DA_MOTION_EASE } from "../lib/motionDa";
+import { ensureCustomCursorAwake } from "../lib/customCursorPortal";
 
 type Props = {
   prefersReducedMotion: boolean;
@@ -113,6 +115,13 @@ export default function CursorOnboardingGate({
 }: Props) {
   const copy = useAppCopy();
   const isArabic = useLanguageStore((s) => s.language) === "ar-dz";
+
+  useLayoutEffect(() => {
+    if (!finePointer) return;
+    ensureCustomCursorAwake();
+    const af = window.requestAnimationFrame(ensureCustomCursorAwake);
+    return () => window.cancelAnimationFrame(af);
+  }, [finePointer]);
 
   const fluidIcon = (
     <svg

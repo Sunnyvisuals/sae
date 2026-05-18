@@ -11,16 +11,13 @@ import { useLanguageStore } from '../../stores/languageStore';
  */
 const CURSOR_ROOT_Z = 2147483647;
 
-const CURSOR_IDLE_HIDE_MS = 5000;
-const HTML_CURSOR_IDLE_CLASS = 'al-rihla-cursor-idle';
+import {
+  ensureCustomCursorAwake,
+  HTML_CURSOR_IDLE_CLASS,
+  reparentCustomCursorPortalToBodyEnd,
+} from '../../lib/customCursorPortal';
 
-/** Dernier enfant du `body` = au-dessus des autres couches `fixed` même z-index (ordre de peinture). */
-function reparentCursorPortalToBodyEnd() {
-  const el = document.getElementById('__custom-cursor-root');
-  if (el?.parentElement === document.body) {
-    document.body.appendChild(el);
-  }
-}
+const CURSOR_IDLE_HIDE_MS = 5000;
 
 export default function CustomCursor({
   /** Menu pause / vidéo intro : on remonte le portail pour qu’il ne soit pas masqué par le dialogue. */
@@ -95,6 +92,13 @@ export default function CustomCursor({
     setMounted(true);
   }, []);
 
+  /** Réaffichage après masquage (ex. fin étape volume tuto). */
+  useEffect(() => {
+    if (forceHidden) return;
+    ensureCustomCursorAwake();
+    setIdleHidden(false);
+  }, [forceHidden]);
+
   useEffect(() => {
     const id = '__custom-cursor-root';
     let el = document.getElementById(id) as HTMLElement | null;
@@ -110,7 +114,7 @@ export default function CustomCursor({
     el.style.setProperty('inset', '0');
     el.style.setProperty('pointer-events', 'none');
     el.style.setProperty('z-index', String(CURSOR_ROOT_Z));
-    reparentCursorPortalToBodyEnd();
+    reparentCustomCursorPortalToBodyEnd();
     setPortalHost(el);
   }, []);
 
@@ -172,19 +176,18 @@ export default function CustomCursor({
     };
   }, [mx, my, overlayOpen]);
 
-  /* Modales / crédits : garder halo + losange visibles (délais > 5 s sans idle). */
+  /* Modales / tuto intro : halo visible + pas d’idle 5 s. */
   useEffect(() => {
     if (!overlayOpen) return;
-    const html = document.documentElement;
     setIdleHidden(false);
-    html.classList.remove(HTML_CURSOR_IDLE_CLASS);
+    ensureCustomCursorAwake();
   }, [overlayOpen]);
 
   useLayoutEffect(() => {
-    reparentCursorPortalToBodyEnd();
+    reparentCustomCursorPortalToBodyEnd();
     if (!overlayOpen) return;
-    const af = window.requestAnimationFrame(() => reparentCursorPortalToBodyEnd());
-    const to = window.setTimeout(reparentCursorPortalToBodyEnd, 132);
+    const af = window.requestAnimationFrame(() => reparentCustomCursorPortalToBodyEnd());
+    const to = window.setTimeout(reparentCustomCursorPortalToBodyEnd, 132);
     return () => {
       window.cancelAnimationFrame(af);
       window.clearTimeout(to);
@@ -193,7 +196,7 @@ export default function CustomCursor({
 
   /** Passage FR → AR (`html[dir=rtl]`) : réancrer le portail au-dessus des volets intro. */
   useLayoutEffect(() => {
-    reparentCursorPortalToBodyEnd();
+    reparentCustomCursorPortalToBodyEnd();
   }, [portalHost, language]);
 
   const isHalo = mode === 'halo';

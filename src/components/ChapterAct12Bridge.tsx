@@ -156,10 +156,7 @@ const ChapterAct12Bridge: FC<ChapterAct12BridgeProps> = ({
           });
         })
         .catch(() => {
-          ensureSwapToAct2();
-          onBridgeRevealChange(1);
-          onDismissChapterToast();
-          finishOnce();
+          teardownAfterDismiss();
         });
     };
 

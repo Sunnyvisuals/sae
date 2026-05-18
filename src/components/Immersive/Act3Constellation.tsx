@@ -460,9 +460,9 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
 
   const fontSizeFor = (w: Act3ConstellationWord) => {
     const imp = metaForWord(w).importance;
-    if (imp >= 3) return "clamp(1.05rem, 2.8vw, 1.35rem)";
-    if (imp === 2) return "clamp(0.95rem, 2.4vw, 1.18rem)";
-    return "clamp(0.88rem, 2.1vw, 1.05rem)";
+    if (imp >= 3) return "clamp(1.5rem, 4vw, 2.05rem)";
+    if (imp === 2) return "clamp(1.32rem, 3.4vw, 1.78rem)";
+    return "clamp(1.2rem, 3.1vw, 1.62rem)";
   };
 
   return (
@@ -498,11 +498,13 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
           {step === "intro" && (
             <motion.div
               key="intro"
-              className="flex flex-1 flex-col items-center justify-center px-3 text-center"
+              className="flex flex-1 flex-col items-center justify-center px-3 text-center sm:px-6"
               exit={{ opacity: 0 }}
               transition={act3Fade(reduceMotion, 1)}
             >
-              <div className="relative flex min-h-[5.5rem] w-full max-w-[min(100%,54rem)] items-center justify-center">
+              <motion.div
+                className="relative flex min-h-[clamp(7rem,22vw,12rem)] w-full max-w-[min(100%,58rem)] items-center justify-center"
+              >
                 <AnimatePresence mode="wait">
                   {introPhase === "line1" && (
                     <motion.p
@@ -541,7 +543,7 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
                     </motion.p>
                   )}
                 </AnimatePresence>
-              </div>
+              </motion.div>
             </motion.div>
           )}
 

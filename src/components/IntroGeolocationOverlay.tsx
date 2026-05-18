@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useAppCopy } from "../hooks/useAppCopy";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import { ensureCustomCursorAwake } from "../lib/customCursorPortal";
 import { useLanguageStore } from "../stores/languageStore";
 import { useGeolocationPrefsStore } from "../stores/geolocationPrefsStore";
 import { useVisitorPlaceStore } from "../stores/visitorPlaceStore";
@@ -19,7 +21,13 @@ export default function IntroGeolocationOverlay({ open, onRequestClose }: Props)
   const setOfferOnArrival = useGeolocationPrefsStore((s) => s.setOfferGeolocationOnArrival);
   const setPlace = useVisitorPlaceStore((s) => s.setPlace);
   const prefersReducedMotion = useReducedMotion();
+  const finePointer = useMediaQuery("(any-pointer: fine)");
   const [loading, setLoading] = useState(false);
+
+  useLayoutEffect(() => {
+    if (!open || !finePointer) return;
+    ensureCustomCursorAwake();
+  }, [open, finePointer]);
 
   const supported = typeof window !== "undefined" && isGeolocationSupported();
   const visible = open && supported && offerOnArrival;
@@ -59,7 +67,10 @@ export default function IntroGeolocationOverlay({ open, onRequestClose }: Props)
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, scale: prefersReducedMotion ? 1 : 1.02 }}
           transition={{ duration: prefersReducedMotion ? 0.28 : 0.88, ease: DA_MOTION_EASE }}
-          className="pointer-events-auto fixed inset-0 z-[106] flex flex-col items-center justify-center overflow-hidden"
+          className={
+            "pointer-events-auto fixed inset-0 z-[106] flex flex-col items-center justify-center overflow-hidden" +
+            (finePointer ? " cursor-none" : "")
+          }
         >
           <motion.div className="absolute inset-0 bg-[#020100]" />
           <div

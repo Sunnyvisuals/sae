@@ -26,5 +26,15 @@ Le fichier [`vercel.json`](./vercel.json) reprend l’équivalent de [`netlify.t
 3. Laisser Vercel détecter **Vite** : les champs sont déjà forcés dans `vercel.json` (**Build** `npm run build`, **Output** `dist`).
 4. Premier déploiement : après la connexion Git, chaque push sur la branche de production redeploie automatiquement.
 
+### Vidéo prologue (production)
+
+Vercel **Hobby** refuse les fichiers **> 100 Mo** : le master `Prologue.mp4` (~340 Mo, Git LFS) ne peut pas être servi tel quel.
+
+1. `npm run assets:prologue` puis `npm run assets:prologue:web` → génère `public/Prologue.web.mp4` (~75 Mo).
+2. **Commit** `public/Prologue.web.mp4` et push (le site prod charge `/Prologue.web.mp4`).
+3. Sur Vercel : **Settings → Git → Git LFS** activé (optionnel, pour la source HD) puis **Redeploy**.
+
+Alternative : variable `VITE_INTRO_VIDEO_URL` pointant vers un CDN (Bunny, R2, etc.).
+
 Sans Git : `npm i -g vercel`, puis depuis la racine du projet  
 `npm run build && npx vercel deploy --prod` (ou `npm run deploy:vercel` après `npm i -g vercel` pour que la commande `vercel` soit dans le PATH).

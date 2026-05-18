@@ -28,8 +28,19 @@ import {
   DA_VOLUME_STEP,
   daPick,
 } from "../lib/motionDa";
+import { ensureCustomCursorAwake } from "../lib/customCursorPortal";
 
 type Copy = ReturnType<typeof copyFor>;
+
+function tutorialCtaCursorClass(finePointer: boolean, enabled: boolean): string {
+  const base = enabled
+    ? "border-solar-gold/45 bg-solar-gold/10 text-solar-gold hover:border-solar-gold/70 hover:bg-solar-gold/16 focus-visible:ring-2 focus-visible:ring-solar-gold/35"
+    : "border-[#6a6458]/35 bg-[#1a1814]/40 text-[#6a6458]/72 grayscale";
+  if (!finePointer) {
+    return (enabled ? "cursor-pointer " : "cursor-not-allowed ") + base;
+  }
+  return "cursor-none " + (enabled ? "" : "cursor-not-allowed ") + base;
+}
 
 /** Corps tuto : un ou plusieurs paragraphes (séparateur `\n` dans appCopy). */
 function TutorialBodyCopy({
@@ -218,6 +229,7 @@ type Props = {
   onLaunchVideo: () => void;
   /** Fin du fondu dâ€™entrÃ©e (relÃ¢che le voile noir de handoff cÃ´tÃ© Intro). */
   onStepRevealed?: () => void;
+  finePointer?: boolean;
 };
 
 function TutorialMissionHeader({
@@ -517,9 +529,18 @@ export default function PrologueTutorialOverlay({
   onReviewSkip,
   onLaunchVideo,
   onStepRevealed,
+  finePointer = false,
 }: Props) {
   const volumePct = Math.round(Math.min(1, Math.max(0, volume01)) * 100);
+  const overlayCursorNone = Boolean(step && finePointer);
   const canLaunchVideo = volumePct > 0;
+
+  useLayoutEffect(() => {
+    if (!step || !finePointer || step === "volume") return;
+    ensureCustomCursorAwake();
+    const af = window.requestAnimationFrame(ensureCustomCursorAwake);
+    return () => window.cancelAnimationFrame(af);
+  }, [step, finePointer]);
   const fullscreenSupported =
     typeof window !== "undefined" && isFullscreenApiSupported();
   const [fullscreenTested, setFullscreenTested] = useState(
@@ -721,7 +742,10 @@ export default function PrologueTutorialOverlay({
             step === "volume" ? "prologue-tutorial-volume-title" : "prologue-tutorial-title"
           }
           dir={isArabic ? "rtl" : "ltr"}
-          className="pointer-events-auto fixed inset-0 z-[48] cursor-none overflow-hidden"
+          className={
+            "pointer-events-auto fixed inset-0 z-[48] overflow-hidden" +
+            (overlayCursorNone ? " cursor-none" : "")
+          }
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -937,9 +961,7 @@ export default function PrologueTutorialOverlay({
                 className={
                   (volumePct <= 0 ? "mt-5 sm:mt-6 " : "mt-9 sm:mt-11 ") +
                   "rounded-[2px] border px-7 py-3 text-[11px] uppercase tracking-[0.34em] transition-colors focus:outline-none sm:text-[12px] " +
-                  (canLaunchVideo
-                    ? "cursor-pointer border-solar-gold/45 bg-solar-gold/10 text-solar-gold hover:border-solar-gold/70 hover:bg-solar-gold/16 focus-visible:ring-2 focus-visible:ring-solar-gold/35"
-                    : "cursor-not-allowed border-[#6a6458]/35 bg-[#1a1814]/40 text-[#6a6458]/72 grayscale")
+                  tutorialCtaCursorClass(finePointer, canLaunchVideo)
                 }
               >
                 {copy.introTutorialVolumeLaunchCta}
@@ -995,9 +1017,7 @@ export default function PrologueTutorialOverlay({
                       title={canAckSkip ? undefined : copy.introTutorialSkipFullscreenHint}
                       className={
                         "rounded-[2px] border px-7 py-3 text-[11px] uppercase tracking-[0.34em] transition-colors focus:outline-none sm:text-[12px] " +
-                        (canAckSkip
-                          ? "cursor-pointer border-solar-gold/45 bg-solar-gold/10 text-solar-gold hover:border-solar-gold/70 hover:bg-solar-gold/16 focus-visible:ring-2 focus-visible:ring-solar-gold/35"
-                          : "cursor-not-allowed border-[#6a6458]/35 bg-[#1a1814]/40 text-[#6a6458]/72 grayscale")
+                        tutorialCtaCursorClass(finePointer, canAckSkip)
                       }
                     >
                       {copy.introTutorialSkipCta}

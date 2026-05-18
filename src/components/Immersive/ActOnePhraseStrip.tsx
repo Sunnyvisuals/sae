@@ -70,20 +70,31 @@ export default function ActOnePhraseStrip({ revelationFound, chapterComplete, ha
       className="pointer-events-none fixed inset-x-0 bottom-0 z-[38] flex flex-col justify-end items-center overflow-x-hidden"
       aria-live="polite"
     >
-      <div className="w-full max-w-[min(42rem,calc(100vw-1.5rem))] px-5 pb-[max(0.65rem,calc(env(safe-area-inset-bottom)+0.35rem))] pt-2 sm:px-8 md:pb-[max(0.75rem,calc(env(safe-area-inset-bottom)+0.45rem))] md:pt-3">
+      <div
+        className={
+          "w-full max-w-[min(42rem,calc(100vw-1.5rem))] px-5 pt-2 sm:px-8 md:pt-3 " +
+          (chapterComplete || allDone
+            ? "pb-[max(1.35rem,calc(env(safe-area-inset-bottom)+1rem))] md:pb-[max(1.65rem,calc(env(safe-area-inset-bottom)+1.2rem))]"
+            : "pb-[max(0.65rem,calc(env(safe-area-inset-bottom)+0.35rem))] md:pb-[max(0.75rem,calc(env(safe-area-inset-bottom)+0.45rem))]")
+        }
+      >
         <div className="mx-auto w-full min-w-0 text-center">
           {chapterComplete || allDone ? (
-            <motion.p
-              initial={{ opacity: 0.75, clipPath: 'inset(0 100% 0 0)' }}
-              animate={{ opacity: 1, clipPath: 'inset(0 0% 0 0)' }}
+            <motion.div
+              initial={{ opacity: 0.75, clipPath: "inset(0 100% 0 0)" }}
+              animate={{ opacity: 1, clipPath: "inset(0 0% 0 0)" }}
               transition={{ duration: 2.1, ease: VERSE_EASE_IN }}
-              className="text-center font-serif text-[17px] italic leading-relaxed text-white sm:text-[18px] md:text-[19px]"
-              style={{
-                textShadow: "0 1px 2px rgba(0,0,0,0.38), 0 0 18px rgba(197,160,89,0.14)",
-              }}
+              className="relative flex min-h-[5rem] flex-col justify-center sm:min-h-[5.5rem]"
             >
-              {copy.phraseStripComplete}
-            </motion.p>
+              <p
+                className="text-center font-serif text-[18px] italic leading-[1.75] text-white [text-wrap:balance] sm:text-[20px] sm:leading-[1.85] md:text-[22px] md:leading-[1.9]"
+                style={{
+                  textShadow: "0 1px 2px rgba(0,0,0,0.4), 0 0 20px rgba(197,160,89,0.12)",
+                }}
+              >
+                {copy.phraseStripComplete}
+              </p>
+            </motion.div>
           ) : (
             <>
               <div className="relative min-h-[5rem] overflow-hidden sm:min-h-[5.5rem]">

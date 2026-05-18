@@ -1,5 +1,8 @@
+import { useLayoutEffect } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useAppCopy } from "../hooks/useAppCopy";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import { ensureCustomCursorAwake } from "../lib/customCursorPortal";
 import { useLanguageStore } from "../stores/languageStore";
 import { useFullscreenPrefsStore } from "../stores/fullscreenPrefsStore";
 import { DA_MOTION_EASE } from "../lib/motionDa";
@@ -27,7 +30,13 @@ export default function IntroFullscreenOverlay({ open, onRequestClose }: Props) 
   const setOfferOnArrival = useFullscreenPrefsStore((s) => s.setOfferFullscreenOnArrival);
   const fsActive = useDocumentFullscreenActive();
   const prefersReducedMotion = useReducedMotion();
+  const finePointer = useMediaQuery("(any-pointer: fine)");
   const supported = typeof window !== "undefined" && isFullscreenApiSupported();
+
+  useLayoutEffect(() => {
+    if (!open || !finePointer) return;
+    ensureCustomCursorAwake();
+  }, [open, finePointer]);
 
   const visible =
     open &&
@@ -67,7 +76,10 @@ export default function IntroFullscreenOverlay({ open, onRequestClose }: Props) 
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, scale: prefersReducedMotion ? 1 : 1.02 }}
           transition={{ duration: prefersReducedMotion ? 0.28 : 0.88, ease: DA_MOTION_EASE }}
-          className="pointer-events-auto fixed inset-0 z-[105] flex flex-col items-center justify-center overflow-hidden"
+          className={
+            "pointer-events-auto fixed inset-0 z-[105] flex flex-col items-center justify-center overflow-hidden" +
+            (finePointer ? " cursor-none" : "")
+          }
         >
           <div className="absolute inset-0 bg-[#020100]" />
           <div

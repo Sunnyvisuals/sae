@@ -42,6 +42,7 @@ import {
 import PrologueTutorialOverlay, {
   type PrologueTutorialStep,
 } from "./PrologueTutorialOverlay";
+import { ensureCustomCursorAwake } from "../lib/customCursorPortal";
 import PrologueVolumeFluid from "./PrologueVolumeFluid";
 import PrologueVolumeHud from "./PrologueVolumeHud";
 import DevChapterJumpsPanel, { type DevChapterJumps } from "./DevChapterJumpsPanel";
@@ -253,6 +254,12 @@ function SuspenseOverlay({
   const chimePlayedRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
+
+  useLayoutEffect(() => {
+    ensureCustomCursorAwake();
+    const af = window.requestAnimationFrame(ensureCustomCursorAwake);
+    return () => window.cancelAnimationFrame(af);
+  }, []);
 
   useEffect(() => {
     const loadDelay = prefersReducedMotion ? 0.55 : 2.2;
@@ -843,11 +850,14 @@ export default function Intro({
 
   const introSuspenseActive = isStarting && !videoStarted;
   const prologueTutorialActive = prologueTutorialStep !== null;
+  /** Étape volume uniquement : pas de halo (écoute Zina) ; immersion + autres écrans tuto gardent le losange. */
+  const prologueTutorialVolumeStep = prologueTutorialStep === "volume";
 
+  /** Masquer le losange/cercle React uniquement à l’étape volume (écoute Zina). */
   useEffect(() => {
-    onIntroCursorSuppressChange?.(introSuspenseActive || prologueTutorialActive);
+    onIntroCursorSuppressChange?.(prologueTutorialVolumeStep);
     return () => onIntroCursorSuppressChange?.(false);
-  }, [introSuspenseActive, prologueTutorialActive, onIntroCursorSuppressChange]);
+  }, [prologueTutorialVolumeStep, onIntroCursorSuppressChange]);
 
   const introCoverActive =
     introSuspenseActive ||
@@ -876,9 +886,23 @@ export default function Intro({
 
   useEffect(() => {
     onIntroGateOpenChange?.(
-      showArrivalLanguageOverlay || cursorOnboardingOpen || geolocationIntroOpen,
+      showArrivalLanguageOverlay ||
+        cursorOnboardingOpen ||
+        geolocationIntroOpen ||
+        fullscreenIntroOpen ||
+        (introSuspenseActive && finePointer) ||
+        (prologueTutorialActive && finePointer),
     );
-  }, [showArrivalLanguageOverlay, cursorOnboardingOpen, geolocationIntroOpen, onIntroGateOpenChange]);
+  }, [
+    showArrivalLanguageOverlay,
+    cursorOnboardingOpen,
+    geolocationIntroOpen,
+    fullscreenIntroOpen,
+    introSuspenseActive,
+    prologueTutorialActive,
+    finePointer,
+    onIntroGateOpenChange,
+  ]);
 
   const triggerLaunchCtaReveal = useCallback(() => {
     setLaunchCtaVisible(true);
@@ -2410,6 +2434,7 @@ export default function Intro({
                   prefersReducedMotion={prefersReducedMotion ?? false}
                   isArabic={isArabic}
                   copy={copy}
+                  finePointer={finePointer}
                   onSkipAck={acknowledgePrologueTutorialSkip}
                   onReviewSkip={reviewPrologueTutorialSkip}
                   onLaunchVideo={completePrologueVolumeTutorial}

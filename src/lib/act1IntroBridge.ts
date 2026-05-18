@@ -22,10 +22,20 @@ import {
 
 const introVideoBase = import.meta.env.BASE_URL.replace(/\/?$/, "/");
 
-/** Prologue : `public/Prologue.mp4` (copié dans `dist/` au build). Override CDN via `VITE_INTRO_VIDEO_URL`. */
+/**
+ * Prologue : `public/Prologue.web.mp4` en prod (≤100 Mo, Vercel Hobby),
+ * `public/Prologue.mp4` en dev. Override : `VITE_INTRO_VIDEO_URL`.
+ */
+const prologueFile =
+  import.meta.env.VITE_INTRO_VIDEO_URL?.trim()
+    ? null
+    : import.meta.env.PROD
+      ? "Prologue.web.mp4"
+      : "Prologue.mp4";
+
 export const INTRO_VIDEO_SRC =
   import.meta.env.VITE_INTRO_VIDEO_URL?.trim() ||
-  `${introVideoBase}Prologue.mp4`;
+  `${introVideoBase}${prologueFile ?? "Prologue.web.mp4"}`;
 
 /** Dev : strip et liste ordonnée restent synchrones. */
 function assertAct1PhraseStripsOrdered(): void {

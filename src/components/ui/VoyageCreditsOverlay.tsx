@@ -325,7 +325,10 @@ export default function VoyageCreditsOverlay({
         <div className="mx-auto my-16 h-px w-20 bg-solar-gold/22" aria-hidden />
         <p
           className={
-            'mx-auto max-w-[min(100%,24rem)] text-center font-sans text-[clamp(1.08rem,3vw,1.42rem)] font-normal uppercase leading-[1.65] tracking-[0.14em] ' +
+            'mx-auto w-full max-w-[min(96vw,52rem)] text-center font-sans font-normal leading-none whitespace-nowrap ' +
+            (lang === 'ar-dz'
+              ? 'font-arabic-ui text-[clamp(0.82rem,2.5vw,1.22rem)] normal-case tracking-[0.02em] '
+              : 'text-[clamp(0.5rem,2.35vw,1.22rem)] uppercase tracking-[0.1em] ') +
             'text-[rgba(212,197,176,0.72)] [text-shadow:0_0_10px_rgba(0,0,0,0.72)]'
           }
         >
