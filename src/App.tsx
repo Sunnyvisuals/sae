@@ -1907,6 +1907,7 @@ export default function App() {
             visibility:
               systemMenuOpen ||
               introVideoOpen ||
+              introVideoPlaying ||
               act23BridgeOpen ||
               isLanguageMorphing
                 ? "hidden"

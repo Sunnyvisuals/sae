@@ -548,6 +548,7 @@ export default function Intro({
   const [prologueVolumeScrollCueDismissed, setPrologueVolumeScrollCueDismissed] =
     useState(false);
   const [prologueVideoPaused, setPrologueVideoPaused] = useState(false);
+  const [prologuePlayBlocked, setProloguePlayBlocked] = useState(false);
   const [prologuePlayMarkVisible, setProloguePlayMarkVisible] = useState(false);
   const [showSkip, setShowSkip] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
@@ -880,6 +881,12 @@ export default function Intro({
 
   const introSuspenseActive = isStarting && !videoStarted;
   const prologueTutorialActive = prologueTutorialStep !== null;
+  /** Lecteur MP4 monté tôt (même élément que la lecture) — pas de 2e téléchargement au lancement. */
+  const prologueVideoMounted =
+    videoStarted ||
+    isStarting ||
+    introPrefetchDone ||
+    prologueTutorialActive;
   const prologueTutorialVolumeStep = prologueTutorialStep === "volume";
 
   useEffect(() => {
@@ -1230,7 +1237,11 @@ export default function Intro({
       el,
       vol > 0 ? vol : PROLOGUE_VIDEO_DEFAULT_VOLUME,
     );
-    void el.play().catch((err) => console.warn("[intro] lecture prologue:", err));
+    setProloguePlayBlocked(false);
+    void el.play().catch((err) => {
+      console.warn("[intro] lecture prologue:", err);
+      setProloguePlayBlocked(true);
+    });
   }, []);
 
   const startPrologueVideo = useCallback(() => {
@@ -1241,6 +1252,8 @@ export default function Intro({
       readPrologueVolume01(volumeRef, isMutedRef);
     prologueChosenVolumeRef.current = null;
     if (chosen > 0) commitPrologueVolume(chosen);
+    setIntroHandoffBlackout(false);
+    setProloguePlayBlocked(false);
     setVideoStarted(true);
     onVideoStart?.();
     setShowInitialTitle(false);
@@ -1472,41 +1485,62 @@ export default function Intro({
     syncPrologueTutorialVolumeProbe(volume, isMuted);
   }, [prologueTutorialStep, volume, isMuted]);
 
-  /** Précharge pendant l’overlay suspense. */
+  /** Précharge sur le même `<video>` que la lecture (suspense / tuto / lancement). */
   useEffect(() => {
-    if (!isStarting || videoStarted) return;
-    const v = document.createElement("video");
-    v.preload = "auto";
-    v.muted = true;
-    v.playsInline = true;
-    v.src = INTRO_VIDEO_SRC;
-    v.load();
-    return () => {
-      v.removeAttribute("src");
+    if (!prologueVideoMounted || videoStarted) return;
+    const prime = () => {
+      const v = videoRef.current;
+      if (!v) return false;
+      v.preload = "auto";
+      v.muted = true;
+      v.playsInline = true;
+      if (!v.src) v.src = INTRO_VIDEO_SRC;
       v.load();
+      return true;
     };
-  }, [isStarting, videoStarted]);
+    if (prime()) return;
+    const raf = requestAnimationFrame(() => prime());
+    return () => cancelAnimationFrame(raf);
+  }, [prologueVideoMounted, videoStarted]);
 
-  /** Lecture native dès que le MP4 est prêt. */
-  useEffect(() => {
+  /** Lecture dès montage visible — useLayoutEffect évite un frame sans ref. */
+  useLayoutEffect(() => {
     if (!videoStarted) return;
-    const v = videoRef.current;
-    if (!v) return;
 
-    const start = () => playPrologueVideo(v);
-    const onErr = () =>
-      console.warn("[intro] erreur vidéo:", v.error?.code, INTRO_VIDEO_SRC);
+    const attach = () => {
+      const v = videoRef.current;
+      if (!v) return undefined;
 
-    v.addEventListener("error", onErr);
-    if (v.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
-      start();
-    } else {
-      v.addEventListener("canplay", start, { once: true });
-    }
+      const start = () => playPrologueVideo(v);
+      const onErr = () => {
+        console.warn("[intro] erreur vidéo:", v.error?.code, INTRO_VIDEO_SRC);
+        setProloguePlayBlocked(true);
+      };
 
+      v.addEventListener("error", onErr);
+      if (v.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
+        start();
+      } else {
+        v.addEventListener("canplay", start, { once: true });
+        v.addEventListener("loadeddata", start, { once: true });
+      }
+
+      return () => {
+        v.removeEventListener("canplay", start);
+        v.removeEventListener("loadeddata", start);
+        v.removeEventListener("error", onErr);
+      };
+    };
+
+    let cleanup = attach();
+    if (cleanup) return cleanup;
+
+    const raf = requestAnimationFrame(() => {
+      cleanup = attach();
+    });
     return () => {
-      v.removeEventListener("canplay", start);
-      v.removeEventListener("error", onErr);
+      cancelAnimationFrame(raf);
+      cleanup?.();
     };
   }, [videoStarted, playPrologueVideo]);
 
@@ -2501,14 +2535,19 @@ export default function Intro({
         </motion.div>
       )}
 
-      {videoStarted ? (
+      {prologueVideoMounted ? (
         <motion.div
-          key="video-container"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-          className="fixed inset-0 z-10 h-dvh max-h-dvh w-full overflow-hidden bg-[#020100]"
+          key="prologue-video-layer"
+          initial={false}
+          animate={{ opacity: videoStarted ? 1 : 0 }}
+          transition={{ duration: videoStarted ? 0.35 : 0, ease: "easeOut" }}
+          className={
+            "fixed inset-0 h-dvh max-h-dvh w-full overflow-hidden bg-[#020100] " +
+            (videoStarted
+              ? "z-[130] pointer-events-auto"
+              : "z-[1] pointer-events-none invisible")
+          }
+          aria-hidden={!videoStarted}
         >
           <motion.div className="relative h-full min-h-0 w-full overflow-hidden">
             <video
@@ -2518,6 +2557,7 @@ export default function Intro({
               playsInline
               onEnded={handleVideoEnd}
               onPlay={() => {
+                setProloguePlayBlocked(false);
                 setPrologueVideoPaused(false);
                 if (prologueWasPausedRef.current) {
                   prologueWasPausedRef.current = false;
@@ -2531,9 +2571,11 @@ export default function Intro({
                 hideProloguePlayMark();
                 setPrologueVideoPaused(true);
               }}
-              className="absolute inset-0 z-[1] h-full w-full cursor-none object-cover"
-              muted={isMuted}
+              className="absolute inset-0 z-[1] h-full w-full object-cover"
+              muted={videoStarted ? isMuted : true}
             />
+            {videoStarted ? (
+              <>
             <AnimatePresence>
               {prologueVideoPaused ? (
                 <ProloguePlaybackMark
@@ -2577,11 +2619,25 @@ export default function Intro({
                 </motion.div>
               ) : null}
             </AnimatePresence>
+                {prologuePlayBlocked ? (
+                  <button
+                    type="button"
+                    className="absolute inset-0 z-[40] flex cursor-pointer items-center justify-center bg-black/35 text-[10px] font-light uppercase tracking-[0.42em] text-solar-gold backdrop-blur-[2px]"
+                    onClick={() => {
+                      const v = videoRef.current;
+                      if (v) playPrologueVideo(v);
+                    }}
+                  >
+                    {copy.introPrologueTapToPlay}
+                  </button>
+                ) : null}
+              </>
+            ) : null}
           </motion.div>
 
-          {/* Skip */}
+          {videoStarted ? (
           <AnimatePresence>
-            {showSkip && (
+            {showSkip ? (
               <motion.div
                 initial={{ opacity: 0, x: 40 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -2629,8 +2685,9 @@ export default function Intro({
                   </motion.div>
                 </motion.button>
               </motion.div>
-            )}
+            ) : null}
           </AnimatePresence>
+          ) : null}
 
         </motion.div>
       ) : null}
