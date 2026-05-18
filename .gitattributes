@@ -1,2 +1,2 @@
-# Prologue (~340 Mo) : Git LFS (limite GitHub 100 Mo par fichier).
+# Prologue (~340 Mo) : Git LFS (limite GitHub 100 Mo par fichier). Prod = CDN (VITE_INTRO_VIDEO_URL).
 public/Prologue.mp4 filter=lfs diff=lfs merge=lfs -text

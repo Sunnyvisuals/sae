@@ -1,5 +1,6 @@
 /**
- * Vérifie que le prologue n’est pas un pointeur LFS avant build (Vercel sert ~134 o sinon).
+ * Vérifie la vidéo prologue avant build.
+ * Prod Vercel : VITE_INTRO_VIDEO_URL (CDN) obligatoire — pas de gros MP4 dans le déploiement.
  */
 import { existsSync, statSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
@@ -8,10 +9,25 @@ import { fileURLToPath } from "node:url";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const candidates = ["public/Prologue.web.mp4", "public/Prologue.mp4"];
 const envUrl = process.env.VITE_INTRO_VIDEO_URL?.trim();
+const onVercel = process.env.VERCEL === "1";
 
 if (envUrl) {
-  console.log(`[prologue] VITE_INTRO_VIDEO_URL défini → pas de fichier local requis (${envUrl})`);
+  if (!/^https:\/\//i.test(envUrl)) {
+    console.error("[prologue] VITE_INTRO_VIDEO_URL doit être une URL HTTPS absolue.");
+    process.exit(1);
+  }
+  console.log(`[prologue] CDN OK : ${envUrl}`);
   process.exit(0);
+}
+
+if (onVercel) {
+  console.error(
+    "[prologue] Sur Vercel, définis la variable d’environnement VITE_INTRO_VIDEO_URL (URL HTTPS du MP4 sur ton CDN).\n" +
+      "  1. Uploade public/Prologue.mp4 (npm run assets:prologue) sur Bunny, Cloudflare R2, etc.\n" +
+      "  2. Vercel → Settings → Environment Variables → VITE_INTRO_VIDEO_URL\n" +
+      "  3. Redeploy",
+  );
+  process.exit(1);
 }
 
 const file = candidates.find((rel) => {
@@ -23,38 +39,14 @@ const file = candidates.find((rel) => {
 });
 
 if (!file) {
-  const any = candidates.find((rel) => existsSync(resolve(root, rel)));
-  if (any) {
-    const p = resolve(root, any);
-    const head = readFileSync(p, "utf8").slice(0, 40);
-    if (head.startsWith("version https://git-lfs.github.com")) {
-      console.error(
-        "[prologue] public/Prologue.mp4 est un pointeur Git LFS (pas la vidéo).\n" +
-          "  → Vercel : activer Git LFS (Pro) OU npm run assets:prologue:web puis commit Prologue.web.mp4\n" +
-          "  → Ou définir VITE_INTRO_VIDEO_URL (CDN) dans les variables Vercel.",
-      );
-      process.exit(1);
-    }
-  }
   console.error(
-    "[prologue] Aucune vidéo prologue utilisable.\n" +
-      "  → npm run assets:prologue puis npm run assets:prologue:web\n" +
-      "  → ou VITE_INTRO_VIDEO_URL sur un hébergeur externe.",
+    "[prologue] Aucune vidéo locale.\n" +
+      "  → npm run assets:prologue  (copie F:\\Prologue.mp4)\n" +
+      "  → npm run lfs:pull  (si pointeur LFS)\n" +
+      "  → ou VITE_INTRO_VIDEO_URL pour la prod",
   );
   process.exit(1);
 }
 
 const mb = (statSync(resolve(root, file)).size / (1024 * 1024)).toFixed(1);
-const vercel = process.env.VERCEL === "1";
-const hobbyMaxMb = 100;
-
-if (vercel && file.endsWith("Prologue.mp4") && statSync(resolve(root, file)).size > hobbyMaxMb * 1024 * 1024) {
-  console.error(
-    `[prologue] ${file} (${mb} Mo) dépasse la limite Vercel Hobby (~${hobbyMaxMb} Mo/fichier).\n` +
-      "  → npm run assets:prologue:web et commit public/Prologue.web.mp4\n" +
-      "  → ou VITE_INTRO_VIDEO_URL (CDN).",
-  );
-  process.exit(1);
-}
-
-console.log(`[prologue] OK : ${file} (${mb} Mo)`);
+console.log(`[prologue] OK local : ${file} (${mb} Mo)`);

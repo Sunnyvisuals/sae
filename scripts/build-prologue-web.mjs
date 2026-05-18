@@ -10,7 +10,7 @@ import { spawnSync } from "node:child_process";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const src = resolve(root, "public/Prologue.mp4");
 const dest = resolve(root, "public/Prologue.web.mp4");
-const targetMb = Number(process.env.PROLOGUE_WEB_TARGET_MB || "92");
+const targetMb = Number(process.env.PROLOGUE_WEB_TARGET_MB || "46");
 
 if (!existsSync(src)) {
   console.error("[assets:prologue:web] Manque public/Prologue.mp4 — lance npm run assets:prologue");

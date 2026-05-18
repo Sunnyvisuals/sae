@@ -13,5 +13,5 @@ coverage/
 
 # Ancien prologue (remplacé par public/Prologue.mp4)
 public/al-rihla.mp4
-# Version web générée localement — à committer pour Vercel (ne pas ignorer si tu déploies)
-# public/Prologue.web.mp4
+# Version web locale (ne pas committer — prod via CDN).
+public/Prologue.web.mp4

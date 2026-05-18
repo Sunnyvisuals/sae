@@ -2,11 +2,13 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
+import { viteCopyProloguePlugin } from './scripts/vite-copy-prologue.mjs';
 
 export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    viteCopyProloguePlugin(),
   ],
   resolve: {
     alias: {

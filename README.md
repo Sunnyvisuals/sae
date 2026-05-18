@@ -26,15 +26,17 @@ Le fichier [`vercel.json`](./vercel.json) reprend l’équivalent de [`netlify.t
 3. Laisser Vercel détecter **Vite** : les champs sont déjà forcés dans `vercel.json` (**Build** `npm run build`, **Output** `dist`).
 4. Premier déploiement : après la connexion Git, chaque push sur la branche de production redeploie automatiquement.
 
-### Vidéo prologue (production)
+### Vidéo prologue (production = CDN)
 
-Vercel **Hobby** refuse les fichiers **> 100 Mo** : le master `Prologue.mp4` (~340 Mo, Git LFS) ne peut pas être servi tel quel.
+Le master fait **~340 Mo** : ne pas l’inclure dans le déploiement Vercel/GitHub.
 
-1. `npm run assets:prologue` puis `npm run assets:prologue:web` → génère `public/Prologue.web.mp4` (~75 Mo).
-2. **Commit** `public/Prologue.web.mp4` et push (le site prod charge `/Prologue.web.mp4`).
-3. Sur Vercel : **Settings → Git → Git LFS** activé (optionnel, pour la source HD) puis **Redeploy**.
+1. `npm run assets:prologue` → copie vers `public/Prologue.mp4` (local).
+2. Uploade ce fichier sur un **CDN** (Bunny.net, Cloudflare R2, etc.) en **HTTPS**, type `video/mp4`, accès public.
+3. Vercel → **Settings → Environment Variables** →  
+   `VITE_INTRO_VIDEO_URL` = `https://ton-cdn.example.com/Prologue.mp4`
+4. **Redeploy** (la variable est injectée au build).
 
-Alternative : variable `VITE_INTRO_VIDEO_URL` pointant vers un CDN (Bunny, R2, etc.).
+En dev local, laisse `VITE_INTRO_VIDEO_URL` vide et utilise `public/Prologue.mp4` (Git LFS : `npm run lfs:pull`).
 
 Sans Git : `npm i -g vercel`, puis depuis la racine du projet  
 `npm run build && npx vercel deploy --prod` (ou `npm run deploy:vercel` après `npm i -g vercel` pour que la commande `vercel` soit dans le PATH).

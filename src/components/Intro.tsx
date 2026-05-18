@@ -46,7 +46,7 @@ import { ensureCustomCursorAwake } from "../lib/customCursorPortal";
 import PrologueVolumeFluid from "./PrologueVolumeFluid";
 import PrologueVolumeHud from "./PrologueVolumeHud";
 import DevChapterJumpsPanel, { type DevChapterJumps } from "./DevChapterJumpsPanel";
-import { INTRO_VIDEO_SRC } from "../lib/act1IntroBridge";
+import { INTRO_VIDEO_SRC, INTRO_VIDEO_CROSS_ORIGIN } from "../lib/act1IntroBridge";
 import { useLanguageStore } from "../stores/languageStore";
 import { useFullscreenPrefsStore } from "../stores/fullscreenPrefsStore";
 import { useCursorPrefsStore, type CursorExperienceMode } from "../stores/cursorPrefsStore";
@@ -2498,6 +2498,7 @@ export default function Intro({
               muted={isMuted}
               playsInline
               autoPlay
+              crossOrigin={INTRO_VIDEO_CROSS_ORIGIN ? "anonymous" : undefined}
               src={INTRO_VIDEO_SRC}
             />
             <AnimatePresence>
