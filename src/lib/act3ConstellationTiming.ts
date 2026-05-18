@@ -28,6 +28,19 @@ export function act3FadeDelayed(
   };
 }
 
+/** Texte : fondu + léger décalage vertical (intro, hints, formulaire). */
+export function act3TextReveal(
+  reducedMotion: boolean,
+  baseDurationSec = 1.05,
+  delayBaseSec = 0,
+) {
+  return {
+    duration: act3Sec(baseDurationSec, reducedMotion),
+    delay: reducedMotion ? 0 : delayBaseSec * S,
+    ease: ACT3_EASE,
+  };
+}
+
 /** Intro — une phrase à la fois. */
 export const ACT3_INTRO_LINE2_MS = act3Ms(2200, false);
 export const ACT3_INTRO_LINE3_MS = act3Ms(5000, false);

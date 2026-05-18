@@ -40,6 +40,7 @@ import {
   ACT3_WORD_RISE_FALL_DURATION,
   act3Fade,
   act3FadeDelayed,
+  act3TextReveal,
 } from "../../lib/act3ConstellationTiming";
 import { metaForWord } from "./mapWordData";
 import { arabicPoemWordLabel } from "../../lib/mapWordArabicDisplay";
@@ -506,10 +507,10 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
                   {introPhase === "line1" && (
                     <motion.p
                       key="i1"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={act3Fade(reduceMotion, 0.9)}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={act3TextReveal(reduceMotion, 1.15)}
                       className="da-act3-intro-line absolute inset-x-0"
                     >
                       {copy.act3IntroLine1}
@@ -518,10 +519,10 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
                   {introPhase === "line2" && (
                     <motion.p
                       key="i2"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={act3Fade(reduceMotion, 0.9)}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={act3TextReveal(reduceMotion, 1.15)}
                       className="da-act3-intro-line absolute inset-x-0"
                     >
                       {copy.act3IntroLine2}
@@ -530,10 +531,10 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
                   {introPhase === "line3" && (
                     <motion.p
                       key="i3"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={act3Fade(reduceMotion, 1.1)}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={act3TextReveal(reduceMotion, 1.25)}
                       className="da-act3-question absolute inset-x-0 max-sm:text-pretty sm:whitespace-nowrap"
                     >
                       {copy.act3IntroLine3}
@@ -555,9 +556,15 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
               transition={act3Fade(reduceMotion, 0.5)}
             >
               {step === "select" ? (
-                <p className="da-act3-hint pointer-events-none absolute left-0 right-0 top-0 z-[1] text-center">
+                <motion.p
+                  key="select-hint"
+                  className="da-act3-hint pointer-events-none absolute left-0 right-0 top-0 z-[1] text-center"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={act3TextReveal(reduceMotion, 1.1, 0.2)}
+                >
                   {copy.act3SelectHint}
-                </p>
+                </motion.p>
               ) : null}
 
               {ACT3_CONSTELLATION_WORDS.map((w, i) => {
@@ -625,10 +632,23 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
               <motion.div className="pointer-events-auto flex w-full max-w-[min(100%,20rem)] flex-col items-center gap-2.5 text-center">
                 {visitorPlace ? (
                   <>
-                    <p className="da-act3-join-place-label">{visitorPlace.label}</p>
-                    <label htmlFor="act3-inscription" className="da-act3-inscription-hint">
+                    <motion.p
+                      className="da-act3-join-place-label"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: starFormVisible ? 1 : 0, y: starFormVisible ? 0 : 8 }}
+                      transition={act3TextReveal(reduceMotion, 1.05, 0.05)}
+                    >
+                      {visitorPlace.label}
+                    </motion.p>
+                    <motion.label
+                      htmlFor="act3-inscription"
+                      className="da-act3-inscription-hint"
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: starFormVisible ? 1 : 0, y: starFormVisible ? 0 : 6 }}
+                      transition={act3TextReveal(reduceMotion, 1, 0.18)}
+                    >
                       {copy.act3ConfirmPrenomPlaceholder}
-                    </label>
+                    </motion.label>
                     <input
                       type="text"
                       value={prenom}
@@ -655,9 +675,15 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
                   </>
                 ) : (
                   <>
-                    <label htmlFor="act3-inscription" className="da-act3-inscription-hint">
+                    <motion.label
+                      htmlFor="act3-inscription"
+                      className="da-act3-inscription-hint"
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: starFormVisible ? 1 : 0, y: starFormVisible ? 0 : 6 }}
+                      transition={act3TextReveal(reduceMotion, 1, 0.12)}
+                    >
                       {copy.act3ConfirmIdentityHint}
-                    </label>
+                    </motion.label>
                     <input
                       type="text"
                       value={identity}
@@ -683,20 +709,29 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
                     />
                   </>
                 )}
-                <p
+                <motion.p
                   id="act3-inscription-enter-hint"
                   className="da-act3-inscription-enter"
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{
+                    opacity: starFormVisible ? 1 : 0,
+                    y: starFormVisible ? 0 : 4,
+                  }}
+                  transition={act3TextReveal(reduceMotion, 0.95, 0.28)}
                   aria-hidden={submitting}
                 >
                   {submitting ? copy.act3Submitting : copy.act3ConfirmEnterHint}
-                </p>
+                </motion.p>
                 {submitError ? (
-                  <p
+                  <motion.p
                     id="act3-inscription-error"
                     className="max-w-[18rem] text-[clamp(0.62rem,1.65vw,0.72rem)] leading-snug text-[rgba(212,197,176,0.62)]"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={act3TextReveal(reduceMotion, 0.85)}
                   >
                     {submitError}
-                  </p>
+                  </motion.p>
                 ) : null}
               </motion.div>
             </motion.form>
@@ -771,10 +806,10 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
                   {outroPhase === "line1" && (
                     <motion.p
                       key="o1"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={act3Fade(reduceMotion, 0.9)}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={act3TextReveal(reduceMotion, 1.15)}
                       className="da-act3-outro-line"
                     >
                       {copy.act3OutroLine1}
@@ -783,10 +818,10 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
                   {outroPhase === "line2" && (
                     <motion.p
                       key="o2"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={act3Fade(reduceMotion, 0.85)}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={act3TextReveal(reduceMotion, 1.1)}
                       className="da-act3-outro-line text-da-parchment/72"
                     >
                       {copy.act3OutroLine2}
@@ -795,10 +830,10 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
                   {outroPhase === "line3" && (
                     <motion.p
                       key="o3"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={act3Fade(reduceMotion, 1.1)}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={act3TextReveal(reduceMotion, 1.25)}
                       className="da-act3-outro-glow"
                     >
                       {copy.act3OutroLine3}

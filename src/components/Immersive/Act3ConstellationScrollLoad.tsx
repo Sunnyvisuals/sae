@@ -6,6 +6,8 @@ import { motion } from "motion/react";
 import {
   ACT3_SCROLL_BUDGET,
   ACT3_SCROLL_COMPLETE_HOLD_MS,
+  act3Fade,
+  act3TextReveal,
 } from "../../lib/act3ConstellationTiming";
 
 type Props = {
@@ -23,10 +25,12 @@ function Act3ViewMyStarBottom({
   label,
   onClick,
   visible,
+  reduceMotion,
 }: {
   label: string;
   onClick: () => void;
   visible: boolean;
+  reduceMotion: boolean;
 }) {
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
 
@@ -44,7 +48,7 @@ function Act3ViewMyStarBottom({
       style={{ bottom: "max(1.25rem, env(safe-area-inset-bottom))" }}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
+      transition={act3TextReveal(reduceMotion, 1.05, 0.15)}
       aria-label={label}
     >
       {label}
@@ -57,9 +61,11 @@ function Act3ViewMyStarBottom({
 function Act3TopScrollChrome({
   progress,
   scrollCue,
+  reduceMotion,
 }: {
   progress: number;
   scrollCue: string;
+  reduceMotion: boolean;
 }) {
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
   const fillRef = useRef<HTMLDivElement>(null);
@@ -80,9 +86,10 @@ function Act3TopScrollChrome({
     <motion.div
       className="pointer-events-none fixed inset-x-0 z-[480] flex flex-col items-center"
       style={{ top: "env(safe-area-inset-top, 0px)" }}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 4 }}
+      transition={act3Fade(reduceMotion, 1.1)}
     >
       <div className="relative h-[2px] w-full shrink-0">
         <motion.div
@@ -116,9 +123,9 @@ function Act3TopScrollChrome({
 
       <motion.div
         className="da-act3-scroll-load-cue mt-3 flex w-full max-w-[min(100%,36rem)] flex-col items-center gap-3 px-4 pb-3 pt-1"
-        initial={{ opacity: 0, y: 4 }}
+        initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1], delay: 0.08 }}
+        transition={act3TextReveal(reduceMotion, 1, 0.12)}
         aria-live="polite"
       >
         <p className="da-act3-scroll-load-cue-line m-0 w-full text-center">{scrollCue}</p>
@@ -268,6 +275,7 @@ export default function Act3ConstellationScrollLoad({
           visible={showViewMyStar}
           label={viewMyStarLabel ?? ""}
           onClick={onViewMyStar ?? (() => {})}
+          reduceMotion={reduceMotion}
         />
         <button type="button" onClick={onComplete} className="da-act3-continue mt-1">
           {continueLabel}
@@ -278,11 +286,16 @@ export default function Act3ConstellationScrollLoad({
 
   return (
     <>
-      <Act3TopScrollChrome progress={progress} scrollCue={scrollCue} />
+      <Act3TopScrollChrome
+        progress={progress}
+        scrollCue={scrollCue}
+        reduceMotion={reduceMotion}
+      />
       <Act3ViewMyStarBottom
         visible={showViewMyStar}
         label={viewMyStarLabel ?? ""}
         onClick={onViewMyStar ?? (() => {})}
+        reduceMotion={reduceMotion}
       />
     </>
   );
