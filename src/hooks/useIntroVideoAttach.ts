@@ -1,4 +1,4 @@
-import { useEffect, type RefObject } from "react";
+import { useLayoutEffect, type RefObject } from "react";
 import { attachIntroVideoMedia } from "../lib/introVideoMedia";
 
 /** Monte la source prologue (MP4 ou HLS) sur un `<video>` quand `enabled`. */
@@ -7,11 +7,12 @@ export function useIntroVideoAttach(
   src: string,
   enabled: boolean,
   crossOrigin = false,
+  onReady?: (video: HTMLVideoElement) => void,
 ): void {
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!enabled) return;
     const el = videoRef.current;
     if (!el) return;
-    return attachIntroVideoMedia(el, src, crossOrigin);
-  }, [enabled, src, crossOrigin, videoRef]);
+    return attachIntroVideoMedia(el, src, { crossOrigin, onReady });
+  }, [enabled, src, crossOrigin, onReady, videoRef]);
 }

@@ -52,15 +52,16 @@ export default function IntroVideoOverlay({ onClose }: Props) {
     return () => window.removeEventListener('keydown', onKey, true);
   }, []);
 
-  useIntroVideoAttach(videoRef, INTRO_VIDEO_SRC, true, INTRO_VIDEO_CROSS_ORIGIN);
-
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v) return;
-    v.currentTime = 0;
-    const p = v.play();
-    if (p !== undefined) p.catch(() => {});
-  }, []);
+  useIntroVideoAttach(
+    videoRef,
+    INTRO_VIDEO_SRC,
+    true,
+    INTRO_VIDEO_CROSS_ORIGIN,
+    (v) => {
+      v.currentTime = 0;
+      void v.play().catch(() => {});
+    },
+  );
 
   useEffect(() => {
     const showTimer = window.setTimeout(() => setShowSkip(true), 4000);

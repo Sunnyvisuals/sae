@@ -377,11 +377,9 @@ export default function ChapterAct23Bridge({ open, onComplete }: Props) {
     if (!isIntroVideoHlsSrc(ACT23_BRIDGE_MP4_FALLBACK)) return;
     const el = videoRef.current;
     if (!el) return;
-    return attachIntroVideoMedia(
-      el,
-      ACT23_BRIDGE_MP4_FALLBACK,
-      INTRO_VIDEO_CROSS_ORIGIN,
-    );
+    return attachIntroVideoMedia(el, ACT23_BRIDGE_MP4_FALLBACK, {
+      crossOrigin: INTRO_VIDEO_CROSS_ORIGIN,
+    });
   }, [open, sourceMode]);
 
   if (!open || prefersReducedMotion === true) return null;

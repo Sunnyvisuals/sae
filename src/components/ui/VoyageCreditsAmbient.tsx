@@ -42,17 +42,26 @@ export default function VoyageCreditsAmbient({
   const getImmersion = () => immersionRef.current;
   const getScrollY = () => creditsProgressRef.current * 4200;
 
+  useIntroVideoAttach(
+    videoRef,
+    INTRO_VIDEO_SRC,
+    !reduceMotion,
+    INTRO_VIDEO_CROSS_ORIGIN,
+    (video) => {
+      video.muted = true;
+      video.playsInline = true;
+      video.loop = true;
+      void video.play().catch(() => {});
+    },
+  );
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video || reduceMotion) return;
-    video.muted = true;
-    video.playsInline = true;
-    video.loop = true;
-    void video.play().catch(() => {});
     return () => {
       video.pause();
     };
-  }, [reduceMotion]);
+  }, [reduceMotion, videoRef]);
 
   useEffect(() => {
     const sky = skyRef.current;
@@ -185,13 +194,6 @@ function CreditsVideoLayer({
   videoRef: RefObject<HTMLVideoElement | null>;
   immersion: number;
 }) {
-  useIntroVideoAttach(
-    videoRef,
-    INTRO_VIDEO_SRC,
-    !reduceMotion,
-    INTRO_VIDEO_CROSS_ORIGIN,
-  );
-
   return (
     <div
       className="pointer-events-none absolute inset-[-4%_-4%_0] z-0 overflow-hidden"

@@ -1198,6 +1198,14 @@ export default function Intro({
     }
   }, [videoStarted]);
 
+  const playPrologueWhenReady = useCallback((el: HTMLVideoElement) => {
+    const vol = readPrologueVolume01(volumeRef, isMutedRef);
+    applyPrologueVideoElementVolume(el, vol);
+    void el.play().catch((err) => {
+      console.warn("[intro] lecture prologue:", err);
+    });
+  }, []);
+
   const startPrologueVideo = useCallback(() => {
     if (videoStarted) return;
     disposePrologueTutorialVolumeProbe();
@@ -1208,15 +1216,6 @@ export default function Intro({
     if (chosen > 0) commitPrologueVolume(chosen);
     setVideoStarted(true);
     onVideoStart?.();
-    window.setTimeout(() => {
-      const el = videoRef.current;
-      if (!el) return;
-      const vol = readPrologueVolume01(volumeRef, isMutedRef);
-      applyPrologueVideoElementVolume(el, vol);
-      void el.play().catch((err) => {
-        console.log("Play failed:", err);
-      });
-    }, 100);
     setShowInitialTitle(false);
   }, [videoStarted, onVideoStart, commitPrologueVolume]);
 
@@ -1466,7 +1465,9 @@ export default function Intro({
     v.preload = "auto";
     v.muted = true;
     v.playsInline = true;
-    const detach = attachIntroVideoMedia(v, INTRO_VIDEO_SRC, INTRO_VIDEO_CROSS_ORIGIN);
+    const detach = attachIntroVideoMedia(v, INTRO_VIDEO_SRC, {
+      crossOrigin: INTRO_VIDEO_CROSS_ORIGIN,
+    });
     v.load();
     return () => {
       detach();
@@ -1478,6 +1479,7 @@ export default function Intro({
     INTRO_VIDEO_SRC,
     videoStarted,
     INTRO_VIDEO_CROSS_ORIGIN,
+    playPrologueWhenReady,
   );
 
   const hideProloguePlayMark = useCallback(() => {
@@ -2505,7 +2507,6 @@ export default function Intro({
               className="absolute inset-0 z-[1] h-full w-full cursor-none object-cover"
               muted={isMuted}
               playsInline
-              autoPlay
             />
             <AnimatePresence>
               {prologueVideoPaused ? (
