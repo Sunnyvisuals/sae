@@ -15,7 +15,7 @@ import Intro from "./components/Intro";
 import DevChapterJumpsPanel from "./components/DevChapterJumpsPanel";
 import type { DevChapterJumps } from "./components/DevChapterJumpsPanel";
 import ChapterAct12Bridge from "./components/ChapterAct12Bridge";
-import ChapterAct23Bridge from "./components/ChapterAct23Bridge";
+import ChapterAct23WhiteFade from "./components/ChapterAct23WhiteFade";
 const AlgeriaMap = lazy(() => import("./components/Immersive/AlgeriaMap"));
 const Act2 = lazy(() => import("./components/Immersive/Act2"));
 const Act3Constellation = lazy(() => import("./components/Immersive/Act3Constellation"));
@@ -68,7 +68,6 @@ import {
   runWhenIdleAfterMinDelay,
   scheduleIdleAct1MapPrefetchAfterLoad,
 } from "./lib/actTransitionPrefetch";
-import { prefetchAct23BridgeVideo } from "./lib/act23Bridge";
 import { PARCHEMIN_STATIC_QUERY } from "./lib/parcheminAssetVersion";
 import {
   ACT_SAVE_STORAGE_KEY,
@@ -90,7 +89,12 @@ import {
   SESSION_RESUME_ACT2,
 } from "./lib/appRoutes";
 import { ACT12_POST_MAP_COMPLETE_DELAY_MS } from "./lib/transitionBridgeReveal";
+import { resetConstellationDatabase } from "./lib/act3ConstellationApi";
 import { clearConstellationVote } from "./lib/act3ConstellationVote";
+import {
+  ACT3_SCENE_ENTER_FADE_SEC,
+  ACT3_SCENE_EXIT_FADE_SEC,
+} from "./lib/act3ConstellationTiming";
 
 /** Page statique parchemin (ch. II / III) ; respecte `import.meta.env.BASE_URL` (d?ploiement sous sous-chemin). */
 function parcheminSenacHref(hash: string, options?: { previewCredits?: boolean }) {
@@ -146,34 +150,6 @@ function mergeHistoryPhaseState(phase: MainAppPhase): Record<string, unknown> {
   return base;
 }
 
-/** ?cran Suspense entre phases : le temps du t?l?chargement du chunk sert au pr?chargement d?j? lanc? en idle. */
-function LazyPhaseFallback({
-  message,
-  bgClassName,
-  arabicUi,
-}: {
-  message: string;
-  bgClassName: string;
-  arabicUi: boolean;
-}) {
-  return (
-    <div
-      role="status"
-      aria-busy="true"
-      aria-live="polite"
-      className={`fixed inset-0 z-[21] flex flex-col items-center justify-center gap-3 px-8 ${bgClassName}`}
-    >
-      <p
-        className={
-          "max-w-[min(340px,88vw)] text-center text-[11px] font-medium leading-relaxed tracking-wide text-solar-gold/58 sm:text-[12px] " +
-          (arabicUi ? "font-arabic-ui" : "")
-        }
-      >
-        {message}
-      </p>
-    </div>
-  );
-}
 
 function readBootstrapMainPhase(): MainAppPhase {
   if (typeof window === "undefined") return "intro";
@@ -223,7 +199,7 @@ export default function App() {
     if (phase !== "intro") setIntroCursorSuppressed(false);
   }, [phase]);
   const [introVideoNonce, setIntroVideoNonce] = useState(0);
-  /** Pont vid?o plein ?cran avant l?acte III (depuis l?acte II). */
+  /** Pont II → III : fondu blanc (scroll parchemin ou Parcours), pas de vidéo. */
   const [act23BridgeOpen, setAct23BridgeOpen] = useState(false);
   const act23ResumeRef = useRef(true);
   const act3KeywordGateOpen = false;
@@ -296,6 +272,8 @@ export default function App() {
   const [act2ParcheminTone, setAct2ParcheminTone] = useState<"solar" | "midnight" | null>(null);
   /** Progression de scroll remont?e par l'iframe parchemin pour la barre parent en haut. */
   const [act2ScrollFillRatio, setAct2ScrollFillRatio] = useState<number | undefined>(undefined);
+  /** Acte II : repère « Molette · vers le bas » masqué après le premier scroll dans l’iframe. */
+  const [act2ScrollNudgeDismissed, setAct2ScrollNudgeDismissed] = useState(false);
   /** Overlay choix CinÃ©ma / Exploration (iframe) : masque le bouton menu du shell. */
   const [act2ScrollModeChoiceOpen, setAct2ScrollModeChoiceOpen] = useState(false);
 
@@ -410,10 +388,15 @@ export default function App() {
       act2ScrollPersistTimerRef.current = 0;
       setAct2ParcheminTone(null);
       setAct2ScrollFillRatio(undefined);
+      setAct2ScrollNudgeDismissed(false);
       setAct2ScrollModeChoiceOpen(false);
     } else {
       const chrome = getHydratedActSave().act2.answers.chromeMode;
       setAct2ParcheminTone(chrome === "midnight" ? "midnight" : "solar");
+      const savedScroll = getHydratedActSave().act2.answers.scrollRatio;
+      setAct2ScrollNudgeDismissed(
+        typeof savedScroll === "number" && Number.isFinite(savedScroll) && savedScroll >= 0.04
+      );
     }
   }, [phase]);
 
@@ -560,35 +543,39 @@ export default function App() {
     }, 3200);
   }, [finePointer, setFluidHandoff]);
 
-  /** Carte : pendant le jeu, pr?pare bundle acte II + HTML parchemin + vid?os de pont (I?II, II?III). */
+  /** Carte : pendant le jeu, pr?pare bundle acte II + HTML parchemin + pont I?II. */
   useEffect(() => {
     if (phase !== "act1") return;
     const cancel = runWhenIdle(() => prefetchAct2TransitionAssets());
     return cancel;
   }, [phase]);
 
-  /** Acte II : renforce le prefetch de la vid?o II?III une fois le parchemin affich?. */
+  /** Parchemin : précharge l’acte III poétique avant la fin du scroll. */
   useEffect(() => {
     if (phase !== "act2") return;
-    const cancel = runWhenIdle(() => prefetchAct23BridgeVideo());
+    const cancel = runWhenIdle(() => {
+      void import("./components/Immersive/Act3Constellation");
+    });
     return cancel;
   }, [phase]);
 
   /** G?n?rique fin de voyage (iframe) : masque le fluide parent et remonte le curseur comme pour l?intro. */
   const [act2VoyageCreditsOpen, setAct2VoyageCreditsOpen] = useState(false);
+  /** Barre de progression en haut pendant le générique (0→1). */
+  const [creditsScrollProgress, setCreditsScrollProgress] = useState(0);
   /** Ouverture des crÃ©dits depuis la clÃ´ture acte III : pas de dÃ©filement, bouton fermer tout de suite. */
   const [creditsSkipScroll, setCreditsSkipScroll] = useState(false);
   /** Align? synchrone avec les messages iframe (`senac-credits-chrome` avant les ?v?nements de progression). */
   const act2VoyageCreditsOpenRef = useRef(false);
-  /** Pont IIâ†’III ou crÃ©dits : couper lâ€™oud iframe pour ne pas chevaucher la vidÃ©o / le gÃ©nÃ©rique. */
   const act23BridgeOpenRef = useRef(false);
-
+  /** Pont IIâ†’III ou crÃ©dits : couper lâ€™oud iframe pour ne pas chevaucher la vidÃ©o / le gÃ©nÃ©rique. */
   useEffect(() => {
     /* Acte II ou III : ne pas couper les crÃ©dits (gÃ©nÃ©rique prolonge lâ€™acte III sans changer de phase). */
     if (phase === "act2" || phase === "act3") return;
     setAct2VoyageCreditsOpen(false);
     act2VoyageCreditsOpenRef.current = false;
     setCreditsSkipScroll(false);
+    setCreditsScrollProgress(0);
   }, [phase]);
 
   act2VoyageCreditsOpenRef.current = act2VoyageCreditsOpen;
@@ -843,13 +830,31 @@ export default function App() {
     act2VoyageCreditsOpenRef.current = false;
     setAct2VoyageCreditsOpen(false);
     setCreditsSkipScroll(false);
+    setCreditsScrollProgress(0);
   }, []);
 
-  const resetParticipativeMode = useCallback(() => {
+  const resetParticipativeMode = useCallback(async () => {
     clearConstellationVote();
+    setParcoursOpen(false);
+    setSystemMenuOpen(false);
+    setAct23BridgeOpen(false);
+    setIntroVideoOpen(false);
+    setAct2ScrollModeChoiceOpen(false);
+    setChapterDaTransition(false);
     act2VoyageCreditsOpenRef.current = false;
     setAct2VoyageCreditsOpen(false);
     setCreditsSkipScroll(false);
+    setCreditsScrollProgress(0);
+
+    const db = await resetConstellationDatabase();
+    if (db.ok === false) {
+      console.warn("[constellation] reset BDD:", db.error);
+    }
+
+    if (phaseRef.current !== "act3") {
+      prepareActIIIEntry({ resumeAct2: false });
+      setPhase("act3");
+    }
     setAct3ParticipativeEpoch((n) => n + 1);
   }, []);
 
@@ -902,13 +907,24 @@ export default function App() {
     chapterDaTransition,
   ]);
 
-  const handleAct23BridgeComplete = useCallback(() => {
+  const handleAct23WhiteFadeSwap = useCallback(() => {
     goEnterActIII(act23ResumeRef.current);
   }, [goEnterActIII]);
 
+  const handleAct23WhiteFadeComplete = useCallback(() => {
+    setAct23BridgeOpen(false);
+  }, []);
+
   useEffect(() => {
-    if (phase !== "act2") setAct23BridgeOpen(false);
+    if (phase === "intro" || phase === "act1") setAct23BridgeOpen(false);
   }, [phase]);
+
+  /** Évite un écran blanc figé si le fondu II→III ne termine pas. */
+  useEffect(() => {
+    if (!act23BridgeOpen) return;
+    const t = window.setTimeout(() => setAct23BridgeOpen(false), 4500);
+    return () => window.clearTimeout(t);
+  }, [act23BridgeOpen]);
 
   const navigateParcoursPhase = useCallback((next: ParcoursPhaseLabel) => {
     setParcoursOpen(false);
@@ -1221,10 +1237,18 @@ export default function App() {
         }
         return;
       }
+      if (e.data?.type === "senac-user-scrolled") {
+        const iframe = document.querySelector('iframe[src*="parchemin-senac"]');
+        if (iframe instanceof HTMLIFrameElement && e.source === iframe.contentWindow) {
+          setAct2ScrollNudgeDismissed(true);
+        }
+        return;
+      }
       if (e.data?.type === "senac-scroll-progress") {
         const ratio = e.data.ratio as number;
         if (typeof ratio === "number" && Number.isFinite(ratio)) {
           const clamped = Math.min(1, Math.max(0, ratio));
+          if (clamped >= 0.015) setAct2ScrollNudgeDismissed(true);
           const now = performance.now();
           const lastAt = act2ScrollUiLastAt.current;
           const lastRatio = act2ScrollUiLastRatio.current;
@@ -1263,7 +1287,7 @@ export default function App() {
         const target = typeof d.target === "string" ? d.target : "";
         const crossNav = getSenacCrossNavFlags();
         if (target === "act3-writing") {
-          if (!crossNav.act3Unlocked) return;
+          if (phaseRef.current !== "act2") return;
           beginActIIIEntrance(true);
           return;
         }
@@ -1713,13 +1737,14 @@ export default function App() {
         <ScrollNudge key="zoom-nudge-act1" />
       )}
 
-      {/* Même repère (chevron + « Zoom vers le haut ») — acte II : masqué au premier scroll iframe */}
+      {/* Même repère (chevron + invite rapprochement) — acte II : masqué au premier scroll iframe */}
       {phase === "act2" &&
         !systemMenuOpen &&
         !introVideoOpen &&
         !act2ScrollModeChoiceOpen &&
         !act2VoyageCreditsOpen &&
         !act23BridgeOpen &&
+        !act2ScrollNudgeDismissed &&
         (act2ScrollFillRatio === undefined || act2ScrollFillRatio < 0.04) && (
           <ScrollNudge key="zoom-nudge-act2" act2 iframeScrollRatio={act2ScrollFillRatio} />
         )}
@@ -1778,15 +1803,7 @@ export default function App() {
                 : { duration: 1.5, ease: "easeInOut" }
             }
           >
-            <Suspense
-              fallback={
-                <LazyPhaseFallback
-                  message={copy.lazySuspenseAct1}
-                  bgClassName="bg-da-depth-map"
-                  arabicUi={language === "ar-dz"}
-                />
-              }
-            >
+            <Suspense fallback={null}>
               <AlgeriaMap
                 onRevelationWordsChange={onAct1RevelationWords}
                 onMemoryMapComplete={handleMemoryMapComplete}
@@ -1836,15 +1853,21 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{
               opacity:
-                act2VoyageCreditsOpen && phase === "act3" ? 0 : 1,
+                act2VoyageCreditsOpen && phase === "act3"
+                  ? 0
+                  : act23BridgeOpen
+                    ? 0
+                    : 1,
             }}
             transition={{
               duration:
                 prefersReducedMotion === true
                   ? 0.28
                   : act2VoyageCreditsOpen
-                    ? 2.85
-                    : 0.9,
+                    ? ACT3_SCENE_EXIT_FADE_SEC
+                    : act23BridgeOpen
+                      ? 0.01
+                      : ACT3_SCENE_ENTER_FADE_SEC,
               ease: [0.22, 1, 0.36, 1],
             }}
             style={{
@@ -1854,10 +1877,12 @@ export default function App() {
           >
             <Suspense
               fallback={
-                <LazyPhaseFallback
-                  message={copy.lazySuspenseAct3}
-                  bgClassName="bg-da-depth-night"
-                  arabicUi={language === "ar-dz"}
+                <motion.div
+                  aria-hidden
+                  className="absolute inset-0 z-10 bg-[#020100]"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.35 }}
                 />
               }
             >
@@ -1928,8 +1953,23 @@ export default function App() {
         }
         skipScrollAnimation={creditsSkipScroll}
         fromAct3Finale={phase === "act3"}
+        onScrollProgress={setCreditsScrollProgress}
         onClose={restartExperience}
       />
+
+      {act2VoyageCreditsOpen && (phase === "act2" || phase === "act3") ? (
+        <ScrollProgressBar
+          tone={
+            phase === "act3"
+              ? "solar"
+              : (act2ParcheminTone ?? "solar") === "midnight"
+                ? "midnight"
+                : "solar"
+          }
+          fillRatio={creditsScrollProgress}
+          aboveChrome
+        />
+      ) : null}
 
       {phase === "act2" &&
       !act2VoyageCreditsOpen &&
@@ -1946,8 +1986,12 @@ export default function App() {
       </motion.div>
       <LanguageMorphHud visible={isLanguageMorphing} midnight={languageMorphMidnight} />
     </ReactLenis>
-      {act23BridgeOpen && phase === "act2" ? (
-        <ChapterAct23Bridge open onComplete={handleAct23BridgeComplete} />
+      {act23BridgeOpen ? (
+        <ChapterAct23WhiteFade
+          open
+          onSwapPhase={handleAct23WhiteFadeSwap}
+          onComplete={handleAct23WhiteFadeComplete}
+        />
       ) : null}
       {/* Acte II : losange parent + relais `senac-pointer` (pas de doublon dans l’iframe). */}
       {finePointer && (

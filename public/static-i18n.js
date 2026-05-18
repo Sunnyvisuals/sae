@@ -181,9 +181,7 @@
       s_arch_date: "Descente de l'arche",
       s_arch_h2: "Le portail du voyage",
       s_arch_p:
-        "En continuant à défiler, vous approchez de l'arche, passage vers l'Acte III. Le modèle 3D descend avec votre lecture : monument imaginaire, seuil entre mémoire et écriture.",
-      s_arch_p2:
-        "Jean Sénac croyait que chaque lecteur franchit un seuil. Cette arche est la vôtre : un instant pour regarder, respirer, puis réécrire le voyage en poésie.",
+        "L'arche. Pas de panneau, pas d'explication. Juste la frontière entre ce qui reste dans la tête et ce qui finit sur la page.",
       ch3_kicker: "Suite du voyage",
       ch3_h2: "Chapitre III",
       ch3_p:
@@ -366,9 +364,7 @@
       s_arch_date: "نزول القوس",
       s_arch_h2: "بوابة الرحلة",
       s_arch_p:
-        "بمواصلة التمرير تقتربون من القوس، ممرّ نحو الفصل الثالث. النموذج ثلاثي الأبعاد ينزل مع قراءتكم: نصب خيالي، عتبة بين الذاكرة والكتابة.",
-      s_arch_p2:
-        "كان سنّاك يؤمن أن كل قارئ يعبر عتبة. هذا القوس لكم: لحظة للنظر والتنفّس، ثم إعادة كتابة الرحلة شعرًا.",
+        "القوس. لا لوحة، لا شرح. فقط الحدّ الفاصل بين ما يبقى في الرأس وما ينتهي على الصفحة.",
       ch3_kicker: "تتمة الرحلة",
       ch3_h2: "الفصل الثالث",
       ch3_p: "الليل يفكّ. الخيط الذهبي يفارق الخط الزمني ويفتح إقليم آخر.",

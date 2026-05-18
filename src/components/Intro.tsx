@@ -287,9 +287,7 @@ function SuspenseOverlay({
   const contentIn = prefersReducedMotion ? 0.35 : 1.15;
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-[26] flex flex-col items-center justify-center gap-0 px-6 text-center">
-
-      {/* fond opaque - montée lente pour ne pas couper l’accueil d’un coup */}
+    <motion.div className="pointer-events-none absolute inset-0 z-[26] flex flex-col items-center justify-center gap-0 px-6 text-center">
       <motion.div
         aria-hidden
         className="absolute inset-0 bg-[#020100]"
@@ -298,7 +296,6 @@ function SuspenseOverlay({
         transition={{ duration: veilIn, ease: revealEase }}
       />
 
-      {/* halo dor? - s'emballe au climax */}
       <motion.div
         aria-hidden
         className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
@@ -306,8 +303,8 @@ function SuspenseOverlay({
           isClimax
             ? { opacity: [0.35, 0.65, 0.35, 0.7, 0.35], scale: [1.2, 1.9, 1.3, 2.1, 1.4] }
             : isBuilding
-            ? { opacity: [0.18, 0.28, 0.18], scale: [1.2, 1.5, 1.2] }
-            : { opacity: [0, 0.28, 0.18], scale: [0.4, 1.6, 1.2] }
+              ? { opacity: [0.18, 0.28, 0.18], scale: [1.2, 1.5, 1.2] }
+              : { opacity: [0, 0.28, 0.18], scale: [0.4, 1.6, 1.2] }
         }
         transition={
           isClimax
@@ -318,11 +315,15 @@ function SuspenseOverlay({
                 ease: revealEase,
               }
         }
-        style={{ width: 520, height: 520, background: "radial-gradient(circle, rgba(197,160,89,0.28) 0%, transparent 68%)", filter: isClimax ? "blur(28px)" : "blur(40px)" }}
+        style={{
+          width: 520,
+          height: 520,
+          background: "radial-gradient(circle, rgba(197,160,89,0.28) 0%, transparent 68%)",
+          filter: isClimax ? "blur(28px)" : "blur(40px)",
+        }}
       />
 
-      {/* ?clats de particules au climax */}
-      {isClimax && !prefersReducedMotion && (
+      {isClimax && !prefersReducedMotion ? (
         <>
           {[...Array(6)].map((_, i) => (
             <motion.div
@@ -342,26 +343,28 @@ function SuspenseOverlay({
                 opacity: [0, 0.9, 0],
                 scale: [0.5, 1.4, 0.5],
               }}
-              transition={{ duration: 0.45 + i * 0.07, repeat: Infinity, ease: "easeInOut", delay: i * 0.06 }}
+              transition={{
+                duration: 0.45 + i * 0.07,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: i * 0.06,
+              }}
             />
           ))}
         </>
-      )}
+      ) : null}
 
-      {/* vignette qui pulse au climax */}
       <motion.div
         aria-hidden
         className="absolute inset-0"
-        animate={
-          isClimax
-            ? { opacity: [0.0, 0.18, 0.0] }
-            : { opacity: 0 }
-        }
+        animate={isClimax ? { opacity: [0, 0.18, 0] } : { opacity: 0 }}
         transition={isClimax ? { duration: 0.5, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
-        style={{ background: "radial-gradient(ellipse 80% 80% at 50% 50%, rgba(197,160,89,0.12) 0%, transparent 70%), linear-gradient(to bottom, transparent 60%, rgba(197,100,20,0.08) 100%)" }}
+        style={{
+          background:
+            "radial-gradient(ellipse 80% 80% at 50% 50%, rgba(197,160,89,0.12) 0%, transparent 70%), linear-gradient(to bottom, transparent 60%, rgba(197,100,20,0.08) 100%)",
+        }}
       />
 
-      {/* contenu centré - même DA que l’écran langue (sourcil, titre caps, filet) */}
       <motion.div
         dir={isArabic ? "rtl" : "ltr"}
         className="relative z-[2] flex flex-col items-center gap-6 px-4 text-center"
@@ -456,7 +459,7 @@ function SuspenseOverlay({
           </span>
         </motion.div>
       </motion.div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -466,6 +469,8 @@ interface IntroProps {
   onVideoStart?: () => void;
   /** Volet langue / curseur : garde le curseur custom visible (App `CustomCursor`). */
   onIntroGateOpenChange?: (open: boolean) => void;
+  /** Masque le curseur custom (overlay chargement, tutoriel volume, etc.). */
+  onIntroCursorSuppressChange?: (suppressed: boolean) => void;
   /** Raccourcis vers les chapitres - affichés uniquement si défini (ex. mode dev dans App). */
   devChapterJumps?: DevChapterJumps;
 }
@@ -475,6 +480,7 @@ export default function Intro({
   isExploring,
   onVideoStart,
   onIntroGateOpenChange,
+  onIntroCursorSuppressChange,
   devChapterJumps,
 }: IntroProps) {
   const language = useLanguageStore((s) => s.language);
@@ -793,6 +799,13 @@ export default function Intro({
     stopLanguageGateSmokeSfx,
   ]);
 
+  /** Pont langue : si la WebM ne démarre pas, forcer le panneau FR/AR (évite écran crème vide). */
+  useEffect(() => {
+    if (!arrivalLanguageBridgeVideoActive || prefersReducedMotion) return;
+    const t = window.setTimeout(() => finishBridgeVideoPlayback(), 14_000);
+    return () => window.clearTimeout(t);
+  }, [arrivalLanguageBridgeVideoActive, prefersReducedMotion, finishBridgeVideoPlayback]);
+
   useEffect(() => {
     if (!arrivalLanguageBridgeVideoActive) return;
     const onKey = (e: KeyboardEvent) => {
@@ -814,11 +827,23 @@ export default function Intro({
 
   const introSuspenseActive = isStarting && !videoStarted;
   const prologueTutorialActive = prologueTutorialStep !== null;
+
+  useEffect(() => {
+    onIntroCursorSuppressChange?.(introSuspenseActive || prologueTutorialActive);
+    return () => onIntroCursorSuppressChange?.(false);
+  }, [introSuspenseActive, prologueTutorialActive, onIntroCursorSuppressChange]);
+
   const introCoverActive =
     introSuspenseActive ||
     prologueTutorialActive ||
     introHandoffBlackout ||
     cursorOnboardingOpen;
+
+  useEffect(() => {
+    if (!introHandoffBlackout || introSuspenseActive || prologueTutorialActive) return;
+    const t = window.setTimeout(() => setIntroHandoffBlackout(false), 900);
+    return () => window.clearTimeout(t);
+  }, [introHandoffBlackout, introSuspenseActive, prologueTutorialActive]);
 
   const showLandingDiamond =
     landingOrnamentAllowed &&
@@ -912,6 +937,7 @@ export default function Intro({
       return () => window.clearTimeout(timer);
     }
     const ctx = gsap.context(() => {
+      if (!backgroundRevealRef.current || !titleRevealRef.current) return;
       gsap.set(backgroundRevealRef.current, {
         opacity: 0.42,
         scale: 1.12,
@@ -1000,9 +1026,19 @@ export default function Intro({
 
     /* `arrivalLanguageGateVisible` omis des deps : sinon à l’ouverture du volet langue le cleanup
      * revert le timeline terminé - effets visuels indésirables sur la pile titre / losange. */
-    return () => ctx.revert();
+    const gsapFallback = window.setTimeout(() => {
+      if (!arrivalLanguageGateVisible && !arrivalLanguageConfirmed) {
+        openFirstIntroGate();
+      }
+    }, ARRIVAL_LANGUAGE_PRELUDE_MS + 2500);
+
+    return () => {
+      window.clearTimeout(gsapFallback);
+      ctx.revert();
+    };
   }, [
     arrivalLanguageConfirmed,
+    arrivalLanguageGateVisible,
     isExploring,
     openFirstIntroGate,
     prefersReducedMotion,
@@ -1164,7 +1200,7 @@ export default function Intro({
         setIsStarting(false);
         return;
       }
-      setIntroHandoffBlackout(true);
+      setIntroHandoffBlackout(false);
       setIsStarting(false);
       openPrologueTutorial();
       return;
@@ -1196,6 +1232,14 @@ export default function Intro({
 
     if (isExploring) {
       startPrologueVideo();
+      return;
+    }
+
+    if (introPrefetchDone) {
+      introSuspenseFinishedRef.current = true;
+      setIntroHandoffBlackout(false);
+      setIsStarting(false);
+      openPrologueTutorial();
       return;
     }
 
@@ -1605,7 +1649,7 @@ export default function Intro({
                 "pointer-events-auto fixed inset-0 z-[100] min-h-[100dvh] w-full overflow-hidden " +
                 (finePointer ? "cursor-none" : "")
               }
-              style={{ background: "#03020100" }}
+              style={{ background: "#020100" }}
             >
               <div
                 className="absolute inset-0 z-[5]"

@@ -1,57 +1,202 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "motion/react";
-
-/** Distance de molette / touch équivalente pour atteindre 100 %. */
-const SCROLL_BUDGET = 980;
-const COMPLETE_HOLD_MS = 520;
+import {
+  ACT3_SCROLL_BUDGET,
+  ACT3_SCROLL_COMPLETE_HOLD_MS,
+} from "../../lib/act3ConstellationTiming";
 
 type Props = {
   active: boolean;
   reduceMotion: boolean;
   scrollCue: string;
-  loadingLabel: string;
   continueLabel: string;
+  viewMyStarLabel?: string | null;
+  onViewMyStar?: () => void;
   onComplete: () => void;
 };
+
+/** Bouton « Voir mon étoile » — fixé en bas. */
+function Act3ViewMyStarBottom({
+  label,
+  onClick,
+  visible,
+}: {
+  label: string;
+  onClick: () => void;
+  visible: boolean;
+}) {
+  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
+
+  useLayoutEffect(() => {
+    setPortalRoot(document.body);
+  }, []);
+
+  if (!visible || !portalRoot) return null;
+
+  return createPortal(
+    <motion.button
+      type="button"
+      onClick={onClick}
+      className="da-act3-view-star pointer-events-auto fixed left-1/2 z-[520] -translate-x-1/2 cursor-pointer"
+      style={{ bottom: "max(1.25rem, env(safe-area-inset-bottom))" }}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
+      aria-label={label}
+    >
+      {label}
+    </motion.button>,
+    portalRoot,
+  );
+}
+
+/** Barre, % et consignes — fixés en haut de page. */
+function Act3TopScrollChrome({
+  progress,
+  scrollCue,
+}: {
+  progress: number;
+  scrollCue: string;
+}) {
+  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
+  const fillRef = useRef<HTMLDivElement>(null);
+  const p = Math.min(1, Math.max(0, progress));
+  const pct = Math.round(p * 100);
+
+  useLayoutEffect(() => {
+    setPortalRoot(document.body);
+  }, []);
+
+  useLayoutEffect(() => {
+    const el = fillRef.current;
+    if (!el) return;
+    el.style.transform = `scaleX(${p})`;
+  }, [p]);
+
+  const chrome = (
+    <motion.div
+      className="pointer-events-none fixed inset-x-0 z-[480] flex flex-col items-center"
+      style={{ top: "env(safe-area-inset-top, 0px)" }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <div className="relative h-[2px] w-full shrink-0">
+        <motion.div
+          className="relative h-full w-full overflow-hidden rounded-[1px]"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={pct}
+          aria-label={`${pct}%`}
+        >
+          <motion.div
+            className="absolute inset-0 rounded-[1px] bg-[rgba(0,8,20,0.32)] shadow-[inset_0_1px_0_rgba(255,252,245,0.06),0_0_18px_rgba(0,0,0,0.45)]"
+            aria-hidden
+          />
+          <motion.div
+            ref={fillRef}
+            className="absolute left-0 top-0 h-full w-full origin-left rounded-[1px] will-change-transform"
+            style={{
+              transform: "scaleX(0)",
+              background:
+                "linear-gradient(90deg, rgba(197,160,89,0.35) 0%, rgba(232,212,164,0.92) 55%, rgba(197,160,89,0.55) 100%)",
+              boxShadow: "0 0 14px rgba(197, 160, 89, 0.28)",
+            }}
+            aria-hidden
+          />
+        </motion.div>
+      </div>
+      <p className="da-act3-scroll-load-pct m-0 mt-4 shrink-0" aria-hidden>
+        {pct}
+      </p>
+
+      <motion.div
+        className="da-act3-scroll-load-cue mt-3 flex w-full max-w-[min(100%,36rem)] flex-col items-center gap-3 px-4 pb-3 pt-1"
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1], delay: 0.08 }}
+        aria-live="polite"
+      >
+        <p className="da-act3-scroll-load-cue-line m-0 w-full text-center">{scrollCue}</p>
+      </motion.div>
+    </motion.div>
+  );
+
+  if (!portalRoot) return null;
+  return createPortal(chrome, portalRoot);
+}
 
 export default function Act3ConstellationScrollLoad({
   active,
   reduceMotion,
   scrollCue,
-  loadingLabel,
   continueLabel,
+  viewMyStarLabel,
+  onViewMyStar,
   onComplete,
 }: Props) {
   const [progress, setProgress] = useState(0);
   const progressRef = useRef(0);
   const completedRef = useRef(false);
+  const pendingCompleteRef = useRef(false);
+  const completeTimeoutRef = useRef<number | null>(null);
   const touchYRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!active) {
       progressRef.current = 0;
       completedRef.current = false;
+      pendingCompleteRef.current = false;
       touchYRef.current = null;
+      if (completeTimeoutRef.current != null) {
+        window.clearTimeout(completeTimeoutRef.current);
+        completeTimeoutRef.current = null;
+      }
       setProgress(0);
       return;
     }
     if (reduceMotion) return;
 
-    const finish = () => {
-      if (completedRef.current) return;
-      completedRef.current = true;
-      progressRef.current = 1;
-      setProgress(1);
-      window.setTimeout(onComplete, COMPLETE_HOLD_MS);
+    const clearCompleteTimer = () => {
+      if (completeTimeoutRef.current != null) {
+        window.clearTimeout(completeTimeoutRef.current);
+        completeTimeoutRef.current = null;
+      }
     };
 
-    const addDelta = (dy: number) => {
-      if (completedRef.current || dy <= 0) return;
-      const next = Math.min(1, progressRef.current + dy / SCROLL_BUDGET);
+    const finish = () => {
+      if (completedRef.current || pendingCompleteRef.current) return;
+      pendingCompleteRef.current = true;
+      progressRef.current = 1;
+      setProgress(1);
+      clearCompleteTimer();
+      completeTimeoutRef.current = window.setTimeout(() => {
+        completedRef.current = true;
+        onComplete();
+      }, ACT3_SCROLL_COMPLETE_HOLD_MS);
+    };
+
+    /** + = charge (scroll vers le haut), − = décharge (vers le bas). */
+    const applyScrollDelta = (signedDy: number) => {
+      if (completedRef.current || signedDy === 0) return;
+
+      const next = Math.min(
+        1,
+        Math.max(0, progressRef.current + signedDy / ACT3_SCROLL_BUDGET),
+      );
+
+      if (next < 1 && pendingCompleteRef.current) {
+        pendingCompleteRef.current = false;
+        clearCompleteTimer();
+      }
+
       progressRef.current = next;
       setProgress(next);
+
       if (next >= 1) finish();
     };
 
@@ -66,7 +211,8 @@ export default function Act3ConstellationScrollLoad({
         return;
       }
       e.preventDefault();
-      addDelta(Math.abs(e.deltaY) * 0.88);
+      /* deltaY > 0 = vers le bas → décharge ; deltaY < 0 = vers le haut → charge */
+      applyScrollDelta(-e.deltaY * 0.88);
     };
 
     const onTouchStart = (e: TouchEvent) => {
@@ -79,7 +225,7 @@ export default function Act3ConstellationScrollLoad({
       if (y == null) return;
       const dy = touchYRef.current - y;
       touchYRef.current = y;
-      if (dy > 0) addDelta(dy * 1.15);
+      applyScrollDelta(dy * 1.15);
     };
 
     const onKey = (e: KeyboardEvent) => {
@@ -107,89 +253,37 @@ export default function Act3ConstellationScrollLoad({
       window.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("keydown", onKey, true);
+      clearCompleteTimer();
     };
   }, [active, reduceMotion, onComplete]);
 
   if (!active) return null;
 
+  const showViewMyStar = Boolean(viewMyStarLabel && onViewMyStar);
+
   if (reduceMotion) {
     return (
-      <button type="button" onClick={onComplete} className="da-act3-continue mt-1">
-        {continueLabel}
-      </button>
+      <>
+        <Act3ViewMyStarBottom
+          visible={showViewMyStar}
+          label={viewMyStarLabel ?? ""}
+          onClick={onViewMyStar ?? (() => {})}
+        />
+        <button type="button" onClick={onComplete} className="da-act3-continue mt-1">
+          {continueLabel}
+        </button>
+      </>
     );
   }
 
-  const pct = Math.min(100, Math.round(progress * 100));
-  const loading = progress > 0.04;
-
   return (
-    <motion.div
-      className="mt-1 flex w-full max-w-[min(100%,20rem)] flex-col items-center gap-3"
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
-    >
-      <motion.div
-        aria-hidden
-        className="opacity-80"
-        animate={{ y: [0, 5, 0] }}
-        transition={{ duration: 2.6, repeat: Infinity, ease: [0.45, 0, 0.55, 1] }}
-      >
-        <svg width="40" height="40" viewBox="0 0 44 44" fill="none">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            stroke="rgba(197, 160, 89, 0.68)"
-            strokeWidth="1.35"
-            d="M14 17.5 L22 25 L30 17.5"
-          />
-        </svg>
-      </motion.div>
-
-      <p className="da-act3-micro m-0 text-center">{scrollCue}</p>
-
-      <div
-        className="da-act3-scroll-load-track"
-        role="progressbar"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={pct}
-        aria-label={loadingLabel}
-      >
-        <div
-          className="da-act3-scroll-load-fill"
-          style={{ transform: `scaleX(${progress})` }}
-          aria-hidden
-        />
-        <motion.div
-          className="da-act3-scroll-load-shimmer"
-          aria-hidden
-          animate={{ opacity: loading ? [0.35, 0.75, 0.35] : 0 }}
-          transition={{
-            duration: 1.8,
-            repeat: loading && progress < 1 ? Infinity : 0,
-            ease: "easeInOut",
-          }}
-        />
-      </div>
-
-      <p
-        className={
-          "da-act3-scroll-load-status m-0 min-h-[1.1em] tabular-nums " +
-          (loading ? "text-solar-gold/62" : "text-transparent")
-        }
-        aria-live="polite"
-      >
-        {loading ? (
-          <>
-            {loadingLabel}
-            {progress < 1 ? <span className="ml-1.5 opacity-70">{pct}%</span> : null}
-          </>
-        ) : (
-          <span className="sr-only">{scrollCue}</span>
-        )}
-      </p>
-    </motion.div>
+    <>
+      <Act3TopScrollChrome progress={progress} scrollCue={scrollCue} />
+      <Act3ViewMyStarBottom
+        visible={showViewMyStar}
+        label={viewMyStarLabel ?? ""}
+        onClick={onViewMyStar ?? (() => {})}
+      />
+    </>
   );
 }

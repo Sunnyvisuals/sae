@@ -1,10 +1,8 @@
 /**
  * Arche 3D - source canonique (SPA crédits via Vite + iframe parchemin via `public/`).
- * Acte II iframe parchemin :
  * Modèle : public/models/model.glb - ratio = scrollY / scrollMax.
  *
- * Le canvas couvre tout le viewport (CSS fixed inset 0, 100% × 100%).
- * Le modèle descend puis, en phase zoom final (fin du scroll), slerp quaternion + petite caméra pour cadrer l'entrée d'arche - à tuner : _scratchEulerB (0.28…) et camera.lookAt Y.
+ * Descente + rotation sur tout le parcours scroll ; léger zoom caméra à partir du portail.
  */
 
 const THREE_VER = "0.170.0";
@@ -13,20 +11,18 @@ const GLTF_LOADER_SRC = `https://esm.sh/three@${THREE_VER}/examples/jsm/loaders/
 const DRACO_LOADER_SRC = `https://esm.sh/three@${THREE_VER}/examples/jsm/loaders/DRACOLoader.js?deps=three@${THREE_VER}`;
 const DRACO_DECODER_PATH = `https://esm.sh/three@${THREE_VER}/examples/jsm/libs/draco/gltf/`;
 
-/** Ratio scroll où commence le zoom. Plus bas = phase zoom plus longue (moins « rapide » à la molette). Synchro `parchemin-senac.js`. */
-const ARCH_ZOOM_BEGIN = 0.68;
-
 /**
  * @param {object} opts
  * @param {HTMLCanvasElement} opts.canvas
  * @param {boolean} opts.reducedMotion
  * @param {string} opts.modelUrl
  * @param {() => number} opts.getScrollRatio 0-1
- * @param {() => { x: number, y: number }} [opts.getMouse01] pointeur 0-1 (x gauche→droite, y bas→haut)
+ * @param {() => number} [opts.getArchZoom01] 0-1 depuis « Le portail du voyage »
+ * @param {() => { x: number, y: number }} [opts.getMouse01] pointeur 0-1
  * @returns {Promise<{ dispose: () => void; sync: () => void }>}
  */
 export async function initSenacArchScene(opts) {
-  const { canvas, reducedMotion, modelUrl, getScrollRatio, getMouse01 } = opts;
+  const { canvas, reducedMotion, modelUrl, getScrollRatio, getArchZoom01, getMouse01 } = opts;
   let disposed = false;
 
   let THREE;
@@ -104,7 +100,6 @@ export async function initSenacArchScene(opts) {
   const _scratchEulerA = new THREE.Euler();
   const _scratchEulerB = new THREE.Euler();
   const _scratchQFrom = new THREE.Quaternion();
-  const _scratchQTo = new THREE.Quaternion();
   const _scratchQWobble = new THREE.Quaternion();
   const mouseSmooth = { x: 0.5, y: 0.5 };
 
@@ -143,14 +138,23 @@ export async function initSenacArchScene(opts) {
     renderer.setSize(w, h, false);
   }
 
-  /**
-   * Une seule courbe descente→zoom : wobble quaternion enveloppé (0 aux bords du zoom)
-   * pour éviter le « pop » perceptif à l’entrée de phase zoom (~ARCH_ZOOM_BEGIN).
-   */
+  const ARCH_CAM_Z_IDLE = 4.6;
+  const ARCH_CAM_Z_PORTAL = 3.78;
+
+  function readArchZoom01() {
+    if (reducedMotion || typeof getArchZoom01 !== "function") return 0;
+    const z = getArchZoom01();
+    return Math.min(1, Math.max(0, Number.isFinite(z) ? z : 0));
+  }
+
+  /** Descente spiralée sur tout le scroll ; dolly léger quand le portail est lisible. */
   function applyPose(tRaw) {
     const t = Math.min(1, Math.max(0, tRaw));
+    const zoomRaw = readArchZoom01();
+    const zoomEased = THREE.MathUtils.smoothstep(zoomRaw, 0, 1);
+    const pz = THREE.MathUtils.lerp(ARCH_CAM_Z_IDLE, ARCH_CAM_Z_PORTAL, zoomEased);
 
-    camera.position.set(0, 0, 4.6);
+    camera.position.set(0, 0, pz);
     camera.lookAt(0, 0, 0);
 
     if (reducedMotion) {
@@ -159,54 +163,16 @@ export async function initSenacArchScene(opts) {
       return;
     }
 
-    const z0 = ARCH_ZOOM_BEGIN;
-    const zSpan = Math.max(1e-6, 1 - z0);
-
-    const tDescend = Math.min(t / z0, 1);
-    const yDescend = THREE.MathUtils.lerp(3.0, -0.2, tDescend);
-    const xDescend = Math.sin(tDescend * Math.PI * 2) * (1 - tDescend) * 3.0;
-    const rxDesc = tDescend * Math.PI * -6.15;
+    const eased = THREE.MathUtils.smoothstep(t, 0, 1);
+    const yDescend = THREE.MathUtils.lerp(3.0, -0.2, eased);
+    const xDescend = Math.sin(eased * Math.PI * 2) * (1 - eased) * 3.0;
+    const rxDesc = eased * Math.PI * -6.15;
     const ryDesc = -9.9;
-
-    const zoomT = Math.min(1, Math.max(0, (t - z0) / zSpan));
-    const zoomEased = THREE.MathUtils.smoothstep(zoomT, 0, 1);
-    const wobbleEnv = zoomEased * (1 - zoomEased) * 4;
-
-    const pz = zoomEased * 5.1;
-    const py = THREE.MathUtils.lerp(yDescend, -0.34, zoomEased);
-    const px =
-      THREE.MathUtils.lerp(xDescend, 0, zoomEased) +
-      Math.sin(zoomT * Math.PI * 4.2) * 0.048 * wobbleEnv;
 
     _scratchEulerA.set(rxDesc, ryDesc, 0, "XYZ");
     _scratchQFrom.setFromEuler(_scratchEulerA);
-    _scratchEulerB.set(0.28, 0.05, -0.04, "XYZ");
-    _scratchQTo.setFromEuler(_scratchEulerB);
-    _scratchQFrom.slerp(_scratchQTo, zoomEased);
-
-    const wAmp = wobbleEnv * 0.12;
-    _scratchEulerB.set(
-      Math.sin(zoomT * Math.PI * 5.5) * wAmp,
-      Math.sin(zoomT * Math.PI * 3.1) * wAmp * 0.85,
-      Math.cos(zoomT * Math.PI * 4.3) * wAmp * 0.62,
-      "XYZ",
-    );
-    _scratchQWobble.setFromEuler(_scratchEulerB);
-    _scratchQFrom.multiply(_scratchQWobble);
-
     animRoot.quaternion.copy(_scratchQFrom);
-    animRoot.position.set(px, py, pz);
-
-    camera.position.set(
-      THREE.MathUtils.lerp(0, -0.12, zoomEased),
-      THREE.MathUtils.lerp(0, 0.06, zoomEased),
-      4.6,
-    );
-    camera.lookAt(
-      THREE.MathUtils.lerp(0, 0.02, zoomEased),
-      THREE.MathUtils.lerp(0, -0.56, zoomEased),
-      0,
-    );
+    animRoot.position.set(xDescend, yDescend, 0);
 
     applyMouseParallax();
   }
@@ -296,7 +262,11 @@ export async function initSenacArchScene(opts) {
     if (rafId) cancelAnimationFrame(rafId);
     window.removeEventListener("resize", onResize);
     document.removeEventListener("visibilitychange", onVisibilityChange);
-    try { renderer.dispose(); } catch { /* ignore */ }
+    try {
+      renderer.dispose();
+    } catch {
+      /* ignore */
+    }
   }
 
   return { dispose, sync };

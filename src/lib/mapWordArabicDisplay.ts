@@ -1,9 +1,5 @@
-import type { RevelationWord } from '../components/Immersive/mapWordData';
-import { isRevelationWord } from '../components/Immersive/mapWordData';
-import { revelationWordUISurface } from './appCopy';
-
 /** Étiquettes arabe-darija / MSA pour les clés françaises des particules carte (canvas + UI homogène) */
-const MAP_WORD_ARABIC_LABEL: Record<string, string> = {
+export const MAP_WORD_ARABIC_LABEL: Record<string, string> = {
   soleil: 'الشمس',
   sable: 'الرمال',
   mémoire: 'الذاكرة',
@@ -37,6 +33,7 @@ const MAP_WORD_ARABIC_LABEL: Record<string, string> = {
   oasis: 'الواحة',
   caravane: 'القافلة',
   aurore: 'الشفق',
+  solaire: 'شمسية',
   souffle: 'النَفَس',
   source: 'العين',
   vague: 'الموجة',
@@ -45,11 +42,19 @@ const MAP_WORD_ARABIC_LABEL: Record<string, string> = {
   chant: 'الغناء',
   chemin: 'السبيل',
   éclat: 'البريق',
+  victoire: 'النصر',
+  mer: 'البحر',
+  poussière: 'الغبار',
+  fleurs: 'الزهور',
+  amour: 'الحب',
+  jour: 'النهار',
+  torrents: 'السيول',
+  avenir: 'المستقبل',
+  orage: 'العاصفة',
+  patrie: 'الوطن',
+  blessure: 'الجرح',
 };
 
 export function arabicPoemWordLabel(word: string): string {
-  if (isRevelationWord(word)) {
-    return revelationWordUISurface(word as RevelationWord, 'ar-dz');
-  }
   return MAP_WORD_ARABIC_LABEL[word] ?? word;
 }

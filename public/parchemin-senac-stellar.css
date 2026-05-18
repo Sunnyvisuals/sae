@@ -237,6 +237,9 @@ body.senac-reading-flow .chapter-two header.hero.senac-hero-stack .hero-portrait
 body.senac-reading-flow .chapter-two header.hero.senac-hero-stack .hero-portrait-frame img {
   position: relative;
   z-index: 2;
+  width: min(100%, clamp(32rem, 72vmin, 46rem));
+  max-width: 100%;
+  height: auto;
   border-radius: 50%;
   object-fit: cover;
   aspect-ratio: 1;

@@ -12,6 +12,18 @@
     document.getElementById("senac-scroll-progress")?.remove();
   }
 
+  /** SPA : le parent n’écoute pas la molette dans l’iframe — masquer le repère « Molette · vers le bas ». */
+  let senacParentScrollNotified = false;
+  function notifySenacParentUserScrolled() {
+    if (!suppressScrollProgressChrome || senacParentScrollNotified) return;
+    senacParentScrollNotified = true;
+    try {
+      window.parent.postMessage({ type: "senac-user-scrolled" }, window.location.origin);
+    } catch {
+      /* ignore */
+    }
+  }
+
   /**
    * SPA : le parent ne reçoit pas `pointermove` quand le pointeur est dans l’iframe → CustomCursor / SplashCursor
    * restent figés ou passent en idle. On relaie les coords (viewport iframe = clientX/Y) ; le parent translate
@@ -515,7 +527,7 @@
     const canvas = document.getElementById("senac-arch-canvas");
     if (!(canvas instanceof HTMLCanvasElement)) return;
     senacArchInitScheduled = true;
-    import("./parchemin-arch-scene.mjs?v=45")
+    import("./parchemin-arch-scene.mjs?v=53")
       .then((mod) =>
         mod.initSenacArchScene({
           canvas,
@@ -527,6 +539,13 @@
               y = yearGaugeLenis.scroll;
             }
             return senacScrollRatioVisual(y);
+          },
+          getArchZoom01() {
+            let y = getScrollY();
+            if (yearGaugeLenis && typeof yearGaugeLenis.scroll === "number") {
+              y = yearGaugeLenis.scroll;
+            }
+            return senacArchPortalZoom01(y);
           },
         }),
       )
@@ -570,6 +589,43 @@
       archScrollTailEl = document.querySelector(".senac-arch-scroll-tail");
     }
     return archScrollTailEl;
+  }
+
+  /** Plage scroll : « Le portail du voyage » lisible → fin de la queue arche. */
+  let archPortalZoomY0 = /** @type {number | null} */ (null);
+  let archPortalZoomY1 = /** @type {number | null} */ (null);
+
+  function measureArchPortalZoomRange() {
+    const portal = document.querySelector(".senac-scene--arch-portal");
+    if (!(portal instanceof HTMLElement)) {
+      archPortalZoomY0 = null;
+      archPortalZoomY1 = null;
+      return;
+    }
+    const vh = window.innerHeight || 1;
+    const max = getScrollMax();
+    /** Début : écran « Le portail du voyage » (carte épinglée / texte lisible). */
+    archPortalZoomY0 = Math.max(0, portal.offsetTop - vh * 0.2);
+    const tail = getArchScrollTailEl();
+    archPortalZoomY1 = tail
+      ? Math.min(max, tail.offsetTop + tail.offsetHeight - vh * 0.06)
+      : max;
+    if (archPortalZoomY1 <= archPortalZoomY0 + 48) {
+      archPortalZoomY1 = max;
+    }
+  }
+
+  /** 0 avant le portail ; 0→1 du portail à la fin de la descente (zoom caméra). */
+  function senacArchPortalZoom01(scrollY) {
+    if (archPortalZoomY0 == null || archPortalZoomY1 == null) measureArchPortalZoomRange();
+    const y0 = archPortalZoomY0;
+    const y1 = archPortalZoomY1;
+    if (y0 == null || y1 == null) return 0;
+    const y = Math.min(y1, Math.max(0, Number.isFinite(scrollY) ? scrollY : getScrollY()));
+    if (y <= y0) return 0;
+    const span = Math.max(1, y1 - y0);
+    const raw = (y - y0) / span;
+    return Math.min(1, Math.max(0, raw));
   }
 
   /**
@@ -687,6 +743,9 @@
 
   function applyScrollDerivedStateNow(scrollY) {
     senacScrollApplyLastY = scrollY;
+    if (suppressScrollProgressChrome && scrollY > 12) {
+      notifySenacParentUserScrolled();
+    }
     computeImmersion(scrollY);
     updateSenacArchAmbient(scrollY);
     updateSenacScrollProgressFill();
@@ -757,6 +816,9 @@
     window.addEventListener(
       "resize",
       () => {
+        archPortalZoomY0 = null;
+        archPortalZoomY1 = null;
+        measureArchPortalZoomRange();
         if (yearGaugeLenis && typeof yearGaugeLenis.resize === "function") {
           yearGaugeLenis.resize();
         }
@@ -2586,6 +2648,7 @@
       if (dismissed) return;
       dismissed = true;
       cue.classList.add("is-hidden");
+      notifySenacParentUserScrolled();
     }
 
     function scrollToContent() {
@@ -3862,9 +3925,13 @@
   initSenacTemporalAmbience();
   initPointerGlow();
   initAtmosphereCanvas();
+  measureArchPortalZoomRange();
   void scheduleSenacArchScene();
   if (typeof requestIdleCallback === "function") {
-    requestIdleCallback(() => scheduleSenacArchScene(), { timeout: 2400 });
+    requestIdleCallback(() => {
+      measureArchPortalZoomRange();
+      scheduleSenacArchScene();
+    }, { timeout: 2400 });
   } else {
     setTimeout(() => scheduleSenacArchScene(), 500);
   }

@@ -17,8 +17,8 @@ body.senac-reading-flow {
   --senac-fact-margin-end: var(--senac-gutter-ui);
   --senac-axis-gap: clamp(0.85rem, 2vw, 1.5rem);
   --senac-stellar-axis: 50%;
-  --senac-portrait-ring-y: clamp(54vh, 58vh, 62vh);
-  --senac-portrait-ring-r: clamp(9rem, 24vw, 14rem);
+  --senac-portrait-ring-y: clamp(48vh, 52vh, 56vh);
+  --senac-portrait-ring-r: clamp(16rem, 34vmin, 23rem);
   --senac-panel-pad-block: clamp(0.35rem, 1vh, 0.65rem);
   --senac-panel-pad-inline: 0px;
   --senac-measure: min(36rem, 100%);
@@ -134,8 +134,8 @@ body.senac-reading-flow .story-card::before {
     --senac-date-nudge: 0px;
     --senac-ghost-date-inset: clamp(3.5rem, 12vw, 5.75rem);
     --senac-stellar-axis: 50%;
-    --senac-portrait-ring-y: clamp(50vh, 54vh, 58vh);
-    --senac-portrait-ring-r: clamp(7.5rem, 38vw, 11rem);
+    --senac-portrait-ring-y: clamp(46vh, 52vh, 56vh);
+    --senac-portrait-ring-r: clamp(13rem, 40vmin, 18rem);
     --senac-panel-pad-inline: 0px;
     --senac-panel-pad-block: clamp(0.75rem, 2vh, 1.15rem);
     --senac-measure: 100%;
@@ -197,7 +197,7 @@ body.senac-reading-flow .story-card::before {
   }
 
   body.senac-reading-flow .hero-portrait {
-    width: min(100%, 11rem);
+    width: min(100%, 17rem);
   }
 }
 

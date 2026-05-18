@@ -4,18 +4,25 @@ import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppCopy } from '../../hooks/useAppCopy';
 
-const DELAY_MS = 5000;
+const DELAY_MS_ACT1 = 900;
+const DELAY_MS_ACT2 = 5000;
 /** Acte II : masquer le repère dès ce ratio de scroll iframe. */
-const ACT2_SCROLL_DISMISS_RATIO = 0.04;
+const ACT2_SCROLL_DISMISS_RATIO = 0.015;
 
 type ScrollNudgeProps = {
   /** Acte II : masqué au scroll du parchemin (pas au zoom carte). */
   act2?: boolean;
   /** Progression scroll iframe (0–1) : masque le repère après le premier défilement. */
   iframeScrollRatio?: number;
+  /** Délai avant apparition (ms). Acte I : plus tôt pour guider le zoom carte. */
+  delayMs?: number;
 };
 
-export default function ScrollNudge({ act2 = false, iframeScrollRatio }: ScrollNudgeProps = {}) {
+export default function ScrollNudge({
+  act2 = false,
+  iframeScrollRatio,
+  delayMs,
+}: ScrollNudgeProps = {}) {
   const copy = useAppCopy();
   const [visible, setVisible] = useState(false);
   const dismissedRef = useRef(false);
@@ -30,6 +37,7 @@ export default function ScrollNudge({ act2 = false, iframeScrollRatio }: ScrollN
   };
 
   const act2Mode = act2;
+  const showDelayMs = delayMs ?? (act2Mode ? DELAY_MS_ACT2 : DELAY_MS_ACT1);
 
   useEffect(() => {
     if (act2Mode && iframeScrollRatio != null && iframeScrollRatio >= ACT2_SCROLL_DISMISS_RATIO) {
@@ -38,9 +46,18 @@ export default function ScrollNudge({ act2 = false, iframeScrollRatio }: ScrollN
   }, [act2Mode, iframeScrollRatio]);
 
   useEffect(() => {
+    if (!act2Mode) return;
+    const onMsg = (e: MessageEvent) => {
+      if (e.data?.type === 'senac-user-scrolled') dismiss();
+    };
+    window.addEventListener('message', onMsg);
+    return () => window.removeEventListener('message', onMsg);
+  }, [act2Mode]);
+
+  useEffect(() => {
     timerRef.current = setTimeout(() => {
       if (!dismissedRef.current) setVisible(true);
-    }, DELAY_MS);
+    }, showDelayMs);
 
     if (act2Mode) {
       return () => {
@@ -86,7 +103,7 @@ export default function ScrollNudge({ act2 = false, iframeScrollRatio }: ScrollN
       window.removeEventListener('touchstart', onTouchStart);
       window.removeEventListener('touchmove', onTouchMove);
     };
-  }, [act2Mode]);
+  }, [act2Mode, showDelayMs]);
 
   useEffect(() => {
     if (visible) lastScrollYRef.current = window.scrollY;

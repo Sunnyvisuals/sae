@@ -1,5 +1,4 @@
 import { prefetchAct12BridgeVideo } from "./act12BridgePrefetch";
-import { prefetchAct23BridgeVideo } from "./act23Bridge";
 import { PARCHEMIN_STATIC_QUERY } from "./parcheminAssetVersion";
 
 /** Lance une tâche basse priorité ; annulable au démontage / changement de phase. */
@@ -135,5 +134,4 @@ export function prefetchAct2TransitionAssets(): void {
   void prefetchAct2ShellChunk();
   prefetchParcheminSenacDocument();
   void prefetchAct12BridgeVideo();
-  prefetchAct23BridgeVideo();
 }

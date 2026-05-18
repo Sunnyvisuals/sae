@@ -3,7 +3,9 @@ import type { RevelationWord } from "../components/Immersive/mapWordData";
 import {
   ACT1_PHRASE_STRIP_STEPS_AR,
   ACT1_PHRASE_STRIP_STEPS_FR,
+  ACT1_REVELATION_SEQUENCE,
 } from "./act1IntroBridge";
+import { MAP_WORD_ARABIC_LABEL } from "./mapWordArabicDisplay";
 
 type PhraseStripStep = {
   word: RevelationWord;
@@ -114,7 +116,9 @@ type Copy = {
   menuRestart: string;
   /** Dialogue de confirmation avant reset complet */
   menuRestartConfirmAria: string;
-  menuRestartConfirmMessage: string;
+  menuRestartConfirmKicker: string;
+  menuRestartConfirmTitle: string;
+  menuRestartConfirmDetail: string;
   menuRestartConfirmYes: string;
   menuRestartConfirmNo: string;
   menuCreditsBy: string;
@@ -217,20 +221,37 @@ type Copy = {
   act3IntroLine2: string;
   act3IntroLine3: string;
   act3SelectHint: string;
-  act3ConfirmIdentityPlaceholder: string;
+  /** Consigne au-dessus du champ prénom (acte III). */
+  act3ConfirmIdentityHint: string;
+  /** Indication Entrée (sous le champ, DA minimaliste). */
+  act3ConfirmEnterHint: string;
   act3ConfirmCta: string;
   act3Submitting: string;
   act3SubmitError: string;
   act3LoadingStars: string;
-  act3YourStarHint: string;
+  act3ViewMyStar: string;
   act3ConstellationContinue: string;
   act3ConstellationScrollCue: string;
+  act3ConstellationScrollCueUp: string;
+  act3ConstellationScrollCueDown: string;
   act3ConstellationScrollLoading: string;
   act3OutroLine1: string;
   act3OutroLine2: string;
   act3OutroLine3: string;
   act3CreditsCta: string;
 };
+
+function act1RevelationWordAria(language: AppLanguage): Record<RevelationWord, string> {
+  const prefix = language === "ar-dz" ? "كلمة لتُوجَد:" : "Mot à trouver :";
+  return Object.fromEntries(
+    ACT1_REVELATION_SEQUENCE.map((word) => [
+      word,
+      language === "ar-dz"
+        ? `${prefix} ${MAP_WORD_ARABIC_LABEL[word] ?? word}`
+        : `${prefix} ${word}`,
+    ]),
+  ) as Record<RevelationWord, string>;
+}
 
 const FR: Copy = {
   act1HudSubtitleDone: "Les cinq feux sont rallumés, la carte respire.",
@@ -250,13 +271,7 @@ const FR: Copy = {
   phraseStripComplete:
     "Sous cette calligraphie de sable, les cinq vers se rejoignent, le vent vous retient encore un instant.",
   phraseStripSteps: [...ACT1_PHRASE_STRIP_STEPS_FR],
-  revelationWordAria: {
-    désert: "Mot à trouver : désert",
-    silence: "Mot à trouver : silence",
-    dune: "Mot à trouver : dune",
-    nuit: "Mot à trouver : nuit",
-    immensité: "Mot à trouver : immensité",
-  },
+  revelationWordAria: act1RevelationWordAria("fr"),
   chapterToastKicker: "Chapitre accompli",
   chapterToastTitle: "Sahara",
   chapterToastSubtitle:
@@ -331,9 +346,12 @@ const FR: Copy = {
     "Lecture par-dessus l’expérience, pas de rechargement, votre progression est conservée.",
   menuRestart: "Recommencer l’expérience",
   menuRestartConfirmAria: "Confirmation avant de recommencer l’expérience",
-  menuRestartConfirmMessage: "Êtes-vous sûr de vouloir recommencer l’expérience ?",
-  menuRestartConfirmYes: "Oui",
-  menuRestartConfirmNo: "Non",
+  menuRestartConfirmKicker: "Attention",
+  menuRestartConfirmTitle: "Repartir du début ?",
+  menuRestartConfirmDetail:
+    "Votre progression, vos choix et la constellation locale seront effacés.",
+  menuRestartConfirmYes: "Oui, recommencer",
+  menuRestartConfirmNo: "Non, continuer",
   menuCreditsBy: "Une création de",
   menuMusicLine: "Musique · © Rafael Krux",
   menuEmbeddedParcours: "Parcours",
@@ -357,7 +375,7 @@ const FR: Copy = {
   introDevPreviewCreditsTitle: "Prévisualiser le générique de fin (-previewCredits=1)",
   introAlRihlaSubtitle: "Jean Sénac",
   introJeanSenacSubtitle: "« La traversée »",
-  zoomNudge: "Zoom vers le haut",
+  zoomNudge: "Rapprochez la carte",
   scrollNudge: "Molette · vers le bas",
   chapterCompleteAria: "révélation carte-mémoire",
   hintTitles: { act1: "Premiers gestes", act2: "Comment naviguer" },
@@ -536,14 +554,17 @@ const FR: Copy = {
   act3IntroLine2: "Ou recommence.",
   act3IntroLine3: "Quel mot de Sénac reste en toi ?",
   act3SelectHint: "Touche un mot",
-  act3ConfirmIdentityPlaceholder: "Ton prénom ou ta ville",
+  act3ConfirmIdentityHint: "Ton prénom",
+  act3ConfirmEnterHint: "Appuie sur Entrée",
   act3ConfirmCta: "Rejoindre la constellation",
   act3Submitting: "Ton étoile monte…",
   act3SubmitError: "L’étoile n’a pas pu rejoindre le ciel. Réessaie dans un instant.",
   act3LoadingStars: "Les étoiles apparaissent…",
-  act3YourStarHint: "Voici ton étoile",
+  act3ViewMyStar: "Voir mon étoile",
   act3ConstellationContinue: "Poursuivre",
-  act3ConstellationScrollCue: "Défiler pour charger la suite",
+  act3ConstellationScrollCue: "Monte pour charger",
+  act3ConstellationScrollCueUp: "Monte pour charger",
+  act3ConstellationScrollCueDown: "Descends pour décharger",
   act3ConstellationScrollLoading: "Chargement…",
   act3OutroLine1: "Jean Sénac est mort en 1973.",
   act3OutroLine2: "Assassiné.",
@@ -569,13 +590,7 @@ const AR: Copy = {
   phraseStripComplete:
     "تحت خطّ الرمل هذي تجتمع الخمس قطع البيت واحد واحد ما زالوا يخلّوه يتمّ.",
   phraseStripSteps: [...ACT1_PHRASE_STRIP_STEPS_AR],
-  revelationWordAria: {
-    désert: "كلمة لتُوجَد: الصحراء",
-    silence: "كلمة لتُوجَد: الصمت",
-    dune: "كلمة لتُوجَد: الكِسيب",
-    nuit: "كلمة لتُوجَد: الليل",
-    immensité: "كلمة لتُوجَد: الفَسحة",
-  },
+  revelationWordAria: act1RevelationWordAria("ar-dz"),
   chapterToastKicker: "المشهد مكمّل",
   chapterToastTitle: "الصحراء",
   chapterToastSubtitle:
@@ -649,9 +664,11 @@ const AR: Copy = {
     "يشغّل فوق التجرّبة، ماكاش إعادة تحميل؛ التقدّم يبقى محفوظ.",
   menuRestart: "عاود التجرّبة من الأول",
   menuRestartConfirmAria: "تأكيد قبل ما تعاود التجرّبة من الأول",
-  menuRestartConfirmMessage: "واش راك متأكد باغي تعاود التجرّبة من الأول؟",
-  menuRestartConfirmYes: "إيه",
-  menuRestartConfirmNo: "لا",
+  menuRestartConfirmKicker: "تنبيه",
+  menuRestartConfirmTitle: "تعاود من الأول؟",
+  menuRestartConfirmDetail: "التقدّم، الاختيارات والكوكبة المحلية غادي يتمسحو.",
+  menuRestartConfirmYes: "إيه، امسح كلش",
+  menuRestartConfirmNo: "لا، كمّل",
   menuCreditsBy: "من وحدة:",
   menuMusicLine: "موسيقى · © Rafael Krux",
   menuEmbeddedParcours: "مسار الرحلة",
@@ -675,7 +692,7 @@ const AR: Copy = {
   introDevPreviewCreditsTitle: "تشوف التذييل النهاية (-previewCredits=1)",
   introAlRihlaSubtitle: "جان ساناك",
   introJeanSenacSubtitle: "« المسيرة »",
-  zoomNudge: "لفوق · التكبير",
+  zoomNudge: "قرّب الخريطة",
   scrollNudge: "لتحت · الحرّاف",
   chapterCompleteAria: "كشوف خريطة الذاكرة",
   hintTitles: { act1: "أول خطوات", act2: "كيف تمشي في الموقع" },
@@ -853,14 +870,17 @@ const AR: Copy = {
   act3IntroLine2: "أو تعاود من الأول.",
   act3IntroLine3: "أشنوّا من كلمات سنّاك بقات فيك؟",
   act3SelectHint: "المس كلمة",
-  act3ConfirmIdentityPlaceholder: "اسمك أو مدينتك",
+  act3ConfirmIdentityHint: "اسمك",
+  act3ConfirmEnterHint: "اضغط إنتر",
   act3ConfirmCta: "انضمّ للكوكبة",
   act3Submitting: "نجمتك طالعة…",
   act3SubmitError: "النجمة ما قدرتش توصل للسماء. عاود جرّب.",
   act3LoadingStars: "النجوم تبان…",
-  act3YourStarHint: "هادي نجمتك",
+  act3ViewMyStar: "شوف نجمتي",
   act3ConstellationContinue: "كمّل",
-  act3ConstellationScrollCue: "حرّاف لتحت باش تكمّل التحميل",
+  act3ConstellationScrollCue: "طلّع باش تتحمّل",
+  act3ConstellationScrollCueUp: "طلّع باش تتحمّل",
+  act3ConstellationScrollCueDown: "نزّل باش ينقص",
   act3ConstellationScrollLoading: "قاعد يتحمّل…",
   act3OutroLine1: "جان سنّاك مات سنة 1973.",
   act3OutroLine2: "اغتيل.",
@@ -875,12 +895,5 @@ export function copyFor(language: AppLanguage): Copy {
 /** عرض الكلمة المفتّوحة تحت العربية بدل المفتاح الفرنسي */
 export function revelationWordUISurface(word: RevelationWord, language: AppLanguage): string {
   if (language !== "ar-dz") return word;
-  const map: Record<RevelationWord, string> = {
-    désert: "الصحراء",
-    silence: "الصمت",
-    dune: "الكسيب",
-    nuit: "الليل",
-    immensité: "الفسحة",
-  };
-  return map[word] ?? word;
+  return MAP_WORD_ARABIC_LABEL[word] ?? word;
 }

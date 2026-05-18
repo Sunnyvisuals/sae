@@ -162,6 +162,8 @@ type Props = {
   tone: Tone;
   /** Acte II (iframe parchemin) : ratio synchro depuis `postMessage` - barre alors au-dessus du chrome `aboveChrome`. */
   iframeFillRatio?: number;
+  /** Ratio imposé (ex. crédits GSAP, acte III) — prioritaire sur le scroll document. */
+  fillRatio?: number;
   /** z-index au-dessus du rail « Parcours » / aides (toujours sous menus plein écran). */
   aboveChrome?: boolean;
 };
@@ -169,17 +171,24 @@ type Props = {
 /** Acte II : ratio iframe - lissage léger, proche du scroll natif (aligné voile blanc). */
 const IFRAME_BAR_LERP = 0.2;
 
-export default function ScrollProgressBar({ tone, iframeFillRatio, aboveChrome }: Props) {
+export default function ScrollProgressBar({
+  tone,
+  iframeFillRatio,
+  fillRatio,
+  aboveChrome,
+}: Props) {
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
   const fillRef = useRef<HTMLDivElement>(null);
   const bSmooth = useRef(tone === "midnight" ? 1 : 0);
   const toneRef = useRef(tone);
   const iframeRatioRef = useRef(iframeFillRatio);
+  const fillRatioRef = useRef(fillRatio);
   /** Valeur affichée lissée (iframe seulement). */
   const iframeDisplayRef = useRef(0);
   const iframeHadPrevFrameRef = useRef(false);
   toneRef.current = tone;
   iframeRatioRef.current = iframeFillRatio;
+  fillRatioRef.current = fillRatio;
 
   useLayoutEffect(() => {
     setPortalRoot(document.body);
@@ -200,12 +209,16 @@ export default function ScrollProgressBar({ tone, iframeFillRatio, aboveChrome }
     function frame() {
       if (!alive) return;
       const el = fillRef.current;
+      const forcedR = fillRatioRef.current;
+      const hasForced = forcedR !== undefined && Number.isFinite(forcedR);
       const iframeR = iframeRatioRef.current;
       const hasIframe = iframeR !== undefined && Number.isFinite(iframeR);
       const kb = reduced ? 1 : 0.13;
 
       let p: number;
-      if (hasIframe && typeof iframeR === "number") {
+      if (hasForced && typeof forcedR === "number") {
+        p = Math.min(1, Math.max(0, forcedR));
+      } else if (hasIframe && typeof iframeR === "number") {
         const target = Math.min(1, Math.max(0, iframeR));
         if (reduced || !iframeHadPrevFrameRef.current) {
           iframeDisplayRef.current = target;

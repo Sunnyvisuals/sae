@@ -50,7 +50,7 @@ export function buildAct3Fragments(
 ): Act3FragmentSpec[] {
   return [
     ...phraseStripFragments(lang),
-    ...mapPoolVerses(["désert", "mémoire", "nuit"], lang),
+    ...mapPoolVerses(["corps", "patrie", "nuit"], lang),
     {
       id: "arc-da-title",
       line: editorial.daTitle.trim(),

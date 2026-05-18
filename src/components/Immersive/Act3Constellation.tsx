@@ -19,19 +19,39 @@ import {
   readConstellationVote,
   writeConstellationVote,
 } from "../../lib/act3ConstellationVote";
-import { SHELL_GOLD_BTN } from "../../lib/shellGoldButton";
+import {
+  ACT3_CONFIRM_FORM_DELAY_MS,
+  ACT3_INTRO_LINE2_MS,
+  ACT3_INTRO_LINE3_MS,
+  ACT3_INTRO_TO_SELECT_MS,
+  ACT3_INTRO_TO_SELECT_REDUCED_MS,
+  ACT3_OUTRO_LINE2_MS,
+  ACT3_OUTRO_LINE3_MS,
+  ACT3_OUTRO_TO_CREDITS_MS,
+  ACT3_OUTRO_TO_CREDITS_REDUCED_MS,
+  ACT3_PICK_FALLBACK_MS,
+  ACT3_STAR_GEM_DURATION,
+  ACT3_WORD_APPEAR_DELAY,
+  ACT3_WORD_DRIFT_SCALE,
+  ACT3_WORD_REVEAL_EACH_SEC,
+  ACT3_WORD_REVEAL_GAP_SEC,
+  ACT3_WORD_OTHERS_FADE,
+  ACT3_WORD_RISE_DURATION,
+  ACT3_WORD_RISE_FALL_DURATION,
+  act3Fade,
+  act3FadeDelayed,
+} from "../../lib/act3ConstellationTiming";
 import { metaForWord } from "./mapWordData";
 import { arabicPoemWordLabel } from "../../lib/mapWordArabicDisplay";
-import Act3ConstellationSky from "./Act3ConstellationSky";
+import Act3ConstellationSky, {
+  type Act3ConstellationSkyHandle,
+} from "./Act3ConstellationSky";
 import Act3ConstellationScrollLoad from "./Act3ConstellationScrollLoad";
 import AuroraMeshBackground from "../AuroraMeshBackground";
 
 type Step = "intro" | "select" | "confirm" | "constellation" | "outro";
+type IntroPhase = "idle" | "line1" | "line2" | "line3";
 type OutroPhase = "idle" | "line1" | "line2" | "line3";
-
-/** Délai avant fondu vers le générique (ms) — laisse la 3ᵉ ligne respirer. */
-const OUTRO_TO_CREDITS_MS = 6800;
-const OUTRO_TO_CREDITS_REDUCED_MS = 1800;
 
 type Props = {
   onContinueToCredits: () => void;
@@ -39,10 +59,8 @@ type Props = {
 
 const WORD_BTN_BASE =
   "da-act3-floating-word pointer-events-auto absolute cursor-none border-0 bg-transparent p-0 " +
-  "transition-[color,text-shadow,opacity] duration-500 " +
-  "focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-solar-gold/45";
-
-const FADE = { duration: 1.1, ease: [0.22, 1, 0.36, 1] as const };
+  "transition-[color,text-shadow] duration-[680ms] ease-[cubic-bezier(0.22,1,0.36,1)] " +
+  "focus-visible:outline-none focus-visible:shadow-[inset_0_0_0_1px_rgba(197,160,89,0.38)]";
 
 export default function Act3Constellation({ onContinueToCredits }: Props) {
   const copy = useAppCopy();
@@ -62,13 +80,18 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [loadingStars, setLoadingStars] = useState(step === "constellation");
   const [constellationRevealed, setConstellationRevealed] = useState(false);
+  const [focusMyStarToken, setFocusMyStarToken] = useState(0);
   const [starFormVisible, setStarFormVisible] = useState(false);
+  const [introPhase, setIntroPhase] = useState<IntroPhase>("idle");
   const [outroPhase, setOutroPhase] = useState<OutroPhase>("idle");
   const creditsAutoRef = useRef(false);
+  const [selectWordsInteractive, setSelectWordsInteractive] = useState(false);
 
+  const skyRef = useRef<Act3ConstellationSkyHandle>(null);
   const wordsWrapRef = useRef<HTMLDivElement>(null);
   const risingWordRef = useRef<HTMLSpanElement>(null);
   const starDotRef = useRef<HTMLSpanElement>(null);
+  const inscriptionInputRef = useRef<HTMLInputElement>(null);
 
   const labelFor = useCallback(
     (w: string) => (arabicUi ? arabicPoemWordLabel(w) : w),
@@ -79,18 +102,52 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
     setConstellationRevealed(true);
   }, []);
 
+  const handleSelectStar = useCallback(() => {}, []);
+
+  const highlightMot = priorVote?.mot ?? selectedWord ?? null;
+
   const goToOutro = useCallback(() => {
     setStep("outro");
   }, []);
 
-  const loadStars = useCallback(async () => {
-    setLoadingStars(true);
-    setStars(await fetchConstellationStars());
-    setLoadingStars(false);
+  const loadStars = useCallback(async (options?: { background?: boolean }) => {
+    const background = options?.background === true;
+    if (!background) setLoadingStars(true);
+    const rows = await fetchConstellationStars();
+    setStars(rows);
+    if (!background) setLoadingStars(false);
   }, []);
+
+  const viewMyStar = useCallback(async () => {
+    if (!highlightId && !highlightMot) return;
+    if (skyRef.current?.focusVisitorStar()) return;
+    await loadStars({ background: true });
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (!skyRef.current?.focusVisitorStar()) {
+          setFocusMyStarToken((n) => n + 1);
+        }
+      });
+    });
+  }, [highlightId, highlightMot, loadStars]);
 
   useEffect(() => {
     if (step === "confirm" || step === "constellation") void loadStars();
+  }, [step, loadStars]);
+
+  /** Ciel partagé : recharger les étoiles des autres visiteurs. */
+  useEffect(() => {
+    if (step !== "constellation") return;
+    const refresh = () => void loadStars({ background: true });
+    const interval = window.setInterval(refresh, 22_000);
+    const onVis = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVis);
+    };
   }, [step, loadStars]);
 
   useEffect(() => {
@@ -99,92 +156,144 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
     }
   }, [step]);
 
-  /* ── Intro : lignes séquentielles ── */
+  /* ── Intro : une phrase à la fois ── */
   useEffect(() => {
-    if (step !== "intro") return;
+    if (step !== "intro") {
+      setIntroPhase("idle");
+      return;
+    }
     if (reduceMotion) {
-      const t = window.setTimeout(() => setStep("select"), 500);
+      setIntroPhase("line3");
+      const t = window.setTimeout(() => setStep("select"), ACT3_INTRO_TO_SELECT_REDUCED_MS);
       return () => window.clearTimeout(t);
     }
-    const t = window.setTimeout(() => setStep("select"), 6200);
-    return () => window.clearTimeout(t);
+    setIntroPhase("line1");
+    const t1 = window.setTimeout(() => setIntroPhase("line2"), ACT3_INTRO_LINE2_MS);
+    const t2 = window.setTimeout(() => setIntroPhase("line3"), ACT3_INTRO_LINE3_MS);
+    const t3 = window.setTimeout(() => setStep("select"), ACT3_INTRO_TO_SELECT_MS);
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+      window.clearTimeout(t3);
+    };
   }, [step, reduceMotion]);
 
-  /* ── Apparition + dérive lente des mots flottants ── */
+  useEffect(() => {
+    if (step !== "select") {
+      setSelectWordsInteractive(false);
+      return;
+    }
+    if (reduceMotion) setSelectWordsInteractive(true);
+  }, [step, reduceMotion]);
+
+  const startWordDrift = useCallback((btn: HTMLButtonElement, index: number) => {
+    const { rot, drift } = act3WordFloatLayout(index);
+    const seg = (drift.dur / 4) * ACT3_WORD_DRIFT_SCALE;
+    const tl = gsap.timeline({ repeat: -1, delay: drift.delay * 0.35 * ACT3_WORD_DRIFT_SCALE });
+    tl.to(btn, {
+      x: drift.ampX,
+      y: -drift.ampY,
+      rotation: rot + drift.rotDelta,
+      duration: seg,
+      ease: "sine.inOut",
+    })
+      .to(btn, {
+        x: drift.ampX * 0.4,
+        y: drift.ampY * 0.55,
+        rotation: rot,
+        duration: seg,
+        ease: "sine.inOut",
+      })
+      .to(btn, {
+        x: -drift.ampX * 0.9,
+        y: -drift.ampY * 0.45,
+        rotation: rot - drift.rotDelta * 0.75,
+        duration: seg,
+        ease: "sine.inOut",
+      })
+      .to(btn, { x: 0, y: 0, rotation: rot, duration: seg, ease: "sine.inOut" });
+    return tl;
+  }, []);
+
+  /* ── Apparition un par un + dérive lente ── */
   useEffect(() => {
     if (step !== "select" || reduceMotion) return;
-    const wrap = wordsWrapRef.current;
-    if (!wrap) return;
 
     let cancelled = false;
+    let raf = 0;
     const driftTimelines: gsap.core.Timeline[] = [];
+    let revealTl: gsap.core.Timeline | null = null;
 
     const boot = () => {
       if (cancelled) return;
+      const wrap = wordsWrapRef.current;
+      if (!wrap) {
+        raf = requestAnimationFrame(boot);
+        return;
+      }
       const btns = [...wrap.querySelectorAll<HTMLButtonElement>("button[data-word]")];
-      if (!btns.length) return;
+      if (!btns.length) {
+        raf = requestAnimationFrame(boot);
+        return;
+      }
 
+      setSelectWordsInteractive(false);
       btns.forEach((btn, i) => {
-        const { rot, drift } = act3WordFloatLayout(i);
+        const { rot } = act3WordFloatLayout(i);
         gsap.set(btn, {
+          opacity: 0,
+          filter: "blur(10px)",
           xPercent: -50,
           yPercent: -50,
           rotation: rot,
           x: 0,
           y: 0,
         });
-
-        const seg = drift.dur / 4;
-        const tl = gsap.timeline({ repeat: -1, delay: drift.delay + 0.35 });
-        tl.to(btn, {
-          x: drift.ampX,
-          y: -drift.ampY,
-          rotation: rot + drift.rotDelta,
-          duration: seg,
-          ease: "sine.inOut",
-        })
-          .to(btn, {
-            x: drift.ampX * 0.4,
-            y: drift.ampY * 0.55,
-            rotation: rot,
-            duration: seg,
-            ease: "sine.inOut",
-          })
-          .to(btn, {
-            x: -drift.ampX * 0.9,
-            y: -drift.ampY * 0.45,
-            rotation: rot - drift.rotDelta * 0.75,
-            duration: seg,
-            ease: "sine.inOut",
-          })
-          .to(btn, { x: 0, y: 0, rotation: rot, duration: seg, ease: "sine.inOut" });
-        driftTimelines.push(tl);
       });
 
-      gsap.fromTo(
-        btns,
-        { opacity: 0, filter: "blur(8px)" },
-        {
-          opacity: 1,
-          filter: "blur(0px)",
-          duration: 1.2,
-          stagger: 0.055,
-          ease: "power2.out",
-          delay: 0.3,
+      revealTl = gsap.timeline({
+        delay: ACT3_WORD_APPEAR_DELAY,
+        onComplete: () => {
+          if (!cancelled) setSelectWordsInteractive(true);
         },
-      );
+      });
+
+      btns.forEach((btn, i) => {
+        revealTl!.fromTo(
+          btn,
+          { opacity: 0, filter: "blur(12px)" },
+          {
+            opacity: 1,
+            filter: "blur(0px)",
+            duration: ACT3_WORD_REVEAL_EACH_SEC,
+            ease: "power1.out",
+            onStart: () => {
+              if (!cancelled && i === 0) setSelectWordsInteractive(true);
+            },
+            onComplete: () => {
+              if (!cancelled) driftTimelines.push(startWordDrift(btn, i));
+            },
+          },
+          i === 0 ? 0 : `+=${ACT3_WORD_REVEAL_GAP_SEC}`,
+        );
+      });
     };
 
-    const raf = requestAnimationFrame(() => requestAnimationFrame(boot));
+    raf = requestAnimationFrame(boot);
 
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf);
-      const btns = [...wrap.querySelectorAll<HTMLButtonElement>("button[data-word]")];
-      gsap.killTweensOf(btns);
+      revealTl?.kill();
+      setSelectWordsInteractive(false);
+      const wrap = wordsWrapRef.current;
+      if (wrap) {
+        const btns = [...wrap.querySelectorAll<HTMLButtonElement>("button[data-word]")];
+        gsap.killTweensOf(btns);
+      }
       driftTimelines.forEach((tl) => tl.kill());
     };
-  }, [step, reduceMotion]);
+  }, [step, reduceMotion, startWordDrift]);
 
   const onPickWord = (w: Act3ConstellationWord) => {
     if (selectedWord) return;
@@ -206,7 +315,7 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
     const picked = wrap.querySelector<HTMLButtonElement>(`button[data-word="${w}"]`);
     const others = allWordBtns.filter((b) => b.dataset.word !== w);
 
-    gsap.to(others, { opacity: 0, duration: 0.5, ease: "power1.in" });
+    gsap.to(others, { opacity: 0, duration: ACT3_WORD_OTHERS_FADE, ease: "power1.in" });
 
     if (picked && risingWordRef.current) {
       const pr = picked.getBoundingClientRect();
@@ -228,21 +337,21 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
       const tl = gsap.timeline({
         onComplete: () => {
           setStep("confirm");
-          window.setTimeout(() => setStarFormVisible(true), 200);
+          window.setTimeout(() => setStarFormVisible(true), ACT3_CONFIRM_FORM_DELAY_MS);
         },
       });
       tl.to(el, {
         x: wr.width / 2,
         y: wr.height * 0.32,
         scale: 1.18,
-        duration: 0.9,
+        duration: ACT3_WORD_RISE_DURATION,
         ease: "power2.out",
       });
       tl.to(el, {
         y: wr.height * 0.14,
         scale: 0.35,
         opacity: 0,
-        duration: 2,
+        duration: ACT3_WORD_RISE_FALL_DURATION,
         ease: "power1.inOut",
       });
       if (starDotRef.current) {
@@ -257,7 +366,7 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
         tl.to(starDotRef.current, {
           opacity: 1,
           scale: 1,
-          duration: 0.55,
+          duration: ACT3_STAR_GEM_DURATION,
           ease: "power2.out",
         });
       }
@@ -265,9 +374,15 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
       window.setTimeout(() => {
         setStep("confirm");
         setStarFormVisible(true);
-      }, 2600);
+      }, ACT3_PICK_FALLBACK_MS);
     }
   };
+
+  useEffect(() => {
+    if (step !== "confirm" || !starFormVisible) return;
+    const t = window.setTimeout(() => inscriptionInputRef.current?.focus(), 160);
+    return () => window.clearTimeout(t);
+  }, [step, starFormVisible]);
 
   const onJoinConstellation = async () => {
     if (!selectedWord || submitting || readConstellationVote()) return;
@@ -289,11 +404,8 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
       votedAt: new Date().toISOString(),
     });
     setHighlightId(res.row.id);
-    setStars((prev) => {
-      if (prev.some((s) => s.id === res.row.id)) return prev;
-      return [...prev, res.row];
-    });
     setStep("constellation");
+    await loadStars();
   };
 
   /* ── Outro séquentiel → fondu vers le générique ── */
@@ -310,19 +422,19 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
           creditsAutoRef.current = true;
           onContinueToCredits();
         }
-      }, OUTRO_TO_CREDITS_REDUCED_MS);
+      }, ACT3_OUTRO_TO_CREDITS_REDUCED_MS);
       return () => window.clearTimeout(t);
     }
 
     setOutroPhase("line1");
-    const t1 = window.setTimeout(() => setOutroPhase("line2"), 1500);
-    const t2 = window.setTimeout(() => setOutroPhase("line3"), 4500);
+    const t1 = window.setTimeout(() => setOutroPhase("line2"), ACT3_OUTRO_LINE2_MS);
+    const t2 = window.setTimeout(() => setOutroPhase("line3"), ACT3_OUTRO_LINE3_MS);
     const t3 = window.setTimeout(() => {
       if (!creditsAutoRef.current) {
         creditsAutoRef.current = true;
         onContinueToCredits();
       }
-    }, OUTRO_TO_CREDITS_MS);
+    }, ACT3_OUTRO_TO_CREDITS_MS);
 
     return () => {
       window.clearTimeout(t1);
@@ -338,11 +450,9 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
     return "clamp(0.88rem, 2.1vw, 1.05rem)";
   };
 
-  const introDelay = (s: number) => (reduceMotion ? 0 : s);
-
   return (
     <section
-      className="relative flex min-h-dvh w-full flex-col overflow-hidden bg-[#1a0f00] text-[#f4ead2]"
+      className="da-act3-scene relative flex min-h-dvh w-full flex-col overflow-hidden bg-transparent"
       aria-label={copy.act3Aria}
       dir={arabicUi ? "rtl" : "ltr"}
     >
@@ -356,14 +466,10 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
         />
         <motion.div
           aria-hidden
-          className="absolute inset-0 z-[1] bg-[radial-gradient(ellipse_95%_70%_at_50%_18%,rgba(213,175,110,0.12)_0%,transparent_55%)]"
+          className="absolute inset-0 z-[1] bg-[radial-gradient(ellipse_76%_82%_at_50%_42%,rgba(197,160,89,0.06)_0%,transparent_68%)]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 1.8, ease: FADE.ease }}
-        />
-        <div
-          aria-hidden
-          className="absolute inset-0 z-[1] bg-[linear-gradient(165deg,rgba(35,24,16,0.5)_0%,transparent_42%,rgba(8,6,4,0.45)_100%)]"
+          transition={act3Fade(reduceMotion, 1.8)}
         />
       </div>
 
@@ -371,40 +477,56 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
         className="relative z-[2] flex min-h-0 flex-1 flex-col px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(3.5rem,env(safe-area-inset-top))] sm:px-8"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: reduceMotion ? 0.15 : 1.4, ease: FADE.ease }}
+        transition={act3Fade(reduceMotion, 1.4)}
       >
         <AnimatePresence mode="wait">
           {step === "intro" && (
             <motion.div
               key="intro"
-              className="flex flex-1 flex-col items-center justify-center gap-0 text-center"
+              className="flex flex-1 flex-col items-center justify-center px-3 text-center"
               exit={{ opacity: 0 }}
-              transition={{ duration: reduceMotion ? 0.2 : 1 }}
+              transition={act3Fade(reduceMotion, 1)}
             >
-              <motion.p
-                className="da-act3-intro-line"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: introDelay(0.5), duration: 1.3, ease: FADE.ease }}
-              >
-                {copy.act3IntroLine1}
-              </motion.p>
-              <motion.p
-                className="da-act3-intro-line mt-6"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: introDelay(1.7), duration: 1.3, ease: FADE.ease }}
-              >
-                {copy.act3IntroLine2}
-              </motion.p>
-              <motion.p
-                className="da-act3-question mt-10 w-full max-w-[min(100%,54rem)] px-3 text-center max-sm:text-pretty sm:whitespace-nowrap"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: introDelay(3.7), duration: 1.5, ease: FADE.ease }}
-              >
-                {copy.act3IntroLine3}
-              </motion.p>
+              <div className="relative flex min-h-[5.5rem] w-full max-w-[min(100%,54rem)] items-center justify-center">
+                <AnimatePresence mode="wait">
+                  {introPhase === "line1" && (
+                    <motion.p
+                      key="i1"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={act3Fade(reduceMotion, 0.9)}
+                      className="da-act3-intro-line absolute inset-x-0"
+                    >
+                      {copy.act3IntroLine1}
+                    </motion.p>
+                  )}
+                  {introPhase === "line2" && (
+                    <motion.p
+                      key="i2"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={act3Fade(reduceMotion, 0.9)}
+                      className="da-act3-intro-line absolute inset-x-0"
+                    >
+                      {copy.act3IntroLine2}
+                    </motion.p>
+                  )}
+                  {introPhase === "line3" && (
+                    <motion.p
+                      key="i3"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={act3Fade(reduceMotion, 1.1)}
+                      className="da-act3-question absolute inset-x-0 max-sm:text-pretty sm:whitespace-nowrap"
+                    >
+                      {copy.act3IntroLine3}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </div>
             </motion.div>
           )}
 
@@ -413,10 +535,10 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
               key="select-layer"
               ref={wordsWrapRef}
               className="relative flex-1 [contain:paint] [isolation:isolate]"
-              initial={{ opacity: 0 }}
+              initial={false}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.9 }}
+              transition={act3Fade(reduceMotion, 0.5)}
             >
               {step === "select" ? (
                 <p className="da-act3-hint pointer-events-none absolute left-0 right-0 top-0 z-[1] text-center">
@@ -432,8 +554,12 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
                     key={w}
                     type="button"
                     data-word={w}
-                    disabled={step === "confirm"}
-                    className={WORD_BTN_BASE}
+                    disabled={step === "confirm" || (step === "select" && !selectWordsInteractive)}
+                    className={
+                      step === "select" && !reduceMotion
+                        ? `${WORD_BTN_BASE} opacity-0`
+                        : WORD_BTN_BASE
+                    }
                     style={{
                       left: `${x}%`,
                       top: `${y}%`,
@@ -444,7 +570,10 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
                           }
                         : undefined),
                       visibility: hidden ? "hidden" : "visible",
-                      pointerEvents: step === "confirm" ? "none" : undefined,
+                      pointerEvents:
+                        step === "confirm" || (step === "select" && !selectWordsInteractive)
+                          ? "none"
+                          : undefined,
                     }}
                     onClick={() => onPickWord(w)}
                   >
@@ -460,42 +589,69 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
               />
               <span
                 ref={starDotRef}
-                className="pointer-events-none absolute left-1/2 top-[14%] z-[3] block h-2.5 w-2.5 rounded-full bg-[#f8f4eb] opacity-0 shadow-[0_0_20px_rgba(197,160,89,0.65),0_0_40px_rgba(197,160,89,0.28)]"
+                className="pointer-events-none absolute left-1/2 top-[14%] z-[3] block h-2.5 w-2.5 rounded-full bg-[rgba(244,234,210,0.92)] opacity-0 shadow-[0_0_20px_rgba(197,160,89,0.45),0_0_40px_rgba(0,0,0,0.35)]"
                 aria-hidden
               />
             </motion.div>
           )}
 
           {step === "confirm" && selectedWord && (
-            <motion.div
+            <motion.form
               key="confirm-form"
-              className="pointer-events-none absolute inset-x-0 bottom-[max(12%,env(safe-area-inset-bottom))] z-[4] flex flex-col items-center px-4"
+              className="pointer-events-none absolute inset-0 z-[4] flex flex-col items-center justify-center px-5"
               initial={{ opacity: 0 }}
               animate={{ opacity: starFormVisible ? 1 : 0 }}
-              transition={{ duration: 0.9, ease: FADE.ease }}
+              transition={act3Fade(reduceMotion, 0.9)}
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!submitting) void onJoinConstellation();
+              }}
+              aria-label={copy.act3ConfirmCta}
             >
-              <div className="pointer-events-auto w-full max-w-[min(100%,20rem)] space-y-5">
+              <motion.div className="pointer-events-auto flex w-full max-w-[min(100%,20rem)] flex-col items-center gap-2.5 text-center">
+                <label htmlFor="act3-inscription" className="da-act3-inscription-hint">
+                  {copy.act3ConfirmIdentityHint}
+                </label>
                 <input
                   type="text"
                   value={identity}
-                  onChange={(e) => setIdentity(e.target.value)}
+                  onChange={(e) => {
+                    setIdentity(e.target.value);
+                    if (submitError) setSubmitError(null);
+                  }}
                   maxLength={80}
-                  placeholder={copy.act3ConfirmIdentityPlaceholder}
-                  className="da-act3-inscription w-full"
-                />
-                {submitError ? (
-                  <p className="text-center text-[11px] text-[rgba(255,160,120,0.85)]">{submitError}</p>
-                ) : null}
-                <button
-                  type="button"
                   disabled={submitting}
-                  onClick={() => void onJoinConstellation()}
-                  className={`w-full min-h-[48px] ${SHELL_GOLD_BTN}`}
+                  ref={inscriptionInputRef}
+                  id="act3-inscription"
+                  name="given-name"
+                  className="da-act3-inscription-minimal w-full"
+                  autoComplete="given-name"
+                  autoCapitalize="words"
+                  spellCheck={false}
+                  aria-invalid={submitError ? true : undefined}
+                  aria-describedby={
+                    submitError
+                      ? "act3-inscription-enter-hint act3-inscription-error"
+                      : "act3-inscription-enter-hint"
+                  }
+                />
+                <p
+                  id="act3-inscription-enter-hint"
+                  className="da-act3-inscription-enter"
+                  aria-hidden={submitting}
                 >
-                  {submitting ? copy.act3Submitting : copy.act3ConfirmCta}
-                </button>
-              </div>
-            </motion.div>
+                  {submitting ? copy.act3Submitting : copy.act3ConfirmEnterHint}
+                </p>
+                {submitError ? (
+                  <p
+                    id="act3-inscription-error"
+                    className="max-w-[18rem] text-[clamp(0.62rem,1.65vw,0.72rem)] leading-snug text-[rgba(212,197,176,0.62)]"
+                  >
+                    {submitError}
+                  </p>
+                ) : null}
+              </motion.div>
+            </motion.form>
           )}
 
           {step === "constellation" && (
@@ -504,13 +660,24 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
               className="flex min-h-0 flex-1 flex-col"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 1.4, ease: FADE.ease }}
+              transition={act3Fade(reduceMotion, 1.4)}
             >
+              <Act3ConstellationScrollLoad
+                active={constellationRevealed}
+                reduceMotion={reduceMotion}
+                scrollCue={copy.act3ConstellationScrollCue}
+                continueLabel={copy.act3ConstellationContinue}
+                viewMyStarLabel={
+                  highlightId || highlightMot ? copy.act3ViewMyStar : null
+                }
+                onViewMyStar={viewMyStar}
+                onComplete={goToOutro}
+              />
               <motion.p
                 className="da-act3-micro pointer-events-none shrink-0 pb-3 text-center"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: loadingStars || !constellationRevealed ? 0.55 : 0 }}
-                transition={{ duration: 0.8, ease: FADE.ease }}
+                transition={act3Fade(reduceMotion, 0.8)}
                 aria-live="polite"
               >
                 {copy.act3LoadingStars}
@@ -520,38 +687,25 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
                 style={{ minHeight: "min(72dvh, calc(100dvh - 11rem))" }}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: loadingStars ? 0 : 1 }}
-                transition={{ duration: 1.2, ease: FADE.ease, delay: loadingStars ? 0 : 0.15 }}
+                transition={
+                  loadingStars
+                    ? act3Fade(reduceMotion, 1.2)
+                    : act3FadeDelayed(reduceMotion, 0.15, 1.2)
+                }
               >
                 {!loadingStars ? (
                   <Act3ConstellationSky
+                    ref={skyRef}
                     stars={stars}
                     highlightId={highlightId}
+                    highlightMot={highlightMot}
+                    focusMyStarToken={focusMyStarToken}
                     arabicUi={arabicUi}
                     reduceMotion={reduceMotion}
                     onRevealComplete={handleConstellationRevealed}
-                    onSelectStar={() => {}}
+                    onSelectStar={handleSelectStar}
                   />
                 ) : null}
-              </motion.div>
-              <motion.div
-                className="shrink-0 pt-4 text-center"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: constellationRevealed ? 1 : 0 }}
-                transition={{ duration: 1, ease: FADE.ease }}
-              >
-                {highlightId && constellationRevealed ? (
-                  <p className="da-act3-micro mb-3 text-solar-gold/42">
-                    {copy.act3YourStarHint}
-                  </p>
-                ) : null}
-                <Act3ConstellationScrollLoad
-                  active={constellationRevealed}
-                  reduceMotion={reduceMotion}
-                  scrollCue={copy.act3ConstellationScrollCue}
-                  loadingLabel={copy.act3ConstellationScrollLoading}
-                  continueLabel={copy.act3ConstellationContinue}
-                  onComplete={goToOutro}
-                />
               </motion.div>
             </motion.div>
           )}
@@ -562,7 +716,7 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
               className="flex flex-1 flex-col items-center justify-center px-4 text-center"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 1, ease: FADE.ease }}
+              transition={act3Fade(reduceMotion, 1)}
             >
               <div className="relative min-h-[5.5rem] w-full max-w-[min(100%,24rem)]">
                 <AnimatePresence mode="wait">
@@ -572,7 +726,7 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      transition={{ duration: 0.9, ease: FADE.ease }}
+                      transition={act3Fade(reduceMotion, 0.9)}
                       className="da-act3-outro-line"
                     >
                       {copy.act3OutroLine1}
@@ -584,7 +738,7 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      transition={{ duration: 0.85, ease: FADE.ease }}
+                      transition={act3Fade(reduceMotion, 0.85)}
                       className="da-act3-outro-line text-da-parchment/72"
                     >
                       {copy.act3OutroLine2}
@@ -596,7 +750,7 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      transition={{ duration: 1.1, ease: FADE.ease }}
+                      transition={act3Fade(reduceMotion, 1.1)}
                       className="da-act3-outro-glow"
                     >
                       {copy.act3OutroLine3}

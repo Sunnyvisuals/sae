@@ -1,1 +1,1 @@
-export const PARCHEMIN_STATIC_QUERY = "v=233";
+export const PARCHEMIN_STATIC_QUERY = "v=235";

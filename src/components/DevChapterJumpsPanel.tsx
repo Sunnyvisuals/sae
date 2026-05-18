@@ -12,7 +12,7 @@ export type DevChapterJumps = {
   launchAct12Bridge?: () => void;
   act1BridgePrefacePending?: boolean;
   /** Efface le vote constellation (localStorage) et remonte l’acte III pour retester le parcours participatif. */
-  resetParticipativeMode?: () => void;
+  resetParticipativeMode?: () => void | Promise<void>;
 };
 
 const DEV_PANEL_OPEN_KEY = "al-rihla-dev-jumps-open";
@@ -149,10 +149,13 @@ export default function DevChapterJumpsPanel({
           </p>
           <button
             type="button"
-            onClick={jumps.resetParticipativeMode}
+            onClick={(e) => {
+              e.stopPropagation();
+              void jumps.resetParticipativeMode?.();
+            }}
             className={btnAccent + " w-full"}
           >
-            Reset participatif
+            Reset BDD comètes
           </button>
         </>
       ) : null}

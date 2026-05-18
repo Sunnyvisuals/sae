@@ -1360,7 +1360,7 @@ html[dir="rtl"] .senac-cross-nav--compact {
 /* Portrait hero - grande taille, pas de bloc carré (éviter ratio 1:1 + blend sur tout le rectangle) */
 .hero-portrait {
   margin: clamp(1.65rem, 4.5vmin, 2.75rem) auto clamp(1.35rem, 3.8vmin, 2.5rem);
-  max-width: min(34rem, 94vw);
+  max-width: min(43rem, 94vw);
   text-align: center;
   /* perspective pour le tilt 3D */
   perspective: 900px;
@@ -1409,7 +1409,7 @@ html[dir="rtl"] .senac-cross-nav--compact {
 
 .hero-portrait-frame img {
   display: block;
-  width: min(34rem, 100%);
+  width: min(43rem, 100%);
   height: auto;
   max-width: 100%;
   margin: 0 auto;

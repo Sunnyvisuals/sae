@@ -38,21 +38,31 @@ html.senac-in-iframe.senac-choice-entered .senac-act2-garde[data-reveal] {
   transition: none !important;
 }
 
+body.senac-reading-flow .chapter-two {
+  --senac-garde-chrome-bottom: max(
+    4.25rem,
+    calc(env(safe-area-inset-bottom, 0px) + 3.15rem)
+  );
+}
+
 body.senac-reading-flow .senac-act2-garde {
+  --senac-garde-act-track: 0.48em;
+  --senac-garde-title-track: 0.22em;
+  --senac-garde-chrome-bottom: max(
+    4.25rem,
+    calc(env(safe-area-inset-bottom, 0px) + 3.15rem)
+  );
   position: relative;
   z-index: 4;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
   box-sizing: border-box;
   width: 100%;
   max-width: none;
   margin: 0;
-  height: 100svh;
   height: 100dvh;
-  min-height: 100svh;
   min-height: 100dvh;
+  max-height: 100dvh;
   padding: 0;
   padding-inline: max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
   text-align: center;
@@ -70,58 +80,73 @@ body.senac-reading-flow .senac-act2-garde::after {
 body.senac-reading-flow .senac-act2-garde__frame {
   position: relative;
   z-index: 2;
-  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: clamp(1.35rem, 3.2vh, 1.75rem);
-  width: min(36rem, calc(100% - 2rem));
-  max-width: min(36rem, 100%);
-  margin: 0;
-  padding-inline: 1rem;
-  text-align: center;
-}
-
-/** Sourcil — équivalent `.da-eyebrow` */
-body.senac-reading-flow .senac-act2-garde__act {
-  display: block;
+  box-sizing: border-box;
   width: 100%;
   max-width: 100%;
-  margin: 0 auto;
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 4vw, 1.5rem);
+  text-align: center;
+  /* Centre optique : compenser le chrome bas (toggle + flèche scroll). */
+  transform: translateY(calc(var(--senac-garde-chrome-bottom) * 0.42));
+}
+
+/** Sourcil — équivalent `.da-eyebrow` (pleine largeur + tracking symétrique) */
+body.senac-reading-flow .senac-act2-garde__act {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
   padding: 0;
-  padding-inline-end: 0.48em;
+  padding-inline: calc(var(--senac-garde-act-track) * 0.5);
   font-family: var(--da-ui, "Inter", system-ui, sans-serif);
   font-size: clamp(0.75rem, 2.4vw, 0.875rem);
   font-weight: 400;
   line-height: 1.55;
-  letter-spacing: 0.48em;
+  letter-spacing: var(--senac-garde-act-track);
   text-transform: uppercase;
   text-align: center;
   color: rgba(197, 160, 89, 0.55);
   text-shadow: 0 0 12px rgba(0, 0, 0, 0.82);
 }
 
-/** Titre — équivalent `.da-display-title` (une ligne) */
+/** Titre — flex + text-align center ; tracking sur le span interne */
 body.senac-reading-flow .senac-act2-garde__title {
-  display: block;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
   width: 100%;
   max-width: 100%;
-  margin: 0 auto;
+  margin: 0;
   padding: 0;
-  padding-inline-end: 0.22em;
+  text-align: center;
+}
+
+body.senac-reading-flow .senac-act2-garde__title-inner {
+  display: inline-block;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
   font-family: var(--da-ui, "Inter", system-ui, sans-serif);
   font-size: clamp(1.8rem, 4.6vw, 3rem);
   font-weight: 500;
   font-style: normal;
   line-height: 1.12;
-  letter-spacing: 0.22em;
+  letter-spacing: var(--senac-garde-title-track);
   text-transform: uppercase;
   text-align: center;
   text-wrap: nowrap;
   white-space: nowrap;
   color: rgba(212, 197, 176, 0.92);
   text-shadow: 0 0 18px rgba(0, 0, 0, 0.78);
+  /* Annule l’espace fantôme après la dernière lettre (letter-spacing). */
+  margin-inline-end: calc(-1 * var(--senac-garde-title-track));
 }
 
 /** Filet — équivalent `.da-title-rule` */
@@ -215,35 +240,38 @@ html.senac-choice-pending:not(.senac-choice-entered) .senac-act2-garde__scroll-c
   }
 }
 
-html[dir="rtl"] body.senac-reading-flow .senac-act2-garde__act {
-  padding-inline-end: 0.12em;
-  font-family: "Noto Naskh Arabic", "Segoe UI", system-ui, sans-serif;
-  font-weight: 500;
-  letter-spacing: 0.12em;
+html[dir="rtl"] body.senac-reading-flow .senac-act2-garde {
+  --senac-garde-act-track: 0.12em;
+  --senac-garde-title-track: 0.04em;
 }
 
-html[dir="rtl"] body.senac-reading-flow .senac-act2-garde__title {
-  padding-inline-end: 0.04em;
+html[dir="rtl"] body.senac-reading-flow .senac-act2-garde__act {
+  font-family: "Noto Naskh Arabic", "Segoe UI", system-ui, sans-serif;
+  font-weight: 500;
+}
+
+html[dir="rtl"] body.senac-reading-flow .senac-act2-garde__title-inner {
   font-family: "Noto Naskh Arabic", "Segoe UI", system-ui, sans-serif;
   font-weight: 300;
-  letter-spacing: 0.04em;
   text-transform: none;
   white-space: normal;
   text-wrap: balance;
 }
 
 @media (max-width: 520px) {
-  body.senac-reading-flow .senac-act2-garde__title {
+  body.senac-reading-flow .senac-act2-garde {
+    --senac-garde-title-track: 0.14em;
+  }
+
+  body.senac-reading-flow .senac-act2-garde__title-inner {
     font-size: clamp(1.05rem, 4.2vw, 1.65rem);
-    letter-spacing: 0.14em;
-    padding-inline-end: 0.14em;
     white-space: normal;
     text-wrap: balance;
   }
 }
 
 .chapter-two header.hero.senac-hero-stack {
-  --senac-hero-col: min(38rem, 94vw);
+  --senac-hero-col: min(43rem, 94vw);
   --senac-hero-gap: clamp(0.9rem, 2.4vh, 1.45rem);
   --senac-hero-gap-tight: clamp(0.5rem, 1.2vh, 0.75rem);
 
@@ -372,7 +400,13 @@ html[dir="rtl"] body.senac-reading-flow .senac-act2-garde__title {
 
 .senac-scroll-glyphs__layer--arcs::before,
 .senac-scroll-glyphs__layer--arcs::after {
-  top: clamp(10%, 16vh, 22%);
+  --senac-arcs-top-garde: calc(50% - var(--senac-garde-chrome-bottom, 4.25rem) * 0.42);
+  --senac-arcs-top-hero: clamp(10%, 16vh, 22%);
+  --senac-arcs-glide: min(1, var(--hero-t, 0) / 0.32);
+  top: calc(
+    var(--senac-arcs-top-garde) * (1 - var(--senac-arcs-glide)) +
+      var(--senac-arcs-top-hero) * var(--senac-arcs-glide)
+  );
   opacity: calc((0.03 + var(--frise-t, 0) * 0.12) * (1 - min(1, var(--hero-t, 0) * 0.95)));
 }
 
@@ -475,13 +509,17 @@ html[dir="rtl"] body.senac-reading-flow .senac-act2-garde__title {
 }
 
 .chapter-two header.hero.senac-hero-stack .hero-portrait {
-  margin: clamp(1.25rem, 3.5vh, 2.25rem) auto clamp(0.5rem, 1.5vh, 1rem);
-  width: min(100%, clamp(17.5rem, 48vw, 24rem));
+  margin: clamp(0.75rem, 2vh, 1.5rem) auto;
+  width: min(100%, clamp(32rem, 68vmin, 44rem));
+  max-width: 100%;
+}
+
+.chapter-two header.hero.senac-hero-stack .hero-portrait-frame {
   max-width: 100%;
 }
 
 .chapter-two header.hero.senac-hero-stack .hero-portrait-frame img {
-  width: min(100%, clamp(17.5rem, 48vw, 24rem));
+  width: min(100%, clamp(32rem, 68vmin, 44rem));
 }
 
 .chapter-two header.hero.senac-hero-stack .scroll-cue {
@@ -489,13 +527,37 @@ html[dir="rtl"] body.senac-reading-flow .senac-act2-garde__title {
   padding-top: clamp(0.75rem, 2vh, 1.25rem);
 }
 
-body.senac-reading-flow header.hero.senac-hero-portal.senac-hero-stack {
+body.senac-reading-flow header.hero.senac-hero-portal.senac-hero-stack,
+body.senac-reading-flow .chapter-two header.hero.senac-hero-stack {
+  --senac-hero-col: min(50rem, 96vw);
+  box-sizing: border-box;
   width: 100%;
   max-width: var(--senac-read-max, var(--senac-hero-col));
-  min-height: auto;
+  min-height: min(100dvh, 100svh);
+  margin-inline: auto;
+  margin-bottom: clamp(1.5rem, 4vh, 2.75rem);
   justify-content: center;
-  gap: var(--senac-hero-gap);
-  padding-top: max(calc(env(safe-area-inset-top, 0px) + 0.65rem), clamp(3.25rem, 10vh, 5.5rem));
+  gap: clamp(0.85rem, 2.2vh, 1.35rem);
+  padding-top: max(env(safe-area-inset-top, 0px), clamp(2rem, 5.5vh, 3.25rem));
+  padding-bottom: clamp(2rem, 5.5vh, 3.25rem);
+}
+
+body.senac-reading-flow .chapter-two header.hero.senac-hero-stack .senac-cross-nav-wrap--hero {
+  flex: 0 0 auto;
+}
+
+body.senac-reading-flow .chapter-two header.hero.senac-hero-stack .hero-portrait {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: clamp(0.35rem, 1.2vh, 1rem) auto;
+  width: min(100%, clamp(32rem, 72vmin, 46rem));
+}
+
+body.senac-reading-flow .chapter-two header.hero.senac-hero-stack .hero-portrait-frame,
+body.senac-reading-flow .chapter-two header.hero.senac-hero-stack .hero-portrait-frame img {
+  width: min(100%, clamp(32rem, 72vmin, 46rem));
 }
 
 /* Iframe : évite de rogner le haut du hero au scroll / reveal */
@@ -544,7 +606,12 @@ html[dir="rtl"] .chapter-two header.hero.senac-hero-stack .hero-eyebrow {
 
   .chapter-two header.hero.senac-hero-stack .hero-portrait,
   .chapter-two header.hero.senac-hero-stack .hero-portrait-frame img {
-    width: min(100%, clamp(16rem, 76vw, 21rem));
+    width: min(100%, clamp(26rem, 88vw, 34rem));
+  }
+
+  body.senac-reading-flow .chapter-two header.hero.senac-hero-stack .hero-portrait,
+  body.senac-reading-flow .chapter-two header.hero.senac-hero-stack .hero-portrait-frame img {
+    width: min(100%, clamp(26rem, 90vmin, 36rem));
   }
 }
 
@@ -562,7 +629,18 @@ html[dir="rtl"] .chapter-two header.hero.senac-hero-stack .hero-eyebrow {
 
   .chapter-two header.hero.senac-hero-stack .hero-portrait,
   .chapter-two header.hero.senac-hero-stack .hero-portrait-frame img {
-    width: min(100%, clamp(13rem, 36vw, 17rem));
+    width: min(100%, clamp(22rem, 52vw, 30rem));
+  }
+
+  body.senac-reading-flow .chapter-two header.hero.senac-hero-stack {
+    min-height: auto;
+    padding-top: max(env(safe-area-inset-top, 0px), clamp(1.5rem, 4vh, 2.25rem));
+    padding-bottom: clamp(1.25rem, 4vh, 2rem);
+  }
+
+  body.senac-reading-flow .chapter-two header.hero.senac-hero-stack .hero-portrait,
+  body.senac-reading-flow .chapter-two header.hero.senac-hero-stack .hero-portrait-frame img {
+    width: min(100%, clamp(20rem, 78vmin, 28rem));
   }
 }
 
@@ -571,6 +649,11 @@ html[dir="rtl"] .chapter-two header.hero.senac-hero-stack .hero-eyebrow {
   .chapter-two header.hero.senac-hero-stack {
     --senac-hero-gap: clamp(1rem, 2.6vh, 1.55rem);
     padding-top: max(env(safe-area-inset-top, 0px), clamp(3.5rem, 11vh, 5.5rem));
+  }
+
+  body.senac-reading-flow .chapter-two header.hero.senac-hero-stack .hero-portrait,
+  body.senac-reading-flow .chapter-two header.hero.senac-hero-stack .hero-portrait-frame img {
+    width: min(100%, clamp(36rem, 62vmin, 48rem));
   }
 
   .chapter-two header.hero.senac-hero-stack h1 {

@@ -62,5 +62,8 @@
   "redirects": [
     { "source": "/act3", "destination": "/", "permanent": false },
     { "source": "/act3/", "destination": "/", "permanent": false }
+  ],
+  "rewrites": [
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

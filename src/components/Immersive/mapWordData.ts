@@ -1,6 +1,10 @@
 /** Métadonnées textuelles + registre des 5 mots « révélation » (game design Acte I). */
 
 import { ACT1_REVELATION_SEQUENCE } from "../../lib/act1IntroBridge";
+import {
+  ACT1_POEM_TITLE,
+  ACT1_REVELATION_VERSE_FR,
+} from "../../lib/act1PoemCorpsPays";
 
 /** Séquence carte / bandeau : alignée sur `ACT1_PHRASE_STRIP` et la VO vidéo d’intro. */
 export const REVELATION_WORDS = ACT1_REVELATION_SEQUENCE;
@@ -8,6 +12,8 @@ export type RevelationWord = (typeof REVELATION_WORDS)[number];
 
 export type WordFontRole = 'serifPoem' | 'sansNote';
 export type Importance = 1 | 2 | 3;
+
+const POEM = ACT1_POEM_TITLE;
 
 interface WordEntry {
   verse: string;
@@ -18,198 +24,371 @@ interface WordEntry {
 }
 
 const WORD_DATA: Record<string, WordEntry> = {
+  mémoire: {
+    verse: 'Ô corps de mon pays, ô terre de mémoire,',
+    poem: POEM,
+    fontRole: 'serifPoem',
+    importance: 3,
+  },
   soleil: {
-    verse: 'Douce comme une peau que le soleil a longtemps aimée',
-    poem: 'Sahara - solstice',
+    verse: 'Toi que le soleil fouille et que la mer embrasse !',
+    poem: POEM,
+    fontRole: 'serifPoem',
+    importance: 3,
+  },
+  algérie: {
+    verse: 'Algérie, ô ma mère au visage de pierre,',
+    poem: POEM,
     fontRole: 'serifPoem',
     importance: 3,
   },
   sable: {
-    verse: "Une calligraphie de sable que personne n'a signée",
-    poem: 'Sahara - solstice',
-    fontRole: 'sansNote',
-    importance: 1,
-  },
-  mémoire: {
-    verse: 'Rien dans les mains - le cœur ouvert comme une tente',
-    poem: 'Sahara - solstice',
-    fontRole: 'serifPoem',
-    importance: 2,
-  },
-  lumière: {
-    verse: 'Une terre nouvelle sous le rayon du lendemain',
-    poem: 'Sahara - solstice',
-    fontRole: 'serifPoem',
-    importance: 2,
-  },
-  désert: {
-    verse: 'Un seul mot, et la bouche devient désert',
-    poem: 'Sahara - solstice',
-    fontRole: 'sansNote',
-    importance: 2,
-  },
-  algérie: {
-    verse:
-      'Tamanrasset, Djanet, Timimoun - ces noms sont de la musique avant d’être des lieux',
-    poem: 'Sahara - solstice',
+    verse: 'Regarde : notre amour a la couleur des sables,',
+    poem: POEM,
     fontRole: 'sansNote',
     importance: 2,
   },
   liberté: {
-    verse: 'Arriver quelque part en soi-même qu’on n’avait jamais visité',
-    poem: 'Sahara - solstice',
-    fontRole: 'serifPoem',
-    importance: 3,
-  },
-  nuit: {
-    verse: 'La nuit du Sahara est une autre naissance',
-    poem: 'Sahara - solstice',
-    fontRole: 'sansNote',
-    importance: 1,
-  },
-  horizon: {
-    verse: 'Tu es l’avant et l’après sous un ciel sans pitié',
-    poem: 'Sahara - solstice',
-    fontRole: 'sansNote',
-    importance: 1,
-  },
-  silence: {
-    verse: 'L’erg est une mer qui a choisi le silence',
-    poem: 'Sahara - solstice',
-    fontRole: 'serifPoem',
-    importance: 2,
-  },
-  vent: {
-    verse: 'Le vent sculpte la nuit - demain tu trouves une terre nouvelle',
-    poem: 'Sahara - solstice',
-    fontRole: 'sansNote',
-    importance: 1,
-  },
-  étoile: {
-    verse: 'Les étoiles descendent si bas qu’on pourrait les boire',
-    poem: 'Sahara - solstice',
-    fontRole: 'serifPoem',
-    importance: 2,
-  },
-  feu: {
-    verse: 'Des tambours dans la gorge, des feux dans la bouche',
-    poem: 'Sahara - solstice',
-    fontRole: 'sansNote',
-    importance: 1,
-  },
-  terre: {
-    verse: 'Ici le temps est une matière - on peut s’asseoir dessus',
-    poem: 'Sahara - solstice',
-    fontRole: 'serifPoem',
-    importance: 2,
-  },
-  naissance: {
-    verse: 'La nuit du Sahara est une autre naissance',
-    poem: 'Sahara - solstice',
-    fontRole: 'serifPoem',
-    importance: 3,
-  },
-  immensité: {
-    verse: 'Qu’on peut traverser l’immensité avec rien dans les mains',
-    poem: 'Sahara - solstice',
+    verse: 'Celui qui t’a vu libre ne t’oubliera pas.',
+    poem: POEM,
     fontRole: 'serifPoem',
     importance: 3,
   },
   corps: {
-    verse: 'Délicieusement minuscule, comme un grain parmi les grains',
-    poem: 'Sahara - solstice',
+    verse: 'Ô corps de mon pays, ô terre de mémoire,',
+    poem: POEM,
     fontRole: 'serifPoem',
     importance: 3,
+  },
+  terre: {
+    verse: 'Ô corps de mon pays, ô terre de mémoire,',
+    poem: POEM,
+    fontRole: 'serifPoem',
+    importance: 2,
+  },
+  mer: {
+    verse: 'Toi que le soleil fouille et que la mer embrasse !',
+    poem: POEM,
+    fontRole: 'sansNote',
+    importance: 1,
+  },
+  victoire: {
+    verse: 'Je t’aime de ce goût d’argile et de victoire,',
+    poem: POEM,
+    fontRole: 'serifPoem',
+    importance: 2,
+  },
+  vent: {
+    verse: 'De ce vent de maquis qui efface la trace.',
+    poem: POEM,
+    fontRole: 'sansNote',
+    importance: 1,
   },
   mère: {
-    verse: 'Timimoun la rouge dort dans son ocre comme une braise',
-    poem: 'Sahara - solstice',
+    verse: 'Algérie, ô ma mère au visage de pierre,',
+    poem: POEM,
     fontRole: 'serifPoem',
     importance: 3,
   },
+  pierre: {
+    verse: 'Algérie, ô ma mère au visage de pierre,',
+    poem: POEM,
+    fontRole: 'sansNote',
+    importance: 2,
+  },
+  cri: {
+    verse: 'Ta beauté n’est pas douce, elle est un cri de fer,',
+    poem: POEM,
+    fontRole: 'sansNote',
+    importance: 2,
+  },
+  source: {
+    verse: 'Une source sauvage au fond de la poussière,',
+    poem: POEM,
+    fontRole: 'serifPoem',
+    importance: 2,
+  },
+  poussière: {
+    verse: 'Une source sauvage au fond de la poussière,',
+    poem: POEM,
+    fontRole: 'sansNote',
+    importance: 1,
+  },
+  fleurs: {
+    verse: 'Un incendie de fleurs aux portes de l’envers.',
+    poem: POEM,
+    fontRole: 'serifPoem',
+    importance: 2,
+  },
+  amour: {
+    verse: 'Regarde : notre amour a la couleur des sables,',
+    poem: POEM,
+    fontRole: 'serifPoem',
+    importance: 2,
+  },
+  jour: {
+    verse: 'Il a le poids du jour, la ferveur des torrents,',
+    poem: POEM,
+    fontRole: 'sansNote',
+    importance: 1,
+  },
+  torrents: {
+    verse: 'Il a le poids du jour, la ferveur des torrents,',
+    poem: POEM,
+    fontRole: 'serifPoem',
+    importance: 2,
+  },
   dune: {
-    verse: 'Chaque dune est une vague arrêtée dans son élan',
-    poem: 'Sahara - solstice',
+    verse: 'Et nos mains, sur ta peau de dunes vulnérables,',
+    poem: POEM,
+    fontRole: 'serifPoem',
+    importance: 2,
+  },
+  avenir: {
+    verse: 'Dessinent l’avenir en des gestes géants.',
+    poem: POEM,
+    fontRole: 'serifPoem',
+    importance: 2,
+  },
+  nuit: {
+    verse: 'Nous t’avons épousée dans la nuit et l’orage,',
+    poem: POEM,
+    fontRole: 'sansNote',
+    importance: 1,
+  },
+  orage: {
+    verse: 'Nous t’avons épousée dans la nuit et l’orage,',
+    poem: POEM,
+    fontRole: 'sansNote',
+    importance: 1,
+  },
+  patrie: {
+    verse: 'Patrie, ô ma blessure au milieu du visage,',
+    poem: POEM,
+    fontRole: 'serifPoem',
+    importance: 3,
+  },
+  blessure: {
+    verse: 'Patrie, ô ma blessure au milieu du visage,',
+    poem: POEM,
+    fontRole: 'serifPoem',
+    importance: 2,
+  },
+  lumière: {
+    verse: 'Un incendie de fleurs aux portes de l’envers.',
+    poem: POEM,
+    fontRole: 'serifPoem',
+    importance: 2,
+  },
+  désert: {
+    verse: 'Une source sauvage au fond de la poussière,',
+    poem: POEM,
+    fontRole: 'sansNote',
+    importance: 1,
+  },
+  horizon: {
+    verse: 'Dessinent l’avenir en des gestes géants.',
+    poem: POEM,
+    fontRole: 'sansNote',
+    importance: 1,
+  },
+  silence: {
+    verse: 'Une source sauvage au fond de la poussière,',
+    poem: POEM,
+    fontRole: 'serifPoem',
+    importance: 1,
+  },
+  étoile: {
+    verse: 'Nous te voulons solaire au matin de nos bras !',
+    poem: POEM,
+    fontRole: 'serifPoem',
+    importance: 2,
+  },
+  feu: {
+    verse: 'Un incendie de fleurs aux portes de l’envers.',
+    poem: POEM,
+    fontRole: 'sansNote',
+    importance: 1,
+  },
+  naissance: {
+    verse: 'Nous te voulons solaire au matin de nos bras !',
+    poem: POEM,
+    fontRole: 'serifPoem',
+    importance: 2,
+  },
+  immensité: {
+    verse: 'Dessinent l’avenir en des gestes géants.',
+    poem: POEM,
     fontRole: 'serifPoem',
     importance: 2,
   },
   ombre: {
-    verse: 'L’ombre du soir s’allonge sur le sable',
-    poem: 'Sahara - solstice',
+    verse: 'Ta beauté n’est pas douce, elle est un cri de fer,',
+    poem: POEM,
     fontRole: 'sansNote',
     importance: 1,
   },
   racine: {
-    verse: 'Des racines dans la terre, des étoiles dans la nuit',
-    poem: 'Sahara - solstice',
+    verse: 'Je t’aime de ce goût d’argile et de victoire,',
+    poem: POEM,
     fontRole: 'serifPoem',
-    importance: 2,
-  },
-  cri: {
-    verse: 'Un cri de lumière dans l’immensité du désert',
-    poem: 'Sahara - solstice',
-    fontRole: 'sansNote',
-    importance: 2,
+    importance: 1,
   },
   oasis: {
-    verse: 'Une oasis au creux du silence',
-    poem: 'Sahara - solstice',
+    verse: 'Une source sauvage au fond de la poussière,',
+    poem: POEM,
     fontRole: 'serifPoem',
-    importance: 2,
+    importance: 1,
   },
   caravane: {
-    verse: 'La caravane trace un chemin de poussière et de feu',
-    poem: 'Sahara - solstice',
+    verse: 'De ce vent de maquis qui efface la trace.',
+    poem: POEM,
     fontRole: 'sansNote',
     importance: 1,
   },
   vague: {
-    verse: 'Chaque dune est une vague arrêtée dans son élan',
-    poem: 'Sahara - solstice',
+    verse: 'Il a le poids du jour, la ferveur des torrents,',
+    poem: POEM,
     fontRole: 'serifPoem',
     importance: 1,
   },
   aurore: {
-    verse: 'Une terre nouvelle sous le rayon du lendemain',
-    poem: 'Sahara - solstice',
+    verse: 'Nous te voulons solaire au matin de nos bras !',
+    poem: POEM,
     fontRole: 'serifPoem',
     importance: 2,
+  },
+  solaire: {
+    verse: 'Nous te voulons solaire au matin de nos bras !',
+    poem: POEM,
+    fontRole: 'serifPoem',
+    importance: 2,
+  },
+  eau: {
+    verse: 'Une source sauvage au fond de la poussière,',
+    poem: POEM,
+    fontRole: 'sansNote',
+    importance: 1,
+  },
+  aube: {
+    verse: 'Nous te voulons solaire au matin de nos bras !',
+    poem: POEM,
+    fontRole: 'sansNote',
+    importance: 1,
+  },
+  poème: {
+    verse: 'Celui qui t’a vu libre ne t’oubliera pas.',
+    poem: POEM,
+    fontRole: 'serifPoem',
+    importance: 2,
+  },
+  voix: {
+    verse: 'Ta beauté n’est pas douce, elle est un cri de fer,',
+    poem: POEM,
+    fontRole: 'sansNote',
+    importance: 1,
+  },
+  rêve: {
+    verse: 'Dessinent l’avenir en des gestes géants.',
+    poem: POEM,
+    fontRole: 'serifPoem',
+    importance: 1,
+  },
+  sang: {
+    verse: 'Patrie, ô ma blessure au milieu du visage,',
+    poem: POEM,
+    fontRole: 'sansNote',
+    importance: 1,
+  },
+  sel: {
+    verse: 'Regarde : notre amour a la couleur des sables,',
+    poem: POEM,
+    fontRole: 'sansNote',
+    importance: 1,
+  },
+  souffle: {
+    verse: 'De ce vent de maquis qui efface la trace.',
+    poem: POEM,
+    fontRole: 'sansNote',
+    importance: 1,
+  },
+  dieu: {
+    verse: 'Nous t’avons épousée dans la nuit et l’orage,',
+    poem: POEM,
+    fontRole: 'serifPoem',
+    importance: 1,
+  },
+  peuple: {
+    verse: 'Regarde : notre amour a la couleur des sables,',
+    poem: POEM,
+    fontRole: 'sansNote',
+    importance: 1,
+  },
+  chant: {
+    verse: 'Ta beauté n’est pas douce, elle est un cri de fer,',
+    poem: POEM,
+    fontRole: 'sansNote',
+    importance: 1,
+  },
+  chemin: {
+    verse: 'De ce vent de maquis qui efface la trace.',
+    poem: POEM,
+    fontRole: 'sansNote',
+    importance: 1,
+  },
+  éclat: {
+    verse: 'Nous te voulons solaire au matin de nos bras !',
+    poem: POEM,
+    fontRole: 'serifPoem',
+    importance: 1,
   },
 };
 
 /** Mots du parcours révélation : exclus du tirage aléatoire pour éviter des doublons illisibles sur la carte. */
 const POEM_POOL = [
-  'sable',
-  'mémoire',
+  'corps',
+  'terre',
+  'mer',
+  'victoire',
+  'vent',
+  'mère',
+  'pierre',
+  'cri',
+  'source',
+  'poussière',
+  'fleurs',
+  'amour',
+  'jour',
+  'torrents',
+  'dune',
+  'avenir',
+  'nuit',
+  'orage',
+  'patrie',
+  'blessure',
   'lumière',
   'désert',
-  'algérie',
-  'cri',
-  'immensité',
-  'vent',
-  'dune',
   'horizon',
-  'nuit',
-  'étoile',
-  'racine',
   'silence',
+  'étoile',
   'feu',
-  'terre',
-  'eau',
+  'naissance',
+  'immensité',
   'ombre',
+  'racine',
+  'oasis',
+  'caravane',
+  'vague',
+  'aurore',
+  'solaire',
+  'eau',
   'aube',
   'poème',
   'voix',
   'rêve',
   'sang',
-  'pierre',
   'sel',
-  'oasis',
-  'caravane',
-  'aurore',
   'souffle',
-  'source',
-  'vague',
   'dieu',
   'peuple',
   'chant',
@@ -236,15 +415,23 @@ function rnd(s: number, salt: number) {
   return x - Math.floor(x);
 }
 
+function verseForWord(word: string): string {
+  const reveal = ACT1_REVELATION_VERSE_FR[word as keyof typeof ACT1_REVELATION_VERSE_FR];
+  if (reveal) return reveal;
+  return WORD_DATA[word]?.verse ?? 'Patrie, ô ma blessure au milieu du visage,';
+}
+
 export function metaForWord(word: string): WordEntry {
-  return (
-    WORD_DATA[word] ?? {
-      verse: 'Sous le même ciel, un grain parmi les grains',
-      poem: 'Sahara - solstice',
+  const base = WORD_DATA[word];
+  if (!base) {
+    return {
+      verse: verseForWord(word),
+      poem: POEM,
       fontRole: 'sansNote',
       importance: 1,
-    }
-  );
+    };
+  }
+  return { ...base, verse: verseForWord(word), poem: POEM };
 }
 
 export function isRevelationWord(w: string): w is RevelationWord {

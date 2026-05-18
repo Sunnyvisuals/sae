@@ -9,6 +9,7 @@ import { useLanguageStore } from '../../stores/languageStore';
 import ShootingStars from '../ShootingStars';
 import VoyageCreditsAmbient from './VoyageCreditsAmbient';
 import { ACT3_DUST_GRAIN_SIZE } from '../../lib/act3NightSky';
+import { ACT3_CREDITS_CROSSFADE_SEC } from '../../lib/act3ConstellationTiming';
 import { useCreditsDaScroll } from '../../hooks/useCreditsDaScroll';
 import {
   VOYAGE_CREDITS_VIGNETTE,
@@ -28,8 +29,6 @@ const FINALE_SCROLL_PROGRESS = 0.88;
 const FINALE_FADE_TO_BLACK_S = 3.85;
 /** Bouton Fermer : peu après le début du fondu (pas après la fin du fondu). */
 const FINALE_BTN_DELAY_S = 1.2;
-/** Fondu entrant depuis l’acte III (croisé avec le fondu sortant de la scène). */
-const ACT3_FINALE_ENTER_FADE_S = 2.85;
 
 /** Logo institutionnel - PNG « blanc sur noir » sans alpha : rendu via masque luminance + dégradé (fond noir ignoré). */
 const MMI_LOGO_SRC = `${import.meta.env.BASE_URL}images/logo-mmi.png`;
@@ -42,6 +41,8 @@ type Props = {
   skipScrollAnimation?: boolean;
   /** Ouverture depuis le mot-clé final acte III : prolonge le ciel / nuit du gate, sans fondu noir. */
   fromAct3Finale?: boolean;
+  /** 0→1 pendant le défilement GSAP (barre de progression en haut). */
+  onScrollProgress?: (progress: number) => void;
 };
 
 export default function VoyageCreditsOverlay({
@@ -50,6 +51,7 @@ export default function VoyageCreditsOverlay({
   midnight,
   skipScrollAnimation = false,
   fromAct3Finale = false,
+  onScrollProgress,
 }: Props) {
   const copy = useAppCopy();
   const lang = useLanguageStore((s) => s.language);
@@ -63,7 +65,15 @@ export default function VoyageCreditsOverlay({
   const finaleTriggeredRef = useRef(false);
   /** 0→1 : pilote parallaxe ciel / brume / fumée / arche pendant le défilement GSAP. */
   const creditsProgressRef = useRef(0);
+  const onScrollProgressRef = useRef(onScrollProgress);
+  onScrollProgressRef.current = onScrollProgress;
   const creditsImmersion = useCreditsDaScroll(open, fromAct3Finale, creditsProgressRef);
+
+  const reportCreditsProgress = useCallback((p: number) => {
+    const clamped = Math.min(1, Math.max(0, p));
+    creditsProgressRef.current = clamped;
+    onScrollProgressRef.current?.(clamped);
+  }, []);
 
   const [scrollDone, setScrollDone] = useState(false);
   const [showClose, setShowClose] = useState(false);
@@ -90,12 +100,13 @@ export default function VoyageCreditsOverlay({
       tweenRef.current?.kill();
       tweenRef.current = null;
       gsap.set(el, { y: 0 });
+      reportCreditsProgress(1);
       setScrollDone(true);
       return;
     }
     tweenRef.current?.kill();
     finaleTriggeredRef.current = false;
-    creditsProgressRef.current = 0;
+    reportCreditsProgress(0);
     const dist = Math.max(0, el.scrollHeight - window.innerHeight * 0.15);
     gsap.set(el, { y: '100vh' });
     const triggerFinale = () => {
@@ -109,15 +120,15 @@ export default function VoyageCreditsOverlay({
       ease: 'none',
       onUpdate() {
         const p = this.progress();
-        creditsProgressRef.current = p;
+        reportCreditsProgress(p);
         if (p >= FINALE_SCROLL_PROGRESS) triggerFinale();
       },
       onComplete: () => {
-        creditsProgressRef.current = 1;
+        reportCreditsProgress(1);
         triggerFinale();
       },
     });
-  }, []);
+  }, [reportCreditsProgress]);
 
   /* Position initiale hors écran : GSAP seul pilote `transform` (évite le conflit Tailwind translate + GSAP). */
   useLayoutEffect(() => {
@@ -133,7 +144,7 @@ export default function VoyageCreditsOverlay({
       tweenRef.current?.kill();
       tweenRef.current = null;
       finaleTriggeredRef.current = false;
-      creditsProgressRef.current = 0;
+      reportCreditsProgress(0);
       setScrollDone(false);
       setShowClose(false);
       return;
@@ -152,7 +163,7 @@ export default function VoyageCreditsOverlay({
          * sinon la « fenêtre » tombe dans le grand padding vide sous le logo. */
         const dist = Math.max(0, el.scrollHeight - vh);
         gsap.set(el, { y: -dist });
-        creditsProgressRef.current = 1;
+        reportCreditsProgress(1);
         setScrollDone(true);
       }, 200);
       return () => window.clearTimeout(t);
@@ -167,7 +178,7 @@ export default function VoyageCreditsOverlay({
     return () => {
       window.clearTimeout(id);
     };
-  }, [open, startScroll, skipScrollAnimation, fromAct3Finale]);
+  }, [open, startScroll, skipScrollAnimation, fromAct3Finale, reportCreditsProgress]);
 
   /* Fondu noir puis bouton Fermer */
   useEffect(() => {
@@ -213,7 +224,7 @@ export default function VoyageCreditsOverlay({
         duration: fromAct3Finale
           ? reduceMotion
             ? 0.28
-            : ACT3_FINALE_ENTER_FADE_S
+            : ACT3_CREDITS_CROSSFADE_SEC
           : 0.65,
         ease: [0.22, 1, 0.36, 1],
       }}
