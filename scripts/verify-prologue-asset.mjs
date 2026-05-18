@@ -16,16 +16,24 @@ if (envUrl) {
     console.error("[prologue] VITE_INTRO_VIDEO_URL doit être une URL HTTPS absolue.");
     process.exit(1);
   }
-  console.log(`[prologue] CDN OK : ${envUrl}`);
+  if (/player\.mediadelivery\.net/i.test(envUrl)) {
+    console.error(
+      "[prologue] URL lecteur Bunny invalide pour le site.\n" +
+        "  Utilise la playlist HLS (.m3u8) ou le MP4 direct (vz-….b-cdn.net/…/play_1080p.mp4),\n" +
+        "  pas https://player.mediadelivery.net/play/…",
+    );
+    process.exit(1);
+  }
+  const kind = /\.m3u8(\?|$)/i.test(envUrl) ? "HLS" : "MP4/direct";
+  console.log(`[prologue] CDN OK (${kind}) : ${envUrl}`);
   process.exit(0);
 }
 
 if (onVercel) {
   console.error(
-    "[prologue] Sur Vercel, définis la variable d’environnement VITE_INTRO_VIDEO_URL (URL HTTPS du MP4 sur ton CDN).\n" +
-      "  1. Uploade public/Prologue.mp4 (npm run assets:prologue) sur Bunny, Cloudflare R2, etc.\n" +
-      "  2. Vercel → Settings → Environment Variables → VITE_INTRO_VIDEO_URL\n" +
-      "  3. Redeploy",
+    "[prologue] Sur Vercel, définis VITE_INTRO_VIDEO_URL (playlist .m3u8 Bunny Stream ou MP4 CDN).\n" +
+      "  Ex. https://vz-….b-cdn.net/{video-id}/playlist.m3u8\n" +
+      "  Vercel → Environment Variables → redeploy",
   );
   process.exit(1);
 }

@@ -1,5 +1,9 @@
 import { useEffect, useRef, type MutableRefObject, type RefObject } from "react";
-import { INTRO_VIDEO_SRC } from "../../lib/act1IntroBridge";
+import {
+  INTRO_VIDEO_CROSS_ORIGIN,
+  INTRO_VIDEO_SRC,
+} from "../../lib/act1IntroBridge";
+import { useIntroVideoAttach } from "../../hooks/useIntroVideoAttach";
 import {
   creditsHeroFriseFromImmersion,
   creditsVideoFilter,
@@ -181,6 +185,13 @@ function CreditsVideoLayer({
   videoRef: RefObject<HTMLVideoElement | null>;
   immersion: number;
 }) {
+  useIntroVideoAttach(
+    videoRef,
+    INTRO_VIDEO_SRC,
+    !reduceMotion,
+    INTRO_VIDEO_CROSS_ORIGIN,
+  );
+
   return (
     <div
       className="pointer-events-none absolute inset-[-4%_-4%_0] z-0 overflow-hidden"
@@ -192,7 +203,6 @@ function CreditsVideoLayer({
         style={{
           filter: creditsVideoFilter(immersion, reduceMotion),
         }}
-        src={INTRO_VIDEO_SRC}
         preload="metadata"
         muted
         playsInline

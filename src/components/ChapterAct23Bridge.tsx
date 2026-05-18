@@ -16,12 +16,17 @@ import {
 } from "../lib/volumeKeyboard";
 import { useAppCopy } from "../hooks/useAppCopy";
 import {
+  INTRO_VIDEO_CROSS_ORIGIN,
+  isIntroVideoHlsSrc,
+} from "../lib/act1IntroBridge";
+import {
   ACT23_BRIDGE_MP4,
   ACT23_BRIDGE_MP4_FALLBACK,
   ACT23_BRIDGE_MP4_LEGACY,
   ACT23_BRIDGE_WEBM,
   ACT23_BRIDGE_WEBM_LEGACY,
 } from "../lib/act23Bridge";
+import { attachIntroVideoMedia } from "../lib/introVideoMedia";
 import { TRANSITION_BRIDGE_SMOKE_SFX } from "../lib/transitionBridgeReveal";
 import {
   applyPrologueVideoElementVolume,
@@ -367,6 +372,18 @@ export default function ChapterAct23Bridge({ open, onComplete }: Props) {
     if (v) tapVideoElementForMeter(v);
   }, [open, sourceMode]);
 
+  useEffect(() => {
+    if (!open || sourceMode !== "prologue") return;
+    if (!isIntroVideoHlsSrc(ACT23_BRIDGE_MP4_FALLBACK)) return;
+    const el = videoRef.current;
+    if (!el) return;
+    return attachIntroVideoMedia(
+      el,
+      ACT23_BRIDGE_MP4_FALLBACK,
+      INTRO_VIDEO_CROSS_ORIGIN,
+    );
+  }, [open, sourceMode]);
+
   if (!open || prefersReducedMotion === true) return null;
 
   const videoKey = sourceMode;
@@ -425,7 +442,7 @@ export default function ChapterAct23Bridge({ open, onComplete }: Props) {
               <source src={ACT23_BRIDGE_MP4} type="video/mp4" />
               <source src={ACT23_BRIDGE_MP4_LEGACY} type="video/mp4" />
             </>
-          ) : (
+          ) : isIntroVideoHlsSrc(ACT23_BRIDGE_MP4_FALLBACK) ? null : (
             <source src={ACT23_BRIDGE_MP4_FALLBACK} type="video/mp4" />
           )}
         </video>

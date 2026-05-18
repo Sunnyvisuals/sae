@@ -23,7 +23,7 @@ import {
 const introVideoBase = import.meta.env.BASE_URL.replace(/\/?$/, "/");
 
 /**
- * Prologue : CDN en prod via `VITE_INTRO_VIDEO_URL` (recommandé).
+ * Prologue : CDN en prod via `VITE_INTRO_VIDEO_URL` (MP4 direct ou playlist `.m3u8` Bunny Stream).
  * Sinon `public/Prologue.mp4` / `Prologue.web.mp4` en local.
  */
 export const INTRO_VIDEO_SRC =
@@ -34,6 +34,8 @@ export const INTRO_VIDEO_SRC =
 export const INTRO_VIDEO_CROSS_ORIGIN = Boolean(
   import.meta.env.VITE_INTRO_VIDEO_URL?.trim(),
 );
+
+export { isIntroVideoHlsSrc } from "./introVideoMedia";
 
 /** Dev : strip et liste ordonnée restent synchrones. */
 function assertAct1PhraseStripsOrdered(): void {

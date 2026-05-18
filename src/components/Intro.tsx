@@ -47,6 +47,8 @@ import PrologueVolumeFluid from "./PrologueVolumeFluid";
 import PrologueVolumeHud from "./PrologueVolumeHud";
 import DevChapterJumpsPanel, { type DevChapterJumps } from "./DevChapterJumpsPanel";
 import { INTRO_VIDEO_SRC, INTRO_VIDEO_CROSS_ORIGIN } from "../lib/act1IntroBridge";
+import { attachIntroVideoMedia } from "../lib/introVideoMedia";
+import { useIntroVideoAttach } from "../hooks/useIntroVideoAttach";
 import { useLanguageStore } from "../stores/languageStore";
 import { useFullscreenPrefsStore } from "../stores/fullscreenPrefsStore";
 import { useCursorPrefsStore, type CursorExperienceMode } from "../stores/cursorPrefsStore";
@@ -1464,13 +1466,19 @@ export default function Intro({
     v.preload = "auto";
     v.muted = true;
     v.playsInline = true;
-    v.src = INTRO_VIDEO_SRC;
+    const detach = attachIntroVideoMedia(v, INTRO_VIDEO_SRC, INTRO_VIDEO_CROSS_ORIGIN);
     v.load();
     return () => {
-      v.removeAttribute("src");
-      v.load();
+      detach();
     };
   }, [isStarting, introPrefetchDone, videoStarted]);
+
+  useIntroVideoAttach(
+    videoRef,
+    INTRO_VIDEO_SRC,
+    videoStarted,
+    INTRO_VIDEO_CROSS_ORIGIN,
+  );
 
   const hideProloguePlayMark = useCallback(() => {
     if (prologuePlayMarkHideRef.current != null) {
@@ -2498,8 +2506,6 @@ export default function Intro({
               muted={isMuted}
               playsInline
               autoPlay
-              crossOrigin={INTRO_VIDEO_CROSS_ORIGIN ? "anonymous" : undefined}
-              src={INTRO_VIDEO_SRC}
             />
             <AnimatePresence>
               {prologueVideoPaused ? (
