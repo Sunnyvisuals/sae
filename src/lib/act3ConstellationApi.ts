@@ -28,7 +28,9 @@ function getClient(): SupabaseClient | null {
 }
 
 export function isConstellationApiConfigured(): boolean {
-  return true;
+  if (getClient() !== null) return true;
+  if (typeof window === "undefined") return false;
+  return !isLocalDevHost();
 }
 
 export function isConstellationPersistenceLive(): boolean {
@@ -66,14 +68,37 @@ const DEMO_SEED: ConstellationStarRow[] = [
   { id: "demo-5", mot: "vent", prenom_ville: "Samir", created_at: "2020-01-05T00:00:00Z" },
 ];
 
-async function fetchFromTable(table: string): Promise<ConstellationStarRow[] | null> {
-  const sb = getClient();
-  if (!sb) return null;
-  const { data, error } = await sb.from(table).select("*").order("created_at", { ascending: true });
-  if (error) return null;
-  return (data ?? [])
-    .map((row) => normalizeRow(row as Record<string, unknown>))
+function mergeStarRows(lists: ConstellationStarRow[][]): ConstellationStarRow[] {
+  const byId = new Map<string, ConstellationStarRow>();
+  for (const batch of lists) {
+    for (const row of batch) {
+      if (!byId.has(row.id)) byId.set(row.id, row);
+    }
+  }
+  return [...byId.values()].sort((a, b) => a.created_at.localeCompare(b.created_at));
+}
+
+async function fetchFromBothTables(sb: SupabaseClient): Promise<ConstellationStarRow[] | null> {
+  const [primary, legacy] = await Promise.all([
+    sb.from(TABLE).select("*").order("created_at", { ascending: true }),
+    sb.from(LEGACY_TABLE).select("*").order("created_at", { ascending: true }),
+  ]);
+  if (primary.error && legacy.error) return null;
+
+  const primaryRows = (primary.data ?? [])
+    .map((raw) => normalizeRow(raw as Record<string, unknown>))
     .filter((r): r is ConstellationStarRow => r !== null);
+  const legacyRows = (legacy.data ?? [])
+    .map((raw) => normalizeRow(raw as Record<string, unknown>))
+    .filter((r): r is ConstellationStarRow => r !== null);
+
+  return mergeStarRows([primaryRows, legacyRows]);
+}
+
+function isLocalDevHost(): boolean {
+  if (typeof window === "undefined") return false;
+  const h = window.location.hostname;
+  return h === "localhost" || h === "127.0.0.1";
 }
 
 async function fetchViaHttpApi(): Promise<ConstellationStarRow[] | null> {
@@ -84,8 +109,15 @@ async function fetchViaHttpApi(): Promise<ConstellationStarRow[] | null> {
       headers: { Accept: "application/json" },
       cache: "no-store",
     });
-    if (!res.ok) return null;
     const body = (await res.json()) as { stars?: unknown[] };
+    if (!res.ok) {
+      if (Array.isArray(body.stars)) {
+        return body.stars
+          .map((row) => normalizeRow(row as Record<string, unknown>))
+          .filter((r): r is ConstellationStarRow => r !== null);
+      }
+      return null;
+    }
     if (!Array.isArray(body.stars)) return null;
     return body.stars
       .map((row) => normalizeRow(row as Record<string, unknown>))
@@ -96,12 +128,18 @@ async function fetchViaHttpApi(): Promise<ConstellationStarRow[] | null> {
 }
 
 export async function fetchConstellationStars(): Promise<ConstellationStarRow[]> {
+  const isLocal = isLocalDevHost();
+
+  /** Prod Vercel : API serveur (clés Supabase côté Vercel). */
+  if (!isLocal) {
+    const fromApi = await fetchViaHttpApi();
+    if (fromApi !== null) return fromApi;
+  }
+
   const sb = getClient();
   if (sb) {
-    const primary = await fetchFromTable(TABLE);
-    if (primary !== null) return primary;
-    const legacy = await fetchFromTable(LEGACY_TABLE);
-    if (legacy !== null) return legacy;
+    const merged = await fetchFromBothTables(sb);
+    if (merged !== null) return merged;
   }
 
   const fromApi = await fetchViaHttpApi();
@@ -147,6 +185,11 @@ export async function submitConstellationStar(
     return { ok: false, error: "invalid_mot" };
   }
   const prenom_ville = input.prenom_ville?.trim().slice(0, 80) || null;
+
+  if (!isLocalDevHost()) {
+    const viaApiFirst = await submitViaHttpApi(input);
+    if (viaApiFirst.ok) return viaApiFirst;
+  }
 
   const sb = getClient();
   if (sb) {

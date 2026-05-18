@@ -51,18 +51,28 @@ function normalizeRow(raw: Record<string, unknown>) {
   };
 }
 
-async function fetchAll(sb: SupabaseClient) {
-  const { data, error } = await sb.from(TABLE).select("*").order("created_at", { ascending: true });
-  if (!error) {
-    return (data ?? [])
-      .map((row) => normalizeRow(row as Record<string, unknown>))
-      .filter(Boolean);
+function mergeStarRows(lists: Record<string, unknown>[][]): ReturnType<typeof normalizeRow>[] {
+  const byId = new Map<string, NonNullable<ReturnType<typeof normalizeRow>>>();
+  for (const batch of lists) {
+    for (const raw of batch) {
+      const row = normalizeRow(raw);
+      if (row && !byId.has(row.id)) byId.set(row.id, row);
+    }
   }
-  const legacy = await sb.from(LEGACY_TABLE).select("*").order("created_at", { ascending: true });
-  if (legacy.error) return null;
-  return (legacy.data ?? [])
-    .map((row) => normalizeRow(row as Record<string, unknown>))
-    .filter(Boolean);
+  return [...byId.values()].sort((a, b) => a.created_at.localeCompare(b.created_at));
+}
+
+/** Toutes les étoiles : table actuelle + legacy (visiteurs des deux versions). */
+async function fetchAll(sb: SupabaseClient) {
+  const [primary, legacy] = await Promise.all([
+    sb.from(TABLE).select("*").order("created_at", { ascending: true }),
+    sb.from(LEGACY_TABLE).select("*").order("created_at", { ascending: true }),
+  ]);
+  if (primary.error && legacy.error) return null;
+  return mergeStarRows([
+    (primary.data ?? []) as Record<string, unknown>[],
+    (legacy.data ?? []) as Record<string, unknown>[],
+  ]);
 }
 
 function isDevResetAllowed(req: VercelReq): boolean {

@@ -57,6 +57,7 @@ async function reverseGeocode(
     headers: {
       Accept: "application/json",
       "Accept-Language": acceptLang,
+      "User-Agent": "AlRihla/1.0 (https://alrihla.art; educational)",
     },
   });
   if (!res.ok) return null;

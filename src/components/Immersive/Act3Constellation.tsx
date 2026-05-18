@@ -145,7 +145,7 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
   useEffect(() => {
     if (step !== "constellation") return;
     const refresh = () => void loadStars({ background: true });
-    const interval = window.setInterval(refresh, 22_000);
+    const interval = window.setInterval(refresh, 12_000);
     const onVis = () => {
       if (document.visibilityState === "visible") refresh();
     };
@@ -396,6 +396,10 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
 
   const onJoinConstellation = async () => {
     if (!selectedWord || submitting || readConstellationVote()) return;
+    if (!visitorPlace && !identity.trim()) {
+      inscriptionInputRef.current?.focus();
+      return;
+    }
     setSubmitting(true);
     setSubmitError(null);
     const res = await submitConstellationStar({
