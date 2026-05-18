@@ -536,6 +536,20 @@
     letter-spacing: 0.06em;
   }
 
+  .da-act3-join-place-label {
+    @apply font-sans font-normal;
+    font-size: clamp(0.82rem, 2vw, 0.98rem);
+    letter-spacing: 0.04em;
+    line-height: 1.45;
+    color: rgba(212, 197, 176, 0.88);
+    text-shadow: 0 0 14px rgba(0, 0, 0, 0.78);
+  }
+
+  [dir="rtl"] .da-act3-join-place-label {
+    @apply font-arabic-ui;
+    letter-spacing: 0.02em;
+  }
+
   /** Acte III — champ prénom : curseur seul, pas de bordure ni bouton. */
   .da-act3-inscription-minimal {
     @apply min-w-[6ch] max-w-full border-0 bg-transparent px-0 py-1 text-center font-sans font-medium uppercase outline-none ring-0;

@@ -43,6 +43,10 @@ import {
 } from "../../lib/act3ConstellationTiming";
 import { metaForWord } from "./mapWordData";
 import { arabicPoemWordLabel } from "../../lib/mapWordArabicDisplay";
+import {
+  buildConstellationPrenomVille,
+  useVisitorPlaceStore,
+} from "../../stores/visitorPlaceStore";
 import Act3ConstellationSky, {
   type Act3ConstellationSkyHandle,
 } from "./Act3ConstellationSky";
@@ -69,10 +73,12 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
   const reduceMotion = useReducedMotion() ?? false;
 
   const priorVote = useMemo(() => readConstellationVote(), []);
+  const visitorPlace = useVisitorPlaceStore((s) => s.place);
   const [step, setStep] = useState<Step>(() => (priorVote ? "constellation" : "intro"));
   const [selectedWord, setSelectedWord] = useState<Act3ConstellationWord | null>(
     () => (priorVote?.mot as Act3ConstellationWord) ?? null,
   );
+  const [prenom, setPrenom] = useState("");
   const [identity, setIdentity] = useState(priorVote?.prenom_ville ?? "");
   const [stars, setStars] = useState<ConstellationStarRow[]>([]);
   const [highlightId, setHighlightId] = useState<string | null>(priorVote?.starId ?? null);
@@ -384,13 +390,17 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
     return () => window.clearTimeout(t);
   }, [step, starFormVisible]);
 
+  const inscriptionValue = visitorPlace
+    ? buildConstellationPrenomVille(prenom, visitorPlace)
+    : identity.trim() || undefined;
+
   const onJoinConstellation = async () => {
     if (!selectedWord || submitting || readConstellationVote()) return;
     setSubmitting(true);
     setSubmitError(null);
     const res = await submitConstellationStar({
       mot: selectedWord,
-      prenom_ville: identity.trim() || undefined,
+      prenom_ville: inscriptionValue,
     });
     setSubmitting(false);
     if (!res.ok) {
@@ -400,7 +410,7 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
     writeConstellationVote({
       starId: res.row.id,
       mot: res.row.mot,
-      prenom_ville: identity.trim() || undefined,
+      prenom_ville: inscriptionValue,
       votedAt: new Date().toISOString(),
     });
     setHighlightId(res.row.id);
@@ -609,32 +619,66 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
               aria-label={copy.act3ConfirmCta}
             >
               <motion.div className="pointer-events-auto flex w-full max-w-[min(100%,20rem)] flex-col items-center gap-2.5 text-center">
-                <label htmlFor="act3-inscription" className="da-act3-inscription-hint">
-                  {copy.act3ConfirmIdentityHint}
-                </label>
-                <input
-                  type="text"
-                  value={identity}
-                  onChange={(e) => {
-                    setIdentity(e.target.value);
-                    if (submitError) setSubmitError(null);
-                  }}
-                  maxLength={80}
-                  disabled={submitting}
-                  ref={inscriptionInputRef}
-                  id="act3-inscription"
-                  name="given-name"
-                  className="da-act3-inscription-minimal w-full"
-                  autoComplete="given-name"
-                  autoCapitalize="words"
-                  spellCheck={false}
-                  aria-invalid={submitError ? true : undefined}
-                  aria-describedby={
-                    submitError
-                      ? "act3-inscription-enter-hint act3-inscription-error"
-                      : "act3-inscription-enter-hint"
-                  }
-                />
+                {visitorPlace ? (
+                  <>
+                    <p className="da-act3-join-place-label">{visitorPlace.label}</p>
+                    <label htmlFor="act3-inscription" className="da-act3-inscription-hint">
+                      {copy.act3ConfirmPrenomPlaceholder}
+                    </label>
+                    <input
+                      type="text"
+                      value={prenom}
+                      onChange={(e) => {
+                        setPrenom(e.target.value);
+                        if (submitError) setSubmitError(null);
+                      }}
+                      maxLength={40}
+                      disabled={submitting}
+                      ref={inscriptionInputRef}
+                      id="act3-inscription"
+                      name="given-name"
+                      className="da-act3-inscription-minimal w-full"
+                      autoComplete="given-name"
+                      autoCapitalize="words"
+                      spellCheck={false}
+                      aria-invalid={submitError ? true : undefined}
+                      aria-describedby={
+                        submitError
+                          ? "act3-inscription-enter-hint act3-inscription-error"
+                          : "act3-inscription-enter-hint"
+                      }
+                    />
+                  </>
+                ) : (
+                  <>
+                    <label htmlFor="act3-inscription" className="da-act3-inscription-hint">
+                      {copy.act3ConfirmIdentityHint}
+                    </label>
+                    <input
+                      type="text"
+                      value={identity}
+                      onChange={(e) => {
+                        setIdentity(e.target.value);
+                        if (submitError) setSubmitError(null);
+                      }}
+                      maxLength={80}
+                      disabled={submitting}
+                      ref={inscriptionInputRef}
+                      id="act3-inscription"
+                      name="given-name"
+                      className="da-act3-inscription-minimal w-full"
+                      autoComplete="given-name"
+                      autoCapitalize="words"
+                      spellCheck={false}
+                      aria-invalid={submitError ? true : undefined}
+                      aria-describedby={
+                        submitError
+                          ? "act3-inscription-enter-hint act3-inscription-error"
+                          : "act3-inscription-enter-hint"
+                      }
+                    />
+                  </>
+                )}
                 <p
                   id="act3-inscription-enter-hint"
                   className="da-act3-inscription-enter"

@@ -134,6 +134,15 @@ type Copy = {
   fullscreenPromptAccept: string;
   fullscreenPromptLater: string;
   fullscreenPromptNever: string;
+  geolocationPromptTitle: string;
+  geolocationPromptBody: string;
+  geolocationPromptAria: string;
+  geolocationPromptAccept: string;
+  geolocationPromptLoading: string;
+  geolocationPromptLater: string;
+  geolocationPromptNever: string;
+  act3ConfirmPlaceLabel: string;
+  act3ConfirmPrenomPlaceholder: string;
   menuFullscreenSection: string;
   menuFullscreenEnter: string;
   menuFullscreenExit: string;
@@ -363,6 +372,17 @@ const FR: Copy = {
   fullscreenPromptAccept: "Activer (F11)",
   fullscreenPromptLater: "Plus tard",
   fullscreenPromptNever: "Ne plus proposer",
+  geolocationPromptTitle: "Ta position",
+  geolocationPromptBody:
+    "Pour inscrire ta ville sur l’étoile à la fin du voyage — rien n’est envoyé avant l’Acte III.",
+  geolocationPromptAria:
+    "Demande d’accès à la position pour afficher ta ville sur ton étoile en fin de parcours. Tu peux refuser ou reporter.",
+  geolocationPromptAccept: "Autoriser",
+  geolocationPromptLoading: "Repérage…",
+  geolocationPromptLater: "Plus tard",
+  geolocationPromptNever: "Ne plus proposer",
+  act3ConfirmPlaceLabel: "Ta position",
+  act3ConfirmPrenomPlaceholder: "Ton prénom (optionnel)",
   menuFullscreenSection: "Plein écran",
   menuFullscreenEnter: "Passer en plein écran",
   menuFullscreenExit: "Quitter le plein écran",
@@ -680,6 +700,17 @@ const AR: Copy = {
   fullscreenPromptAccept: "فعّل",
   fullscreenPromptLater: "بعد",
   fullscreenPromptNever: "ما تعاودش",
+  geolocationPromptTitle: "مكانك",
+  geolocationPromptBody:
+    "باش نكتب مدينتك على نجمتك في آخر الرحلة — ما كاينش إرسال قبل الفصل الثالث.",
+  geolocationPromptAria:
+    "طلب الوصول للموقع لعرض مدينتك على نجمتك في نهاية المسار. يمكنك الرفض أو التأجيل.",
+  geolocationPromptAccept: "اسمح",
+  geolocationPromptLoading: "تحديد…",
+  geolocationPromptLater: "بعد",
+  geolocationPromptNever: "ما تعاودش",
+  act3ConfirmPlaceLabel: "مكانك",
+  act3ConfirmPrenomPlaceholder: "اسمك (اختياري)",
   menuFullscreenSection: "ملء الشاشة",
   menuFullscreenEnter: "دير ملء الشاشة دابا",
   menuFullscreenExit: "خرج من ملء الشاشة",

@@ -53,6 +53,10 @@ import { useCursorStore } from "../hooks/useCursorContext";
 import { isFullscreenApiSupported } from "../lib/fullscreenDocument";
 import { useMasterVolumeStore } from "../stores/masterVolumeStore";
 import IntroFullscreenOverlay from "./IntroFullscreenOverlay";
+import IntroGeolocationOverlay from "./IntroGeolocationOverlay";
+import { isGeolocationSupported } from "../lib/visitorGeolocation";
+import { useGeolocationPrefsStore } from "../stores/geolocationPrefsStore";
+import { useVisitorPlaceStore } from "../stores/visitorPlaceStore";
 import CursorOnboardingGate from "./CursorOnboardingGate";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { useAppCopy } from "../hooks/useAppCopy";
@@ -557,7 +561,12 @@ export default function Intro({
   const [launchCtaVisible, setLaunchCtaVisible] = useState(Boolean(isExploring));
   const [launchCtaRevealToken, setLaunchCtaRevealToken] = useState(0);
   const [fullscreenIntroOpen, setFullscreenIntroOpen] = useState(false);
+  const [geolocationIntroOpen, setGeolocationIntroOpen] = useState(false);
   const [cursorOnboardingOpen, setCursorOnboardingOpen] = useState(false);
+  const offerGeolocationOnArrival = useGeolocationPrefsStore(
+    (s) => s.offerGeolocationOnArrival,
+  );
+  const visitorPlace = useVisitorPlaceStore((s) => s.place);
   /** Coupure synchrone au clic langue - disparition immédiate du losange (voir `showLandingDiamond`). */
   const [landingOrnamentAllowed, setLandingOrnamentAllowed] = useState(true);
   const initialStageRef = useRef<HTMLDivElement>(null);
@@ -646,6 +655,13 @@ export default function Intro({
     offerFullscreenOnArrival &&
     typeof window !== "undefined" &&
     isFullscreenApiSupported();
+
+  const shouldOfferGeolocationNow =
+    offerGeolocationOnArrival &&
+    typeof window !== "undefined" &&
+    isGeolocationSupported() &&
+    !visitorPlace;
+
   const showArrivalLanguageOverlay = !arrivalLanguageConfirmed && arrivalLanguageGateVisible;
 
   const stopLanguageGateSmokeSfx = useCallback(() => {
@@ -853,13 +869,16 @@ export default function Intro({
     !isExploring &&
     !arrivalLanguageConfirmed &&
     !fullscreenIntroOpen &&
+    !geolocationIntroOpen &&
     !launchCtaVisible &&
     !cursorOnboardingOpen &&
     !hideLandingDiamondForLangBridge;
 
   useEffect(() => {
-    onIntroGateOpenChange?.(showArrivalLanguageOverlay || cursorOnboardingOpen);
-  }, [showArrivalLanguageOverlay, cursorOnboardingOpen, onIntroGateOpenChange]);
+    onIntroGateOpenChange?.(
+      showArrivalLanguageOverlay || cursorOnboardingOpen || geolocationIntroOpen,
+    );
+  }, [showArrivalLanguageOverlay, cursorOnboardingOpen, geolocationIntroOpen, onIntroGateOpenChange]);
 
   const triggerLaunchCtaReveal = useCallback(() => {
     setLaunchCtaVisible(true);
@@ -872,8 +891,13 @@ export default function Intro({
       setFullscreenIntroOpen(true);
       return;
     }
+    if (shouldOfferGeolocationNow) {
+      setLaunchCtaVisible(false);
+      setGeolocationIntroOpen(true);
+      return;
+    }
     triggerLaunchCtaReveal();
-  }, [shouldOfferFullscreenNow, triggerLaunchCtaReveal]);
+  }, [shouldOfferFullscreenNow, shouldOfferGeolocationNow, triggerLaunchCtaReveal]);
 
   const confirmCursorOnboarding = useCallback(
     (experience: CursorExperienceMode) => {
@@ -904,9 +928,25 @@ export default function Intro({
     });
   };
 
+  const proceedAfterFullscreenGate = useCallback(() => {
+    if (shouldOfferGeolocationNow) {
+      setLaunchCtaVisible(false);
+      setGeolocationIntroOpen(true);
+      return;
+    }
+    triggerLaunchCtaReveal();
+  }, [shouldOfferGeolocationNow, triggerLaunchCtaReveal]);
+
   const handleIntroFullscreenClose = useCallback(() => {
     flushSync(() => {
       setFullscreenIntroOpen(false);
+      proceedAfterFullscreenGate();
+    });
+  }, [proceedAfterFullscreenGate]);
+
+  const handleIntroGeolocationClose = useCallback(() => {
+    flushSync(() => {
+      setGeolocationIntroOpen(false);
       triggerLaunchCtaReveal();
     });
   }, [triggerLaunchCtaReveal]);
@@ -1051,6 +1091,7 @@ export default function Intro({
   useEffect(() => {
     if (videoStarted || isStarting || prologueTutorialActive) {
       setFullscreenIntroOpen(false);
+      setGeolocationIntroOpen(false);
       return undefined;
     }
     if (!arrivalLanguageConfirmed || !shouldOfferFullscreenNow) {
@@ -1065,6 +1106,12 @@ export default function Intro({
     prologueTutorialActive,
     shouldOfferFullscreenNow,
   ]);
+
+  useEffect(() => {
+    if (videoStarted || isStarting || prologueTutorialActive) {
+      setGeolocationIntroOpen(false);
+    }
+  }, [videoStarted, isStarting, prologueTutorialActive]);
 
   useEffect(() => {
     if (!videoStarted) return;
@@ -2534,6 +2581,10 @@ export default function Intro({
       <IntroFullscreenOverlay
         open={fullscreenIntroOpen}
         onRequestClose={handleIntroFullscreenClose}
+      />
+      <IntroGeolocationOverlay
+        open={geolocationIntroOpen}
+        onRequestClose={handleIntroGeolocationClose}
       />
     </>
   );
