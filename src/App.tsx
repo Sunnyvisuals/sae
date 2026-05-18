@@ -432,7 +432,7 @@ export default function App() {
 
     const base = import.meta.env.BASE_URL || "/";
     const prefix = base.endsWith("/") ? base : `${base}/`;
-    const favQs = "?v=202";
+    const favQs = "?v=203";
     const iconHref =
       theme === "midnight"
         ? `${prefix}favicon-48-night.png${favQs}`
