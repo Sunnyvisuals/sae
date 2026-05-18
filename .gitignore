@@ -10,3 +10,6 @@ coverage/
 *.tsbuildinfo
 .env*
 !.env.example
+
+# Ancien prologue (remplacé par public/Prologue.mp4)
+public/al-rihla.mp4

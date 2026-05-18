@@ -12,7 +12,12 @@ export const ACT23_BRIDGE_WEBM_LEGACY = `${prefix}transitions/trans2-alpha.webm`
 export const ACT23_BRIDGE_MP4 = `${prefix}transitions/trans2-alpha-act23.mp4`;
 export const ACT23_BRIDGE_MP4_LEGACY = `${prefix}transitions/trans2-alpha.mp4`;
 /** Repli audible / visible (même fichier que le prologue). */
-export const ACT23_BRIDGE_MP4_FALLBACK = `${prefix}al-rihla.mp4`;
+import { INTRO_VIDEO_SRC } from "./act1IntroBridge";
+
+/** Repli pont II→III : même fichier que le prologue (pas de second MP4 lourd). */
+export const ACT23_BRIDGE_MP4_FALLBACK = INTRO_VIDEO_SRC.startsWith("/")
+  ? `${prefix}${INTRO_VIDEO_SRC.replace(/^\//, "")}`
+  : INTRO_VIDEO_SRC;
 
 let act23VideoPrefetched = false;
 
