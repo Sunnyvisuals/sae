@@ -8,7 +8,16 @@
   useTransform,
   useReducedMotion,
 } from "motion/react";
-import React, { useState, useEffect, useRef, useId, lazy, Suspense, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useId,
+  lazy,
+  Suspense,
+  useCallback,
+} from "react";
 import { flushSync } from "react-dom";
 import gsap from "gsap";
 const PoetryGame = lazy(() => import("./PoetryGame"));
