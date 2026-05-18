@@ -1,11 +1,8 @@
-import { PROLOGUE_CDN_HLS_URL, PROLOGUE_CDN_URL } from "./prologueCdn";
-
 export function isIntroVideoHlsSrc(src: string): boolean {
   return /\.m3u8(\?.*)?$/i.test(src);
 }
 
 export type IntroVideoAttachOptions = {
-  /** Laisser false pour Bunny (Referer). */
   crossOrigin?: boolean;
   onReady?: (video: HTMLVideoElement) => void;
   onError?: (video: HTMLVideoElement) => void;
@@ -83,22 +80,14 @@ function attachHls(
     .then(({ default: Hls }) => {
       if (cancelled) return;
       if (!Hls.isSupported()) {
-        cleanup = attachMp4(video, PROLOGUE_CDN_URL, false, onReady, onError);
+        onError?.(video);
         return;
       }
 
       const hls = new Hls({ enableWorker: true });
-
-      const tryMp4 = () => {
-        if (!PROLOGUE_CDN_URL || src === PROLOGUE_CDN_URL) return false;
-        hls.destroy();
-        cleanup = attachMp4(video, PROLOGUE_CDN_URL, false, onReady, onError);
-        return true;
-      };
-
       hls.on(Hls.Events.MANIFEST_PARSED, () => whenCanPlay(video, onReady));
       hls.on(Hls.Events.ERROR, (_e, data) => {
-        if (data.fatal && !tryMp4()) onError?.(video);
+        if (data.fatal) onError?.(video);
       });
       hls.loadSource(src);
       hls.attachMedia(video);
@@ -109,9 +98,7 @@ function attachHls(
       };
     })
     .catch(() => {
-      if (!cancelled) {
-        cleanup = attachMp4(video, PROLOGUE_CDN_URL, false, onReady, onError);
-      }
+      if (!cancelled) onError?.(video);
     });
 
   return () => {
@@ -141,5 +128,3 @@ export function attachIntroVideoMedia(
 
   return attachMp4(video, src, crossOrigin, onReady, onError);
 }
-
-export { PROLOGUE_CDN_HLS_URL };

@@ -1,5 +1,5 @@
 /**
- * Version web HQ du prologue (~100 Mo, CDN / Vercel <100 Mo).
+ * Version web du prologue (~45 Mo par défaut, faststart, démarrage rapide).
  * Source : public/Prologue.mp4 (ou PROLOGUE_SOURCE / F:\Prologue.mp4 via assets:prologue).
  */
 import { existsSync, readFileSync, statSync } from "node:fs";
@@ -10,7 +10,7 @@ import { spawnSync } from "node:child_process";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const src = resolve(root, "public/Prologue.mp4");
 const dest = resolve(root, "public/Prologue.web.mp4");
-const targetMb = Number(process.env.PROLOGUE_WEB_TARGET_MB || "100");
+const targetMb = Number(process.env.PROLOGUE_WEB_TARGET_MB || "45");
 
 if (!existsSync(src)) {
   console.error("[assets:prologue:web] Manque public/Prologue.mp4 — lance npm run assets:prologue");
