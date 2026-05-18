@@ -10,16 +10,8 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const candidates = ["public/Prologue.web.mp4", "public/Prologue.mp4"];
 const onVercel = process.env.VERCEL === "1";
 
-function readPrologueCdnFromConfig() {
-  const path = resolve(root, "config/prologue-cdn.json");
-  if (!existsSync(path)) return "";
-  try {
-    const data = JSON.parse(readFileSync(path, "utf8"));
-    return typeof data.url === "string" ? data.url.trim() : "";
-  } catch {
-    return "";
-  }
-}
+const PROLOGUE_CDN_FALLBACK =
+  "https://vz-b0e81311-954.b-cdn.net/5cdd6a54-5491-4bba-b34b-e6ed79c32de4/play_1080p.mp4";
 
 function readPrologueCdnFromVercelJson() {
   const path = resolve(root, "vercel.json");
@@ -56,8 +48,7 @@ function validateCdnUrl(envUrl) {
 
 const envUrl =
   process.env.VITE_INTRO_VIDEO_URL?.trim() ||
-  readPrologueCdnFromConfig() ||
-  (onVercel ? readPrologueCdnFromVercelJson() : "");
+  (onVercel ? readPrologueCdnFromVercelJson() || PROLOGUE_CDN_FALLBACK : "");
 
 if (envUrl) {
   validateCdnUrl(envUrl);

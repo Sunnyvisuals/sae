@@ -15,10 +15,8 @@ import {
   shouldIgnoreVolumeKeyboardTarget,
 } from "../lib/volumeKeyboard";
 import { useAppCopy } from "../hooks/useAppCopy";
-import {
-  INTRO_VIDEO_CROSS_ORIGIN,
-  isIntroVideoHlsSrc,
-} from "../lib/act1IntroBridge";
+import { INTRO_VIDEO_CROSS_ORIGIN } from "../lib/act1IntroBridge";
+import { isIntroVideoHlsSrc } from "../lib/introVideoMedia";
 import {
   ACT23_BRIDGE_MP4,
   ACT23_BRIDGE_MP4_FALLBACK,

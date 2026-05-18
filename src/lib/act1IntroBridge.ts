@@ -35,11 +35,11 @@ export const INTRO_VIDEO_SRC =
   (import.meta.env.PROD ? PROLOGUE_CDN_URL : `${introVideoBase}Prologue.mp4`);
 
 /** True si la vidéo est hébergée sur un autre domaine (CORS possible pour Web Audio). */
+/** CDN cross-origin (Bunny) — pas pour `/Prologue.mp4` local. */
 export const INTRO_VIDEO_CROSS_ORIGIN = Boolean(
-  introVideoUrlFromEnv || import.meta.env.PROD,
+  introVideoUrlFromEnv ||
+    (import.meta.env.PROD && PROLOGUE_CDN_URL.startsWith("https://")),
 );
-
-export { isIntroVideoHlsSrc } from "./introVideoMedia";
 
 /** Dev : strip et liste ordonnée restent synchrones. */
 function assertAct1PhraseStripsOrdered(): void {

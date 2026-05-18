@@ -1,11 +1,7 @@
-import prologueCdnJson from "../../config/prologue-cdn.json";
+/** Bunny Stream — MP4 direct (prod). */
+export const PROLOGUE_CDN_URL =
+  "https://vz-b0e81311-954.b-cdn.net/5cdd6a54-5491-4bba-b34b-e6ed79c32de4/play_1080p.mp4";
 
-type PrologueCdnConfig = { url: string; hls?: string };
-const prologueCdn = prologueCdnJson as PrologueCdnConfig;
-
-/** URL prod Bunny Stream (MP4 direct, lecteur natif) — surchargeable via `VITE_INTRO_VIDEO_URL`. */
-export const PROLOGUE_CDN_URL = prologueCdn.url.trim();
-
-/** Fallback HLS si le MP4 échoue. */
+/** Fallback HLS si besoin. */
 export const PROLOGUE_CDN_HLS_URL =
-  typeof prologueCdn.hls === "string" ? prologueCdn.hls.trim() : "";
+  "https://vz-b0e81311-954.b-cdn.net/5cdd6a54-5491-4bba-b34b-e6ed79c32de4/playlist.m3u8";
