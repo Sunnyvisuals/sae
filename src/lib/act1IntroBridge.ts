@@ -26,14 +26,15 @@ const introVideoBase = import.meta.env.BASE_URL.replace(/\/?$/, "/");
  * Prologue : CDN en prod via `VITE_INTRO_VIDEO_URL` (MP4 direct ou playlist `.m3u8` Bunny Stream).
  * Sinon `public/Prologue.mp4` / `Prologue.web.mp4` en local.
  */
+const envIntroVideoUrl = import.meta.env.VITE_INTRO_VIDEO_URL;
+const introVideoUrlFromEnv =
+  typeof envIntroVideoUrl === "string" ? envIntroVideoUrl.trim() : "";
+
 export const INTRO_VIDEO_SRC =
-  import.meta.env.VITE_INTRO_VIDEO_URL?.trim() ||
-  `${introVideoBase}Prologue.mp4`;
+  introVideoUrlFromEnv || `${introVideoBase}Prologue.mp4`;
 
 /** True si la vidéo est hébergée sur un autre domaine (CORS possible pour Web Audio). */
-export const INTRO_VIDEO_CROSS_ORIGIN = Boolean(
-  import.meta.env.VITE_INTRO_VIDEO_URL?.trim(),
-);
+export const INTRO_VIDEO_CROSS_ORIGIN = Boolean(introVideoUrlFromEnv);
 
 export { isIntroVideoHlsSrc } from "./introVideoMedia";
 
