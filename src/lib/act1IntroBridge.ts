@@ -19,22 +19,25 @@ import {
   ACT1_PHRASE_STRIP_STEPS_FR,
   ACT1_REVELATION_SEQUENCE,
 } from "./act1PoemCorpsPays";
+import { PROLOGUE_CDN_URL } from "./prologueCdn";
 
 const introVideoBase = import.meta.env.BASE_URL.replace(/\/?$/, "/");
 
 /**
- * Prologue : CDN en prod via `VITE_INTRO_VIDEO_URL` (MP4 direct ou playlist `.m3u8` Bunny Stream).
- * Sinon `public/Prologue.mp4` / `Prologue.web.mp4` en local.
+ * Prologue : `VITE_INTRO_VIDEO_URL` (Vercel) ou {@link PROLOGUE_CDN_URL} en prod, sinon fichier local.
  */
 const envIntroVideoUrl = import.meta.env.VITE_INTRO_VIDEO_URL;
 const introVideoUrlFromEnv =
   typeof envIntroVideoUrl === "string" ? envIntroVideoUrl.trim() : "";
 
 export const INTRO_VIDEO_SRC =
-  introVideoUrlFromEnv || `${introVideoBase}Prologue.mp4`;
+  introVideoUrlFromEnv ||
+  (import.meta.env.PROD ? PROLOGUE_CDN_URL : `${introVideoBase}Prologue.mp4`);
 
 /** True si la vidéo est hébergée sur un autre domaine (CORS possible pour Web Audio). */
-export const INTRO_VIDEO_CROSS_ORIGIN = Boolean(introVideoUrlFromEnv);
+export const INTRO_VIDEO_CROSS_ORIGIN = Boolean(
+  introVideoUrlFromEnv || import.meta.env.PROD,
+);
 
 export { isIntroVideoHlsSrc } from "./introVideoMedia";
 

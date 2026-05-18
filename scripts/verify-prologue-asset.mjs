@@ -1,6 +1,6 @@
 /**
  * Vérifie la vidéo prologue avant build.
- * Prod Vercel : VITE_INTRO_VIDEO_URL (CDN) obligatoire — pas de gros MP4 dans le déploiement.
+ * Prod Vercel : VITE_INTRO_VIDEO_URL ou config/prologue-cdn.json (Bunny Stream).
  */
 import { existsSync, statSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
@@ -8,10 +8,35 @@ import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const candidates = ["public/Prologue.web.mp4", "public/Prologue.mp4"];
-const envUrl = process.env.VITE_INTRO_VIDEO_URL?.trim();
 const onVercel = process.env.VERCEL === "1";
 
-if (envUrl) {
+function readPrologueCdnFromConfig() {
+  const path = resolve(root, "config/prologue-cdn.json");
+  if (!existsSync(path)) return "";
+  try {
+    const data = JSON.parse(readFileSync(path, "utf8"));
+    return typeof data.url === "string" ? data.url.trim() : "";
+  } catch {
+    return "";
+  }
+}
+
+function readPrologueCdnFromVercelJson() {
+  const path = resolve(root, "vercel.json");
+  if (!existsSync(path)) return "";
+  try {
+    const data = JSON.parse(readFileSync(path, "utf8"));
+    return (
+      data.env?.VITE_INTRO_VIDEO_URL?.trim() ||
+      data.build?.env?.VITE_INTRO_VIDEO_URL?.trim() ||
+      ""
+    );
+  } catch {
+    return "";
+  }
+}
+
+function validateCdnUrl(envUrl) {
   if (!/^https:\/\//i.test(envUrl)) {
     console.error("[prologue] VITE_INTRO_VIDEO_URL doit être une URL HTTPS absolue.");
     process.exit(1);
@@ -29,10 +54,18 @@ if (envUrl) {
   process.exit(0);
 }
 
+const envUrl =
+  process.env.VITE_INTRO_VIDEO_URL?.trim() ||
+  readPrologueCdnFromConfig() ||
+  (onVercel ? readPrologueCdnFromVercelJson() : "");
+
+if (envUrl) {
+  validateCdnUrl(envUrl);
+}
+
 if (onVercel) {
   console.error(
-    "[prologue] Sur Vercel, définis VITE_INTRO_VIDEO_URL (playlist .m3u8 Bunny Stream ou MP4 CDN).\n" +
-      "  Ex. https://vz-….b-cdn.net/{video-id}/playlist.m3u8\n" +
+    "[prologue] Sur Vercel, configure VITE_INTRO_VIDEO_URL ou config/prologue-cdn.json.\n" +
       "  Vercel → Environment Variables → redeploy",
   );
   process.exit(1);
