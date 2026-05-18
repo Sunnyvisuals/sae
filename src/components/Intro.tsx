@@ -34,6 +34,14 @@ import {
   PROLOGUE_VIDEO_DEFAULT_VOLUME,
 } from "../lib/prologueVideoElement";
 import ProloguePlaybackMark, { GoldPlayIcon } from "./ProloguePlaybackMark";
+import {
+  disposePrologueTutorialVolumeProbe,
+  primePrologueTutorialVolumeProbe,
+  syncPrologueTutorialVolumeProbe,
+} from "../lib/prologueTutorialVolumeProbe";
+import PrologueTutorialOverlay, {
+  type PrologueTutorialStep,
+} from "./PrologueTutorialOverlay";
 import { ensureCustomCursorAwake } from "../lib/customCursorPortal";
 import PrologueVolumeFluid from "./PrologueVolumeFluid";
 import PrologueVolumeHud from "./PrologueVolumeHud";
@@ -75,6 +83,7 @@ const INTRO_CTA_WORDS_FR = ["Cliquer", "ou", "Entrée"] as const;
 const INTRO_CTA_WORDS_AR = ["إضغط", "أو", "إنتر"] as const;
 /** HUD volume prologue : durée visible après molette / touches. */
 const PROLOGUE_VOLUME_HUD_HOLD_MS = 1500;
+const PROLOGUE_TUTORIAL_VOLUME_HUD_HOLD_MS = 4000;
 type AnimatedTitleProps = {
   text?: string;
   className?: string;
@@ -535,6 +544,9 @@ export default function Intro({
   const [isStarting, setIsStarting] = useState(false);
   /** true après l’overlay « Prologue » : le 2e clic ouvre le tutoriel puis la vidéo. */
   const [introPrefetchDone, setIntroPrefetchDone] = useState(Boolean(isExploring));
+  const [prologueTutorialStep, setPrologueTutorialStep] = useState<PrologueTutorialStep | null>(null);
+  const prologueTutorialVolumeDoneRef = useRef(false);
+  const prologueChosenVolumeRef = useRef<number | null>(null);
   const introSuspenseFinishedRef = useRef(false);
   const [introHandoffBlackout, setIntroHandoffBlackout] = useState(false);
   const [isPoetryGameOpen, setIsPoetryGameOpen] = useState(false);
@@ -588,6 +600,11 @@ export default function Intro({
   const isMutedRef = useRef(isMuted);
   volumeRef.current = volume;
   isMutedRef.current = isMuted;
+  if (prologueTutorialStep !== "volume") {
+    volumeScrollRef.current = volume;
+    mutedScrollRef.current = isMuted;
+  }
+
   const commitPrologueVolume = useCallback((volume01: number) => {
     const v = Math.min(1, Math.max(0, volume01));
     const silent = v <= 0;
@@ -605,7 +622,10 @@ export default function Intro({
   }, []);
 
   const pulsePrologueVolumeHud = useCallback(() => {
-    const holdMs = PROLOGUE_VOLUME_HUD_HOLD_MS;
+    const holdMs =
+      prologueTutorialStep === "volume"
+        ? PROLOGUE_TUTORIAL_VOLUME_HUD_HOLD_MS
+        : PROLOGUE_VOLUME_HUD_HOLD_MS;
     const armHide = () => {
       if (prologueVolumeAuraHideRef.current != null) {
         window.clearTimeout(prologueVolumeAuraHideRef.current);
@@ -632,7 +652,32 @@ export default function Intro({
       prologueVolumeHudVisibleRef.current = true;
       armHide();
     }, 130);
-  }, []);
+  }, [prologueTutorialStep]);
+
+  const setTutorialVolume01 = useCallback(
+    (next01: number) => {
+      const next = Math.min(1, Math.max(0, next01));
+      setPrologueVolumeScrollCueDismissed(true);
+      volumeScrollRef.current = next;
+      mutedScrollRef.current = next === 0;
+      setVolume(next);
+      setIsMuted(next === 0);
+      pulsePrologueVolumeHud();
+    },
+    [pulsePrologueVolumeHud],
+  );
+
+  const bumpTutorialVolumeByWheel = useCallback(
+    (deltaY: number) => {
+      const currentPct = Math.round(
+        (mutedScrollRef.current ? 0 : volumeScrollRef.current) * 100,
+      );
+      const deltaPct =
+        -Math.sign(deltaY) * Math.max(1, Math.min(2, Math.round(Math.abs(deltaY) / 48)));
+      setTutorialVolume01(Math.min(100, Math.max(0, currentPct + deltaPct)) / 100);
+    },
+    [setTutorialVolume01],
+  );
 
   const shouldOfferFullscreenNow =
     offerFullscreenOnArrival &&
@@ -825,15 +870,25 @@ export default function Intro({
     languageBridgeReveal01 < 0.72;
 
   const introSuspenseActive = isStarting && !videoStarted;
-
-  const introCoverActive =
-    introSuspenseActive || introHandoffBlackout || cursorOnboardingOpen;
+  const prologueTutorialActive = prologueTutorialStep !== null;
+  const prologueTutorialVolumeStep = prologueTutorialStep === "volume";
 
   useEffect(() => {
-    if (!introHandoffBlackout || introSuspenseActive) return;
+    onIntroCursorSuppressChange?.(prologueTutorialVolumeStep);
+    return () => onIntroCursorSuppressChange?.(false);
+  }, [prologueTutorialVolumeStep, onIntroCursorSuppressChange]);
+
+  const introCoverActive =
+    introSuspenseActive ||
+    prologueTutorialActive ||
+    introHandoffBlackout ||
+    cursorOnboardingOpen;
+
+  useEffect(() => {
+    if (!introHandoffBlackout || introSuspenseActive || prologueTutorialActive) return;
     const t = window.setTimeout(() => setIntroHandoffBlackout(false), 900);
     return () => window.clearTimeout(t);
-  }, [introHandoffBlackout, introSuspenseActive]);
+  }, [introHandoffBlackout, introSuspenseActive, prologueTutorialActive]);
 
   const showLandingDiamond =
     landingOrnamentAllowed &&
@@ -854,7 +909,8 @@ export default function Intro({
         cursorOnboardingOpen ||
         geolocationIntroOpen ||
         fullscreenIntroOpen ||
-        (introSuspenseActive && finePointer),
+        (introSuspenseActive && finePointer) ||
+        (prologueTutorialActive && finePointer),
     );
   }, [
     showArrivalLanguageOverlay,
@@ -862,6 +918,7 @@ export default function Intro({
     geolocationIntroOpen,
     fullscreenIntroOpen,
     introSuspenseActive,
+    prologueTutorialActive,
     finePointer,
     onIntroGateOpenChange,
   ]);
@@ -1075,7 +1132,7 @@ export default function Intro({
 
   /** Plein écran : proposé sur l’écran Immersion ; overlay classique fermé pendant le tuto. */
   useEffect(() => {
-    if (videoStarted || isStarting) {
+    if (videoStarted || isStarting || prologueTutorialActive) {
       setFullscreenIntroOpen(false);
       setGeolocationIntroOpen(false);
       return undefined;
@@ -1089,14 +1146,15 @@ export default function Intro({
     arrivalLanguageConfirmed,
     videoStarted,
     isStarting,
+    prologueTutorialActive,
     shouldOfferFullscreenNow,
   ]);
 
   useEffect(() => {
-    if (videoStarted || isStarting) {
+    if (videoStarted || isStarting || prologueTutorialActive) {
       setGeolocationIntroOpen(false);
     }
-  }, [videoStarted, isStarting]);
+  }, [videoStarted, isStarting, prologueTutorialActive]);
 
   useEffect(() => {
     if (!videoStarted) return;
@@ -1168,24 +1226,43 @@ export default function Intro({
 
   const startPrologueVideo = useCallback(() => {
     if (videoStarted) return;
-    if (readPrologueVolume01(volumeRef, isMutedRef) <= 0) {
-      commitPrologueVolume(PROLOGUE_VIDEO_DEFAULT_VOLUME);
-    }
+    disposePrologueTutorialVolumeProbe();
+    const chosen =
+      prologueChosenVolumeRef.current ??
+      readPrologueVolume01(volumeRef, isMutedRef);
+    prologueChosenVolumeRef.current = null;
+    if (chosen > 0) commitPrologueVolume(chosen);
     setVideoStarted(true);
     onVideoStart?.();
     setShowInitialTitle(false);
   }, [videoStarted, onVideoStart, commitPrologueVolume]);
 
-  const launchPrologueAfterGate = useCallback(() => {
+  const openPrologueTutorial = useCallback(() => {
+    prologueTutorialVolumeDoneRef.current = false;
+    prologueChosenVolumeRef.current = null;
+    volumeScrollRef.current = 0;
+    mutedScrollRef.current = true;
+    setVolume(0);
+    setIsMuted(true);
+    setPrologueTutorialStep("skip");
+  }, []);
+
+  const reviewPrologueTutorialSkip = useCallback(() => {
+    setPrologueTutorialStep("skip");
+  }, []);
+
+  const acknowledgePrologueTutorialSkip = useCallback(() => {
+    prologueTutorialVolumeDoneRef.current = false;
+    setPrologueTutorialStep("volume");
+  }, []);
+
+  const handleTutorialStepRevealed = useCallback(() => {
     setIntroHandoffBlackout(false);
-    setIsStarting(false);
-    introSuspenseFinishedRef.current = true;
-    setIntroPrefetchDone(true);
-    startPrologueVideo();
-  }, [startPrologueVideo]);
+  }, []);
 
   const startPrologueDirect = useCallback(() => {
     if (videoStarted) return;
+    disposePrologueTutorialVolumeProbe();
     if (!arrivalLanguageConfirmed) {
       confirmLanguage(language);
       setArrivalLanguageConfirmed(true);
@@ -1193,6 +1270,7 @@ export default function Intro({
     introSuspenseFinishedRef.current = true;
     setIntroPrefetchDone(true);
     setIsStarting(false);
+    setPrologueTutorialStep(null);
     startPrologueVideo();
   }, [
     videoStarted,
@@ -1212,11 +1290,13 @@ export default function Intro({
         setIsStarting(false);
         return;
       }
-      launchPrologueAfterGate();
+      setIntroHandoffBlackout(false);
+      setIsStarting(false);
+      openPrologueTutorial();
       return;
     }
     setIsStarting(false);
-  }, [isExploring, videoStarted, startPrologueVideo, launchPrologueAfterGate]);
+  }, [isExploring, videoStarted, startPrologueVideo, openPrologueTutorial]);
 
   useEffect(() => {
     if (!isStarting || introSuspenseFinishedRef.current) return;
@@ -1230,7 +1310,7 @@ export default function Intro({
       openFirstIntroGate();
       return;
     }
-    if (isStarting || videoStarted) return;
+    if (isStarting || videoStarted || prologueTutorialActive) return;
 
     if (!introPrefetchDone) {
       primeSuspenseAudio();
@@ -1246,7 +1326,10 @@ export default function Intro({
     }
 
     if (introPrefetchDone) {
-      launchPrologueAfterGate();
+      introSuspenseFinishedRef.current = true;
+      setIntroHandoffBlackout(false);
+      setIsStarting(false);
+      openPrologueTutorial();
       return;
     }
 
@@ -1269,7 +1352,116 @@ export default function Intro({
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps ?? déclenchement aligné sur l’écran titre initial uniquement
-  }, [videoStarted, isStarting, showInitialTitle, isPoetryGameOpen]);
+  }, [videoStarted, isStarting, showInitialTitle, isPoetryGameOpen, prologueTutorialActive]);
+
+  const completePrologueVolumeTutorial = useCallback(() => {
+    if (prologueTutorialVolumeDoneRef.current) return false;
+    const vol = readPrologueVolume01(volumeRef, isMutedRef);
+    if (vol <= 0) return false;
+
+    prologueTutorialVolumeDoneRef.current = true;
+    commitPrologueVolume(vol);
+    disposePrologueTutorialVolumeProbe();
+    setPrologueTutorialStep(null);
+    setIntroHandoffBlackout(false);
+    setIsStarting(false);
+    introSuspenseFinishedRef.current = true;
+    setIntroPrefetchDone(true);
+    startPrologueVideo();
+    return true;
+  }, [commitPrologueVolume, startPrologueVideo]);
+
+  useEffect(() => {
+    if (prologueTutorialStep === "skip") {
+      prologueTutorialVolumeDoneRef.current = false;
+    }
+  }, [prologueTutorialStep]);
+
+  useEffect(() => {
+    if (prologueTutorialStep !== "volume") {
+      setPrologueVolumeHudVisible(false);
+      prologueVolumeHudVisibleRef.current = false;
+      setPrologueVolumeScrollCueDismissed(false);
+      if (prologueVolumeHudShowRef.current != null) {
+        window.clearTimeout(prologueVolumeHudShowRef.current);
+        prologueVolumeHudShowRef.current = null;
+      }
+      return;
+    }
+    volumeScrollRef.current = 0;
+    mutedScrollRef.current = true;
+    setVolume(0);
+    setIsMuted(true);
+    setPrologueVolumeHudVisible(false);
+    prologueVolumeHudVisibleRef.current = false;
+    setPrologueVolumeScrollCueDismissed(false);
+    const onWheel = (e: WheelEvent) => {
+      const t = e.target;
+      if (
+        t instanceof HTMLInputElement ||
+        t instanceof HTMLTextAreaElement ||
+        t instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+      e.preventDefault();
+      bumpTutorialVolumeByWheel(e.deltaY);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      const dir = getVolumeKeyDirection(e);
+      if (dir) {
+        if (shouldIgnoreVolumeKeyboardTarget(e.target)) return;
+        e.preventDefault();
+        const { volume: v, muted: m } = applyVolumeKeyStep(
+          dir,
+          mutedScrollRef.current ? 0 : volumeScrollRef.current,
+          mutedScrollRef.current,
+        );
+        setTutorialVolume01(m ? 0 : v);
+        return;
+      }
+      if (e.key !== "Enter" || e.repeat) return;
+      const t = e.target;
+      if (
+        t instanceof HTMLInputElement ||
+        t instanceof HTMLTextAreaElement ||
+        t instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+      e.preventDefault();
+      completePrologueVolumeTutorial();
+    };
+    window.addEventListener("wheel", onWheel, { passive: false, capture: true });
+    window.addEventListener("keydown", onKey, true);
+    return () => {
+      window.removeEventListener("wheel", onWheel, { capture: true });
+      window.removeEventListener("keydown", onKey, true);
+      if (prologueVolumeHudShowRef.current != null) {
+        window.clearTimeout(prologueVolumeHudShowRef.current);
+        prologueVolumeHudShowRef.current = null;
+      }
+    };
+  }, [
+    prologueTutorialStep,
+    completePrologueVolumeTutorial,
+    bumpTutorialVolumeByWheel,
+    setTutorialVolume01,
+  ]);
+
+  useEffect(() => {
+    if (prologueTutorialStep !== "volume") {
+      disposePrologueTutorialVolumeProbe();
+      return;
+    }
+    primePrologueTutorialVolumeProbe();
+    return () => disposePrologueTutorialVolumeProbe();
+  }, [prologueTutorialStep]);
+
+  useEffect(() => {
+    if (prologueTutorialStep !== "volume") return;
+    syncPrologueTutorialVolumeProbe(volume, isMuted);
+  }, [prologueTutorialStep, volume, isMuted]);
 
   /** Précharge pendant l’overlay suspense. */
   useEffect(() => {
@@ -2261,7 +2453,24 @@ export default function Intro({
             </AnimatePresence>
 
             <AnimatePresence mode="wait">
-              {isStarting && !videoStarted ? (
+              {prologueTutorialStep ? (
+                <PrologueTutorialOverlay
+                  key="prologue-tutorial"
+                  step={prologueTutorialStep}
+                  volume01={isMuted ? 0 : volume}
+                  volumeHudVisible={prologueVolumeHudVisible}
+                  volumeScrollCueDismissed={prologueVolumeScrollCueDismissed}
+                  prefersReducedMotion={prefersReducedMotion ?? false}
+                  isArabic={isArabic}
+                  copy={copy}
+                  finePointer={finePointer}
+                  onSkipAck={acknowledgePrologueTutorialSkip}
+                  onReviewSkip={reviewPrologueTutorialSkip}
+                  onLaunchVideo={completePrologueVolumeTutorial}
+                  onVolumeChange={setTutorialVolume01}
+                  onStepRevealed={handleTutorialStepRevealed}
+                />
+              ) : isStarting && !videoStarted ? (
                 <motion.div
                   key="intro-suspense"
                   initial={{ opacity: 0 }}
