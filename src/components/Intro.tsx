@@ -542,11 +542,15 @@ export default function Intro({
   const [prologueVideoPaused, setPrologueVideoPaused] = useState(false);
   const [prologuePlayMarkVisible, setProloguePlayMarkVisible] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [prologueVideoLoading, setPrologueVideoLoading] = useState(false);
+  const [prologueNeedsUserPlay, setPrologueNeedsUserPlay] = useState(false);
   const [showSkip, setShowSkip] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   /** true après l’overlay « Prologue » : le 2e clic ouvre le tutoriel puis la vidéo. */
   const [introPrefetchDone, setIntroPrefetchDone] = useState(Boolean(isExploring));
   const [prologueTutorialStep, setPrologueTutorialStep] = useState<PrologueTutorialStep | null>(null);
+  const prologueMediaWarm =
+    isStarting || prologueTutorialStep !== null || videoStarted;
   /** Évite double validation « Lancer la vidéo ». */
   const prologueTutorialVolumeDoneRef = useRef(false);
   /** Volume validé à la fin du test sonore - conservé jusqu’au lancement vidéo. */
@@ -657,6 +661,31 @@ export default function Intro({
       armHide();
     }, 130);
   }, [prologueTutorialStep]);
+
+  const setTutorialVolume01 = useCallback(
+    (next01: number) => {
+      const next = Math.min(1, Math.max(0, next01));
+      setPrologueVolumeScrollCueDismissed(true);
+      volumeScrollRef.current = next;
+      mutedScrollRef.current = next === 0;
+      setVolume(next);
+      setIsMuted(next === 0);
+      pulsePrologueVolumeHud();
+    },
+    [pulsePrologueVolumeHud],
+  );
+
+  const bumpTutorialVolumeByWheel = useCallback(
+    (deltaY: number) => {
+      const currentPct = Math.round(
+        (mutedScrollRef.current ? 0 : volumeScrollRef.current) * 100,
+      );
+      const deltaPct =
+        -Math.sign(deltaY) * Math.max(1, Math.min(2, Math.round(Math.abs(deltaY) / 48)));
+      setTutorialVolume01(Math.min(100, Math.max(0, currentPct + deltaPct)) / 100);
+    },
+    [setTutorialVolume01],
+  );
 
   const shouldOfferFullscreenNow =
     offerFullscreenOnArrival &&
@@ -1199,10 +1228,32 @@ export default function Intro({
   const playPrologueWhenReady = useCallback((el: HTMLVideoElement) => {
     const vol = readPrologueVolume01(volumeRef, isMutedRef);
     applyPrologueVideoElementVolume(el, vol);
+    setHasError(false);
+    setPrologueVideoLoading(true);
     void el.play().catch((err) => {
       console.warn("[intro] lecture prologue:", err);
+      setPrologueVideoLoading(false);
+      setPrologueNeedsUserPlay(true);
     });
   }, []);
+
+  const handlePrologueTapToPlay = useCallback(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    setPrologueNeedsUserPlay(false);
+    setHasError(false);
+    playPrologueWhenReady(v);
+  }, [playPrologueWhenReady]);
+
+  const retryPrologueVideo = useCallback(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    setHasError(false);
+    setPrologueNeedsUserPlay(false);
+    v.src = INTRO_VIDEO_SRC;
+    v.load();
+    playPrologueWhenReady(v);
+  }, [playPrologueWhenReady]);
 
   const startPrologueVideo = useCallback(() => {
     if (videoStarted) return;
@@ -1212,6 +1263,9 @@ export default function Intro({
       readPrologueVolume01(volumeRef, isMutedRef);
     prologueChosenVolumeRef.current = null;
     if (chosen > 0) commitPrologueVolume(chosen);
+    setPrologueVideoLoading(true);
+    setPrologueNeedsUserPlay(false);
+    setHasError(false);
     setVideoStarted(true);
     onVideoStart?.();
     setShowInitialTitle(false);
@@ -1336,8 +1390,12 @@ export default function Intro({
 
   const completePrologueVolumeTutorial = useCallback(() => {
     if (prologueTutorialVolumeDoneRef.current) return false;
-    const vol = readPrologueVolume01(volumeRef, isMutedRef);
-    if (vol <= 0) return false;
+    let vol = readPrologueVolume01(volumeRef, isMutedRef);
+    if (vol <= 0) {
+      if (finePointer) return false;
+      vol = PROLOGUE_VIDEO_DEFAULT_VOLUME;
+      commitPrologueVolume(vol);
+    }
 
     prologueTutorialVolumeDoneRef.current = true;
     commitPrologueVolume(vol);
@@ -1349,7 +1407,7 @@ export default function Intro({
     setIntroPrefetchDone(true);
     startPrologueVideo();
     return true;
-  }, [commitPrologueVolume, startPrologueVideo]);
+  }, [commitPrologueVolume, startPrologueVideo, finePointer]);
 
   useEffect(() => {
     if (prologueTutorialStep === "skip") {
@@ -1385,37 +1443,19 @@ export default function Intro({
         return;
       }
       e.preventDefault();
-      setPrologueVolumeScrollCueDismissed(true);
-      const currentPct = Math.round(
-        (mutedScrollRef.current ? 0 : volumeScrollRef.current) * 100
-      );
-      const dy = e.deltaY;
-      const deltaPct =
-        -Math.sign(dy) * Math.max(1, Math.min(2, Math.round(Math.abs(dy) / 48)));
-      const nextPct = Math.min(100, Math.max(0, currentPct + deltaPct));
-      const next = nextPct / 100;
-      volumeScrollRef.current = next;
-      mutedScrollRef.current = next === 0;
-      setVolume(next);
-      setIsMuted(next === 0);
-      pulsePrologueVolumeHud();
+      bumpTutorialVolumeByWheel(e.deltaY);
     };
     const onKey = (e: KeyboardEvent) => {
       const dir = getVolumeKeyDirection(e);
       if (dir) {
         if (shouldIgnoreVolumeKeyboardTarget(e.target)) return;
         e.preventDefault();
-        setPrologueVolumeScrollCueDismissed(true);
         const { volume: v, muted: m } = applyVolumeKeyStep(
           dir,
           mutedScrollRef.current ? 0 : volumeScrollRef.current,
           mutedScrollRef.current
         );
-        volumeScrollRef.current = v;
-        mutedScrollRef.current = m;
-        setVolume(v);
-        setIsMuted(m);
-        pulsePrologueVolumeHud();
+        setTutorialVolume01(m ? 0 : v);
         return;
       }
       if (e.key !== "Enter" || e.repeat) return;
@@ -1440,7 +1480,12 @@ export default function Intro({
         prologueVolumeHudShowRef.current = null;
       }
     };
-  }, [prologueTutorialStep, completePrologueVolumeTutorial, pulsePrologueVolumeHud]);
+  }, [
+    prologueTutorialStep,
+    completePrologueVolumeTutorial,
+    bumpTutorialVolumeByWheel,
+    setTutorialVolume01,
+  ]);
 
   useEffect(() => {
     if (prologueTutorialStep !== "volume") {
@@ -1456,20 +1501,30 @@ export default function Intro({
     syncPrologueTutorialVolumeProbe(volume, isMuted);
   }, [prologueTutorialStep, volume, isMuted]);
 
-  /** Précharge le MP4 Bunny pendant l’overlay « Le voyage va commencer ». */
+  /** Précharge le MP4 dès la langue confirmée (navigateur + élément vidéo caché). */
   useEffect(() => {
-    if (!isStarting || introPrefetchDone || videoStarted) return;
-    const v = document.createElement("video");
-    v.preload = "auto";
-    v.muted = true;
-    v.playsInline = true;
-    v.src = INTRO_VIDEO_SRC;
-    v.load();
+    if (!arrivalLanguageConfirmed || typeof document === "undefined") return;
+    const link = document.createElement("link");
+    link.rel = "preload";
+    link.as = "video";
+    link.href = INTRO_VIDEO_SRC;
+    document.head.appendChild(link);
     return () => {
-      v.removeAttribute("src");
-      v.load();
+      link.remove();
     };
-  }, [isStarting, introPrefetchDone, videoStarted]);
+  }, [arrivalLanguageConfirmed]);
+
+  useEffect(() => {
+    if (!prologueMediaWarm) return;
+    const v = videoRef.current;
+    if (!v) return;
+    if (!v.src || !v.currentSrc) {
+      v.src = INTRO_VIDEO_SRC;
+    }
+    v.preload = "auto";
+    v.playsInline = true;
+    v.load();
+  }, [prologueMediaWarm]);
 
   /** Lecture dès que le flux est prêt (MP4 natif, sans crossOrigin). */
   useEffect(() => {
@@ -1477,7 +1532,24 @@ export default function Intro({
     const v = videoRef.current;
     if (!v) return;
 
-    const start = () => playPrologueWhenReady(v);
+    const start = () => {
+      if (!prologueNeedsUserPlay) playPrologueWhenReady(v);
+    };
+
+    const onPlaying = () => {
+      setPrologueVideoLoading(false);
+      setPrologueNeedsUserPlay(false);
+    };
+    const onWaiting = () => setPrologueVideoLoading(true);
+    const onErr = () => {
+      console.warn("[intro] erreur vidéo:", v.error?.code, INTRO_VIDEO_SRC);
+      setHasError(true);
+      setPrologueVideoLoading(false);
+    };
+
+    v.addEventListener("playing", onPlaying);
+    v.addEventListener("waiting", onWaiting);
+    v.addEventListener("error", onErr);
 
     if (v.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
       start();
@@ -1485,22 +1557,13 @@ export default function Intro({
       v.addEventListener("canplay", start, { once: true });
     }
 
-    const onErr = () => {
-      console.warn("[intro] erreur vidéo:", v.error?.code, INTRO_VIDEO_SRC);
-      setHasError(true);
-    };
-    v.addEventListener("error", onErr);
-
-    if (!v.src) {
-      v.src = INTRO_VIDEO_SRC;
-      v.load();
-    }
-
     return () => {
       v.removeEventListener("canplay", start);
+      v.removeEventListener("playing", onPlaying);
+      v.removeEventListener("waiting", onWaiting);
       v.removeEventListener("error", onErr);
     };
-  }, [videoStarted, playPrologueWhenReady]);
+  }, [videoStarted, playPrologueWhenReady, prologueNeedsUserPlay]);
 
   const hideProloguePlayMark = useCallback(() => {
     if (prologuePlayMarkHideRef.current != null) {
@@ -2468,6 +2531,7 @@ export default function Intro({
                   onSkipAck={acknowledgePrologueTutorialSkip}
                   onReviewSkip={reviewPrologueTutorialSkip}
                   onLaunchVideo={completePrologueVolumeTutorial}
+                  onVolumeChange={setTutorialVolume01}
                   onStepRevealed={handleTutorialStepRevealed}
                 />
               ) : isStarting && !videoStarted ? (
@@ -2492,14 +2556,19 @@ export default function Intro({
         </motion.div>
       )}
 
-      {videoStarted && (
+      {prologueMediaWarm ? (
         <motion.div
           key="video-container"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          initial={videoStarted ? { opacity: 0 } : false}
+          animate={videoStarted ? { opacity: 1 } : false}
           exit={{ opacity: 0 }}
           transition={{ duration: 3.1, delay: 0.12, ease: "easeInOut" }}
-          className="fixed inset-0 z-10 h-dvh max-h-dvh w-full overflow-hidden bg-[#020100]"
+          className={
+            videoStarted
+              ? "fixed inset-0 z-10 h-dvh max-h-dvh w-full overflow-hidden bg-[#020100]"
+              : "pointer-events-none fixed inset-0 -z-10 h-dvh w-full overflow-hidden opacity-0"
+          }
+          aria-hidden={!videoStarted}
         >
           <motion.div className="relative h-full min-h-0 w-full overflow-hidden">
             <motion.div
@@ -2514,6 +2583,7 @@ export default function Intro({
               onEnded={handleVideoEnd}
               onPlay={() => {
                 setPrologueVideoPaused(false);
+                setPrologueVideoLoading(false);
                 if (prologueWasPausedRef.current) {
                   prologueWasPausedRef.current = false;
                   showProloguePlayMark();
@@ -2529,6 +2599,50 @@ export default function Intro({
               className="absolute inset-0 z-[1] h-full w-full cursor-none object-cover"
               muted={isMuted}
             />
+            {videoStarted && prologueVideoLoading && !hasError && !prologueNeedsUserPlay ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="absolute inset-0 z-[15] flex flex-col items-center justify-center gap-4 bg-[#020100]/92 px-6 text-center pointer-events-none"
+              >
+                <div
+                  className="h-9 w-9 animate-spin rounded-full border-2 border-solar-gold/25 border-t-solar-gold/85"
+                  aria-hidden
+                />
+                <p className="text-[11px] uppercase tracking-[0.42em] text-solar-gold/75">
+                  {copy.introPrologueVideoLoading}
+                </p>
+              </motion.div>
+            ) : null}
+            {videoStarted && prologueNeedsUserPlay && !hasError ? (
+              <motion.button
+                type="button"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                onClick={handlePrologueTapToPlay}
+                className="absolute inset-0 z-[16] flex cursor-pointer flex-col items-center justify-center gap-4 bg-[#020100]/75 px-6 text-center"
+              >
+                <GoldPlayIcon className="h-14 w-14 text-solar-gold/90" aria-hidden />
+                <span className="text-[11px] uppercase tracking-[0.42em] text-solar-gold/85">
+                  {copy.introPrologueTapToPlay}
+                </span>
+              </motion.button>
+            ) : null}
+            {videoStarted && hasError ? (
+              <div className="absolute inset-0 z-[17] flex flex-col items-center justify-center gap-5 bg-[#020100]/94 px-6 text-center">
+                <p className="max-w-md text-[12px] leading-relaxed text-solar-gold/80">
+                  {copy.introPrologueVideoError}
+                </p>
+                <button
+                  type="button"
+                  onClick={retryPrologueVideo}
+                  className="rounded-[2px] border border-solar-gold/45 bg-solar-gold/10 px-6 py-2.5 text-[11px] uppercase tracking-[0.34em] text-solar-gold hover:bg-solar-gold/16"
+                >
+                  {copy.introPrologueVideoRetry}
+                </button>
+              </div>
+            ) : null}
+            {videoStarted ? (
             <AnimatePresence>
               {prologueVideoPaused ? (
                 <ProloguePlaybackMark
@@ -2547,6 +2661,8 @@ export default function Intro({
                 />
               ) : null}
             </AnimatePresence>
+            ) : null}
+            {videoStarted ? (
             <AnimatePresence mode="wait">
               {prologueVolumeHudVisible ? (
                 <motion.div
@@ -2572,8 +2688,11 @@ export default function Intro({
                 </motion.div>
               ) : null}
             </AnimatePresence>
+            ) : null}
           </motion.div>
 
+          {videoStarted ? (
+          <>
           {/* Skip */}
           <AnimatePresence>
             {showSkip && (
@@ -2626,9 +2745,11 @@ export default function Intro({
               </motion.div>
             )}
           </AnimatePresence>
+          </>
+          ) : null}
 
         </motion.div>
-      )}
+      ) : null}
     </AnimatePresence>
       </motion.div>
 

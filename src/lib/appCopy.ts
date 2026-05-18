@@ -183,6 +183,10 @@ type Copy = {
   introPrologueVolumeAuraAria: string;
   introProloguePausedAria: string;
   introProloguePlayingAria: string;
+  introPrologueVideoLoading: string;
+  introPrologueTapToPlay: string;
+  introPrologueVideoError: string;
+  introPrologueVideoRetry: string;
   /** Suspense intro vidéo - même typo que l’écran langue (sourcil + titre + filet). */
   introSuspenseEyebrow: string;
   introSuspenseTitle: string;
@@ -209,6 +213,8 @@ type Copy = {
   introTutorialVolumeProgressAria: string;
   introTutorialVolumeSuccess: string;
   introTutorialVolumeLaunchCta: string;
+  introTutorialVolumeTouchLabel: string;
+  introTutorialVolumeTouchAria: string;
   /** Mission 2 : relire le texte de la mission 1 sans perdre la jauge. */
   introTutorialReviewMission1: string;
   /** Vidéo pont avant l’Acte III (même commande « passer » que l’introduction, phrase distincte). */
@@ -456,6 +462,10 @@ const FR: Copy = {
     "Volume du prologue : molette sur la bande lumineuse à droite - vers le haut augmente, vers le bas diminue. Flèches haut et bas quand la zone est sélectionnée.",
   introProloguePausedAria: "Vidéo en pause - appuyez sur Espace pour reprendre.",
   introProloguePlayingAria: "Lecture en cours.",
+  introPrologueVideoLoading: "Chargement du prologue…",
+  introPrologueTapToPlay: "Appuyer pour lancer la lecture",
+  introPrologueVideoError: "La vidéo n’a pas pu se charger.",
+  introPrologueVideoRetry: "Réessayer",
   introSuspenseEyebrow: "Prologue",
   introSuspenseTitle: "Le voyage va commencer",
   introSuspenseProgressAria: "Progression du chargement",
@@ -485,6 +495,8 @@ const FR: Copy = {
   introTutorialVolumeProgressAria: "Progression de la résonance",
   introTutorialVolumeSuccess: "Le seuil est franchi - le prologue commence.",
   introTutorialVolumeLaunchCta: "Lancer la vidéo",
+  introTutorialVolumeTouchLabel: "Volume",
+  introTutorialVolumeTouchAria: "Régler le volume du prologue",
   introTutorialReviewMission1: "Reprendre l'accueil",
   act23BridgeVideoSkip: "Franchir le passage",
   act2FinaleAria: "Clôture du voyage - complétez la phrase pour accéder aux crédits",
@@ -784,6 +796,10 @@ const AR: Copy = {
     "صوت المقدّمة: عجلة الفأرة على الشريط المضيء يمين الشاشة - لفّة للأعلى ترفع، للأسفل تخفّض. أسهم للأعلى والأسفل عند التركيز على المنطقة.",
   introProloguePausedAria: "الفيديو متوقّف - إضغط مسافة باش تكمل.",
   introProloguePlayingAria: "التشغيل جاري.",
+  introPrologueVideoLoading: "تحميل المقدّمة…",
+  introPrologueTapToPlay: "اضغط لتشغيل الفيديو",
+  introPrologueVideoError: "ما قدرناش نحمّلو الفيديو.",
+  introPrologueVideoRetry: "عاود المحاولة",
   introSuspenseEyebrow: "مقدّمة",
   introSuspenseTitle: "الرحلة غادي تبدا",
   introSuspenseProgressAria: "تقدّم التحميل",
@@ -812,6 +828,8 @@ const AR: Copy = {
   introTutorialVolumeProgressAria: "تقدّم الصدى",
   introTutorialVolumeSuccess: "العتبة تجاوزت - المقدّمة تبدا.",
   introTutorialVolumeLaunchCta: "شغّل الفيديو",
+  introTutorialVolumeTouchLabel: "الصوت",
+  introTutorialVolumeTouchAria: "اضبط صوت المقدّمة",
   introTutorialReviewMission1: "رجع للاستقبال",
   act23BridgeVideoSkip: "اجتياز الممر",
   act2FinaleAria: "ختام الرحلة - أكمّل الجملة باش توصل لتذييل الفريق",

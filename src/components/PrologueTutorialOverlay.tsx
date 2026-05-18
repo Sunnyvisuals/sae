@@ -227,7 +227,7 @@ type Props = {
   onReviewSkip: () => void;
   /** Volume rÃ©glÃ© : passage au chargement puis Ã  la vidÃ©o. */
   onLaunchVideo: () => void;
-  /** Fin du fondu dâ€™entrÃ©e (relÃ¢che le voile noir de handoff cÃ´tÃ© Intro). */
+  onVolumeChange: (volume01: number) => void;
   onStepRevealed?: () => void;
   finePointer?: boolean;
 };
@@ -528,6 +528,7 @@ export default function PrologueTutorialOverlay({
   onSkipAck,
   onReviewSkip,
   onLaunchVideo,
+  onVolumeChange,
   onStepRevealed,
   finePointer = false,
 }: Props) {
@@ -952,6 +953,30 @@ export default function PrologueTutorialOverlay({
                   )}
                 </AnimatePresence>
               </motion.div>
+              {step === "volume" && !finePointer ? (
+                <label className="mx-auto mt-6 flex w-full max-w-[min(20rem,88vw)] flex-col items-center gap-2.5">
+                  <span
+                    className={
+                      (isArabic ? "da-eyebrow-ar" : "da-eyebrow") +
+                      " text-[10px] sm:text-[11px]"
+                    }
+                  >
+                    {copy.introTutorialVolumeTouchLabel}
+                  </span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={volumePct}
+                    onChange={(e) =>
+                      onVolumeChange(Number(e.target.value) / 100)
+                    }
+                    className="h-2 w-full cursor-pointer accent-[#c5a059]"
+                    aria-label={copy.introTutorialVolumeTouchAria}
+                  />
+                </label>
+              ) : null}
               <motion.button
                 type="button"
                 disabled={!canLaunchVideo}
