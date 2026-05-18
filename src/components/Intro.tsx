@@ -549,8 +549,6 @@ export default function Intro({
   /** true après l’overlay « Prologue » : le 2e clic ouvre le tutoriel puis la vidéo. */
   const [introPrefetchDone, setIntroPrefetchDone] = useState(Boolean(isExploring));
   const [prologueTutorialStep, setPrologueTutorialStep] = useState<PrologueTutorialStep | null>(null);
-  const prologueMediaWarm =
-    isStarting || prologueTutorialStep !== null || videoStarted;
   /** Évite double validation « Lancer la vidéo ». */
   const prologueTutorialVolumeDoneRef = useRef(false);
   /** Volume validé à la fin du test sonore - conservé jusqu’au lancement vidéo. */
@@ -562,6 +560,11 @@ export default function Intro({
   const [easterEggPromptHidden, setEasterEggPromptHidden] = useState(false);
   const [easterEggPos, setEasterEggPos] = useState({ top: "20%", left: "80%" });
   const [arrivalLanguageConfirmed, setArrivalLanguageConfirmed] = useState(Boolean(isExploring));
+  const prologueMediaWarm =
+    arrivalLanguageConfirmed ||
+    isStarting ||
+    prologueTutorialStep !== null ||
+    videoStarted;
   const [arrivalLanguageGateVisible, setArrivalLanguageGateVisible] = useState(Boolean(isExploring));
   /** Lecture de `trans2-alpha.webm` avant de montrer les boutons FR / AR */
   const [arrivalLanguageBridgeVideoActive, setArrivalLanguageBridgeVideoActive] = useState(false);
@@ -1225,16 +1228,37 @@ export default function Intro({
     }
   }, [videoStarted]);
 
-  const playPrologueWhenReady = useCallback((el: HTMLVideoElement) => {
+  const playPrologueWhenReady = useCallback(async (el: HTMLVideoElement) => {
     const vol = readPrologueVolume01(volumeRef, isMutedRef);
-    applyPrologueVideoElementVolume(el, vol);
+    const targetVol = vol > 0 ? vol : PROLOGUE_VIDEO_DEFAULT_VOLUME;
     setHasError(false);
     setPrologueVideoLoading(true);
-    void el.play().catch((err) => {
-      console.warn("[intro] lecture prologue:", err);
-      setPrologueVideoLoading(false);
-      setPrologueNeedsUserPlay(true);
-    });
+
+    const tryPlay = async (muted: boolean) => {
+      if (muted) {
+        el.muted = true;
+        el.volume = 0;
+      } else {
+        applyPrologueVideoElementVolume(el, targetVol);
+      }
+      await el.play();
+    };
+
+    try {
+      await tryPlay(false);
+      setPrologueNeedsUserPlay(false);
+    } catch (err) {
+      console.warn("[intro] lecture prologue (son) :", err);
+      try {
+        await tryPlay(true);
+        applyPrologueVideoElementVolume(el, targetVol);
+        setPrologueNeedsUserPlay(false);
+      } catch (err2) {
+        console.warn("[intro] lecture prologue (muet) :", err2);
+        setPrologueVideoLoading(false);
+        setPrologueNeedsUserPlay(true);
+      }
+    }
   }, []);
 
   const handlePrologueTapToPlay = useCallback(() => {
@@ -1262,7 +1286,11 @@ export default function Intro({
       prologueChosenVolumeRef.current ??
       readPrologueVolume01(volumeRef, isMutedRef);
     prologueChosenVolumeRef.current = null;
-    if (chosen > 0) commitPrologueVolume(chosen);
+    if (chosen > 0) {
+      commitPrologueVolume(chosen);
+    } else {
+      commitPrologueVolume(PROLOGUE_VIDEO_DEFAULT_VOLUME);
+    }
     setPrologueVideoLoading(true);
     setPrologueNeedsUserPlay(false);
     setHasError(false);
@@ -1270,6 +1298,16 @@ export default function Intro({
     onVideoStart?.();
     setShowInitialTitle(false);
   }, [videoStarted, onVideoStart, commitPrologueVolume]);
+
+  /** Après suspense / CTA : vidéo directe (sans tutoriel volume). */
+  const launchPrologueAfterGate = useCallback(() => {
+    setPrologueTutorialStep(null);
+    setIntroHandoffBlackout(false);
+    setIsStarting(false);
+    introSuspenseFinishedRef.current = true;
+    setIntroPrefetchDone(true);
+    startPrologueVideo();
+  }, [startPrologueVideo]);
 
   const startPrologueDirect = useCallback(() => {
     if (videoStarted) return;
@@ -1324,13 +1362,11 @@ export default function Intro({
         setIsStarting(false);
         return;
       }
-      setIntroHandoffBlackout(false);
-      setIsStarting(false);
-      openPrologueTutorial();
+      launchPrologueAfterGate();
       return;
     }
     setIsStarting(false);
-  }, [isExploring, videoStarted, startPrologueVideo, openPrologueTutorial]);
+  }, [isExploring, videoStarted, startPrologueVideo, launchPrologueAfterGate]);
 
   useEffect(() => {
     if (!isStarting || introSuspenseFinishedRef.current) return;
@@ -1360,10 +1396,7 @@ export default function Intro({
     }
 
     if (introPrefetchDone) {
-      introSuspenseFinishedRef.current = true;
-      setIntroHandoffBlackout(false);
-      setIsStarting(false);
-      openPrologueTutorial();
+      launchPrologueAfterGate();
       return;
     }
 
@@ -1527,13 +1560,13 @@ export default function Intro({
   }, [prologueMediaWarm]);
 
   /** Lecture dès que le flux est prêt (MP4 natif, sans crossOrigin). */
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!videoStarted) return;
     const v = videoRef.current;
     if (!v) return;
 
     const start = () => {
-      if (!prologueNeedsUserPlay) playPrologueWhenReady(v);
+      if (!prologueNeedsUserPlay) void playPrologueWhenReady(v);
     };
 
     const onPlaying = () => {
@@ -2562,7 +2595,7 @@ export default function Intro({
           initial={videoStarted ? { opacity: 0 } : false}
           animate={videoStarted ? { opacity: 1 } : false}
           exit={{ opacity: 0 }}
-          transition={{ duration: 3.1, delay: 0.12, ease: "easeInOut" }}
+          transition={{ duration: 0.55, delay: 0, ease: "easeOut" }}
           className={
             videoStarted
               ? "fixed inset-0 z-10 h-dvh max-h-dvh w-full overflow-hidden bg-[#020100]"
