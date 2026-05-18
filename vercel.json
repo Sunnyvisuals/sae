@@ -1,11 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "npm install --legacy-peer-deps",
-  "buildCommand": "VITE_INTRO_VIDEO_URL=https://vz-b0e81311-954.b-cdn.net/5cdd6a54-5491-4bba-b34b-e6ed79c32de4/play_1080p.mp4 npm run build",
+  "installCommand": "git lfs pull && npm install --legacy-peer-deps",
+  "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "env": {
-    "VITE_INTRO_VIDEO_URL": "https://vz-b0e81311-954.b-cdn.net/5cdd6a54-5491-4bba-b34b-e6ed79c32de4/play_1080p.mp4"
-  },
   "headers": [
     {
       "source": "/assets/(.*)",

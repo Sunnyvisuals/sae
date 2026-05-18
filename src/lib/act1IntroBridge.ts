@@ -19,7 +19,6 @@ import {
   ACT1_PHRASE_STRIP_STEPS_FR,
   ACT1_REVELATION_SEQUENCE,
 } from "./act1PoemCorpsPays";
-import { PROLOGUE_CDN_URL } from "./prologueCdn";
 import { isIntroVideoHlsSrc } from "./introVideoMedia";
 
 const introVideoBase = import.meta.env.BASE_URL.replace(/\/?$/, "/");
@@ -28,21 +27,22 @@ const envIntroVideoUrl = import.meta.env.VITE_INTRO_VIDEO_URL;
 const introVideoUrlFromEnv =
   typeof envIntroVideoUrl === "string" ? envIntroVideoUrl.trim() : "";
 
-/**
- * Prod : toujours le MP4 Bunny (`prologueCdn.ts`).
- * Dev : `VITE_INTRO_VIDEO_URL` ou `public/Prologue.mp4`.
- */
-export const INTRO_VIDEO_SRC = import.meta.env.PROD
-  ? PROLOGUE_CDN_URL
-  : introVideoUrlFromEnv && !isIntroVideoHlsSrc(introVideoUrlFromEnv)
-    ? introVideoUrlFromEnv
-    : introVideoUrlFromEnv || `${introVideoBase}Prologue.mp4`;
+const localPrologueMp4 = `${introVideoBase}Prologue.mp4`;
 
 /**
- * Pas de crossOrigin sur Bunny : le CDN filtre par Referer ;
- * `crossOrigin=anonymous` provoque des 403 et un écran noir.
+ * Prod : `/Prologue.mp4` sur le même domaine (Vercel) — pas de CDN Bunny (403).
+ * Dev : override `VITE_INTRO_VIDEO_URL` ou fichier local.
  */
-export const INTRO_VIDEO_CROSS_ORIGIN = false;
+export const INTRO_VIDEO_SRC = import.meta.env.PROD
+  ? localPrologueMp4
+  : introVideoUrlFromEnv && !isIntroVideoHlsSrc(introVideoUrlFromEnv)
+    ? introVideoUrlFromEnv
+    : introVideoUrlFromEnv || localPrologueMp4;
+
+/** Même origine en prod — pas de crossOrigin. */
+export const INTRO_VIDEO_CROSS_ORIGIN = Boolean(
+  introVideoUrlFromEnv && /^https:\/\//i.test(introVideoUrlFromEnv),
+);
 
 /** Dev : strip et liste ordonnée restent synchrones. */
 function assertAct1PhraseStripsOrdered(): void {
