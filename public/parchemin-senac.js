@@ -287,6 +287,44 @@
     return window.scrollY || document.documentElement.scrollTop || 0;
   }
 
+  function getSenacScrollPosition() {
+    const lenis = yearGaugeLenis;
+    if (lenis && typeof lenis.scroll === "number" && Number.isFinite(lenis.scroll)) {
+      return lenis.scroll;
+    }
+    return getScrollY();
+  }
+
+  function senacScrollToY(
+    y,
+    opts = { immediate: true, duration: 0 },
+  ) {
+    const maxY = getScrollMax();
+    const target = Math.min(maxY, Math.max(0, y));
+    const lenis = yearGaugeLenis;
+    if (lenis && typeof lenis.scrollTo === "function") {
+      lenis.scrollTo(target, opts);
+      applyScrollDerivedState(lenis.scroll);
+      return;
+    }
+    if (opts.immediate === false && (opts.duration ?? 0) > 0 && !reducedMotion) {
+      window.scrollTo({ top: target, behavior: "smooth" });
+    } else {
+      window.scrollTo(0, target);
+    }
+    applyScrollDerivedState(getScrollY());
+  }
+
+  function ensureSenacScrollerActive() {
+    const lenis = yearGaugeLenis;
+    if (lenis) {
+      if (typeof lenis.resize === "function") lenis.resize();
+      if (typeof lenis.start === "function") lenis.start();
+      return Promise.resolve(true);
+    }
+    return ensureLenisInit();
+  }
+
   /** Bandeau de progression en haut (scroll réel dans l’iframe parchemin). */
   let senacScrollFillEl = /** @type {HTMLElement | null} */ (null);
   /** États pour transition douce (pas de saut doré ↔ bleu au seuil fixe). */
@@ -3145,15 +3183,20 @@
       syncCinemaWaypointFromScroll();
     };
 
+    function cinemaTourReady() {
+      if (!senacAct2MotionReady) return false;
+      if (getScrollMax() < 64) return false;
+      refreshSenacCinemaWaypointsCache();
+      return getSenacCinemaWaypointsCached().length > 0;
+    }
+
     function syncCinemaWaypointFromScroll() {
-      const lenis = yearGaugeLenis;
-      if (!lenis) return;
       const waypoints = getSenacCinemaWaypointsCached();
       if (!waypoints.length) {
         cinemaWaypointIndex = 0;
         return;
       }
-      const scrollY = lenis.scroll;
+      const scrollY = getSenacScrollPosition();
       let idx = 0;
       while (idx < waypoints.length - 1 && waypoints[idx + 1].y <= scrollY + 16) {
         idx += 1;
@@ -3166,10 +3209,7 @@
 
     function haltCinemaLenisAnimation() {
       senacCinemaScrollGen += 1;
-      const lenis = yearGaugeLenis;
-      if (lenis && typeof lenis.scrollTo === "function") {
-        lenis.scrollTo(lenis.scroll, { immediate: true, duration: 0 });
-      }
+      senacScrollToY(getSenacScrollPosition(), { immediate: true, duration: 0 });
     }
 
     function clearCinemaTourTimers() {
@@ -3211,8 +3251,7 @@
       senacCinemaRafId = 0;
       if (mode !== "cinema" || senacCinemaPaused) return;
 
-      const lenis = yearGaugeLenis;
-      if (!lenis || typeof lenis.scrollTo !== "function") {
+      if (!cinemaTourReady()) {
         senacCinemaRafId = requestAnimationFrame(cinemaTourFrame);
         return;
       }
@@ -3225,7 +3264,7 @@
       }
 
       const maxY = getScrollMax();
-      let curY = lenis.scroll;
+      let curY = getSenacScrollPosition();
 
       /* Waypoints déjà dépassés (scroll manuel ou recalcul) : avancer sans bloquer. */
       while (cinemaWaypointIndex < waypoints.length) {
@@ -3242,7 +3281,7 @@
 
       const wp = waypoints[cinemaWaypointIndex];
       const targetY = Math.min(Math.max(0, wp.y), maxY);
-      curY = lenis.scroll;
+      curY = getSenacScrollPosition();
 
       if (cinemaTourPhase === "hold") {
         senacCinemaScrolling = false;
@@ -3260,8 +3299,7 @@
       const dist = targetY - curY;
       if (dist < 5) {
         senacCinemaScrolling = false;
-        lenis.scrollTo(targetY, { immediate: true, duration: 0 });
-        applyScrollDerivedState(targetY);
+        senacScrollToY(targetY, { immediate: true, duration: 0 });
         cinemaTourPhase = "hold";
         cinemaHoldUntil = now + wp.holdMs;
         senacCinemaRafId = requestAnimationFrame(cinemaTourFrame);
@@ -3273,8 +3311,7 @@
       const step = (SPEED_PX_S * dt) / 1000;
       const nextY = Math.min(targetY, curY + Math.max(step, 0.5));
       senacCinemaScrolling = true;
-      lenis.scrollTo(nextY, { immediate: true, duration: 0 });
-      applyScrollDerivedState(nextY);
+      senacScrollToY(nextY, { immediate: true, duration: 0 });
       senacCinemaRafId = requestAnimationFrame(cinemaTourFrame);
     }
 
@@ -3286,21 +3323,28 @@
       cinemaHoldUntil = 0;
       updateCinemaToggleUi();
 
-      const lenis = yearGaugeLenis;
-      if (!lenis || typeof lenis.scrollTo !== "function") {
-        retryTimer = window.setTimeout(startAutoScroll, 150);
-        return;
-      }
-
-      requestAnimationFrame(() => {
+      const begin = () => {
         if (mode !== "cinema") return;
-        if (typeof lenis.resize === "function") lenis.resize();
-        if (senacAct2MotionReady) recordObservatorySceneMeta();
-        refreshSenacCinemaWaypointsCache();
-        syncCinemaWaypointFromScroll();
-        cinemaLastFrameTs = 0;
-        senacCinemaRafId = requestAnimationFrame(cinemaTourFrame);
-      });
+        void ensureSenacScrollerActive().then(() => {
+          if (mode !== "cinema") return;
+          if (!cinemaTourReady()) {
+            retryTimer = window.setTimeout(begin, 140);
+            return;
+          }
+          requestAnimationFrame(() => {
+            if (mode !== "cinema") return;
+            const lenis = yearGaugeLenis;
+            if (lenis && typeof lenis.resize === "function") lenis.resize();
+            recordObservatorySceneMeta();
+            refreshSenacCinemaWaypointsCache();
+            syncCinemaWaypointFromScroll();
+            cinemaLastFrameTs = 0;
+            senacCinemaRafId = requestAnimationFrame(cinemaTourFrame);
+          });
+        });
+      };
+
+      requestAnimationFrame(begin);
     }
 
     function pauseCinemaTour() {
@@ -3772,14 +3816,7 @@
         );
         if (scrollRatio == null) return;
         const maxY = getScrollMax();
-        const lenis = yearGaugeLenis;
-        if (lenis && typeof lenis.scrollTo === "function") {
-          lenis.scrollTo(scrollRatio * maxY, { immediate: true });
-          applyScrollDerivedState(lenis.scroll);
-        } else {
-          window.scrollTo(0, scrollRatio * maxY);
-          applyScrollDerivedState(getScrollY());
-        }
+        senacScrollToY(scrollRatio * maxY, { immediate: true, duration: 0 });
       });
     }
 
@@ -3841,22 +3878,34 @@
 
     /** Parent SPA : restaurer mode d’entrée + ratio de scroll (après premier choix utilisateur, cf. `entryChosen`). */
     function applyParentHydrate(payload) {
-      const p = payload || {};
-      /** Retour SPA depuis l’acte III vers crédits : pas de voile blanc ni re-navigation arche. */
-      if (p.suppressArchToAct3 === true) {
-        archWhiteoutSuppressed = true;
-        archWhiteoutNavTriggered = true;
-        setArchWhiteoutOpacity(0);
-      }
-      const em =
-        p.entryMode === "cinema" || p.entryMode === "explore" ? p.entryMode : "explore";
-      const sr =
-        typeof p.scrollRatio === "number" && Number.isFinite(p.scrollRatio)
-          ? Math.min(1, Math.max(0, p.scrollRatio))
-          : null;
+      const run = () => {
+        const p = payload || {};
+        /** Retour SPA depuis l’acte III vers crédits : pas de voile blanc ni re-navigation arche. */
+        if (p.suppressArchToAct3 === true) {
+          archWhiteoutSuppressed = true;
+          archWhiteoutNavTriggered = true;
+          setArchWhiteoutOpacity(0);
+        }
+        const em =
+          p.entryMode === "cinema" || p.entryMode === "explore" ? p.entryMode : "explore";
+        const sr =
+          typeof p.scrollRatio === "number" && Number.isFinite(p.scrollRatio)
+            ? Math.min(1, Math.max(0, p.scrollRatio))
+            : null;
 
-      stopAutoScroll();
-      completeEntryWithoutOverlay(em, sr);
+        stopAutoScroll();
+        completeEntryWithoutOverlay(em, sr);
+      };
+
+      if (!senacPostLenisReady) {
+        const wait = () => {
+          if (senacPostLenisReady) run();
+          else requestAnimationFrame(wait);
+        };
+        requestAnimationFrame(wait);
+        return;
+      }
+      run();
     }
 
     window.addEventListener(

@@ -249,6 +249,22 @@ html.senac-in-iframe body.senac-night {
   overscroll-behavior-y: none;
 }
 
+/** Après le choix Cinéma / Exploration : le document peut défiler (Lenis + mode cinéma). */
+html.senac-in-iframe.senac-choice-entered,
+html.senac-in-iframe.lenis.senac-choice-entered {
+  height: auto;
+  max-height: none;
+  min-height: 100%;
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+html.senac-in-iframe.senac-choice-entered body,
+html.senac-in-iframe.senac-choice-entered body.senac-night {
+  min-height: 100%;
+  height: auto;
+}
+
 @media (hover: hover) and (pointer: fine) {
   html.senac-in-iframe body,
   html.senac-in-iframe body.senac-night {
