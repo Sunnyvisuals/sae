@@ -53,7 +53,6 @@ import PrologueTutorialOverlay, {
 } from "./PrologueTutorialOverlay";
 import { ensureCustomCursorAwake } from "../lib/customCursorPortal";
 import PrologueVolumeFluid from "./PrologueVolumeFluid";
-import PrologueVolumeHud from "./PrologueVolumeHud";
 import DevChapterJumpsPanel, { type DevChapterJumps } from "./DevChapterJumpsPanel";
 import { INTRO_VIDEO_SRC } from "../lib/act1IntroBridge";
 import { useLanguageStore } from "../stores/languageStore";
@@ -1189,13 +1188,26 @@ export default function Intro({
         volumeRef.current,
         isMutedRef.current
       );
-      setVolume(v);
-      setIsMuted(m);
+      if (v <= 0 || m) {
+        volumeScrollRef.current = 0;
+        mutedScrollRef.current = true;
+        setVolume(0);
+        setIsMuted(true);
+      } else {
+        commitPrologueVolume(v);
+      }
+      const vid = videoRef.current;
+      if (vid) {
+        applyPrologueVideoElementVolume(
+          vid,
+          readPrologueVolume01(volumeRef, isMutedRef),
+        );
+      }
       pulsePrologueVolumeHud();
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
-  }, [videoStarted, pulsePrologueVolumeHud]);
+  }, [videoStarted, pulsePrologueVolumeHud, commitPrologueVolume]);
 
   useEffect(() => {
     if (videoStarted && isEasterEggFound) {
@@ -1693,10 +1705,21 @@ export default function Intro({
         -Math.sign(dy) * Math.max(1, Math.min(2, Math.round(Math.abs(dy) / 48)));
       const nextPct = Math.min(100, Math.max(0, currentPct + deltaPct));
       const next = nextPct / 100;
-      volumeScrollRef.current = next;
-      mutedScrollRef.current = next === 0;
-      setVolume(next);
-      setIsMuted(next === 0);
+      if (next === 0) {
+        volumeScrollRef.current = 0;
+        mutedScrollRef.current = true;
+        setVolume(0);
+        setIsMuted(true);
+      } else {
+        commitPrologueVolume(next);
+      }
+      const v = videoRef.current;
+      if (v) {
+        applyPrologueVideoElementVolume(
+          v,
+          readPrologueVolume01(volumeRef, isMutedRef),
+        );
+      }
       pulsePrologueVolumeHud();
     };
     window.addEventListener("wheel", onWheel, { passive: false, capture: true });
@@ -1707,7 +1730,7 @@ export default function Intro({
         prologueVolumeAuraHideRef.current = null;
       }
     };
-  }, [videoStarted, pulsePrologueVolumeHud]);
+  }, [videoStarted, pulsePrologueVolumeHud, commitPrologueVolume]);
 
   const handleManualPlay = () => {
     if (videoRef.current) {
@@ -2659,12 +2682,6 @@ export default function Intro({
                     prefersReducedMotion={prefersReducedMotion}
                     className="absolute inset-0 z-[19]"
                   />
-                  <div className="absolute inset-0 z-[22]">
-                    <PrologueVolumeHud
-                      volumePct={Math.round((isMuted ? 0 : volume) * 100)}
-                      ariaLabel={copy.introPrologueVolumeAuraAria}
-                    />
-                  </div>
                 </motion.div>
               ) : null}
             </AnimatePresence>
@@ -2679,6 +2696,38 @@ export default function Intro({
                   >
                     {copy.introPrologueTapToPlay}
                   </button>
+                ) : null}
+                {!finePointer ? (
+                  <label className="pointer-events-auto absolute inset-x-0 bottom-[max(1.25rem,env(safe-area-inset-bottom))] z-[35] mx-auto flex w-full max-w-[min(20rem,88vw)] flex-col items-center gap-2 px-5 opacity-80">
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={Math.round((isMuted ? 0 : volume) * 100)}
+                      onChange={(e) => {
+                        const next = Number(e.target.value) / 100;
+                        if (next === 0) {
+                          volumeScrollRef.current = 0;
+                          mutedScrollRef.current = true;
+                          setVolume(0);
+                          setIsMuted(true);
+                        } else {
+                          commitPrologueVolume(next);
+                        }
+                        const v = videoRef.current;
+                        if (v) {
+                          applyPrologueVideoElementVolume(
+                            v,
+                            readPrologueVolume01(volumeRef, isMutedRef),
+                          );
+                        }
+                        pulsePrologueVolumeHud();
+                      }}
+                      className="h-2 w-full cursor-pointer accent-[#c5a059]"
+                      aria-label={copy.introTutorialVolumeTouchAria}
+                    />
+                  </label>
                 ) : null}
               </>
             ) : null}
