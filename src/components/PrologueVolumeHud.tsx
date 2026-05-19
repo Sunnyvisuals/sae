@@ -91,11 +91,11 @@ export default function PrologueVolumeHud({ volumePct, ariaLabel, className = ""
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.18, ease: HUD_EASE }}
         dir="ltr"
-        className="relative z-[1] inline-flex flex-row items-center justify-end gap-2.5 sm:gap-3"
+        className="relative z-[1] inline-flex flex-row items-center justify-end gap-2.5 sm:gap-3 [isolation:isolate]"
       >
         <PrologueVolumeHudIcon level={level} />
         <span
-          className="font-sans text-[clamp(1.65rem,3.6vw,2.35rem)] font-medium tabular-nums leading-none tracking-[0.06em] text-[#f4ead2]/78"
+          className="font-sans text-[clamp(1.65rem,3.6vw,2.35rem)] font-medium tabular-nums leading-none tracking-[0.06em] text-[#f4ead2]/92"
           style={{
             textShadow:
               "0 0 14px rgba(0,0,0,0.85), 0 1px 2px rgba(0,0,0,0.55)",

@@ -53,6 +53,7 @@ import PrologueTutorialOverlay, {
 } from "./PrologueTutorialOverlay";
 import { ensureCustomCursorAwake } from "../lib/customCursorPortal";
 import PrologueVolumeFluid from "./PrologueVolumeFluid";
+import PrologueVolumeHud from "./PrologueVolumeHud";
 import DevChapterJumpsPanel, { type DevChapterJumps } from "./DevChapterJumpsPanel";
 import { INTRO_VIDEO_SRC } from "../lib/act1IntroBridge";
 import { primePrologueVideoPreload } from "../lib/primePrologueVideo";
@@ -659,13 +660,14 @@ export default function Intro({
     if (prologueVolumeHudShowRef.current != null) {
       window.clearTimeout(prologueVolumeHudShowRef.current);
     }
-    /** Laisse la souris disparaître avant le pictogramme son + chiffre. */
+    /** Tuto volume : léger délai ; pendant la vidéo : chiffre tout de suite. */
+    const showDelayMs = prologueTutorialStep === "volume" ? 130 : 0;
     prologueVolumeHudShowRef.current = window.setTimeout(() => {
       prologueVolumeHudShowRef.current = null;
       setPrologueVolumeHudVisible(true);
       prologueVolumeHudVisibleRef.current = true;
       armHide();
-    }, 130);
+    }, showDelayMs);
   }, [prologueTutorialStep]);
 
   const setTutorialVolume01 = useCallback(
@@ -1299,13 +1301,19 @@ export default function Intro({
     setIntroHandoffBlackout(false);
     setProloguePlayBlocked(false);
     prologueHasPlayedRef.current = false;
-    /** Lecture dans le clic (avant setState) pour conserver l’activation utilisateur. */
-    const v = videoRef.current;
-    if (v) void playPrologueVideo(v);
     setVideoStarted(true);
     onVideoStart?.();
     setShowInitialTitle(false);
-  }, [videoStarted, onVideoStart, commitPrologueVolume, playPrologueVideo]);
+    /** Lecture dans le geste clavier / clic (Entrée, bouton tuto). */
+    const v = videoRef.current;
+    if (v) {
+      void playPrologueVideo(v).then(() => {
+        if (readPrologueVolume01(volumeRef, isMutedRef) > 0) {
+          pulsePrologueVolumeHud();
+        }
+      });
+    }
+  }, [videoStarted, onVideoStart, commitPrologueVolume, playPrologueVideo, pulsePrologueVolumeHud]);
 
   const openPrologueTutorial = useCallback(() => {
     prologueTutorialVolumeDoneRef.current = false;
@@ -1636,7 +1644,7 @@ export default function Intro({
     onComplete();
   }, [onComplete]);
 
-  // Trailer : Espace = lecture/pause, Entrée = passer
+  // Trailer : Espace = lecture/pause (ou premier play si buffer), Entrée = passer
   useEffect(() => {
     if (!videoStarted || isPoetryGameOpen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -1646,6 +1654,11 @@ export default function Intro({
       }
       if (e.key === " " || e.code === "Space") {
         e.preventDefault();
+        const v = videoRef.current;
+        if (v && (v.paused || v.readyState < HTMLMediaElement.HAVE_CURRENT_DATA)) {
+          void playPrologueVideo(v);
+          return;
+        }
         toggleProloguePlayback();
         return;
       }
@@ -1655,7 +1668,7 @@ export default function Intro({
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
-  }, [videoStarted, isPoetryGameOpen, toggleProloguePlayback, handleSkip]);
+  }, [videoStarted, isPoetryGameOpen, toggleProloguePlayback, handleSkip, playPrologueVideo]);
 
   useEffect(() => {
     if (!videoRef.current || !videoStarted) return;
@@ -2676,13 +2689,18 @@ export default function Intro({
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-                  className="absolute inset-0 pointer-events-none"
+                  className="absolute inset-0 pointer-events-none z-[25]"
                 >
                   <PrologueVolumeFluid
                     visible
                     volume01={isMuted ? 0 : volume}
                     prefersReducedMotion={prefersReducedMotion}
                     className="absolute inset-0 z-[19]"
+                  />
+                  <PrologueVolumeHud
+                    volumePct={Math.round((isMuted ? 0 : volume) * 100)}
+                    ariaLabel={`${copy.introPrologueVolumeAuraAria} ${Math.round((isMuted ? 0 : volume) * 100)}.`}
+                    className="z-[21]"
                   />
                 </motion.div>
               ) : null}
