@@ -18,3 +18,15 @@ export function readPrologueVolume01(
 
 /** Niveau par défaut du trailer prologue (avant tuto volume). */
 export const PROLOGUE_VIDEO_DEFAULT_VOLUME = 0.1;
+
+/** Lance `play()` tout de suite (muet) — à appeler dans la pile du geste utilisateur. */
+export function kickPrologueVideoPlay(video: HTMLVideoElement): void {
+  video.playsInline = true;
+  video.muted = true;
+  try {
+    const pending = video.play();
+    if (pending) void pending.catch(() => {});
+  } catch {
+    /* politique autoplay */
+  }
+}
