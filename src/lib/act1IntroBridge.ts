@@ -27,17 +27,17 @@ const envIntroVideoUrl = import.meta.env.VITE_INTRO_VIDEO_URL;
 const introVideoUrlFromEnv =
   typeof envIntroVideoUrl === "string" ? envIntroVideoUrl.trim() : "";
 
-const localPrologueMp4 = `${introVideoBase}Prologue.mp4`;
+/** ~34 Mo, faststart — jamais le master `Prologue.mp4` (~340 Mo) dans le lecteur. */
+const localPrologueWeb = `${introVideoBase}Prologue.web.mp4`;
 
 /**
- * Prod : `/Prologue.mp4` sur le même domaine (Vercel) — pas de CDN Bunny (403).
- * Dev : override `VITE_INTRO_VIDEO_URL` ou fichier local.
+ * Prod / dev : `Prologue.web.mp4` (copié aussi en `Prologue.mp4` au build Vercel).
+ * Override : `VITE_INTRO_VIDEO_URL` (MP4 HTTPS direct — pas de m3u8 Bunny, 403).
  */
-export const INTRO_VIDEO_SRC = import.meta.env.PROD
-  ? localPrologueMp4
-  : introVideoUrlFromEnv && !isIntroVideoHlsSrc(introVideoUrlFromEnv)
+export const INTRO_VIDEO_SRC =
+  introVideoUrlFromEnv && !isIntroVideoHlsSrc(introVideoUrlFromEnv)
     ? introVideoUrlFromEnv
-    : introVideoUrlFromEnv || localPrologueMp4;
+    : localPrologueWeb;
 
 /** Même origine en prod — pas de crossOrigin. */
 export const INTRO_VIDEO_CROSS_ORIGIN = Boolean(

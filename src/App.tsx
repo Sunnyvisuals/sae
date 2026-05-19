@@ -33,6 +33,7 @@ const IntroVideoOverlay = lazy(() => import("./components/ui/IntroVideoOverlay")
 import type { SVGProps } from "react";
 import type { MainAppPhase, ParcoursPhaseLabel } from "./components/ui/OrientationPanel";
 import CustomCursor from "./components/ui/CustomCursor";
+import { dispatchSenacPointerMove } from "./lib/customCursorPortal";
 import CinematicOverlay from "./components/CinematicOverlay";
 import Soundscape from "./components/Soundscape";
 import SplashCursor from "./components/SplashCursor";
@@ -1175,14 +1176,23 @@ export default function App() {
         }
         const x = left + cx;
         const y = top + cy;
+        dispatchSenacPointerMove({
+          clientX: x,
+          clientY: y,
+          down: d.down === true,
+        });
+        const pointerInit = {
+          clientX: x,
+          clientY: y,
+          bubbles: true,
+          cancelable: false,
+          pointerId: 1,
+          pointerType: "mouse" as const,
+        };
         if (d.down === true) {
-          window.dispatchEvent(
-            new PointerEvent("pointerdown", { clientX: x, clientY: y, bubbles: true, cancelable: false }),
-          );
+          window.dispatchEvent(new PointerEvent("pointerdown", pointerInit));
         }
-        window.dispatchEvent(
-          new PointerEvent("pointermove", { clientX: x, clientY: y, bubbles: true, cancelable: false }),
-        );
+        window.dispatchEvent(new PointerEvent("pointermove", pointerInit));
         return;
       }
       if (e.data?.type === "senac-entry-mode") {
@@ -1896,12 +1906,9 @@ export default function App() {
 
       </main>
 
-      {/* Fluide WebGL : intro / acte I / III (désactivé acte II : scroll + curseur dans l’iframe). */}
-      {finePointer &&
-        splashWebglReady &&
-        useFluidCursorExperience &&
-        phase !== "act2" && (
-        <div
+      {/* Fluide WebGL : curseur + scroll (acte II : au-dessus du parchemin, coords via `senac-pointer`). */}
+      {finePointer && splashWebglReady && useFluidCursorExperience && (
+        <motion.div
           style={{
             pointerEvents: "none",
             visibility:
@@ -1909,7 +1916,8 @@ export default function App() {
               introVideoOpen ||
               introVideoPlaying ||
               act23BridgeOpen ||
-              isLanguageMorphing
+              isLanguageMorphing ||
+              (phase === "act2" && act2ScrollModeChoiceOpen)
                 ? "hidden"
                 : "visible",
           }}
@@ -1926,7 +1934,7 @@ export default function App() {
             <SplashCursor
               syncPaletteFromAmbient
               zIndex={
-                act2VoyageCreditsOpen ? 532 : phase === "act2" ? 10 : 120
+                act2VoyageCreditsOpen ? 532 : phase === "act2" ? 22 : 120
               }
               SIM_RESOLUTION={phase === "act1" || phase === "act2" ? 112 : 160}
               DYE_RESOLUTION={phase === "act1" ? 448 : phase === "act2" ? 640 : 720}
@@ -1940,7 +1948,7 @@ export default function App() {
               iframeScrollRatio={phase === "act2" ? act2ScrollFillRatio : undefined}
             />
           </Fragment>
-        </div>
+        </motion.div>
       )}
 
       <VoyageCreditsOverlay

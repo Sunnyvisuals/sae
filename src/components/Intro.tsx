@@ -2625,6 +2625,8 @@ export default function Intro({
               ref={videoRef}
               src={INTRO_VIDEO_SRC}
               preload="auto"
+              // @ts-expect-error fetchPriority pas encore dans tous les types React
+              fetchPriority="high"
               playsInline
               onEnded={handleVideoEnd}
               onPlay={() => {

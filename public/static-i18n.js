@@ -196,23 +196,23 @@
       vc_h_conception: "Réalisation",
       vc_l_conception_1: "Yacine Bouabdallah",
       vc_l_conception_2:
-        "Conception · direction artistique · carte mémoire · frise · écriture · générique",
+        "Conception · direction artistique · carte mémoire · frise · constellation participative · générique",
       vc_h_textes: "Textes",
-      vc_l_textes_1: "Jean Sénac · fragments et citations",
-      vc_l_textes_2: "Reproduction pédagogique (art. L. 122 5 CPI) · BUT MMI, usage non commercial",
+      vc_l_textes_1: "Jean Sénac · « Corps de mon pays », fragments et citations",
+      vc_l_textes_2: "Reproduction pédagogique (art. L. 122-5 CPI) · BUT MMI, usage non commercial",
       vc_h_images: "Images & archives",
       vc_l_images: "Portraits et documents · dossier pédagogique · archives photographiques",
       vc_h_video: "Image & son",
       vc_l_video:
-        "Prologue et transitions · Yacine Bouabdallah · plans Artlist · design sonore des transitions",
+        "Prologue et transitions · Yacine Bouabdallah · plans Artlist · lecture vidéo hls.js",
       vc_h_audio: "Musique",
       vc_l_audio:
-        "« Zina » · Raïna Raï · « Switzerland » · Thomas James White · « Emotional Arabian Oud » · acte II",
+        "« Zina » · Raïna Raï (prologue) · « Switzerland » · Thomas James White · « Emotional Arabian Oud » · acte II",
       vc_h_outils: "Technologies",
       vc_l_outils_1:
-        "React · TypeScript · Vite · GSAP · Motion · Three.js · Tailwind · Lenis · Howler · Zustand",
+        "React · TypeScript · Vite · GSAP · Motion · Three.js · Tailwind · Lenis · Howler · Zustand · Supabase · hls.js",
       vc_l_outils_2:
-        "Post production : Adobe Creative Cloud, DaVinci Resolve, Blender · Natural Earth · Turf.js · Google Fonts · Bahlull",
+        "Post production : Adobe Creative Cloud, DaVinci Resolve, Blender · Natural Earth · Turf.js · OpenStreetMap · Nominatim · Google Fonts · Bahlull · Vercel",
       vc_h_favicon: "Avec l’aide de",
       vc_l_favicon: "Outils d’intelligence artificielle · débogage et conception",
       vc_fin: "Merci d'avoir mené cette traversée jusqu'au bout de la nuit.",
@@ -380,25 +380,25 @@
       vc_h_conception: "الإنجاز",
       vc_l_conception_1: "ياسين بوعبد الله",
       vc_l_conception_2:
-        "الإعداد · الإخراج الفنّي · خريطة الذاكرة · الخط الزمني · الكتابة · التذييل",
+        "الإعداد · الإخراج الفنّي · خريطة الذاكرة · الخط الزمني · كوكبة تفاعلية · التذييل",
       vc_h_textes: "النصوص",
-      vc_l_textes_1: "جان سنّاك · مقتطفات واقتباسات",
-      vc_l_textes_2: "إعادة إنتاج تربوي (المادة 122 5) · BUT MMI، غير تجاري",
+      vc_l_textes_1: "جان سنّاك · « يا جسد وطني »، مقتطفات واقتباسات",
+      vc_l_textes_2: "إعادة إنتاج تربوي (المادة 122-5) · BUT MMI، غير تجاري",
       vc_h_images: "الصور والأرشيف",
       vc_l_images: "صور ومستندات · ملفّ تربوي · أرشيفات فوتوغرافية",
       vc_h_video: "الصورة والصوت",
       vc_l_video:
-        "المقدّمة والانتقالات · ياسين بوعبد الله · لقطات Artlist · تصميم صوتي للانتقالات",
+        "المقدّمة والانتقالات · ياسين بوعبد الله · لقطات Artlist · بثّ فيديو hls.js",
       vc_h_audio: "الموسيقى",
       vc_l_audio:
-        "« Zina » · Raïna Raï · « Switzerland » · Thomas James White · « Emotional Arabian Oud » · الجزء الثاني",
+        "« Zina » · Raïna Raï (المقدّمة) · « Switzerland » · Thomas James White · « Emotional Arabian Oud » · الجزء الثاني",
       vc_h_outils: "التقنيات",
       vc_l_outils_1:
-        "React · TypeScript · Vite · GSAP · Motion · Three.js · Tailwind · Lenis · Howler · Zustand",
+        "React · TypeScript · Vite · GSAP · Motion · Three.js · Tailwind · Lenis · Howler · Zustand · Supabase · hls.js",
       vc_h_favicon: "بمساعدة",
       vc_l_favicon: "أدوات الذكاء الاصطناعي · تصميم وتصحيح",
       vc_l_outils_2:
-        "ما بعد الإنتاج: Adobe Creative Cloud، DaVinci Resolve، Blender · Natural Earth · Turf.js · Google Fonts · Bahlull",
+        "ما بعد الإنتاج: Adobe Creative Cloud، DaVinci Resolve، Blender · Natural Earth · Turf.js · OpenStreetMap · Nominatim · Google Fonts · Bahlull · Vercel",
       vc_fin: "شكرًا لأنك كملت هاد المسيرة حتى كتامة الليل.",
       vc_skip_title: "غادر الليل (يظهر في نهاية الشهادات)",
       vc_skip_btn: "غادر الليل",

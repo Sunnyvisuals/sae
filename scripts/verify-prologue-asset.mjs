@@ -53,4 +53,4 @@ if (!file) {
 }
 
 const mb = (statSync(resolve(root, file)).size / (1024 * 1024)).toFixed(1);
-console.log(`[prologue] OK ${onVercel ? "Vercel" : "local"} : ${file} (${mb} Mo) → /Prologue.mp4`);
+console.log(`[prologue] OK ${onVercel ? "Vercel" : "local"} : ${file} (${mb} Mo) → /Prologue.web.mp4`);

@@ -516,15 +516,15 @@ const FR: Copy = {
       lead: "Yacine Bouabdallah",
       lines: [
         "Conception, direction artistique et développement",
-        "Carte mémoire · frise Jean Sénac · écriture interactive",
+        "Carte mémoire · frise Jean Sénac · constellation participative",
         "Montage, générique et intégration",
       ],
     },
     {
       heading: "Textes",
       lines: [
-        "Jean Sénac · fragments et citations",
-        "Reproduction pédagogique (art. L. 122 5 CPI)",
+        "Jean Sénac · « Corps de mon pays », fragments et citations",
+        "Reproduction pédagogique (art. L. 122-5 CPI)",
         "Projet BUT MMI · usage non commercial",
       ],
     },
@@ -538,7 +538,7 @@ const FR: Copy = {
     {
       heading: "Musique",
       lines: [
-        "« Zina » · Raïna Raï",
+        "« Zina » · Raïna Raï (prologue / tutoriel)",
         "« Switzerland » · Thomas James White",
         "« Emotional Arabian Oud » · acte II",
       ],
@@ -548,7 +548,7 @@ const FR: Copy = {
       lines: [
         "Prologue et transitions · Yacine Bouabdallah",
         "Plans additionnels · Artlist",
-        "Design sonore des transitions",
+        "Lecture vidéo adaptative · hls.js",
       ],
     },
     {
@@ -568,13 +568,16 @@ const FR: Copy = {
             "React · TypeScript · Vite",
             "GSAP · Motion · Three.js",
             "Tailwind · Lenis · Howler · Zustand",
+            "Supabase · hls.js",
           ],
         },
         {
-          label: "Données & typographie",
+          label: "Données, services & typographie",
           lines: [
             "Natural Earth · Turf.js",
+            "OpenStreetMap · Nominatim (géolocalisation)",
             "Google Fonts · Bahlull",
+            "Vercel · hébergement",
             "Bibliothèques open source",
           ],
         },
@@ -849,15 +852,15 @@ const AR: Copy = {
       lead: "ياسين بوعبد الله",
       lines: [
         "الإعداد، الإخراج الفنّي والتطوير",
-        "خريطة الذاكرة · خط جان سنّاك · كتابة تفاعلية",
+        "خريطة الذاكرة · خط جان سنّاك · كوكبة تفاعلية",
         "المونتاج، التذييل والدمج",
       ],
     },
     {
       heading: "النصوص",
       lines: [
-        "جان سنّاك · مقتطفات واقتباسات",
-        "إعادة إنتاج تربوي (المادة 122 5)",
+        "جان سنّاك · « يا جسد وطني »، مقتطفات واقتباسات",
+        "إعادة إنتاج تربوي (المادة 122-5)",
         "مشروع BUT MMI · غير تجاري",
       ],
     },
@@ -871,7 +874,7 @@ const AR: Copy = {
     {
       heading: "الموسيقى",
       lines: [
-        "« Zina » · Raïna Raï",
+        "« Zina » · Raïna Raï (المقدّمة / التعليمات)",
         "« Switzerland » · Thomas James White",
         "« Emotional Arabian Oud » · الجزء الثاني",
       ],
@@ -881,7 +884,7 @@ const AR: Copy = {
       lines: [
         "المقدّمة والانتقالات · ياسين بوعبد الله",
         "لقطات إضافية · Artlist",
-        "تصميم صوتي للانتقالات",
+        "بثّ فيديو تكيّفي · hls.js",
       ],
     },
     {
@@ -901,13 +904,16 @@ const AR: Copy = {
             "React · TypeScript · Vite",
             "GSAP · Motion · Three.js",
             "Tailwind · Lenis · Howler · Zustand",
+            "Supabase · hls.js",
           ],
         },
         {
-          label: "البيانات والخطوط",
+          label: "البيانات والخدمات والخطوط",
           lines: [
             "Natural Earth · Turf.js",
+            "OpenStreetMap · Nominatim (الموقع الجغرافي)",
             "Google Fonts · Bahlull",
+            "Vercel · الاستضافة",
             "مكتبات مفتوحة المصدر",
           ],
         },

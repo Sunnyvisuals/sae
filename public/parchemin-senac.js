@@ -42,14 +42,20 @@
         /* ignore */
       }
     }
+    function queueSenacPointer(/** @type {PointerEvent} */ e) {
+      pendingX = e.clientX;
+      pendingY = e.clientY;
+      if (!senacPointerRaf) {
+        senacPointerRaf = window.requestAnimationFrame(flushSenacPointer);
+      }
+    }
+    document.addEventListener("pointermove", queueSenacPointer, { passive: true });
     document.addEventListener(
-      "pointermove",
+      "pointerenter",
       function (/** @type {PointerEvent} */ e) {
         pendingX = e.clientX;
         pendingY = e.clientY;
-        if (!senacPointerRaf) {
-          senacPointerRaf = window.requestAnimationFrame(flushSenacPointer);
-        }
+        flushSenacPointer();
       },
       { passive: true }
     );

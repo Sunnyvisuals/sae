@@ -1,4 +1,4 @@
-import { useEffect, useState, useLayoutEffect, useMemo } from 'react';
+import { useEffect, useState, useLayoutEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, useMotionValue, useSpring } from 'motion/react';
 import { useCursorStore } from '../../hooks/useCursorContext';
@@ -15,6 +15,8 @@ import {
   ensureCustomCursorAwake,
   HTML_CURSOR_IDLE_CLASS,
   reparentCustomCursorPortalToBodyEnd,
+  SENAC_POINTER_MOVE_EVT,
+  type SenacPointerMoveDetail,
 } from '../../lib/customCursorPortal';
 
 const CURSOR_IDLE_HIDE_MS = 5000;
@@ -48,6 +50,8 @@ export default function CustomCursor({
   const night = ambient === 'midnight';
   const mx = useMotionValue(-100);
   const my = useMotionValue(-100);
+  /** Réveil idle + timer 5 s (partagé avec le relais iframe acte II). */
+  const pokeCursorRef = useRef<() => void>(() => {});
 
   /** Mode basique : ressort très sec (sinon suivi direct mx/my). */
   const basicLeadSpring = useMemo(
@@ -99,6 +103,14 @@ export default function CustomCursor({
     setIdleHidden(false);
   }, [forceHidden]);
 
+  /** Acte II : le pointeur vit dans l’iframe — réveiller le losange dès l’entrée. */
+  useEffect(() => {
+    if (!iframeRelay || forceHidden) return;
+    ensureCustomCursorAwake();
+    setIdleHidden(false);
+    pokeCursorRef.current();
+  }, [iframeRelay, forceHidden]);
+
   useEffect(() => {
     const id = '__custom-cursor-root';
     let el = document.getElementById(id) as HTMLElement | null;
@@ -146,6 +158,7 @@ export default function CustomCursor({
       applyHtmlClass(false);
       scheduleIdleHide();
     };
+    pokeCursorRef.current = poke;
 
     poke();
 
@@ -167,6 +180,7 @@ export default function CustomCursor({
     window.addEventListener('pointercancel', onPointerCancel, { passive: true, capture: true });
 
     return () => {
+      pokeCursorRef.current = () => {};
       window.clearTimeout(timer);
       html.classList.remove(HTML_CURSOR_IDLE_CLASS);
       window.removeEventListener('pointermove', onPointerMove, { capture: true });
@@ -175,6 +189,21 @@ export default function CustomCursor({
       window.removeEventListener('pointercancel', onPointerCancel, { capture: true });
     };
   }, [mx, my, overlayOpen]);
+
+  /** Acte II : relais `senac-pointer` (les `PointerEvent` synthétiques ne réveillent pas toujours le portail). */
+  useEffect(() => {
+    if (!iframeRelay) return;
+    const onSenac = (e: Event) => {
+      const d = (e as CustomEvent<SenacPointerMoveDetail>).detail;
+      if (!d || !Number.isFinite(d.clientX) || !Number.isFinite(d.clientY)) return;
+      mx.set(d.clientX);
+      my.set(d.clientY);
+      if (d.down === true) setBasicPressed(true);
+      pokeCursorRef.current();
+    };
+    window.addEventListener(SENAC_POINTER_MOVE_EVT, onSenac);
+    return () => window.removeEventListener(SENAC_POINTER_MOVE_EVT, onSenac);
+  }, [iframeRelay, mx, my]);
 
   /* Modales / tuto intro : halo visible + pas d’idle 5 s. */
   useEffect(() => {
