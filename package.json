@@ -24,6 +24,7 @@
     "lint": "tsc --noEmit",
     "knip": "knip",
     "verify": "npm run lint && npm run build",
+    "db:constellation": "node scripts/apply-constellation-schema.mjs",
     "assets:favicons": "node scripts/generate-favicons.mjs"
   },
   "dependencies": {
@@ -45,6 +46,7 @@
     "@vitejs/plugin-react": "^5.0.4",
     "knip": "^5.88.1",
     "png-to-ico": "^2.1.8",
+    "postgres": "^3.4.9",
     "sharp": "^0.34.5",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
