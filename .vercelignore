@@ -7,3 +7,5 @@ node_modules/
 *.log
 .env*
 !.env.example
+# Master prologue (~340 Mo) — le lecteur et le build utilisent Prologue.web.mp4 uniquement.
+public/Prologue.mp4
