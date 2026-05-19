@@ -55,6 +55,7 @@ import { ensureCustomCursorAwake } from "../lib/customCursorPortal";
 import PrologueVolumeFluid from "./PrologueVolumeFluid";
 import DevChapterJumpsPanel, { type DevChapterJumps } from "./DevChapterJumpsPanel";
 import { INTRO_VIDEO_SRC } from "../lib/act1IntroBridge";
+import { primePrologueVideoPreload } from "../lib/primePrologueVideo";
 import { useLanguageStore } from "../stores/languageStore";
 import { useFullscreenPrefsStore } from "../stores/fullscreenPrefsStore";
 import { useCursorPrefsStore, type CursorExperienceMode } from "../stores/cursorPrefsStore";
@@ -884,14 +885,13 @@ export default function Intro({
 
   const introSuspenseActive = isStarting && !videoStarted;
   const prologueTutorialActive = prologueTutorialStep !== null;
-  /** Lecteur MP4 monté tôt (même élément que la lecture) — pas de 2e téléchargement au lancement. */
-  const prologueVideoMounted =
-    videoStarted ||
-    isStarting ||
-    introPrefetchDone ||
-    prologueTutorialActive ||
-    arrivalLanguageConfirmed;
+  /** Lecteur MP4 monté dès l’intro (preload réseau déjà lancé dans main.tsx + index.html). */
+  const prologueVideoMounted = true;
   const prologueTutorialVolumeStep = prologueTutorialStep === "volume";
+
+  useEffect(() => {
+    primePrologueVideoPreload();
+  }, []);
 
   useEffect(() => {
     onIntroCursorSuppressChange?.(prologueTutorialVolumeStep);
