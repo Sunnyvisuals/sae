@@ -1,4 +1,4 @@
-import { useId, useState, type ChangeEvent, type ReactNode, type SVGProps } from 'react';
+import { useId, useMemo, useState, type ChangeEvent, type ReactNode, type SVGProps } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useCursorStore } from '../../hooks/useCursorContext';
 import { useCursorPrefsStore, type CursorExperienceMode } from '../../stores/cursorPrefsStore';
@@ -13,6 +13,7 @@ import {
   requestDocumentFullscreen,
   useDocumentFullscreenActive,
 } from '../../lib/fullscreenDocument';
+import { isSafariBrowser } from '../../lib/safariDetect';
 
 const DEFAULT_MASTER_VOLUME = 0.2;
 type Props = {
@@ -30,7 +31,7 @@ const easeMajestic = [0.22, 1, 0.36, 1] as const;
 const PAUSE_MENU_STACK_CLASS = 'mx-auto w-full max-w-[min(100%,526px)] shrink-0';
 
 const PAUSE_MENU_PANEL_SHELL_CLASS =
-  'w-full rounded-[2px] px-3 py-1.5 sm:px-4 sm:py-2';
+  'pause-menu-panel w-full rounded-[2px] px-3 py-1.5 sm:px-4 sm:py-2';
 
 function IconChevronDown(props: SVGProps<SVGSVGElement>) {
   return (
@@ -836,6 +837,7 @@ export default function SystemMenu({
   const language = useLanguageStore((s) => s.language);
   const isArabic = language === 'ar-dz';
   const [restartConfirmOpen, setRestartConfirmOpen] = useState(false);
+  const isSafari = useMemo(() => isSafariBrowser(), []);
 
   /** Curseur personnalisé (fluide ou « basique ») : masque le pointeur OS dans le menu. */
   const shellCursor = finePointer ? 'cursor-none' : 'cursor-auto';
@@ -845,14 +847,16 @@ export default function SystemMenu({
       role="dialog"
       aria-modal="true"
       aria-labelledby="system-menu-title"
+      data-midnight={midnight ? '1' : '0'}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.4 }}
       className={
-        midnight
-          ? `fixed inset-0 z-[560] flex min-h-dvh w-full ${shellCursor} flex-col bg-[#030810]/88 backdrop-blur-md supports-[backdrop-filter]:bg-[#030810]/76 [padding-top:env(safe-area-inset-top)] [padding-bottom:env(safe-area-inset-bottom)]`
-          : `fixed inset-0 z-[560] flex min-h-dvh w-full ${shellCursor} flex-col bg-[#020100]/88 backdrop-blur-md supports-[backdrop-filter]:bg-[#020100]/76 [padding-top:env(safe-area-inset-top)] [padding-bottom:env(safe-area-inset-bottom)]`
+        (midnight
+          ? `pause-menu-overlay fixed inset-0 z-[560] flex min-h-dvh w-full ${shellCursor} flex-col bg-[#030810]/88 backdrop-blur-md supports-[backdrop-filter]:bg-[#030810]/76 [padding-top:env(safe-area-inset-top)] [padding-bottom:env(safe-area-inset-bottom)]`
+          : `pause-menu-overlay fixed inset-0 z-[560] flex min-h-dvh w-full ${shellCursor} flex-col bg-[#020100]/88 backdrop-blur-md supports-[backdrop-filter]:bg-[#020100]/76 [padding-top:env(safe-area-inset-top)] [padding-bottom:env(safe-area-inset-bottom)]`) +
+        (isSafari ? ' pause-menu-overlay--safari' : '')
       }
     >
       {/* Fond ? halos discrets (pas de grain SVG ni fluide WebGL : lisibilité pause). */}
@@ -914,8 +918,8 @@ export default function SystemMenu({
             dir={isArabic ? 'rtl' : 'ltr'}
             className={
               (midnight
-                ? 'relative mx-auto flex w-full max-w-[min(100%,40rem)] shrink-0 flex-col overflow-x-hidden border border-[rgba(90,168,255,0.26)] bg-[#040a14]/85 text-center shadow-[0_0_0_1px_rgba(90,168,255,0.1),inset_0_0_60px_rgba(45,110,190,0.05)] backdrop-blur-md '
-                : 'relative mx-auto flex w-full max-w-[min(100%,40rem)] shrink-0 flex-col overflow-x-hidden border border-solar-gold/25 bg-[#050302]/85 text-center shadow-[0_0_0_1px_rgba(197,160,89,0.08),inset_0_0_60px_rgba(197,160,89,0.03)] backdrop-blur-md ') +
+                ? 'pause-menu-card relative mx-auto flex w-full max-w-[min(100%,40rem)] shrink-0 flex-col overflow-x-hidden border border-[rgba(90,168,255,0.26)] bg-[#040a14]/85 text-center shadow-[0_0_0_1px_rgba(90,168,255,0.1),inset_0_0_60px_rgba(45,110,190,0.05)] backdrop-blur-md '
+                : 'pause-menu-card relative mx-auto flex w-full max-w-[min(100%,40rem)] shrink-0 flex-col overflow-x-hidden border border-solar-gold/25 bg-[#050302]/85 text-center shadow-[0_0_0_1px_rgba(197,160,89,0.08),inset_0_0_60px_rgba(197,160,89,0.03)] backdrop-blur-md ') +
               (laptopShort
                 ? 'px-4 pb-8 pt-7'
                 : 'px-4 pb-12 pt-9 sm:px-7 sm:pb-14 sm:pt-12 md:px-9 md:pb-16 md:pt-14')
@@ -954,7 +958,7 @@ export default function SystemMenu({
               </p>
               <h2
                 className={
-                  'font-bahlull mx-auto box-border flex w-full max-w-[min(100%,28ch)] flex-col items-center justify-center overflow-visible px-0.5 pb-0.5 pt-0.5 italic leading-[1.15] text-transparent ' +
+                  'pause-menu-hero-title font-bahlull mx-auto box-border flex w-full max-w-[min(100%,28ch)] flex-col items-center justify-center overflow-visible px-0.5 pb-0.5 pt-0.5 italic leading-[1.15] text-transparent ' +
                   (laptopShort
                     ? 'mt-2 mb-0.5 text-[clamp(1.75rem,5vw,2.65rem)]'
                     : 'mt-3 mb-1 text-[clamp(2.35rem,8vw,4rem)] leading-[1.18] sm:mt-3.5 sm:mb-1.5')
@@ -967,7 +971,9 @@ export default function SystemMenu({
                         WebkitBackgroundClip: 'text',
                         backgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
-                        filter: 'drop-shadow(0 0 28px rgba(90,168,255,0.22))',
+                        ...(isSafari
+                          ? { textShadow: '0 0 28px rgba(90,168,255,0.22)' }
+                          : { filter: 'drop-shadow(0 0 28px rgba(90,168,255,0.22))' }),
                       }
                     : {
                         backgroundImage:
@@ -975,7 +981,9 @@ export default function SystemMenu({
                         WebkitBackgroundClip: 'text',
                         backgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
-                        filter: 'drop-shadow(0 0 28px rgba(197,160,89,0.18))',
+                        ...(isSafari
+                          ? { textShadow: '0 0 28px rgba(197,160,89,0.18)' }
+                          : { filter: 'drop-shadow(0 0 28px rgba(197,160,89,0.18))' }),
                       }
                 }
               >

@@ -72,3 +72,54 @@ html.is-safari .font-bahlull[style*="background-clip"] {
 html.is-safari video {
   object-fit: cover;
 }
+
+/* Menu pause : hors parent transformé + fonds opaques (Safari ne floute pas / ghost drop-shadow). */
+html.is-safari .pause-menu-overlay--safari {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  transform: translateZ(0);
+  isolation: isolate;
+}
+
+html.is-safari .pause-menu-overlay--safari[data-midnight="0"] {
+  background-color: #020100 !important;
+}
+
+html.is-safari .pause-menu-overlay--safari[data-midnight="1"] {
+  background-color: #030810 !important;
+}
+
+html.is-safari .pause-menu-overlay--safari .pause-menu-card {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html.is-safari .pause-menu-overlay--safari[data-midnight="0"] .pause-menu-card {
+  background-color: rgba(5, 3, 2, 0.97) !important;
+}
+
+html.is-safari .pause-menu-overlay--safari[data-midnight="1"] .pause-menu-card {
+  background-color: rgba(4, 10, 20, 0.97) !important;
+}
+
+html.is-safari .pause-menu-overlay--safari[data-midnight="0"] .pause-menu-panel {
+  background-color: rgba(0, 0, 0, 0.4) !important;
+}
+
+html.is-safari .pause-menu-overlay--safari[data-midnight="1"] .pause-menu-panel {
+  background-color: rgba(4, 10, 22, 0.55) !important;
+}
+
+html.is-safari .pause-menu-overlay--safari .pause-menu-hero-title {
+  filter: none !important;
+  -webkit-filter: none !important;
+}
+
+html.is-safari .pause-menu-overlay--safari [class*="backdrop-blur"] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html.is-safari .pause-menu-overlay--safari button[class*="bg-black/30"] {
+  background-color: rgba(0, 0, 0, 0.52) !important;
+}

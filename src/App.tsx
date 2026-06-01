@@ -1561,48 +1561,6 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {systemMenuOpen && (
-          <Fragment key="sysmenu">
-            <Suspense
-              fallback={
-                <div
-                  className="fixed inset-0 z-[120] bg-black/55 backdrop-blur-[2px]"
-                  aria-hidden
-                />
-              }
-            >
-              <SystemMenu
-                onClose={() => setSystemMenuOpen(false)}
-                onReplayIntroVideo={openIntroVideoOverlay}
-                onRestartExperience={restartExperience}
-                embeddedParcours={
-                  !mdUp && (phase !== "intro" || journeyReplayUnlocked) ? (
-                    <Suspense fallback={<div className="min-h-[100px] w-full" aria-hidden />}>
-                      <ParcoursPanelInnerContent
-                        phase={phase}
-                        revelationCount={revelationCount}
-                        parcoursRailMidnight={
-                          phase === "act2" &&
-                          (act2ParcheminTone ?? "solar") === "midnight"
-                        }
-                        act2VoyageCreditsOpen={
-                          act2VoyageCreditsOpen && (phase === "act2" || phase === "act3")
-                        }
-                        journeyReplayUnlocked={journeyReplayUnlocked}
-                        act2UnlockedAfterBridge={act2UnlockedAfterBridge}
-                        act3Reachable={act3RailUnlocked}
-                        onNavigatePhase={navigateParcoursPhase}
-                      />
-                    </Suspense>
-                  ) : undefined
-                }
-              />
-            </Suspense>
-          </Fragment>
-        )}
-      </AnimatePresence>
-
       {/* Fermeture du rail uniquement viewport md+ (le rail est masqu? sous md). */}
       {mdUp && parcoursOpen && (phase !== "intro" || journeyReplayUnlocked) && (
         <div
@@ -2033,6 +1991,50 @@ export default function App() {
       </motion.div>
       <LanguageMorphHud visible={isLanguageMorphing} midnight={languageMorphMidnight} />
     </ReactLenis>
+
+      {/* Hors Lenis / motion shell : fixed + backdrop-filter fiables (Safari). */}
+      <AnimatePresence>
+        {systemMenuOpen && (
+          <Fragment key="sysmenu">
+            <Suspense
+              fallback={
+                <div
+                  className="fixed inset-0 z-[560] bg-[#020100]/94"
+                  aria-hidden
+                />
+              }
+            >
+              <SystemMenu
+                onClose={() => setSystemMenuOpen(false)}
+                onReplayIntroVideo={openIntroVideoOverlay}
+                onRestartExperience={restartExperience}
+                embeddedParcours={
+                  !mdUp && (phase !== "intro" || journeyReplayUnlocked) ? (
+                    <Suspense fallback={<div className="min-h-[100px] w-full" aria-hidden />}>
+                      <ParcoursPanelInnerContent
+                        phase={phase}
+                        revelationCount={revelationCount}
+                        parcoursRailMidnight={
+                          phase === "act2" &&
+                          (act2ParcheminTone ?? "solar") === "midnight"
+                        }
+                        act2VoyageCreditsOpen={
+                          act2VoyageCreditsOpen && (phase === "act2" || phase === "act3")
+                        }
+                        journeyReplayUnlocked={journeyReplayUnlocked}
+                        act2UnlockedAfterBridge={act2UnlockedAfterBridge}
+                        act3Reachable={act3RailUnlocked}
+                        onNavigatePhase={navigateParcoursPhase}
+                      />
+                    </Suspense>
+                  ) : undefined
+                }
+              />
+            </Suspense>
+          </Fragment>
+        )}
+      </AnimatePresence>
+
       {act23BridgeOpen ? (
         <ChapterAct23WhiteFade
           open
