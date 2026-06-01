@@ -19,6 +19,7 @@ import ChapterAct23WhiteFade from "./components/ChapterAct23WhiteFade";
 const AlgeriaMap = lazy(() => import("./components/Immersive/AlgeriaMap"));
 const Act2 = lazy(() => import("./components/Immersive/Act2"));
 const Act3Constellation = lazy(() => import("./components/Immersive/Act3Constellation"));
+import Act3LenisLock from "./components/Immersive/Act3LenisLock";
 
 const loadOrientationPanelMod = () => import("./components/ui/OrientationPanel");
 const OrientationPanel = lazy(() =>
@@ -1990,6 +1991,7 @@ export default function App() {
 
       </motion.div>
       <LanguageMorphHud visible={isLanguageMorphing} midnight={languageMorphMidnight} />
+      {phase === "act3" && <Act3LenisLock />}
     </ReactLenis>
 
       {/* Hors Lenis / motion shell : fixed + backdrop-filter fiables (Safari). */}

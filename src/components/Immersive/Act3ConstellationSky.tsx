@@ -232,12 +232,14 @@ const Act3ConstellationSky = forwardRef<Act3ConstellationSkyHandle, Props>(
 
   useEffect(() => {
     rebuild();
-    if (stars.length !== starsCountRef.current) {
+    const lengthChanged = stars.length !== starsCountRef.current;
+    if (lengthChanged) {
       starsCountRef.current = stars.length;
-      resetCameraHome(true);
+      if (!revealDoneRef.current) {
+        resetCameraHome(true);
+        revealRef.current = reduceMotion ? 1 : 0;
+      }
     }
-    revealRef.current = reduceMotion ? 1 : 0;
-    revealDoneRef.current = false;
     syncCometAppearances(starsRef.current);
   }, [rebuild, reduceMotion, resetCameraHome, syncCometAppearances, stars.length]);
 
@@ -318,6 +320,8 @@ const Act3ConstellationSky = forwardRef<Act3ConstellationSkyHandle, Props>(
       }
       return;
     }
+    if (revealDoneRef.current) return;
+
     const start = performance.now();
     const dur = act3SkyRevealDurationMs(stars.length, false);
     const tick = (now: number) => {

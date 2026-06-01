@@ -72,7 +72,7 @@ export const ACT3_CONFIRM_FORM_DELAY_MS = act3Ms(200, false);
 export const ACT3_PICK_FALLBACK_MS = act3Ms(2600, false);
 
 /** Scroll chargement constellation. */
-export const ACT3_SCROLL_BUDGET = Math.round(980 * S);
+export const ACT3_SCROLL_BUDGET = Math.round(1480 * S);
 export const ACT3_SCROLL_COMPLETE_HOLD_MS = act3Ms(520, false);
 
 /** Focus caméra « Voir mon étoile » : zoom in → pause → zoom out. */
