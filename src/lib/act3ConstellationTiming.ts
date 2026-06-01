@@ -47,11 +47,11 @@ export const ACT3_INTRO_LINE3_MS = act3Ms(5000, false);
 export const ACT3_INTRO_TO_SELECT_MS = act3Ms(7800, false);
 export const ACT3_INTRO_TO_SELECT_REDUCED_MS = act3Ms(6200, true);
 
-/** Outro → crédits. */
-export const ACT3_OUTRO_LINE2_MS = act3Ms(1500, false);
-export const ACT3_OUTRO_LINE3_MS = act3Ms(4500, false);
-export const ACT3_OUTRO_TO_CREDITS_MS = act3Ms(6800, false);
-export const ACT3_OUTRO_TO_CREDITS_REDUCED_MS = act3Ms(1800, true);
+/** Outro → crédits (délais absolus depuis le début de l’outro). */
+export const ACT3_OUTRO_LINE2_MS = act3Ms(5500, false);
+export const ACT3_OUTRO_LINE3_MS = act3Ms(9500, false);
+export const ACT3_OUTRO_TO_CREDITS_MS = act3Ms(14500, false);
+export const ACT3_OUTRO_TO_CREDITS_REDUCED_MS = act3Ms(2400, true);
 
 /** GSAP — mots flottants (révélation + dérive, plus lent que le reste de l’acte). */
 const WORD_M = import.meta.env.DEV ? 1.55 : 2.3;
