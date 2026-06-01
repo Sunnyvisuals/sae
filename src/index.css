@@ -727,6 +727,11 @@
       font-size: clamp(1.35rem, 6.2vw, 2rem);
     }
 
+    .da-act3-outro-glow {
+      font-size: clamp(0.72rem, 3.1vw, 0.95rem);
+      letter-spacing: 0.12em;
+    }
+
     .da-act3-scroll-load-cue-line {
       font-size: clamp(0.88rem, 3.8vw, 1.05rem);
       letter-spacing: 0.14em;
@@ -820,6 +825,7 @@
     line-height: 1.55;
     color: rgba(244, 234, 210, 0.92);
     text-shadow: 0 0 18px rgba(0, 0, 0, 0.78);
+    white-space: nowrap;
   }
 
   [dir="rtl"] .da-act3-outro-line,

@@ -802,7 +802,7 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
               animate={{ opacity: 1 }}
               transition={act3Fade(reduceMotion, 1)}
             >
-              <div className="relative min-h-[5.5rem] w-full max-w-[min(100%,24rem)]">
+              <div className="relative min-h-[5.5rem] w-full max-w-[min(100%,54rem)] px-2">
                 <AnimatePresence mode="wait">
                   {outroPhase === "line1" && (
                     <motion.p
