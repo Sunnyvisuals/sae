@@ -1997,6 +1997,18 @@ html[dir="rtl"] .senac-cross-nav--compact {
   line-height: 1.55;
 }
 
+.archive-window figcaption a.archive-caption__wiki {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: rgba(197, 160, 89, 0.35);
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+
+.archive-window figcaption a.archive-caption__wiki:hover {
+  text-decoration-color: currentColor;
+}
+
 /* Clic "fragment" - quete acte II (validee dans le parent React) */
 .senac-fragment {
   cursor: pointer;

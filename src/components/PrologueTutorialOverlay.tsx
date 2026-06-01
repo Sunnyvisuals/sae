@@ -533,11 +533,12 @@ export default function PrologueTutorialOverlay({
   finePointer = false,
 }: Props) {
   const volumePct = Math.round(Math.min(1, Math.max(0, volume01)) * 100);
-  const overlayCursorNone = Boolean(step && finePointer);
+  /** Étape volume : curseur custom visible pour régler le son ; skip : cursor-none natif. */
+  const overlayCursorNone = step === "skip" && finePointer;
   const canLaunchVideo = volumePct > 0;
 
   useLayoutEffect(() => {
-    if (!step || !finePointer || step === "volume") return;
+    if (!step || !finePointer) return;
     ensureCustomCursorAwake();
     const af = window.requestAnimationFrame(ensureCustomCursorAwake);
     return () => window.cancelAnimationFrame(af);

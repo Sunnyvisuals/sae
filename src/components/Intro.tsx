@@ -95,8 +95,6 @@ const INTRO_CTA_WORDS_AR = ["إضغط", "أو", "إنتر"] as const;
 /** HUD volume prologue : durée visible après molette / touches. */
 const PROLOGUE_VOLUME_HUD_HOLD_MS = 1500;
 const PROLOGUE_TUTORIAL_VOLUME_HUD_HOLD_MS = 4000;
-/** Délai après le premier volume > 0 au tuto avant lancement auto de la vidéo. */
-const PROLOGUE_TUTORIAL_AUTO_LAUNCH_MS = 360;
 /** Relances silencieuses si le navigateur bloque le premier `play()`. */
 const PROLOGUE_PLAY_RETRY_MS = 100;
 const PROLOGUE_PLAY_RETRY_MAX = 50;
@@ -610,7 +608,6 @@ export default function Intro({
   const prologueHasPlayedRef = useRef(false);
   /** Évite les `load()` répétés qui annulent le buffer en cours. */
   const prologuePreloadPrimedRef = useRef(false);
-  const prologueAutoLaunchTimerRef = useRef<number | null>(null);
   const mutedScrollRef = useRef(isMuted);
   const arrivalLangBridgeVideoRef = useRef<HTMLVideoElement>(null);
   const languageGateSmokeSfxRef = useRef<import("howler").Howl | null>(null);
@@ -900,11 +897,6 @@ export default function Intro({
   useEffect(() => {
     primePrologueVideoPreload();
   }, []);
-
-  useEffect(() => {
-    onIntroCursorSuppressChange?.(prologueTutorialVolumeStep);
-    return () => onIntroCursorSuppressChange?.(false);
-  }, [prologueTutorialVolumeStep, onIntroCursorSuppressChange]);
 
   const introCoverActive =
     introSuspenseActive ||
@@ -1442,10 +1434,6 @@ export default function Intro({
     if (vol <= 0) return false;
 
     prologueTutorialVolumeDoneRef.current = true;
-    if (prologueAutoLaunchTimerRef.current != null) {
-      window.clearTimeout(prologueAutoLaunchTimerRef.current);
-      prologueAutoLaunchTimerRef.current = null;
-    }
     commitPrologueVolume(vol);
     disposePrologueTutorialVolumeProbe();
     setPrologueTutorialStep(null);
@@ -1456,32 +1444,6 @@ export default function Intro({
     startPrologueVideo();
     return true;
   }, [commitPrologueVolume, startPrologueVideo]);
-
-  /** Après le seuil volume au tuto : passage vidéo sans clic ni Entrée. */
-  useEffect(() => {
-    if (prologueTutorialStep !== "volume") {
-      if (prologueAutoLaunchTimerRef.current != null) {
-        window.clearTimeout(prologueAutoLaunchTimerRef.current);
-        prologueAutoLaunchTimerRef.current = null;
-      }
-      return;
-    }
-    if (readPrologueVolume01(volumeRef, isMutedRef) <= 0) return;
-    if (prologueTutorialVolumeDoneRef.current) return;
-    if (prologueAutoLaunchTimerRef.current != null) {
-      window.clearTimeout(prologueAutoLaunchTimerRef.current);
-    }
-    prologueAutoLaunchTimerRef.current = window.setTimeout(() => {
-      prologueAutoLaunchTimerRef.current = null;
-      completePrologueVolumeTutorial();
-    }, PROLOGUE_TUTORIAL_AUTO_LAUNCH_MS);
-    return () => {
-      if (prologueAutoLaunchTimerRef.current != null) {
-        window.clearTimeout(prologueAutoLaunchTimerRef.current);
-        prologueAutoLaunchTimerRef.current = null;
-      }
-    };
-  }, [prologueTutorialStep, volume, isMuted, completePrologueVolumeTutorial]);
 
   useEffect(() => {
     if (prologueTutorialStep === "skip") {
@@ -1530,19 +1492,7 @@ export default function Intro({
           mutedScrollRef.current,
         );
         setTutorialVolume01(m ? 0 : v);
-        return;
       }
-      if (e.key !== "Enter" || e.repeat) return;
-      const t = e.target;
-      if (
-        t instanceof HTMLInputElement ||
-        t instanceof HTMLTextAreaElement ||
-        t instanceof HTMLSelectElement
-      ) {
-        return;
-      }
-      e.preventDefault();
-      completePrologueVolumeTutorial();
     };
     window.addEventListener("wheel", onWheel, { passive: false, capture: true });
     window.addEventListener("keydown", onKey, true);

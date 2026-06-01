@@ -114,7 +114,8 @@
       s1950_p3:
         "Il côtoie Camus, Charlot, de nombreux écrivains du Maghreb. Sénac revendique une « algérianité » de la littérature : écrire en français depuis l'Afrique, sans renier la terre ni le peuple.",
       fig2_alt: "Vue d'Alger et de son port, photographie d'archive.",
-      fig2_cap: "Alger, années 1950-1960, scène littéraire et engagement",
+      fig2_cap_html:
+        '<a href="https://fr.wikipedia.org/wiki/Alger" target="_blank" rel="noopener noreferrer" class="archive-caption__wiki">Alger</a>, années 1950-1960, scène littéraire et engagement',
       ghost_soleils: "Soleils",
       s_soleils_date: "1949, livre",
       s_soleils_h2: "Soleils séparés",
@@ -305,7 +306,8 @@
       s_belcourt_p2:
         "ليست صالونًا باريسيًا: إنها الشارع والشاي والبحر. ثقافة شعبية ومثقفة تبشّر باستقلالات ثقافية في المغرب.",
       fig2_alt: "منظر للجزائر ومينائها، صورة أرشيفية.",
-      fig2_cap: "الجزائر، الستينات، مشهد أدبي وانخراط",
+      fig2_cap_html:
+        '<a href="https://ar.wikipedia.org/wiki/الجزائر_(مدينة)" target="_blank" rel="noopener noreferrer" class="archive-caption__wiki">الجزائر</a>، الستينات، مشهد أدبي وانخراط',
       ghost_soleils: "شموس",
       s_soleils_date: "١٩٤٩، كتاب",
       s_soleils_h2: "شموس متفرّقة",
