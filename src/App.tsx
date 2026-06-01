@@ -49,6 +49,7 @@ import { useCursorStore } from "./hooks/useCursorContext";
 import { useCursorPrefsStore } from "./stores/cursorPrefsStore";
 import { useShellRuntimeStore } from "./stores/shellRuntimeStore";
 import { useMediaQuery } from "./hooks/useMediaQuery";
+import { isSafariBrowser } from "./lib/safariDetect";
 import {
   useLanguageStore,
   LANGUAGE_MORPH_IN_MS,
@@ -300,6 +301,7 @@ export default function App() {
   const isLanguageMorphing = useLanguageStore((s) => s.isLanguageMorphing);
   const copy = useAppCopy();
   const prefersReducedMotion = useReducedMotion();
+  const isSafari = useMemo(() => isSafariBrowser(), []);
   const introVideoPlaying = phase === "intro" && videoStarted;
 
   /** Palettes du voile langue - alignées acte II minuit sinon doré désert */
@@ -1032,14 +1034,18 @@ export default function App() {
       phase === "act2" || phase === "act3"
         ? { lerp: 1, duration: 0.01, smoothWheel: false, syncTouch: false }
         : phase === "act1" || act23BridgeOpen
-          ? { lerp: 0.12, duration: 1.2, smoothWheel: false }
+          ? {
+              lerp: isSafari ? 0.14 : 0.12,
+              duration: 1.2,
+              smoothWheel: false,
+            }
           : {
-              lerp: 0.068,
-              duration: 1.82,
+              lerp: isSafari ? 0.08 : 0.068,
+              duration: isSafari ? 1.55 : 1.82,
               smoothWheel: true,
-              wheelMultiplier: 0.92,
+              wheelMultiplier: isSafari ? 1 : 0.92,
             },
-    [phase, act23BridgeOpen]
+    [phase, act23BridgeOpen, isSafari],
   );
 
   useEffect(() => {
@@ -1477,23 +1483,34 @@ export default function App() {
               ? {
                   opacity: 0.72,
                   scale: 0.989,
-                  filter: "blur(8px) saturate(1.08) brightness(0.88)",
+                  ...(isSafari
+                    ? {}
+                    : { filter: "blur(8px) saturate(1.08) brightness(0.88)" }),
                 }
               : phase === "intro"
                 ? {
                     opacity: 0.78,
                     scale: 0.987,
-                    filter: "blur(5px) saturate(0.88) brightness(0.96) sepia(0.1)",
+                    ...(isSafari
+                      ? {}
+                      : {
+                          filter:
+                            "blur(5px) saturate(0.88) brightness(0.96) sepia(0.1)",
+                        }),
                   }
                 : {
                     opacity: 0.76,
                     scale: 0.987,
-                    filter: "blur(6px) saturate(0.9) brightness(0.94)",
+                    ...(isSafari
+                      ? {}
+                      : { filter: "blur(6px) saturate(0.9) brightness(0.94)" }),
                   }
             : {
                 opacity: 1,
                 scale: 1,
-                filter: "blur(0px) saturate(1) brightness(1) sepia(0)",
+                ...(isSafari
+                  ? {}
+                  : { filter: "blur(0px) saturate(1) brightness(1) sepia(0)" }),
               }
         }
         transition={{
@@ -1504,8 +1521,8 @@ export default function App() {
         style={{ transformOrigin: "50% 40%" }}
         className={
           phase === "intro" || phase === "act1" || phase === "act2" || phase === "act3"
-            ? "isolate h-dvh max-h-dvh min-h-0 w-full overflow-hidden will-change-[opacity,filter,transform]"
-            : "isolate min-h-0 w-full will-change-[opacity,filter,transform]"
+            ? `isolate h-dvh max-h-dvh min-h-0 w-full overflow-hidden ${isSafari ? "will-change-[opacity,transform]" : "will-change-[opacity,filter,transform]"}`
+            : `isolate min-h-0 w-full ${isSafari ? "will-change-[opacity,transform]" : "will-change-[opacity,filter,transform]"}`
         }
       >
       {/* Acte II : pas d?overlay cin? (z-[52]) au-dessus de l?iframe - vignette = bande sombre ? pied de page ?. */}

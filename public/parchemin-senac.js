@@ -6,6 +6,9 @@
   if (window.parent !== window) {
     root.classList.add("senac-in-iframe");
   }
+  if (/Safari/i.test(navigator.userAgent) && !/Chrome|Chromium|CriOS|EdgiOS|Edg|OPR|Opera/i.test(navigator.userAgent)) {
+    root.classList.add("is-safari");
+  }
   /** Dans la SPA : pas de barre de progression (elle était relayée au parent et grossissait au scroll). */
   const suppressScrollProgressChrome = window.parent !== window;
   if (suppressScrollProgressChrome) {

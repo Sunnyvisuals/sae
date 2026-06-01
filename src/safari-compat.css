@@ -1,0 +1,74 @@
+/**
+ * Safari (WebKit) : composite GPU, backdrop-filter, mix-blend, Lenis.
+ * Activé via `html.is-safari` (initSafariCompat dans main.tsx).
+ */
+
+html.is-safari {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+html.is-safari #root {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* Lenis translate sur documentElement : évite déchirures au scroll. */
+html.is-safari.lenis,
+html.is-safari.lenis body {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+html.is-safari.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+/* Calques fixes / WebGL fluide */
+html.is-safari canvas#fluid,
+html.is-safari canvas#fluid-bg,
+html.is-safari canvas#fluid-bg-scene {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Backdrop : préfixe explicite (aligné Chrome). */
+html.is-safari .backdrop-blur-sm,
+html.is-safari .backdrop-blur-md,
+html.is-safari .backdrop-blur-lg,
+html.is-safari .backdrop-blur-xl,
+html.is-safari .backdrop-blur-\[2px\],
+html.is-safari .backdrop-blur-\[3px\] {
+  -webkit-backdrop-filter: var(--tw-backdrop-blur,) var(--tw-backdrop-brightness,)
+    var(--tw-backdrop-contrast,) var(--tw-backdrop-grayscale,)
+    var(--tw-backdrop-hue-rotate,) var(--tw-backdrop-invert,) var(--tw-backdrop-opacity,)
+    var(--tw-backdrop-saturate,) var(--tw-backdrop-sepia,);
+}
+
+/* Grands halos Tailwind blur : Safari floute moins uniformément → léger resserrement. */
+html.is-safari .safari-halo-blur {
+  filter: blur(56px) !important;
+}
+
+@media (min-width: 640px) {
+  html.is-safari .safari-halo-blur-sm {
+    filter: blur(72px) !important;
+  }
+}
+
+/* Animations filter coûteuses : fondu/opacité seulement (Framer inline blur ignoré). */
+@media (prefers-reduced-motion: no-preference) {
+  html.is-safari .will-change-\[opacity\,filter\,transform\] {
+    will-change: opacity, transform;
+  }
+}
+
+/* Texte dégradé (titres pause, etc.) */
+html.is-safari .font-bahlull[style*="background-clip"] {
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+html.is-safari video {
+  object-fit: cover;
+}

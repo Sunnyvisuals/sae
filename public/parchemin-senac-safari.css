@@ -1,0 +1,56 @@
+/**
+ * Acte II (parchemin) — Safari WebKit : même rendu visuel que Chrome, composite stable.
+ * Activé via `html.is-safari` (parchemin-senac.js).
+ */
+
+html.is-safari {
+  -webkit-font-smoothing: antialiased;
+}
+
+html.is-safari .aurora {
+  filter: blur(20px) saturate(1.12);
+}
+
+html.is-safari .aurora-a,
+html.is-safari .aurora-b {
+  will-change: transform, opacity;
+}
+
+html.is-safari .depth-lines {
+  animation-duration: 48s;
+}
+
+html.is-safari .hero-portrait-frame {
+  filter: grayscale(0.06) contrast(1.05) brightness(1.03);
+}
+
+html.is-safari .hero-portrait-frame img {
+  transform: translate(var(--portrait-tx, 0px), var(--portrait-ty, 0px)) translateZ(0);
+}
+
+html.is-safari #sky-canvas,
+html.is-safari #senac-color-fluid canvas,
+html.is-safari #senac-arch-canvas {
+  transform: translateZ(0);
+}
+
+html.is-safari .smc-backdrop.is-visible {
+  -webkit-backdrop-filter: blur(14px) saturate(0.92);
+  backdrop-filter: blur(14px) saturate(0.92);
+}
+
+html.is-safari .scroll-mode-choice.is-visible.is-leaving .smc-split-root {
+  filter: none !important;
+}
+
+html.is-safari .scroll-mode-choice .smc-split-curtain,
+html.is-safari .scroll-mode-choice .smc-split-act-kicker,
+html.is-safari .scroll-mode-choice .smc-split-side {
+  filter: none !important;
+}
+
+html.is-safari.lenis,
+html.is-safari.lenis body {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}

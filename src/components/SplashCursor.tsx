@@ -2,6 +2,7 @@
 import { useEffect, useRef } from 'react';
 import type { CSSProperties } from 'react';
 import { useCursorStore } from '../hooks/useCursorContext';
+import { isSafariBrowser } from '../lib/safariDetect';
 
 interface SplashCursorProps {
   SIM_RESOLUTION?: number;
@@ -125,6 +126,12 @@ function SplashCursor({
       TRANSPARENT
     };
 
+    if (isSafariBrowser()) {
+      config.SIM_RESOLUTION = Math.min(config.SIM_RESOLUTION, 112);
+      config.DYE_RESOLUTION = Math.min(config.DYE_RESOLUTION, 560);
+      config.PRESSURE_ITERATIONS = Math.min(config.PRESSURE_ITERATIONS, 14);
+    }
+
     let pointers = [new (pointerPrototype as any)()];
 
     const { gl, ext } = getWebGLContext(canvas);
@@ -139,7 +146,8 @@ function SplashCursor({
         depth: false,
         stencil: false,
         antialias: false,
-        preserveDrawingBuffer: false
+        preserveDrawingBuffer: false,
+        powerPreference: 'high-performance' as WebGLPowerPreference,
       };
       let gl = canvas.getContext('webgl2', params) as WebGL2RenderingContext;
       const isWebGL2 = !!gl;

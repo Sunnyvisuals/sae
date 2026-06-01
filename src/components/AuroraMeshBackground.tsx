@@ -170,7 +170,7 @@ export default function AuroraMeshBackground({
 
       {/* Halo « soleil bas » / sable doré qui suit le curseur */}
       <div
-        className="pointer-events-none absolute left-1/2 top-1/2 h-[min(135vmin,1400px)] w-[min(135vmin,1400px)] rounded-full blur-[72px] sm:blur-[100px] opacity-[0.88] will-change-transform"
+        className="pointer-events-none absolute left-1/2 top-1/2 safari-halo-blur h-[min(135vmin,1400px)] w-[min(135vmin,1400px)] rounded-full blur-[72px] sm:blur-[100px] sm:safari-halo-blur-sm opacity-[0.88] will-change-transform"
         style={{
           background:
             'radial-gradient(circle at 42% 38%, rgba(213, 175, 110, 0.55) 0%, rgba(197, 160, 89, 0.38) 28%, rgba(140, 95, 48, 0.22) 52%, transparent 74%)',
