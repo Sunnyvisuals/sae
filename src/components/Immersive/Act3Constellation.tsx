@@ -51,9 +51,8 @@ import {
 import Act3ConstellationSky, {
   type Act3ConstellationSkyHandle,
 } from "./Act3ConstellationSky";
-import Act3ConstellationScrollLoad, {
-  Act3FixedCenterPortal,
-} from "./Act3ConstellationScrollLoad";
+import Act3ConstellationScrollLoad from "./Act3ConstellationScrollLoad";
+import Act3FixedCenterPortal from "./Act3FixedCenterPortal";
 import AuroraMeshBackground from "../AuroraMeshBackground";
 
 type Step = "intro" | "select" | "confirm" | "constellation" | "outro";
@@ -499,12 +498,12 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
         <AnimatePresence mode="wait">
           {step === "intro" && (
             <Act3FixedCenterPortal className="pointer-events-none fixed inset-0 z-[3] shell-visual-center flex items-center justify-center px-3 text-center sm:px-6">
-            <motion.div
-              key="intro"
-              className="flex w-full items-center justify-center"
-              exit={{ opacity: 0 }}
-              transition={act3Fade(reduceMotion, 1)}
-            >
+              <motion.div
+                key="intro"
+                className="flex w-full items-center justify-center"
+                exit={{ opacity: 0 }}
+                transition={act3Fade(reduceMotion, 1)}
+              >
               <AnimatePresence mode="wait">
                 {introPhase === "line1" && (
                   <motion.p
@@ -543,7 +542,7 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
                   </motion.p>
                 )}
               </AnimatePresence>
-            </motion.div>
+              </motion.div>
             </Act3FixedCenterPortal>
           )}
 

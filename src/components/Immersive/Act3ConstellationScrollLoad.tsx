@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "motion/react";
 import {
   ACT3_SCROLL_BUDGET,
+  ACT3_SCROLL_COMPLETE_HOLD_MS,
   act3Fade,
   act3TextReveal,
 } from "../../lib/act3ConstellationTiming";
@@ -18,25 +19,6 @@ type Props = {
   onViewMyStar?: () => void;
   onComplete: () => void;
 };
-
-/** Overlays intro/outro : portal body pour éviter décalage `fixed` (Lenis / Safari). */
-export function Act3FixedCenterPortal({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
-
-  useLayoutEffect(() => {
-    setPortalRoot(document.body);
-  }, []);
-
-  if (!portalRoot) return null;
-
-  return createPortal(<div className={className}>{children}</div>, portalRoot);
-}
 
 /** Bouton « Voir mon étoile » — fixé en bas. */
 function Act3ViewMyStarBottom({
@@ -79,17 +61,11 @@ function Act3ViewMyStarBottom({
 function Act3TopScrollChrome({
   progress,
   scrollCue,
-  continueLabel,
   reduceMotion,
-  readyToContinue,
-  onContinue,
 }: {
   progress: number;
   scrollCue: string;
-  continueLabel: string;
   reduceMotion: boolean;
-  readyToContinue: boolean;
-  onContinue: () => void;
 }) {
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
   const fillRef = useRef<HTMLDivElement>(null);
@@ -152,21 +128,7 @@ function Act3TopScrollChrome({
         transition={act3TextReveal(reduceMotion, 1, 0.12)}
         aria-live="polite"
       >
-        <p className="da-act3-scroll-load-cue-line m-0 w-full text-center">
-          {readyToContinue ? continueLabel : scrollCue}
-        </p>
-        {readyToContinue ? (
-          <motion.button
-            type="button"
-            onClick={onContinue}
-            className="da-act3-continue pointer-events-auto mt-1"
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={act3TextReveal(reduceMotion, 0.95, 0.08)}
-          >
-            {continueLabel}
-          </motion.button>
-        ) : null}
+        <p className="da-act3-scroll-load-cue-line m-0 w-full text-center">{scrollCue}</p>
       </motion.div>
     </motion.div>
   );
@@ -187,22 +149,42 @@ export default function Act3ConstellationScrollLoad({
   const [progress, setProgress] = useState(0);
   const progressRef = useRef(0);
   const completedRef = useRef(false);
+  const pendingCompleteRef = useRef(false);
+  const completeTimeoutRef = useRef<number | null>(null);
   const touchYRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!active) {
       progressRef.current = 0;
       completedRef.current = false;
+      pendingCompleteRef.current = false;
       touchYRef.current = null;
+      if (completeTimeoutRef.current != null) {
+        window.clearTimeout(completeTimeoutRef.current);
+        completeTimeoutRef.current = null;
+      }
       setProgress(0);
       return;
     }
     if (reduceMotion) return;
 
-    const markReady = () => {
-      if (completedRef.current) return;
+    const clearCompleteTimer = () => {
+      if (completeTimeoutRef.current != null) {
+        window.clearTimeout(completeTimeoutRef.current);
+        completeTimeoutRef.current = null;
+      }
+    };
+
+    const finish = () => {
+      if (completedRef.current || pendingCompleteRef.current) return;
+      pendingCompleteRef.current = true;
       progressRef.current = 1;
       setProgress(1);
+      clearCompleteTimer();
+      completeTimeoutRef.current = window.setTimeout(() => {
+        completedRef.current = true;
+        onComplete();
+      }, ACT3_SCROLL_COMPLETE_HOLD_MS);
     };
 
     /** + = charge (scroll vers le haut), − = décharge (vers le bas). */
@@ -214,10 +196,15 @@ export default function Act3ConstellationScrollLoad({
         Math.max(0, progressRef.current + signedDy / ACT3_SCROLL_BUDGET),
       );
 
+      if (next < 1 && pendingCompleteRef.current) {
+        pendingCompleteRef.current = false;
+        clearCompleteTimer();
+      }
+
       progressRef.current = next;
       setProgress(next);
 
-      if (next >= 1) markReady();
+      if (next >= 1) finish();
     };
 
     const onWheel = (e: WheelEvent) => {
@@ -260,12 +247,7 @@ export default function Act3ConstellationScrollLoad({
         return;
       }
       e.preventDefault();
-      if (progressRef.current >= 1) {
-        completedRef.current = true;
-        onComplete();
-      } else {
-        markReady();
-      }
+      finish();
     };
 
     window.addEventListener("wheel", onWheel, { passive: false, capture: true });
@@ -278,19 +260,13 @@ export default function Act3ConstellationScrollLoad({
       window.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("keydown", onKey, true);
+      clearCompleteTimer();
     };
   }, [active, reduceMotion, onComplete]);
-
-  const handleContinue = () => {
-    if (completedRef.current) return;
-    completedRef.current = true;
-    onComplete();
-  };
 
   if (!active) return null;
 
   const showViewMyStar = Boolean(viewMyStarLabel && onViewMyStar);
-  const readyToContinue = progress >= 1;
 
   if (reduceMotion) {
     return (
@@ -301,7 +277,7 @@ export default function Act3ConstellationScrollLoad({
           onClick={onViewMyStar ?? (() => {})}
           reduceMotion={reduceMotion}
         />
-        <button type="button" onClick={handleContinue} className="da-act3-continue mt-1">
+        <button type="button" onClick={onComplete} className="da-act3-continue mt-1">
           {continueLabel}
         </button>
       </>
@@ -313,10 +289,7 @@ export default function Act3ConstellationScrollLoad({
       <Act3TopScrollChrome
         progress={progress}
         scrollCue={scrollCue}
-        continueLabel={continueLabel}
         reduceMotion={reduceMotion}
-        readyToContinue={readyToContinue}
-        onContinue={handleContinue}
       />
       <Act3ViewMyStarBottom
         visible={showViewMyStar}
