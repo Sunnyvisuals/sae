@@ -61,6 +61,7 @@ function MajesticButton({
   children,
   variant = 'gold',
   midnight,
+  compact,
   onClick,
   'aria-pressed': ariaPressed,
   'aria-keyshortcuts': ariaKeyshortcuts,
@@ -69,6 +70,8 @@ function MajesticButton({
   variant?: 'gold' | 'mist' | 'ember';
   /** Acte II - bleu constellation au lieu du doré désert */
   midnight: boolean;
+  /** MacBook / hauteur limitée : boutons plus compacts, texte multiligne. */
+  compact?: boolean;
   onClick: () => void;
   'aria-pressed'?: boolean | 'true' | 'false' | 'mixed';
   'aria-keyshortcuts'?: string;
@@ -101,7 +104,13 @@ function MajesticButton({
       onClick={onClick}
       aria-pressed={ariaPressed}
       aria-keyshortcuts={ariaKeyshortcuts}
-      className={`group relative w-full overflow-hidden rounded-[2px] border bg-black/30 px-4 py-3 text-center text-[11px] uppercase leading-snug tracking-[0.26em] backdrop-blur-[2px] transition-colors duration-500 sm:px-6 sm:py-[0.95rem] sm:text-[12px] sm:tracking-[0.32em] md:flex md:h-[57px] md:items-center md:justify-center md:py-[18px] md:text-[13px] md:tracking-[0.36em] ${styles}`}
+      className={
+        `group relative w-full overflow-hidden rounded-[2px] border bg-black/30 text-center uppercase leading-snug backdrop-blur-[2px] transition-colors duration-500 ` +
+        (compact
+          ? 'px-3 py-2 text-[10px] tracking-[0.2em] sm:px-4 sm:py-2.5 sm:text-[10px] sm:tracking-[0.22em]'
+          : 'px-4 py-3 text-[11px] tracking-[0.26em] sm:px-6 sm:py-[0.95rem] sm:text-[12px] sm:tracking-[0.32em] md:flex md:min-h-[50px] md:items-center md:justify-center md:py-3 md:text-[13px] md:tracking-[0.36em]') +
+        ` ${styles}`
+      }
     >
       <span
         className={`pointer-events-none absolute inset-y-0 left-0 w-[3px] ${stripeGrad} opacity-0 transition-opacity duration-500 group-hover:opacity-100`}
@@ -121,7 +130,7 @@ function MajesticButton({
 }
 
 /** Curseur - souris fine uniquement ; placé avant le son dans le menu pause. */
-function PauseCursorPicker({ midnight }: { midnight: boolean }) {
+function PauseCursorPicker({ midnight, compact }: { midnight: boolean; compact?: boolean }) {
   const copy = useAppCopy();
   const panelId = useId();
   const finePointer = useMediaQuery('(any-pointer: fine)');
@@ -203,7 +212,9 @@ function PauseCursorPicker({ midnight }: { midnight: boolean }) {
             </span>
             <span
               className={
-                'min-w-0 max-w-full text-end text-[9px] font-light tracking-[0.12em] sm:max-w-[min(100%,18ch)] sm:truncate sm:text-[10px] sm:tracking-[0.18em] ' +
+                'min-w-0 max-w-full text-end text-[9px] font-light tracking-[0.12em] sm:text-[10px] sm:tracking-[0.18em] ' +
+                (compact ? 'hidden sm:inline sm:max-w-[min(100%,14ch)] sm:truncate' : 'sm:max-w-[min(100%,18ch)] sm:truncate') +
+                ' ' +
                 (midnight ? 'text-sky-200/70' : 'text-[rgba(253,248,238,0.65)]')
               }
               title={currentLabel}
@@ -221,7 +232,7 @@ function PauseCursorPicker({ midnight }: { midnight: boolean }) {
         >
           <div className={`min-h-0 overflow-hidden ${!cursorOpen ? 'pointer-events-none' : ''}`}>
             <div className="pt-2">
-              <div className={`grid grid-cols-1 gap-2 sm:grid-cols-2 ${isArabic ? 'text-right' : ''}`} dir={isArabic ? 'rtl' : 'ltr'}>
+              <div className={`grid grid-cols-1 gap-2 ${compact ? '' : 'sm:grid-cols-2'} ${isArabic ? 'text-right' : ''}`} dir={isArabic ? 'rtl' : 'ltr'}>
                 <button
                   type="button"
                   onClick={() => applyExperience('fluid')}
@@ -233,17 +244,16 @@ function PauseCursorPicker({ midnight }: { midnight: boolean }) {
                     optActive(experience === 'fluid')
                   }
                 >
-                  <span className="block text-[9px] font-medium uppercase tracking-[0.22em]">
+                  <span className="block text-[9px] font-medium uppercase leading-snug tracking-[0.16em]">
                     {copy.cursorOptionFluid}
-                    <span
-                      className={
-                        "font-light normal-case tracking-[0.14em] " +
-                        (midnight ? "text-sky-300/48" : "text-solar-gold/55")
-                      }
-                    >
-                      {" "}
-                      · {copy.cursorOptionDefaultBadge}
-                    </span>
+                  </span>
+                  <span
+                    className={
+                      'mt-0.5 block text-[8px] font-normal normal-case leading-snug tracking-[0.08em] ' +
+                      (midnight ? 'text-sky-300/48' : 'text-solar-gold/55')
+                    }
+                  >
+                    {copy.cursorOptionDefaultBadge}
                   </span>
                 </button>
                 <button
@@ -257,7 +267,7 @@ function PauseCursorPicker({ midnight }: { midnight: boolean }) {
                     optActive(experience === 'basic')
                   }
                 >
-                  <span className="block text-[9px] font-medium uppercase tracking-[0.22em]">
+                  <span className="block text-[9px] font-medium uppercase leading-snug tracking-[0.16em]">
                     {copy.cursorOptionBasic}
                   </span>
                 </button>
@@ -821,6 +831,7 @@ export default function SystemMenu({
 }: Props) {
   const midnight = useCursorStore((s) => s.ambient === 'midnight');
   const finePointer = useMediaQuery('(any-pointer: fine)');
+  const laptopShort = useMediaQuery('(min-width: 768px) and (max-height: 980px)');
   const copy = useAppCopy();
   const language = useLanguageStore((s) => s.language);
   const isArabic = language === 'ar-dz';
@@ -877,22 +888,37 @@ export default function SystemMenu({
         <IconX className="h-5 w-5 sm:h-[22px] sm:w-[22px]" aria-hidden />
       </motion.button>
 
-      {/* Zone centrale : carte centrée ; scroll si le contenu dépasse. */}
-      <motion.div className="relative z-10 flex min-h-0 w-full flex-1 flex-col items-center justify-center overflow-hidden px-3 py-3 sm:px-5 sm:py-4">
-        <motion.div className="mx-auto flex w-full max-w-[min(100%,42rem)] min-h-0 max-h-full flex-1 flex-col items-center justify-center overflow-y-auto overflow-x-hidden overscroll-y-contain px-1 py-3 sm:px-2 sm:py-4">
+      {/* Zone centrale : carte ; scroll si le contenu dépasse (prioritaire sur laptop). */}
+      <motion.div
+        className={
+          'relative z-10 flex min-h-0 w-full flex-1 flex-col items-center overflow-hidden px-3 sm:px-5 ' +
+          (laptopShort ? 'justify-start py-2' : 'justify-center py-3 sm:py-4')
+        }
+      >
+        <motion.div
+          className={
+            'mx-auto flex w-full max-w-[min(100%,42rem)] min-h-0 flex-1 flex-col items-center overflow-y-auto overflow-x-hidden overscroll-y-contain px-1 ' +
+            (laptopShort
+              ? 'max-h-full justify-start py-1'
+              : 'max-h-full justify-center py-3 sm:px-2 sm:py-4')
+          }
+        >
         <motion.div
           className="flex w-full min-h-0 min-w-0 shrink-0 flex-col items-center justify-center"
           variants={container}
           initial="hidden"
           animate="show"
         >
-          {/* Bloc encadré - centré viewport ; scroll sur le parent si contenu haut. */}
+          {/* Bloc encadré - scroll sur le parent si contenu haut. */}
           <div
             dir={isArabic ? 'rtl' : 'ltr'}
             className={
-              midnight
-                ? 'relative mx-auto my-auto flex w-full max-w-[min(100%,40rem)] shrink-0 flex-col overflow-x-hidden border border-[rgba(90,168,255,0.26)] bg-[#040a14]/85 px-4 pb-12 pt-9 text-center shadow-[0_0_0_1px_rgba(90,168,255,0.1),inset_0_0_60px_rgba(45,110,190,0.05)] backdrop-blur-md sm:px-7 sm:pb-14 sm:pt-12 md:px-9 md:pb-16 md:pt-14'
-                : 'relative mx-auto my-auto flex w-full max-w-[min(100%,40rem)] shrink-0 flex-col overflow-x-hidden border border-solar-gold/25 bg-[#050302]/85 px-4 pb-12 pt-9 text-center shadow-[0_0_0_1px_rgba(197,160,89,0.08),inset_0_0_60px_rgba(197,160,89,0.03)] backdrop-blur-md sm:px-7 sm:pb-14 sm:pt-12 md:px-9 md:pb-16 md:pt-14'
+              (midnight
+                ? 'relative mx-auto flex w-full max-w-[min(100%,40rem)] shrink-0 flex-col overflow-x-hidden border border-[rgba(90,168,255,0.26)] bg-[#040a14]/85 text-center shadow-[0_0_0_1px_rgba(90,168,255,0.1),inset_0_0_60px_rgba(45,110,190,0.05)] backdrop-blur-md '
+                : 'relative mx-auto flex w-full max-w-[min(100%,40rem)] shrink-0 flex-col overflow-x-hidden border border-solar-gold/25 bg-[#050302]/85 text-center shadow-[0_0_0_1px_rgba(197,160,89,0.08),inset_0_0_60px_rgba(197,160,89,0.03)] backdrop-blur-md ') +
+              (laptopShort
+                ? 'px-4 pb-8 pt-7'
+                : 'px-4 pb-12 pt-9 sm:px-7 sm:pb-14 sm:pt-12 md:px-9 md:pb-16 md:pt-14')
             }
           >
             <div
@@ -927,7 +953,12 @@ export default function SystemMenu({
                 {copy.menuPause}
               </p>
               <h2
-                className="font-bahlull mx-auto mt-3 mb-1 box-border flex w-full max-w-[min(100%,28ch)] flex-col items-center justify-center overflow-visible px-0.5 pb-0.5 pt-0.5 text-[clamp(2.35rem,8vw,4rem)] italic leading-[1.18] text-transparent sm:mt-3.5 sm:mb-1.5"
+                className={
+                  'font-bahlull mx-auto box-border flex w-full max-w-[min(100%,28ch)] flex-col items-center justify-center overflow-visible px-0.5 pb-0.5 pt-0.5 italic leading-[1.15] text-transparent ' +
+                  (laptopShort
+                    ? 'mt-2 mb-0.5 text-[clamp(1.75rem,5vw,2.65rem)]'
+                    : 'mt-3 mb-1 text-[clamp(2.35rem,8vw,4rem)] leading-[1.18] sm:mt-3.5 sm:mb-1.5')
+                }
                 style={
                   midnight
                     ? {
@@ -956,8 +987,10 @@ export default function SystemMenu({
               variants={item}
               className={
                 midnight
-                  ? 'font-serif mx-auto mt-1.5 max-w-[30ch] text-center text-[13px] italic leading-relaxed text-sky-200/52 sm:mt-2 sm:max-w-lg sm:text-[15px] md:text-[16px]'
-                  : 'font-serif mx-auto mt-1.5 max-w-[30ch] text-center text-[13px] italic leading-relaxed text-solar-gold/50 sm:mt-2 sm:max-w-lg sm:text-[15px] md:text-[16px]'
+                  ? 'font-serif mx-auto max-w-[30ch] text-center italic leading-relaxed text-sky-200/52 ' +
+                    (laptopShort ? 'mt-1 text-[12px] leading-snug' : 'mt-1.5 text-[13px] sm:mt-2 sm:max-w-lg sm:text-[15px] md:text-[16px]')
+                  : 'font-serif mx-auto max-w-[30ch] text-center italic leading-relaxed text-solar-gold/50 ' +
+                    (laptopShort ? 'mt-1 text-[12px] leading-snug' : 'mt-1.5 text-[13px] sm:mt-2 sm:max-w-lg sm:text-[15px] md:text-[16px]')
               }
             >
               <span className={midnight ? 'text-sky-300/42' : 'text-solar-gold/35'}>«</span>
@@ -966,7 +999,7 @@ export default function SystemMenu({
             </motion.p>
 
             <motion.div variants={item} className={`${PAUSE_MENU_STACK_CLASS} flex flex-col items-stretch`}>
-            <PauseCursorPicker midnight={midnight} />
+            <PauseCursorPicker midnight={midnight} compact={laptopShort} />
 
             <PauseVolumeSlider midnight={midnight} />
 
@@ -1010,10 +1043,13 @@ export default function SystemMenu({
 
             <motion.nav
               variants={item}
-              className="mt-5 flex w-full flex-col gap-5 sm:mt-6"
+              className={
+                'flex w-full flex-col ' +
+                (laptopShort ? 'mt-3 gap-3' : 'mt-5 gap-5 sm:mt-6')
+              }
               aria-label={copy.menuNavAria}
             >
-              <MajesticButton variant="gold" midnight={midnight} onClick={onClose}>
+              <MajesticButton variant="gold" midnight={midnight} compact={laptopShort} onClick={onClose}>
                 {copy.menuContinue}
               </MajesticButton>
 
@@ -1021,6 +1057,7 @@ export default function SystemMenu({
                 <MajesticButton
                   variant="mist"
                   midnight={midnight}
+                  compact={laptopShort}
                   onClick={() => {
                     onReplayIntroVideo();
                   }}
@@ -1039,6 +1076,7 @@ export default function SystemMenu({
               <MajesticButton
                 variant="ember"
                 midnight={midnight}
+                compact={laptopShort}
                 onClick={() => setRestartConfirmOpen(true)}
               >
                 {copy.menuRestart}
@@ -1062,7 +1100,14 @@ export default function SystemMenu({
       />
 
       {/* Crédits - hors du cadre, bas d’écran */}
-      <div className="pointer-events-none relative z-10 flex w-full shrink-0 flex-col items-center gap-1.5 px-4 pb-[max(1.35rem,env(safe-area-inset-bottom))] pt-4 text-center">
+      <div
+        className={
+          'pointer-events-none relative z-10 flex w-full shrink-0 flex-col items-center gap-1.5 px-4 text-center ' +
+          (laptopShort
+            ? 'pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2'
+            : 'pb-[max(1.35rem,env(safe-area-inset-bottom))] pt-4')
+        }
+      >
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
