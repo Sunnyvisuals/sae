@@ -745,7 +745,7 @@ export default function PrologueTutorialOverlay({
           }
           dir={isArabic ? "rtl" : "ltr"}
           className={
-            "pointer-events-auto fixed inset-0 z-[48] overflow-hidden" +
+            "pointer-events-auto fixed inset-0 z-[48] shell-visual-center overflow-hidden" +
             (overlayCursorNone ? " cursor-none" : "")
           }
           initial={{ opacity: 0 }}

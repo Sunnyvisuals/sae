@@ -541,7 +541,9 @@ export default function Intro({
       };
 
   const prefersReducedMotion = useReducedMotion();
-  const compactDesktop = useMediaQuery("(min-width: 1600px) and (max-height: 1100px)");
+  const laptopMac = useMediaQuery("(min-width: 900px) and (max-height: 980px)");
+  const compactDesktop =
+    useMediaQuery("(min-width: 1280px) and (max-height: 1100px)") || laptopMac;
   const finePointer = useMediaQuery("(any-pointer: fine)");
   const [videoStarted, setVideoStarted] = useState(false);
   const [showInitialTitle, setShowInitialTitle] = useState(true);
@@ -2334,7 +2336,10 @@ export default function Intro({
                     heroMotion
                     viewportTracking
                     className={
-                      "mx-auto flex min-h-[clamp(13rem,30vw,22rem)] w-screen max-w-[1500px] items-center justify-center px-6 md:px-10 select-none"
+                      "mx-auto flex w-screen max-w-[1500px] items-center justify-center px-6 md:px-10 select-none " +
+                      (laptopMac
+                        ? "min-h-[clamp(9rem,22vw,14rem)]"
+                        : "min-h-[clamp(13rem,30vw,22rem)]")
                     }
                   >
                     <span className="sr-only">الرحلة</span>
@@ -2347,7 +2352,11 @@ export default function Intro({
                       draggable={false}
                       className={
                         "mx-auto h-auto drop-shadow-[0_0_22px_rgba(197,160,89,0.28)] " +
-                        (compactDesktop ? "w-[min(54rem,78vw)]" : "w-[min(60rem,86vw)]")
+                        (laptopMac
+                          ? "w-[min(48rem,72vw)]"
+                          : compactDesktop
+                            ? "w-[min(54rem,78vw)]"
+                            : "w-[min(60rem,86vw)]")
                       }
                     />
                   </AnimatedTitle>
@@ -2359,7 +2368,9 @@ export default function Intro({
                     text="Al Rihla"
                     className={
                       "font-bahlull text-white tracking-tighter italic drop-shadow-[0_0_22px_rgba(197,160,89,0.35)] " +
-                      (compactDesktop ? "text-6xl md:text-8xl" : "text-7xl md:text-9xl")
+                      (compactDesktop
+                        ? "text-6xl md:text-7xl"
+                        : "text-6xl md:text-7xl xl:text-8xl 2xl:text-9xl")
                     }
                   />
                 )}

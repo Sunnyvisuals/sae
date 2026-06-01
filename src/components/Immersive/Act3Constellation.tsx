@@ -498,7 +498,7 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
           {step === "intro" && (
             <motion.div
               key="intro"
-              className="pointer-events-none fixed inset-0 z-[3] flex items-center justify-center px-3 text-center sm:px-6"
+              className="pointer-events-none fixed inset-0 z-[3] shell-visual-center flex items-center justify-center px-3 text-center sm:px-6"
               exit={{ opacity: 0 }}
               transition={act3Fade(reduceMotion, 1)}
             >
@@ -794,7 +794,7 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
           {step === "outro" && (
             <motion.div
               key="outro"
-              className="flex flex-1 flex-col items-center justify-center px-4 text-center"
+              className="flex flex-1 flex-col items-center justify-center shell-visual-center px-4 text-center"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={act3Fade(reduceMotion, 1)}

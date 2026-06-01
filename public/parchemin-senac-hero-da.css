@@ -644,8 +644,8 @@ html[dir="rtl"] .chapter-two header.hero.senac-hero-stack .hero-eyebrow {
   }
 }
 
-/* Grand écran : respiration */
-@media (min-width: 1100px) {
+/* Grand écran : respiration (hauteur suffisante — pas MacBook 14" ~982px). */
+@media (min-width: 1100px) and (min-height: 900px) {
   .chapter-two header.hero.senac-hero-stack {
     --senac-hero-gap: clamp(1rem, 2.6vh, 1.55rem);
     padding-top: max(env(safe-area-inset-top, 0px), clamp(3.5rem, 11vh, 5.5rem));
@@ -662,6 +662,43 @@ html[dir="rtl"] .chapter-two header.hero.senac-hero-stack .hero-eyebrow {
 
   .chapter-two header.hero.senac-hero-stack .hero-subtitle {
     font-size: clamp(0.72rem, 0.9vw, 0.92rem);
+  }
+}
+
+/* MacBook / laptop : largeur desktop, hauteur limitée (ex. 1512×982). */
+@media (min-width: 900px) and (max-height: 980px) {
+  .chapter-two header.hero.senac-hero-stack {
+    --senac-hero-gap: clamp(0.7rem, 1.65vh, 1rem);
+    padding-top: max(env(safe-area-inset-top, 0px), clamp(2rem, 5vh, 2.85rem));
+    padding-bottom: clamp(1.15rem, 3.2vh, 1.85rem);
+  }
+
+  .chapter-two header.hero.senac-hero-stack h1 {
+    font-size: clamp(2.35rem, 6.2vw, 3.65rem);
+  }
+
+  .chapter-two header.hero.senac-hero-stack .hero-subtitle {
+    font-size: clamp(0.68rem, 0.82vw, 0.84rem);
+  }
+
+  .chapter-two header.hero.senac-hero-stack .hero-portrait,
+  .chapter-two header.hero.senac-hero-stack .hero-portrait-frame img {
+    width: min(100%, clamp(22rem, 44vw, 30rem));
+  }
+
+  body.senac-reading-flow .chapter-two header.hero.senac-hero-stack {
+    min-height: auto;
+    padding-top: max(env(safe-area-inset-top, 0px), clamp(1.65rem, 4vh, 2.35rem));
+    padding-bottom: clamp(1.1rem, 3vh, 1.75rem);
+  }
+
+  body.senac-reading-flow .chapter-two header.hero.senac-hero-stack .hero-portrait,
+  body.senac-reading-flow .chapter-two header.hero.senac-hero-stack .hero-portrait-frame img {
+    width: min(100%, clamp(20rem, 40vmin, 28rem));
+  }
+
+  .hero-portrait {
+    margin: clamp(1rem, 2.8vmin, 1.65rem) auto clamp(0.85rem, 2.4vmin, 1.35rem);
   }
 }
 

@@ -1130,6 +1130,27 @@ export default function App() {
     return () => window.removeEventListener("wheel", onWheel);
   }, [parcoursOpen, phase, journeyReplayUnlocked]);
 
+  /** Largeur rail Parcours → centrage visuel des overlays (`shell-visual-center`). */
+  useEffect(() => {
+    const root = document.documentElement;
+    const sync = () => {
+      const parcoursEligible = mdUp && (phase !== "intro" || journeyReplayUnlocked);
+      const w =
+        parcoursOpen && parcoursEligible
+          ? Math.min(248, Math.max(200, Math.round(window.innerWidth * 0.22)))
+          : 0;
+      root.style.setProperty("--shell-parcours-rail-w", `${w}px`);
+      root.classList.toggle("shell-parcours-open", w > 0);
+    };
+    sync();
+    window.addEventListener("resize", sync, { passive: true });
+    return () => {
+      root.style.setProperty("--shell-parcours-rail-w", "0px");
+      root.classList.remove("shell-parcours-open");
+      window.removeEventListener("resize", sync);
+    };
+  }, [parcoursOpen, mdUp, phase, journeyReplayUnlocked]);
+
   /**
    * Acte II : iframe ? progression, navigation, et relais pointeur (`senac-pointer`) pour que le curseur
    * fluide + losange React suivent la souris au-dessus du parchemin (sinon seuls le rail Parcours re?oivent les events).

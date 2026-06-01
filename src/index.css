@@ -205,6 +205,20 @@
   }
 }
 
+/**
+ * Rail Parcours (desktop) : centrage visuel des overlays plein écran.
+ * Le contenu est centré sur le viewport ; on compense la moitié du rail à droite.
+ */
+:root {
+  --shell-parcours-rail-w: 0px;
+}
+
+@media (min-width: 768px) {
+  html.shell-parcours-open .shell-visual-center {
+    transform: translateX(calc(var(--shell-parcours-rail-w, 0px) * -0.5));
+  }
+}
+
 /* Losange : souris / trackpad précis uniquement (évite un gros curseur image sur tactile). */
 @media (hover: hover) and (pointer: fine) {
   @layer base {
@@ -381,6 +395,13 @@
     .da-tutorial-body-line-ar {
       font-size: clamp(0.62rem, 2.85vw, 0.82rem);
       letter-spacing: 0.008em;
+    }
+  }
+
+  @media (min-width: 900px) and (max-height: 980px) {
+    .da-display-title,
+    .da-display-title-ar {
+      font-size: clamp(1.45rem, 3.4vw, 2.15rem);
     }
   }
 
@@ -709,6 +730,29 @@
     .da-act3-scroll-load-cue-line {
       font-size: clamp(0.88rem, 3.8vw, 1.05rem);
       letter-spacing: 0.14em;
+    }
+  }
+
+  /** MacBook 13"/14"/15" : largeur desktop, hauteur ~900–980px. */
+  @media (min-width: 900px) and (max-height: 980px) {
+    .da-act3-intro-line {
+      font-size: clamp(1.65rem, 4.2vw, 2.45rem);
+    }
+
+    .da-act3-question {
+      font-size: clamp(1.45rem, 3.4vw, 2.05rem);
+    }
+
+    .da-act3-hint {
+      font-size: clamp(1rem, 2.4vw, 1.28rem);
+    }
+
+    .da-act3-floating-word {
+      font-size: clamp(1.05rem, 2.6vw, 1.42rem);
+    }
+
+    .da-act3-scroll-load-cue-line {
+      font-size: clamp(0.92rem, 2vw, 1.12rem);
     }
   }
 
