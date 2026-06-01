@@ -1,3 +1,5 @@
+import type { ConstellationStarRow } from "./act3ConstellationApi";
+
 const STORAGE_KEY = "al-rihla-constellation-vote";
 
 export type ConstellationVoteRecord = {
@@ -50,4 +52,20 @@ export function clearConstellationVote(): void {
   } catch {
     /* quota / private mode */
   }
+}
+
+/** Garantit que l’étoile du visiteur (localStorage) est dans la liste affichée. */
+export function mergeVisitorConstellationStar(rows: ConstellationStarRow[]): ConstellationStarRow[] {
+  const vote = readConstellationVote();
+  if (!vote?.starId) return rows;
+  if (rows.some((s) => s.id === vote.starId)) return rows;
+  return [
+    ...rows,
+    {
+      id: vote.starId,
+      mot: vote.mot,
+      prenom_ville: vote.prenom_ville ?? null,
+      created_at: vote.votedAt,
+    },
+  ];
 }

@@ -44,7 +44,7 @@ function Act3ViewMyStarBottom({
     <motion.button
       type="button"
       onClick={onClick}
-      className="da-act3-view-star pointer-events-auto fixed left-1/2 z-[520] -translate-x-1/2 cursor-pointer"
+      className="da-act3-view-star pointer-events-auto fixed left-1/2 z-[600] -translate-x-1/2 cursor-pointer"
       style={{ bottom: "max(1.25rem, env(safe-area-inset-bottom))" }}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}

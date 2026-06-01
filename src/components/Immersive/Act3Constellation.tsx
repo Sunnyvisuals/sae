@@ -18,6 +18,7 @@ import {
 import {
   readConstellationVote,
   writeConstellationVote,
+  mergeVisitorConstellationStar,
 } from "../../lib/act3ConstellationVote";
 import {
   ACT3_CONFIRM_FORM_DELAY_MS,
@@ -121,22 +122,17 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
   const loadStars = useCallback(async (options?: { background?: boolean }) => {
     const background = options?.background === true;
     if (!background) setLoadingStars(true);
-    const rows = await fetchConstellationStars();
+    const rows = mergeVisitorConstellationStar(await fetchConstellationStars());
     setStars(rows);
     if (!background) setLoadingStars(false);
+    return rows;
   }, []);
 
   const viewMyStar = useCallback(async () => {
     if (!highlightId && !highlightMot) return;
     if (skyRef.current?.focusVisitorStar()) return;
     await loadStars({ background: true });
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        if (!skyRef.current?.focusVisitorStar()) {
-          setFocusMyStarToken((n) => n + 1);
-        }
-      });
-    });
+    setFocusMyStarToken((n) => n + 1);
   }, [highlightId, highlightMot, loadStars]);
 
   useEffect(() => {
@@ -420,6 +416,9 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
       votedAt: new Date().toISOString(),
     });
     setHighlightId(res.row.id);
+    setStars((prev) =>
+      prev.some((s) => s.id === res.row.id) ? prev : [...prev, res.row],
+    );
     setStep("constellation");
     await loadStars();
   };

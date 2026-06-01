@@ -172,6 +172,7 @@ const Act3ConstellationSky = forwardRef<Act3ConstellationSkyHandle, Props>(
       }
     | { phase: "hold"; until: number; star: DrawStar };
   const focusAnimRef = useRef<StarFocusAnim>({ phase: "idle" });
+  const focusPersistRef = useRef(false);
   const [selected, setSelected] = useState<ConstellationStarRow | null>(null);
 
   const resetCameraHome = useCallback((snap = false) => {
@@ -248,7 +249,8 @@ const Act3ConstellationSky = forwardRef<Act3ConstellationSkyHandle, Props>(
   }, [stars, syncCometAppearances]);
 
   const startVisitorStarFocusSequence = useCallback(
-    (star: DrawStar) => {
+    (star: DrawStar, persist = false) => {
+      focusPersistRef.current = persist;
       const cam = cameraRef.current;
       const toPanX = 0.5 - star.x;
       const toPanY = FOCUS_Y - star.y;
@@ -267,11 +269,13 @@ const Act3ConstellationSky = forwardRef<Act3ConstellationSkyHandle, Props>(
         cam.panTx = toPanX;
         cam.panTy = toPanY;
         cam.zoomT = toZoom;
-        window.setTimeout(() => {
-          resetCameraHome(true);
-          setSelected(null);
-          onSelectStar(null);
-        }, act3Ms(700, true));
+        if (!persist) {
+          window.setTimeout(() => {
+            resetCameraHome(true);
+            setSelected(null);
+            onSelectStar(null);
+          }, act3Ms(700, true));
+        }
         return;
       }
 
@@ -292,7 +296,6 @@ const Act3ConstellationSky = forwardRef<Act3ConstellationSkyHandle, Props>(
   );
 
   const focusVisitorStar = useCallback(() => {
-    if (focusAnimRef.current.phase !== "idle") return true;
     const star = resolveVisitorStar(
       starsRef.current,
       stars,
@@ -300,7 +303,8 @@ const Act3ConstellationSky = forwardRef<Act3ConstellationSkyHandle, Props>(
       highlightMot,
     );
     if (!star) return false;
-    startVisitorStarFocusSequence(star);
+    focusAnimRef.current = { phase: "idle" };
+    startVisitorStarFocusSequence(star, true);
     return true;
   }, [stars, highlightId, highlightMot, startVisitorStarFocusSequence]);
 
@@ -414,6 +418,10 @@ const Act3ConstellationSky = forwardRef<Act3ConstellationSkyHandle, Props>(
         cam.zoom += (cam.zoomT - cam.zoom) * camK;
 
         if (t >= focusAnim.until) {
+          if (focusPersistRef.current) {
+            focusAnimRef.current = { phase: "idle" };
+            return;
+          }
           focusAnimRef.current = {
             phase: "zoom-out",
             startAt: t,
@@ -630,6 +638,10 @@ const Act3ConstellationSky = forwardRef<Act3ConstellationSkyHandle, Props>(
         aria-hidden
         onPointerDown={(e) => {
           const hit = hitTest(e.clientX, e.clientY);
+          if (!hit && focusPersistRef.current) {
+            focusPersistRef.current = false;
+            resetCameraHome(false);
+          }
           setSelected(hit);
           onSelectStar(hit);
         }}
