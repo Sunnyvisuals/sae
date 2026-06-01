@@ -498,52 +498,48 @@ export default function Act3Constellation({ onContinueToCredits }: Props) {
           {step === "intro" && (
             <motion.div
               key="intro"
-              className="flex flex-1 flex-col items-center justify-center px-3 text-center sm:px-6"
+              className="pointer-events-none fixed inset-0 z-[3] flex items-center justify-center px-3 text-center sm:px-6"
               exit={{ opacity: 0 }}
               transition={act3Fade(reduceMotion, 1)}
             >
-              <motion.div
-                className="relative flex min-h-[clamp(7rem,22vw,12rem)] w-full max-w-[min(100%,58rem)] items-center justify-center"
-              >
-                <AnimatePresence mode="wait">
-                  {introPhase === "line1" && (
-                    <motion.p
-                      key="i1"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      transition={act3TextReveal(reduceMotion, 1.15)}
-                      className="da-act3-intro-line absolute inset-x-0"
-                    >
-                      {copy.act3IntroLine1}
-                    </motion.p>
-                  )}
-                  {introPhase === "line2" && (
-                    <motion.p
-                      key="i2"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      transition={act3TextReveal(reduceMotion, 1.15)}
-                      className="da-act3-intro-line absolute inset-x-0"
-                    >
-                      {copy.act3IntroLine2}
-                    </motion.p>
-                  )}
-                  {introPhase === "line3" && (
-                    <motion.p
-                      key="i3"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -6 }}
-                      transition={act3TextReveal(reduceMotion, 1.25)}
-                      className="da-act3-question absolute inset-x-0 max-sm:text-pretty sm:whitespace-nowrap"
-                    >
-                      {copy.act3IntroLine3}
-                    </motion.p>
-                  )}
-                </AnimatePresence>
-              </motion.div>
+              <AnimatePresence mode="wait">
+                {introPhase === "line1" && (
+                  <motion.p
+                    key="i1"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={act3TextReveal(reduceMotion, 1.15)}
+                    className="da-act3-intro-line w-full max-w-[min(100%,58rem)]"
+                  >
+                    {copy.act3IntroLine1}
+                  </motion.p>
+                )}
+                {introPhase === "line2" && (
+                  <motion.p
+                    key="i2"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={act3TextReveal(reduceMotion, 1.15)}
+                    className="da-act3-intro-line w-full max-w-[min(100%,58rem)]"
+                  >
+                    {copy.act3IntroLine2}
+                  </motion.p>
+                )}
+                {introPhase === "line3" && (
+                  <motion.p
+                    key="i3"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={act3TextReveal(reduceMotion, 1.25)}
+                    className="da-act3-question w-full max-w-[min(100%,58rem)] max-sm:text-pretty sm:whitespace-nowrap"
+                  >
+                    {copy.act3IntroLine3}
+                  </motion.p>
+                )}
+              </AnimatePresence>
             </motion.div>
           )}
 

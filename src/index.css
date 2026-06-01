@@ -441,7 +441,7 @@
   }
 
   .da-act3-intro-line {
-    @apply font-sans font-medium uppercase;
+    @apply mx-auto text-center font-sans font-medium uppercase;
     font-size: clamp(2rem, 6.4vw, 3.65rem);
     letter-spacing: var(--tracking-da-display);
     line-height: 1.12;
@@ -450,7 +450,7 @@
   }
 
   .da-act3-question {
-    @apply mx-auto font-sans font-medium uppercase;
+    @apply mx-auto text-center font-sans font-medium uppercase;
     font-size: clamp(1.65rem, 4.8vw, 2.85rem);
     letter-spacing: var(--tracking-da-display);
     line-height: 1.18;
